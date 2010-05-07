@@ -4,11 +4,9 @@
 
 MIRROR="http://rcn-ee.net/deb/tools/"
 MLO="MLO-beagleboard-1.44+r10+gitr1c9276af4d6a5b7014a7630a1abeddf3b3177563-r10"
-XLOAD="x-load-beagleboard-1.44+r10+gitr1c9276af4d6a5b7014a7630a1abeddf3b3177563-r10.bin.ift"
 UBOOT="u-boot-beagleboard-2010.03-rc1+r45+gitr946351081bd14e8bf5816fc38b82e004a0e6b4fe-r45.bin"
 
 unset UBOOT_FILE
-unset XLOADER_FILE
 unset MLO_FILE
 
 unset MMC
@@ -36,34 +34,19 @@ BOOTCMD
  fi
 }
 
-
-function dl_xload_uboot {
+function dl_mlo_uboot {
  echo ""
- echo "Downloading X-loader and Uboot if required"
- echo ""
+ echo "Downloading MLO and Uboot if required"
 
  if [ "$MLO_FILE" ]; then
-  echo ""
   echo "Using MLO file $MLO_FILE"
-  echo ""
  else
   wget -c --no-verbose --directory-prefix=${DIR}/deploy/ ${MIRROR}${MLO}
   MLO_FILE="${DIR}/deploy/{$MLO}"
  fi
 
- if [ "$XLOADER_FILE" ]; then
-  echo ""
-  echo "Using xloader file $XLOADER_FILE"
-  echo ""
- else
-  wget -c --no-verbose --directory-prefix=${DIR}/deploy/ ${MIRROR}${XLOAD}
-  XLOADER_FILE="${DIR}/deploy/{$XLOAD}"
- fi
-
  if [ -n "$UBOOT_FILE" ]; then
-  echo ""
   echo "Using uboot file $UBOOT_FILE"
-  echo ""
  else
    wget -c --no-verbose --directory-prefix=${DIR}/deploy/ ${MIRROR}${UBOOT}
    UBOOT_FILE="${DIR}/deploy/$UBOOT"
@@ -110,7 +93,6 @@ mkdir ${DIR}/disk
 sudo mount ${MMC}1 ${DIR}/disk
 
 sudo cp -v ${MLO_FILE} ${DIR}/disk/MLO
-# sudo cp -v ${XLOADER_FILE} ${DIR}/disk/x-load.bin.ift
 sudo cp -v ${UBOOT_FILE} ${DIR}/disk/u-boot.bin
 
 cd ${DIR}/disk
@@ -295,9 +277,6 @@ Additional/Optional options:
 --swap_file <xxx>
     Creats a Swap file of (xxx)MB's
 
---xloader <xxx>
-    specify a xloader file to use
-
 --uboot <xxx>
     specify a uboot file to use
 
@@ -352,10 +331,6 @@ while [ ! -z "$1" ]; do
 	    checkparm $2
             UBOOT_FILE="$2"
             ;;
-        --xloader)
-	    checkparm $2
-            XLOADER_FILE="$2"
-            ;;
         --mlo)
 	    checkparm $2
             MLO_FILE="$2"
@@ -369,7 +344,7 @@ if [ ! "${MMC}" ];then
 fi
 
  prepare_sources
- dl_xload_uboot
+ dl_mlo_uboot
  cleanup_sd
  create_partitions
  populate_boot
