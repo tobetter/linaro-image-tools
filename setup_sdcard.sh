@@ -1,13 +1,10 @@
 #!/bin/bash -e
 
+# Based on rcn's setup_sdcard.sh script.
 #Notes: need to check for: parted, fdisk, wget, mkfs.*, mkimage, md5sum
 
-MIRROR="http://rcn-ee.net/deb/tools/"
-MLO="MLO-beagleboard-1.44+r10+gitr1c9276af4d6a5b7014a7630a1abeddf3b3177563-r10"
-UBOOT="u-boot-beagleboard-2010.03-rc1+r45+gitr946351081bd14e8bf5816fc38b82e004a0e6b4fe-r45.bin"
-
-unset UBOOT_FILE
-unset MLO_FILE
+MLO_FILE="usr/lib/x-loader-omap/MLO"
+UBOOT_FILE="usr/lib/u-boot/u-boot-beagle.bin"
 
 unset MMC
 
@@ -31,25 +28,6 @@ setenv bootargs 'console=tty0 console=ttyS2,115200n8 earlyprintk root=/dev/mmcbl
 boot
 BOOTCMD
   fi
- fi
-}
-
-function dl_mlo_uboot {
- echo ""
- echo "Downloading MLO and Uboot if required"
-
- if [ "$MLO_FILE" ]; then
-  echo "Using MLO file $MLO_FILE"
- else
-  wget -c --no-verbose --directory-prefix=${DIR}/deploy/ ${MIRROR}${MLO}
-  MLO_FILE="${DIR}/deploy/{$MLO}"
- fi
-
- if [ -n "$UBOOT_FILE" ]; then
-  echo "Using uboot file $UBOOT_FILE"
- else
-   wget -c --no-verbose --directory-prefix=${DIR}/deploy/ ${MIRROR}${UBOOT}
-   UBOOT_FILE="${DIR}/deploy/$UBOOT"
  fi
 }
 
@@ -277,12 +255,6 @@ Additional/Optional options:
 --swap_file <xxx>
     Creats a Swap file of (xxx)MB's
 
---uboot <xxx>
-    specify a uboot file to use
-
---mlo <xxx>
-    specify a MLO file to use
-
 EOF
 exit
 }
@@ -327,14 +299,6 @@ while [ ! -z "$1" ]; do
         --chessy)
             CHESSY_SOURCE=1
             ;;
-        --uboot)
-	    checkparm $2
-            UBOOT_FILE="$2"
-            ;;
-        --mlo)
-	    checkparm $2
-            MLO_FILE="$2"
-            ;;
     esac
     shift
 done
@@ -344,7 +308,6 @@ if [ ! "${MMC}" ];then
 fi
 
  prepare_sources
- dl_mlo_uboot
  cleanup_sd
  create_partitions
  populate_boot
