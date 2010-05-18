@@ -3,10 +3,12 @@
 # Based on rcn's setup_sdcard.sh script.
 #Notes: need to check for: parted, fdisk, wget, mkfs.*, mkimage, md5sum
 
+set -e
+
 MLO_FILE="usr/lib/x-loader-omap/MLO"
 UBOOT_FILE="usr/lib/u-boot/u-boot-beagle.bin"
 
-unset MMC
+unset MMC MMC1 MMC2 MMC3
 
 #Defaults
 RFS=ext3
@@ -14,6 +16,30 @@ BOOT_LABEL=boot
 RFS_LABEL=rootfs
 
 DIR=$PWD
+
+function get_mmcs_by_id {
+  for device in /dev/disk/by-id/*; do
+    if [ `realpath $device` = $MMC ]; then
+      if echo $device | grep -q -- "-part[0-9]*$"; then
+        echo "device $MMC must not be a partition part ($device)" 1>&2
+	exit 1
+      fi
+      for part_id in `ls $device-part*`; do
+        part=`realpath $part_id`
+	part_no=`echo $part_id | sed -e 's/.*-part//g'`
+        # echo "part $part_no found: $part_id" 1>&2
+        if test "$part_no" = 1; then
+          MMC1=$part
+        elif test "$part_no" = 2; then
+          MMC2=$part
+        elif test "$part_no" = 3; then
+          MMC3=$part
+        fi
+      done
+      break
+    fi
+  done
+}
 
 function prepare_sources {
  if [ "$CHESSY_SOURCE" ] ; then
@@ -37,8 +63,12 @@ function cleanup_sd {
  echo "Umounting Partitions"
  echo ""
 
- sudo umount ${MMC}1 &> /dev/null || true
- sudo umount ${MMC}2 &> /dev/null || true
+ if test -n "$MMC1"; then
+   sudo umount ${MMC1} &> /dev/null || true
+ fi
+ if test -n "$MMC2"; then
+   sudo umount ${MMC2} &> /dev/null || true
+ fi
 
  sudo parted -s ${MMC} mklabel msdos
 }
@@ -55,31 +85,8 @@ a
 1
 t
 e
-p
-w
-END
 
-echo ""
-echo "Formating Boot Partition"
-echo ""
 
-sudo mkfs.vfat -F 16 ${MMC}1 -n ${BOOT_LABEL}
-
-sudo rm -rfd ${DIR}/disk || true
-
-mkdir ${DIR}/disk
-sudo mount ${MMC}1 ${DIR}/disk
-
-sudo cp -v ${MLO_FILE} ${DIR}/disk/MLO
-sudo cp -v ${UBOOT_FILE} ${DIR}/disk/u-boot.bin
-
-cd ${DIR}/disk
-sync
-cd ${DIR}
-sudo umount ${DIR}/disk || true
-echo "done"
-
-sudo fdisk ${MMC} << ROOTFS
 n
 p
 2
@@ -87,20 +94,44 @@ p
 
 p
 w
-ROOTFS
+END
+
+}
+
+function prepare_partitions {
+
+echo ""
+echo "Formating Boot Partition"
+echo ""
+
+sudo mkfs.vfat -F 16 ${MMC1} -n ${BOOT_LABEL}
+
+sudo rm -rfd ${DIR}/disk || true
+
+mkdir ${DIR}/disk
+sudo mount ${MMC1} ${DIR}/disk
+
+if test -e ${MLO_FILE} -a -e ${UBOOT_FILE}; then
+  sudo cp -v ${MLO_FILE} ${DIR}/disk/MLO
+  sudo cp -v ${UBOOT_FILE} ${DIR}/disk/u-boot.bin
+fi
+
+sync
+cd ${DIR}
+sudo umount ${DIR}/disk || true
+echo "done"
 
 echo ""
 echo "Formating ${RFS} Partition"
 echo ""
-sudo mkfs.${RFS} ${MMC}2 -L ${RFS_LABEL}
-
+sudo mkfs.${RFS} ${MMC2} -L ${RFS_LABEL}
 }
 
 function populate_boot {
  echo ""
  echo "Populating Boot Partition"
  echo ""
- sudo mount ${MMC}1 ${DIR}/disk
+ sudo mount ${MMC1} ${DIR}/disk
  sudo mkimage -A arm -O linux -T kernel -C none -a 0x80008000 -e 0x80008000 -n "Linux" -d ${DIR}/vmlinuz-* ${DIR}/disk/uImage
  sudo mkimage -A arm -O linux -T ramdisk -C none -a 0 -e 0 -n initramfs -d ${DIR}/initrd.img-* ${DIR}/disk/uInitrd
 
@@ -130,7 +161,7 @@ function populate_rootfs {
  echo "Populating rootfs Partition"
  echo "Be patient, this may take a few minutes"
  echo ""
- sudo mount ${MMC}2 ${DIR}/disk
+ sudo mount ${MMC2} ${DIR}/disk
 
  if [ "$CHESSY_SOURCE" ] ; then
   sudo tar xfp binary-tar.tar.lzma --lzma --strip-components=1 -C disk/
@@ -144,7 +175,7 @@ function populate_rootfs {
   echo "Creating SWAP File"
   echo ""
 
-  SPACE_LEFT=$(df ${DIR}/disk/ | grep ${MMC}2 | awk '{print $4}')
+  SPACE_LEFT=$(df ${DIR}/disk/ | grep ${MMC2} | awk '{print $4}')
 
   let SIZE=$SWAP_SIZE*1024
 
@@ -310,6 +341,16 @@ fi
  prepare_sources
  cleanup_sd
  create_partitions
+ echo -n "waiting for partitioning to settle ..."
+ sync
+ sleep 3
+ echo "done."
+ get_mmcs_by_id
+ if test -z "$MMC1" -o -z "$MMC2"; then
+   echo "MMC1: $MMC1 nor MMC2: $MMC2 must be empty"
+   exit 2
+ fi
+ prepare_partitions
  populate_boot
  populate_rootfs
 
