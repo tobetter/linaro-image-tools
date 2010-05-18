@@ -51,7 +51,7 @@ function prepare_sources {
   if [ ! -f boot.cmd ] ; then
     cat > boot.cmd << BOOTCMD
 setenv bootcmd 'mmc init; fatload mmc 0:1 0x80000000 uImage; fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 0x81600000'
-setenv bootargs 'console=tty0 console=ttyS2,115200n8 earlyprintk fixrtc root=/dev/mmcblk0p2 rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
+setenv bootargs 'console=tty0 console=ttyS2,115200 earlyprintk fixrtc root=/dev/mmcblk0p2 rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
 BOOTCMD
   fi
@@ -181,7 +181,7 @@ function populate_rootfs {
   let SIZE=$SWAP_SIZE*1024
 
   if [ $SPACE_LEFT -ge $SIZE ] ; then
-   sudo dd if=/dev/zero of=${DIR}/disk/mnt/SWAP.swap bs=1M seek=$SWAP_SIZE count=0
+   sudo dd if=/dev/zero of=${DIR}/disk/mnt/SWAP.swap bs=1M count=$SWAP_SIZE
    sudo mkswap ${DIR}/disk/mnt/SWAP.swap
    echo "/mnt/SWAP.swap  none  swap  sw  0 0" | sudo tee -a ${DIR}/disk/etc/fstab
    else
