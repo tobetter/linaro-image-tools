@@ -340,6 +340,7 @@ if [ ! "${MMC}" ];then
 fi
 
  prepare_sources
+ get_mmcs_by_id
  cleanup_sd
  create_partitions
  echo -n "waiting for partitioning to settle ..."
