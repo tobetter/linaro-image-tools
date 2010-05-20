@@ -5,8 +5,8 @@
 
 set -e
 
-MLO_FILE="usr/lib/x-loader-omap/MLO"
-UBOOT_FILE="usr/lib/u-boot/u-boot-beagle.bin"
+MLO_FILE="MLO.omap"
+UBOOT_FILE="u-boot.bin.omap"
 
 unset MMC MMC1 MMC2 MMC3
 
@@ -15,6 +15,8 @@ RFS=ext3
 BOOT_LABEL=boot
 RFS_LABEL=rootfs
 CODENAME=Chessy
+RFS_UUID=`uuidgen -r`
+IS_LIVE=
 
 DIR=$PWD
 
@@ -48,13 +50,16 @@ function prepare_sources {
   tar xf binary-boot.omap.tar.gz 
   ln -sf boot/initrd.img-* .
   ln -sf boot/vmlinuz-* .
-  if [ ! -f boot.cmd ] ; then
-    cat > boot.cmd << BOOTCMD
+  if [ "$IS_LIVE" ]; then
+    boot_snippet='root=UUID='${RFS_UUID}
+  else
+    boot_snippet='boot=casper'
+  fi
+  cat > boot.cmd << BOOTCMD
 setenv bootcmd 'mmc init; fatload mmc 0:1 0x80000000 uImage; fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 0x81600000'
-setenv bootargs 'console=tty0 console=ttyS2,115200 earlyprintk fixrtc root=/dev/mmcblk0p2 rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
+setenv bootargs 'console=tty0 console=ttyS2,115200 earlyprintk fixrtc ${boot_snippet} rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
 BOOTCMD
-  fi
  fi
 }
 
@@ -107,37 +112,35 @@ echo ""
 
 sudo mkfs.vfat -F 16 ${MMC1} -n ${BOOT_LABEL}
 
-sudo rm -rfd ${DIR}/disk || true
-
-mkdir ${DIR}/disk
-sudo mount ${MMC1} ${DIR}/disk
-
-if test -e ${MLO_FILE} -a -e ${UBOOT_FILE}; then
-  sudo cp -v ${MLO_FILE} ${DIR}/disk/MLO
-  sudo cp -v ${UBOOT_FILE} ${DIR}/disk/u-boot.bin
-fi
-
-sync
-cd ${DIR}
-sudo umount ${DIR}/disk || true
-echo "done"
-
 echo ""
 echo "Formating ${RFS} Partition"
 echo ""
-sudo mkfs.${RFS} ${MMC2} -L ${RFS_LABEL}
+sudo mkfs.${RFS} -U "$RFS_UUID" ${MMC2} -L ${RFS_LABEL}
 }
 
 function populate_boot {
  echo ""
  echo "Populating Boot Partition"
  echo ""
- sudo mount ${MMC1} ${DIR}/disk
- sudo mkimage -A arm -O linux -T kernel -C none -a 0x80008000 -e 0x80008000 -n "Linux" -d ${DIR}/vmlinuz-* ${DIR}/disk/uImage
- sudo mkimage -A arm -O linux -T ramdisk -C none -a 0 -e 0 -n initramfs -d ${DIR}/initrd.img-* ${DIR}/disk/uInitrd
 
- sudo mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "$CODENAME 10.04" -d ${DIR}/boot.cmd ${DIR}/disk/boot.scr
- #for igepv2 users
+ echo ""
+ echo "Installing OMAP Boot Loader"
+ echo ""
+
+ mkdir -p ${DIR}/disk || true
+ sudo mount ${MMC1} ${DIR}/disk
+ if test -e ${MLO_FILE} -a -e ${UBOOT_FILE}; then
+   sudo cp -v ${MLO_FILE} ${DIR}/disk/MLO
+   sudo cp -v ${UBOOT_FILE} ${DIR}/disk/u-boot.bin
+ fi
+ sync
+ cd ${DIR}
+ echo "done"
+
+ sudo cp -a ${DIR}/uImage.omap ${DIR}/disk/uImage
+ sudo cp -a ${DIR}/uInitrd.omap ${DIR}/disk/uInitrd
+
+ sudo mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "$CODENAME 10.05" -d ${DIR}/boot.cmd ${DIR}/disk/boot.scr
  sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
 
  echo "#!/bin/sh" > /tmp/rebuild_uinitrd.sh
@@ -287,6 +290,11 @@ Additional/Optional options:
 --swap_file <xxx>
     Creats a Swap file of (xxx)MB's
 
+--live
+    Create boot command for casper/live images; if this is not
+    provided a UUID for the rootfs is generated and used as the root=
+    option
+
 EOF
 exit
 }
@@ -327,6 +335,9 @@ while [ ! -z "$1" ]; do
             checkparm $2
             SWAP_SIZE="$2"
             CREATE_SWAP=1
+            ;;
+        --live)
+            IS_LIVE=1
             ;;
         --chessy)
             CHESSY_SOURCE=1
