@@ -46,15 +46,22 @@ function get_mmcs_by_id {
 
 function prepare_sources {
  if [ "$CHESSY_SOURCE" ] ; then
-  rm -rf ${DIR}/boot/ || true
-  tar xf binary-boot.omap.tar.gz 
-  ln -sf boot/initrd.img-* .
-  ln -sf boot/vmlinuz-* .
+
   if [ "$IS_LIVE" ]; then
-    boot_snippet='root=UUID='${RFS_UUID}
-  else
+    parts_dir=casper
     boot_snippet='boot=casper'
+  else
+    parts_dir=boot
+    boot_snippet='root=UUID='${RFS_UUID}
   fi
+
+  rm -rf ${DIR}/${parts_dir}/ || true
+  rm -rf initrd.img-* || true
+  rm -rf vmlinuz-* || true
+  tar xf binary-boot.omap.tar.gz 
+  ln -sf ${parts_dir}/initrd.img-* .
+  ln -sf ${parts_dir}/vmlinuz-* .
+
   cat > boot.cmd << BOOTCMD
 setenv bootcmd 'mmc init; fatload mmc 0:1 0x80000000 uImage; fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 0x81600000'
 setenv bootargs 'console=tty0 console=ttyS2,115200 earlyprintk fixrtc ${boot_snippet} rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
@@ -127,18 +134,24 @@ function populate_boot {
  echo "Installing OMAP Boot Loader"
  echo ""
 
+ if [ "$IS_LIVE" ]; then
+   parts_dir=casper
+ else
+   parts_dir=boot
+ fi
+
  mkdir -p ${DIR}/disk || true
  sudo mount ${MMC1} ${DIR}/disk
- if test -e ${MLO_FILE} -a -e ${UBOOT_FILE}; then
-   sudo cp -v ${MLO_FILE} ${DIR}/disk/MLO
-   sudo cp -v ${UBOOT_FILE} ${DIR}/disk/u-boot.bin
+ if test -e ${parts_dir}/${MLO_FILE} -a -e ${parts_dir}/${UBOOT_FILE}; then
+   sudo cp -v ${parts_dir}/${MLO_FILE} ${DIR}/disk/MLO
+   sudo cp -v ${parts_dir}/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
  fi
  sync
  cd ${DIR}
  echo "done"
 
- sudo cp -a ${DIR}/uImage.omap ${DIR}/disk/uImage
- sudo cp -a ${DIR}/uInitrd.omap ${DIR}/disk/uInitrd
+ sudo cp -f ${DIR}/${parts_dir}/uImage.omap ${DIR}/disk/uImage
+ sudo cp -f ${DIR}/${parts_dir}/uInitrd.omap ${DIR}/disk/uInitrd
 
  sudo mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "$CODENAME 10.05" -d ${DIR}/boot.cmd ${DIR}/disk/boot.scr
  sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
@@ -168,7 +181,7 @@ function populate_rootfs {
  sudo mount ${MMC2} ${DIR}/disk
 
  if [ "$CHESSY_SOURCE" ] ; then
-  sudo tar xfp binary-tar.tar.lzma --lzma --strip-components=1 -C disk/
+  sudo tar xfp binary-tar.tar.lzma --lzma --strip-components=1 -C disk/ || sudo tar xzfp binary-tar.tar.gz  --strip-components=1 -C disk/
  else
   sudo tar xfp ${DIR}/armel-rootfs-* -C ${DIR}/disk/
  fi
