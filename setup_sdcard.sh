@@ -1,7 +1,9 @@
 #!/bin/bash -e
 
+# Copyright 2010, Canonical Ltd.
+# License: GPLv3 
 # Based on rcn's setup_sdcard.sh script.
-#Notes: need to check for: parted, fdisk, wget, mkfs.*, mkimage, md5sum
+# Notes: need to check for: parted, fdisk, wget, mkfs.*, mkimage, md5sum
 
 set -e
 
