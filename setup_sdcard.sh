@@ -52,6 +52,7 @@ function prepare_sources {
   if [ "$IS_LIVE" ]; then
     parts_dir=casper
     boot_snippet='boot=casper'
+    [ "$IS_LOWMEM" ] && lowmem_opt=only-ubiquity
   else
     parts_dir=boot
     boot_snippet='root=UUID='${RFS_UUID}
@@ -66,7 +67,7 @@ function prepare_sources {
 
   cat > boot.cmd << BOOTCMD
 setenv bootcmd 'mmc init; fatload mmc 0:1 0x80000000 uImage; fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 0x81600000'
-setenv bootargs 'console=tty0 console=ttyS2,115200 earlyprintk fixrtc ${boot_snippet} rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
+setenv bootargs '${serial_opts} earlyprintk fixrtc ${lowmem_opt} ${boot_snippet} rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
 BOOTCMD
  fi
@@ -310,6 +311,19 @@ Additional/Optional options:
     provided a UUID for the rootfs is generated and used as the root=
     option
 
+--live-256m
+    Create boot command for casper/live images; adds only-ubiquity option
+    to allow use of live installer on boards with 256M memory - like beagle
+
+--dev <board>
+    use development boot options; this includes setting up serial ttys as well
+    as enabling normal debug options for the target board. Current board values:
+    * beagle
+
+--console <ttyXY>
+    add a console to kernel boot parameter; this parameter can be defined
+    multiple times.
+
 EOF
 exit
 }
@@ -320,6 +334,8 @@ function checkparm {
         usage
     fi
 }
+
+consoles=""
 
 # parse commandline options
 while [ ! -z "$1" ]; do
@@ -354,12 +370,48 @@ while [ ! -z "$1" ]; do
         --live)
             IS_LIVE=1
             ;;
+        --live-256m)
+            IS_LIVE=1
+            IS_LOWMEM=1
+            ;;
+        --console)
+            checkparm $2
+            consoles="$consoles $2"
+            ;;
         --chessy)
             CHESSY_SOURCE=1
+            ;;
+	--dev)
+            checkparm $2
+            DEVIMAGE=$2
             ;;
     esac
     shift
 done
+
+serial_opts=""
+if [ "$consoles" ]; then
+  for c in ${consoles}; do 
+    serial_opts="$serial_opts console=$c"
+  done
+  if [ "$IS_LIVE" ]; then 
+    serial_opts="$serial_opts serialtty=ttyS2"
+  fi
+fi
+
+if [ "$DEVIMAGE" ]; then
+  case "$DEVIMAGE" in
+    beagle)
+      serial_opts="$serial_opts console=tty0 console=ttyS2,115200n8"
+      if [ "$IS_LIVE" ]; then
+        serial_opts="$serial_opts serialtty=ttyS2"
+      fi
+      ;;
+    *)
+      echo "unknown --dev paramater: $DEVIMAGE" 1>&2
+      ;;
+  esac
+fi
 
 if [ ! "${MMC}" ];then
     usage
