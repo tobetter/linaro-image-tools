@@ -184,7 +184,7 @@ function populate_rootfs {
  sudo mount ${MMC2} ${DIR}/disk
 
  if [ "$CHESSY_SOURCE" ] ; then
-  sudo tar xfp binary-tar.tar.lzma --lzma --strip-components=1 -C disk/ || sudo tar xzfp binary-tar.tar.gz  --strip-components=1 -C disk/
+  sudo tar xfp binary-tar.tar.lzma --lzma --strip-components=1 -C disk/ 2>/dev/null || sudo tar xzfp binary-tar.tar.gz  --strip-components=1 -C disk/
  else
   sudo tar xfp ${DIR}/armel-rootfs-* -C ${DIR}/disk/
  fi
