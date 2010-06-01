@@ -3,7 +3,6 @@
 # Copyright 2010, Canonical Ltd.
 # License: GPLv3 
 # Based on rcn's setup_sdcard.sh script.
-# Notes: need to check for: parted, fdisk, wget, mkfs.*, mkimage, md5sum
 
 set -e
 
@@ -11,6 +10,24 @@ MLO_FILE="MLO.omap"
 UBOOT_FILE="u-boot.bin.omap"
 
 unset MMC MMC1 MMC2 MMC3
+
+function ensure_command {
+# ensure_command foo foo-package
+which "$1" 2>/dev/null 1>/dev/null || ( echo "Installing required command $1 from package $2" && sudo apt-get install "$2" )
+}
+
+ensure_command uuidgen uuidgen-runtime
+ensure_command parted parted
+ensure_command fdisk util-linux # threre is a fdisk binary provided by gnu-fdisk as well
+ensure_command wget wget
+ensure_command mkfs.ext3 e2fsprogs
+ensure_command mkfs.ext4 e2fsprogs
+ensure_command mkfs.reiserfs reiserfsprogs
+ensure_command mkfs.btrfs btrfs-tools
+ensure_command mkimage uboot-mkimage
+ensure_command md5sum coreutils
+ensure_command realpath realpath
+
 
 #Defaults
 RFS=ext3
@@ -21,6 +38,7 @@ RFS_UUID=`uuidgen -r`
 IS_LIVE=
 
 DIR=$PWD
+
 
 function get_mmcs_by_id {
   for device in /dev/disk/by-id/*; do
