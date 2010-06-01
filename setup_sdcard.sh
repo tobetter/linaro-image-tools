@@ -67,7 +67,7 @@ function prepare_sources {
 
   cat > boot.cmd << BOOTCMD
 setenv bootcmd 'mmc init; fatload mmc 0:1 0x80000000 uImage; fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 0x81600000'
-setenv bootargs '${serial_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} ${boot_snippet} rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
+setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} ${boot_snippet} rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
 BOOTCMD
  fi
@@ -411,6 +411,10 @@ if [ "$DEVIMAGE" ]; then
       echo "unknown --dev paramater: $DEVIMAGE" 1>&2
       ;;
   esac
+else
+  if [ "$IS_LIVE" ]; then
+    splash_opts="quiet splash"
+  fi
 fi
 
 if [ ! "${MMC}" ];then
