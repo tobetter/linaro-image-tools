@@ -22,7 +22,6 @@ ensure_command fdisk util-linux # threre is a fdisk binary provided by gnu-fdisk
 ensure_command wget wget
 ensure_command mkfs.ext3 e2fsprogs
 ensure_command mkfs.ext4 e2fsprogs
-ensure_command mkfs.reiserfs reiserfsprogs
 ensure_command mkimage uboot-mkimage
 ensure_command md5sum coreutils
 ensure_command realpath realpath
