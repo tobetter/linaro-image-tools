@@ -9,7 +9,7 @@ set -e
 MLO_FILE="MLO.omap"
 UBOOT_FILE="u-boot.bin.omap"
 
-unset MMC MMC1 MMC2 MMC3
+unset MMC MMC1 MMC2 MMC3 IMAGE_FILE
 
 function ensure_command {
 # ensure_command foo foo-package
@@ -33,10 +33,13 @@ RFS_LABEL=rootfs
 CODENAME=Chessy
 RFS_UUID=`uuidgen -r`
 IS_LIVE=
+FAT_SIZE=16
+IMAGE_SIZE=2G
 
 DIR=$PWD
 
 function get_mmcs_by_id {
+if [ ! ${IMAGE_FILE} ]; then
   for device in /dev/disk/by-id/*; do
     if [ `realpath $device` = $MMC ]; then
       if echo $device | grep -q -- "-part[0-9]*$"; then
@@ -58,6 +61,7 @@ function get_mmcs_by_id {
       break
     fi
   done
+fi
 }
 
 function prepare_sources {
@@ -79,11 +83,19 @@ function prepare_sources {
   ln -sf ${parts_dir}/initrd.img-* .
   ln -sf ${parts_dir}/vmlinuz-* .
 
-  cat > boot.cmd << BOOTCMD
+  if [ "${IMAGE_FILE}" ]; then
+    cat > boot.cmd << BOOTCMD
+setenv bootcmd 'mmc init; fatload mmc 0:1 0x80000000 uImage; bootm 0x80000000'
+setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} root=/dev/mmcblk0p2 rootwait rw vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
+boot
+BOOTCMD
+  else
+    cat > boot.cmd << BOOTCMD
 setenv bootcmd 'mmc init; fatload mmc 0:1 0x80000000 uImage; fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 0x81600000'
 setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} ${boot_snippet} rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
 BOOTCMD
+  fi
  fi
 }
 
@@ -99,11 +111,12 @@ function cleanup_sd {
  if test -n "$MMC2"; then
    sudo umount ${MMC2} &> /dev/null || true
  fi
-
- sudo parted -s ${MMC} mklabel msdos
+ if [ "${MMC}" ]; then
+   sudo parted -s ${MMC} mklabel msdos
+ fi
 }
 
-function create_partitions {
+function create_partitions_mmc {
 
 sudo fdisk -H 255 -S 63 ${MMC} << END
 n
@@ -128,13 +141,39 @@ END
 
 }
 
+function create_partitions_image {
+# Create a VFAT partition of 9 cylinders which is about 64M
+# and a linux partition of the rest
+sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $IMAGE_FILE << 'THEEND'
+,9,0x0C,*
+,,,-
+THEEND
+
+VFATOFFSET=$(($(fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $3}')*512))
+VFATSIZE=$(($(fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $5}')*1024))
+ROOTOFFSET=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')*512))
+ROOTSIZE2=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $3}')))
+ROOTSIZE1=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')))
+ROOTSIZE=$((((ROOTSIZE2-ROOTSIZE1)/2)*1024))
+MMC1=$(sudo losetup -f --show $IMAGE_FILE --offset $VFATOFFSET --sizelimit $VFATSIZE)
+MMC2=$(sudo losetup -f --show $IMAGE_FILE --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
+}
+
+function create_partitions {
+if [ "${IMAGE_FILE}" ]; then
+  create_partitions_image
+else
+  create_partitions_mmc
+fi
+}
+
 function prepare_partitions {
 
 echo ""
 echo "Formating Boot Partition"
 echo ""
 
-sudo mkfs.vfat -F 16 ${MMC1} -n ${BOOT_LABEL}
+sudo mkfs.vfat -F ${FAT_SIZE} ${MMC1} -n ${BOOT_LABEL}
 
 echo ""
 echo "Formating ${RFS} Partition"
@@ -211,7 +250,7 @@ function populate_rootfs {
 
   SPACE_LEFT=$(df ${DIR}/disk/ | grep ${MMC2} | awk '{print $4}')
 
-  let SIZE=$SWAP_SIZE*1024
+  let SIZE=$SWAP_SIZE*1024*1024
 
   if [ $SPACE_LEFT -ge $SIZE ] ; then
    sudo dd if=/dev/zero of=${DIR}/disk/mnt/SWAP.swap bs=1M count=$SWAP_SIZE
@@ -293,13 +332,39 @@ function check_fs_type {
  fi
 }
 
+function calculatesize {
+    IMAGE_SIZE=${IMAGE_SIZE/G/M*1024}
+    IMAGE_SIZE=${IMAGE_SIZE/M/K*1024}
+    IMAGE_SIZE=${IMAGE_SIZE/K/*1024}
+    IMAGE_SIZE=$(($IMAGE_SIZE))
+}
+
+function setup_image {
+    calculatesize
+    HEADS=255
+    SECTORS=63
+    SECTORSIZE=512
+    CYLINDERSIZE=$(($HEADS*$SECTORS*$SECTORSIZE))
+    CYLINDERS=$(($IMAGE_SIZE/$CYLINDERSIZE))
+    CYLINDER_ARG="-C $CYLINDERS"
+    IMAGE_SIZE=$(($CYLINDERS*$CYLINDERSIZE))
+    FAT_SIZE=32
+
+    sudo qemu-img create -f raw $IMAGE_FILE $IMAGE_SIZE
+}
+
 function usage {
     echo "usage: $(basename $0) --mmc /dev/sdd"
+    echo "<or>"
+    echo "usage: $(basename $0) --image_file mmc.img"
 cat <<EOF
 
 required options:
 --mmc </dev/sdX>
     Unformated MMC Card
+<or>
+--image_file <xxx>
+    specify name of image file
 
 Additional/Optional options:
 -h --help
@@ -338,6 +403,9 @@ Additional/Optional options:
     add a console to kernel boot parameter; this parameter can be defined
     multiple times.
 
+--image_size nnnG or nnnM
+    specify size of SD image to create; use with --image_file only (default: 2G)
+
 EOF
 exit
 }
@@ -363,6 +431,14 @@ while [ ! -z "$1" ]; do
             MMC="$2"
             check_mmc 
             ;;
+        --image_file)
+	    checkparm $2
+	    IMAGE_FILE="$2"
+	    ;;
+	--image_size)
+	    checkparm $2
+	    IMAGE_SIZE=$2
+	    ;;
         --rootfs)
             checkparm $2
             FS_TYPE="$2"
@@ -403,6 +479,10 @@ while [ ! -z "$1" ]; do
     shift
 done
 
+if [ "${IMAGE_FILE}" ]; then
+  setup_image
+fi
+
 serial_opts=""
 if [ "$consoles" ]; then
   for c in ${consoles}; do 
@@ -431,7 +511,7 @@ else
   fi
 fi
 
-if [ ! "${MMC}" ];then
+if [ ! "${MMC}" -a ! "${IMAGE_FILE}" ]; then
     usage
 fi
 
