@@ -250,14 +250,14 @@ function populate_rootfs {
 
   SPACE_LEFT=$(df ${DIR}/disk/ | grep ${MMC2} | awk '{print $4}')
 
-  let SIZE=$SWAP_SIZE*1024*1024
+  let SIZE=$SWAP_SIZE*1024
 
   if [ $SPACE_LEFT -ge $SIZE ] ; then
    sudo dd if=/dev/zero of=${DIR}/disk/mnt/SWAP.swap bs=1M count=$SWAP_SIZE
    sudo mkswap ${DIR}/disk/mnt/SWAP.swap
    echo "/mnt/SWAP.swap  none  swap  sw  0 0" | sudo tee -a ${DIR}/disk/etc/fstab
    else
-   echo "FIXME Recovery after user selects SWAP file bigger then whats left not implemented"
+   echo "SWAP file bigger then whats left on partition"
   fi
  fi
 
@@ -532,3 +532,7 @@ fi
  populate_boot
  populate_rootfs
 
+ if [ "${IMAGE_FILE}" ]; then
+  echo "Create ${IMAGE_FILE}.gz"
+  gzip -f ${IMAGE_FILE} > ${IMAGE_FILE}.gz
+ fi
