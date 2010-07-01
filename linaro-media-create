@@ -81,10 +81,10 @@ function prepare_sources {
   rm -rf binary/vmlinuz-* || true
 
   case $BINARY_TARBALL in
-    *.bz2)  sudo tar -x --bzip2 -f $BINARY_TARBALL;;
-    *.gz)   sudo tar -x --gzip  -f $BINARY_TARBALL;;
-    *.lzma) lzcat $BINARY_TARBALL | sudo tar -x -f -;;
-    *.xz)   xzcat $BINARY_TARBALL | sudo tar -x -f -;;
+    *.bz2)  sudo tar -x --bzip2 -f $BINARY_TARBALL binary/${parts_dir};;
+    *.gz)   sudo tar -x --gzip  -f $BINARY_TARBALL binary/${parts_dir};;
+    *.lzma) lzcat $BINARY_TARBALL | sudo tar -x -f - binary/${parts_dir};;
+    *.xz)   xzcat $BINARY_TARBALL | sudo tar -x -f - binary/${parts_dir};;
     *)      false;;
   esac
 
