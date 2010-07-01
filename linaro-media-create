@@ -28,6 +28,7 @@ ensure_command realpath realpath
 
 #Defaults
 RFS=ext3
+BINARY_TARBALL='binary-tar.tar.gz'
 BOOT_LABEL=boot
 RFS_LABEL=rootfs
 CODENAME=Chessy
@@ -77,20 +78,29 @@ function prepare_sources {
   fi
 
   rm -rf ${DIR}/${parts_dir}/ || true
-  rm -rf initrd.img-* || true
-  rm -rf vmlinuz-* || true
-  tar xf binary-boot.omap.tar.gz 
-  ln -sf ${parts_dir}/initrd.img-* .
-  ln -sf ${parts_dir}/vmlinuz-* .
+  rm -rf ${DIR}/binary/ || true
+  rm -rf binary/initrd.img-* || true
+  rm -rf binary/vmlinuz-* || true
+
+  case $BINARY_TARBALL in
+    *.bz2)  sudo tar -x --bzip2 -f $BINARY_TARBALL;;
+    *.gz)   sudo tar -x --gzip  -f $BINARY_TARBALL;;
+    *.lzma) lzcat $BINARY_TARBALL | sudo tar -x -f -;;
+    *.xz)   xzcat $BINARY_TARBALL | sudo tar -x -f -;;
+    *)      false;;
+  esac
+
+  ln -sf binary/${parts_dir}/initrd.img-* .
+  ln -sf binary/${parts_dir}/vmlinuz-* .
 
   if [ "${IMAGE_FILE}" ]; then
-    cat > boot.cmd << BOOTCMD
+    cat > binary/boot.cmd << BOOTCMD
 setenv bootcmd 'mmc init; fatload mmc 0:1 0x80000000 uImage; bootm 0x80000000'
 setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} root=/dev/mmcblk0p2 rootwait rw vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
 BOOTCMD
   else
-    cat > boot.cmd << BOOTCMD
+    cat > binary/boot.cmd << BOOTCMD
 setenv bootcmd 'mmc init; fatload mmc 0:1 0x80000000 uImage; fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 0x81600000'
 setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} ${boot_snippet} rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
@@ -198,18 +208,18 @@ function populate_boot {
 
  mkdir -p ${DIR}/disk || true
  sudo mount ${MMC1} ${DIR}/disk
- if test -e ${parts_dir}/${MLO_FILE} -a -e ${parts_dir}/${UBOOT_FILE}; then
-   sudo cp -v ${parts_dir}/${MLO_FILE} ${DIR}/disk/MLO
-   sudo cp -v ${parts_dir}/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
+ if test -e binary/${parts_dir}/${MLO_FILE} -a -e binary/${parts_dir}/${UBOOT_FILE}; then
+   sudo cp -v binary/${parts_dir}/${MLO_FILE} ${DIR}/disk/MLO
+   sudo cp -v binary/${parts_dir}/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
  fi
  sync
  cd ${DIR}
  echo "done"
 
- sudo cp -f ${DIR}/${parts_dir}/uImage.omap ${DIR}/disk/uImage
- sudo cp -f ${DIR}/${parts_dir}/uInitrd.omap ${DIR}/disk/uInitrd
+ sudo cp -f ${DIR}/binary/${parts_dir}/uImage.omap ${DIR}/disk/uImage
+ sudo cp -f ${DIR}/binary/${parts_dir}/uInitrd.omap ${DIR}/disk/uInitrd
 
- sudo mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "$CODENAME 10.05" -d ${DIR}/boot.cmd ${DIR}/disk/boot.scr
+ sudo mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "$CODENAME 10.05" -d ${DIR}/binary/boot.cmd ${DIR}/disk/boot.scr
  sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
 
  echo "#!/bin/sh" > /tmp/rebuild_uinitrd.sh
@@ -236,11 +246,13 @@ function populate_rootfs {
  echo ""
  sudo mount ${MMC2} ${DIR}/disk
 
- if [ "$CHESSY_SOURCE" ] ; then
-  sudo tar xfp binary-tar.tar.lzma --lzma --strip-components=1 -C disk/ 2>/dev/null || sudo tar xzfp binary-tar.tar.gz  --strip-components=1 -C disk/
- else
-  sudo tar xfp ${DIR}/armel-rootfs-* -C ${DIR}/disk/
- fi
+ case $BINARY_TARBALL in
+   *.bz2)  sudo tar -x --bzip2 -f $BINARY_TARBALL --strip-components=1 -C disk/;;
+   *.gz)   sudo tar -x --gzip -f $BINARY_TARBALL --strip-components=1 -C disk/;;
+   *.lzma) lzcat $BINARY_TARBALL | sudo tar -x -f --strip-components=1 -C disk/ -;;
+   *.xz)   xzcat $BINARY_TARBALL | sudo tar -x -f --strip-components=1 -C disk/ -;;
+   *)      false;;
+ esac
 
  if [ "$CREATE_SWAP" ] ; then
 
@@ -406,6 +418,8 @@ Additional/Optional options:
 --image_size nnnG or nnnM
     specify size of SD image to create; use with --image_file only (default: 2G)
 
+--binary <filename>
+    specify file used to create the bootable system. Default binary-tar.tar.gz
 EOF
 exit
 }
@@ -475,6 +489,10 @@ while [ ! -z "$1" ]; do
             checkparm $2
             DEVIMAGE=$2
             ;;
+        --binary)
+            checkparm $2
+            BINARY_TARBALL="$2"
+            ;; 
     esac
     shift
 done
