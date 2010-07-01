@@ -253,9 +253,9 @@ function populate_rootfs {
   let SIZE=$SWAP_SIZE*1024
 
   if [ $SPACE_LEFT -ge $SIZE ] ; then
-   sudo dd if=/dev/zero of=${DIR}/disk/mnt/SWAP.swap bs=1M count=$SWAP_SIZE
-   sudo mkswap ${DIR}/disk/mnt/SWAP.swap
-   echo "/mnt/SWAP.swap  none  swap  sw  0 0" | sudo tee -a ${DIR}/disk/etc/fstab
+   sudo dd if=/dev/zero of=${DIR}/disk/SWAP.swap bs=1M count=$SWAP_SIZE
+   sudo mkswap ${DIR}/disk/SWAP.swap
+   echo "/SWAP.swap  none  swap  sw  0 0" | sudo tee -a ${DIR}/disk/etc/fstab
    else
    echo "SWAP file bigger then whats left on partition"
   fi
