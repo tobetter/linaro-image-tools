@@ -66,8 +66,6 @@ fi
 }
 
 function prepare_sources {
- if [ "$CHESSY_SOURCE" ] ; then
-
   if [ "$IS_LIVE" ]; then
     parts_dir=casper
     boot_snippet='boot=casper'
@@ -106,7 +104,6 @@ setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${
 boot
 BOOTCMD
   fi
- fi
 }
 
 function cleanup_sd {
@@ -481,9 +478,6 @@ while [ ! -z "$1" ]; do
         --console)
             checkparm $2
             consoles="$consoles $2"
-            ;;
-        --chessy)
-            CHESSY_SOURCE=1
             ;;
 	--dev)
             checkparm $2
