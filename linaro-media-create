@@ -428,6 +428,13 @@ function checkparm {
     fi
 }
 
+function cleanup_workdir {
+  if [ -d binary/ ]; then
+    sudo rm -rf binary/
+  fi
+}
+
+
 consoles=""
 
 # parse commandline options
@@ -548,3 +555,6 @@ fi
   echo "Create ${IMAGE_FILE}.gz"
   gzip -f ${IMAGE_FILE} > ${IMAGE_FILE}.gz
  fi
+
+ cleanup_workdir
+
