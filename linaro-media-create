@@ -123,39 +123,20 @@ function cleanup_sd {
  fi
 }
 
-function create_partitions_mmc {
-
-sudo fdisk -H $HEADS -S $SECTORS ${MMC} << END
-n
-p
-1
-1
-+64M
-a
-1
-t
-e
-
-
-n
-p
-2
-
-
-p
-w
-END
-
-}
-
-function create_partitions_image {
+function create_partitions {
+if [ "${IMAGE_FILE}" ]; then
+partdev=${IMAGE_FILE}
+else
+partdev=${MMC}
+fi
 # Create a VFAT partition of 9 cylinders which is about 64M
 # and a linux partition of the rest
-sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $IMAGE_FILE << 'THEEND'
+sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev << 'THEEND'
 ,9,0x0C,*
 ,,,-
 THEEND
 
+if [ "${IMAGE_FILE}" ]; then
 VFATOFFSET=$(($(fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $3}')*512))
 VFATSIZE=$(($(fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $5}')*1024))
 ROOTOFFSET=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')*512))
@@ -164,15 +145,9 @@ ROOTSIZE1=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')))
 ROOTSIZE=$((((ROOTSIZE2-ROOTSIZE1)/2)*1024))
 MMC1=$(sudo losetup -f --show $IMAGE_FILE --offset $VFATOFFSET --sizelimit $VFATSIZE)
 MMC2=$(sudo losetup -f --show $IMAGE_FILE --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
-}
-
-function create_partitions {
-if [ "${IMAGE_FILE}" ]; then
-  create_partitions_image
-else
-  create_partitions_mmc
 fi
 }
+
 
 function prepare_partitions {
 
