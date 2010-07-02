@@ -125,7 +125,7 @@ function cleanup_sd {
 
 function create_partitions_mmc {
 
-sudo fdisk -H 255 -S 63 ${MMC} << END
+sudo fdisk -H $HEADS -S $SECTORS ${MMC} << END
 n
 p
 1
@@ -348,17 +348,23 @@ function calculatesize {
     IMAGE_SIZE=$(($IMAGE_SIZE))
 }
 
-function setup_image {
-    calculatesize
+function setup_sizes {
     HEADS=255
     SECTORS=63
     SECTORSIZE=512
+    if [ "${IMAGE_FILE}" ]; then
+    calculatesize
     CYLINDERSIZE=$(($HEADS*$SECTORS*$SECTORSIZE))
     CYLINDERS=$(($IMAGE_SIZE/$CYLINDERSIZE))
     CYLINDER_ARG="-C $CYLINDERS"
     IMAGE_SIZE=$(($CYLINDERS*$CYLINDERSIZE))
-    FAT_SIZE=32
+    else
+    CYLINDER_ARG=""
+    fi
+}
 
+function setup_image {
+    FAT_SIZE=32
     sudo qemu-img create -f raw $IMAGE_FILE $IMAGE_SIZE
 }
 
@@ -498,6 +504,7 @@ while [ ! -z "$1" ]; do
     shift
 done
 
+setup_sizes
 if [ "${IMAGE_FILE}" ]; then
   setup_image
 fi
