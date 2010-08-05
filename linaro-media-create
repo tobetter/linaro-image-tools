@@ -245,6 +245,12 @@ function populate_rootfs {
   fi
  fi
 
+ echo ""
+ echo "Creating /etc/flash-kernel.conf"
+ echo ""
+
+ echo "UBOOT_PART=/dev/mmcblk0p1" > ${DIR}/disk/etc/flash-kernel.conf
+
  cd ${DIR}/disk/
  sync
  sync
