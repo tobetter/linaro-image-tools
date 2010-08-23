@@ -169,7 +169,7 @@ function populate_boot {
  echo ""
 
  echo ""
- echo "Installing OMAP Boot Loader"
+ echo "Installing Boot Loader"
  echo ""
 
  if [ "$IS_LIVE" ]; then
@@ -180,19 +180,37 @@ function populate_boot {
 
  mkdir -p ${DIR}/disk || true
  sudo mount ${MMC1} ${DIR}/disk
- if test -e binary/${parts_dir}/${MLO_FILE} -a -e binary/${parts_dir}/${UBOOT_FILE}; then
-   sudo cp -v binary/${parts_dir}/${MLO_FILE} ${DIR}/disk/MLO
-   sudo cp -v binary/${parts_dir}/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
- fi
- sync
- cd ${DIR}
- echo "done"
+ case "$DEVIMAGE" in
+   beagle)
+     if test -e binary/${parts_dir}/${MLO_FILE} -a -e binary/${parts_dir}/${UBOOT_FILE}; then
+       sudo cp -v binary/${parts_dir}/${MLO_FILE} ${DIR}/disk/MLO
+       sudo cp -v binary/${parts_dir}/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
+     fi
+     sync
+     cd ${DIR}
+     echo "done"
 
- sudo cp -f ${DIR}/binary/${parts_dir}/uImage.omap ${DIR}/disk/uImage
- sudo cp -f ${DIR}/binary/${parts_dir}/uInitrd.omap ${DIR}/disk/uInitrd
+     sudo cp -f ${DIR}/binary/${parts_dir}/uImage.omap ${DIR}/disk/uImage
+     sudo cp -f ${DIR}/binary/${parts_dir}/uInitrd.omap ${DIR}/disk/uInitrd
 
- sudo mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "$CODENAME 10.05" -d ${DIR}/binary/boot.cmd ${DIR}/disk/boot.scr
- sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
+     sudo mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "$CODENAME 10.05" -d ${DIR}/binary/boot.cmd ${DIR}/disk/boot.scr
+     sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
+     ;;
+   vexpress)
+     sudo cp -v ${DIR}/binary/${parts_dir}/u-boot-ca9x4_ct_vxp.bin \
+          ${DIR}/disk/ubootca9.bin
+     sudo cp -f ${DIR}/binary/${parts_dir}/vmlinuz*-vexpress ${DIR}/disk/vmlinuz
+     mkimage -A arm -O linux -T kernel -C none -a 0x60008000 -e 0x60008000 \
+          -n "Linux" -d  ${DIR}/disk/vmlinuz  ${DIR}/disk/uImage.vxp
+     # TODO add uInitrd once we have daily images
+     #sudo cp -f ${DIR}/binary/${parts_dir}/uInitrd.vexpress ${DIR}/disk/uInitrd
+     ;;
+   *)
+     echo "Set --dev parameter: --dev <beagle|vexpress>" 1>&2
+     cleanup_workdir
+     exit
+     ;;
+ esac
 
  echo "#!/bin/sh" > /tmp/rebuild_uinitrd.sh
  echo "" >> /tmp/rebuild_uinitrd.sh
@@ -362,6 +380,12 @@ required options:
 --image_file <xxx>
     specify name of image file
 
+--dev <board>
+    use development boot options; this includes setting up serial ttys as well
+    as enabling normal debug options for the target board. Current board values:
+    * beagle
+    * vexpress
+
 Additional/Optional options:
 -h --help
     this help
@@ -389,11 +413,6 @@ Additional/Optional options:
 --live-256m
     Create boot command for casper/live images; adds only-ubiquity option
     to allow use of live installer on boards with 256M memory - like beagle
-
---dev <board>
-    use development boot options; this includes setting up serial ttys as well
-    as enabling normal debug options for the target board. Current board values:
-    * beagle
 
 --console <ttyXY>
     add a console to kernel boot parameter; this parameter can be defined
@@ -506,6 +525,12 @@ if [ "$DEVIMAGE" ]; then
       serial_opts="$serial_opts console=tty0 console=ttyS2,115200n8"
       if [ "$IS_LIVE" ]; then
         serial_opts="$serial_opts serialtty=ttyS2"
+      fi
+      ;;
+    vexpress)
+      serial_opts="$serial_opts console=tty0 console=ttyAMA0,38400n8"
+      if [ "$IS_LIVE" ]; then
+        serial_opts="$serial_opts serialtty=ttyAMA0"
       fi
       ;;
     *)
