@@ -148,3 +148,18 @@ class ConfigTests(TestCase):
         config = Config(StringIO(
             "[hwpack]\nname = ahwpack\ninclude-debs = \n"))
         self.assertEqual(True, config.include_debs)
+
+    def test_origin(self):
+        config = Config(StringIO(
+            "[hwpack]\nname = ahwpack\norigin = linaro\n"))
+        self.assertEqual("linaro", config.origin)
+
+    def test_origin_default_None(self):
+        config = Config(StringIO(
+            "[hwpack]\nname = ahwpack\n"))
+        self.assertEqual(None, config.origin)
+
+    def test_origin_None_on_empty(self):
+        config = Config(StringIO(
+            "[hwpack]\nname = ahwpack\norigin =  \n"))
+        self.assertEqual(None, config.origin)

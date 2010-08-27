@@ -16,6 +16,7 @@ class Config(object):
     SOURCES_ENTRY_KEY = "sources-entry"
     PACKAGES_KEY = "packages"
     PACKAGE_REGEX = NAME_REGEX
+    ORIGIN_KEY = "origin"
 
     def __init__(self, fp):
         """Create a Config.
@@ -51,6 +52,16 @@ class Config(object):
                 self.MAIN_SECTION, self.INCLUDE_DEBS_KEY)
         except ConfigParser.NoOptionError:
             return True
+
+    @property
+    def origin(self):
+        try:
+            origin = self.parser.get(self.MAIN_SECTION, self.ORIGIN_KEY)
+            if not origin:
+                return None
+            return origin
+        except ConfigParser.NoOptionError:
+            return None
 
     def _validate_name(self):
         try:
