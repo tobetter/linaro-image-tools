@@ -15,6 +15,7 @@ class Config(object):
     SUPPORT_KEY = "support"
     SOURCES_ENTRY_KEY = "sources-entry"
     PACKAGES_KEY = "packages"
+    PACKAGE_REGEX = NAME_REGEX
 
     def __init__(self, fp):
         """Create a Config.
@@ -80,6 +81,13 @@ class Config(object):
                 raise HwpackConfigError(
                     "The %s in the [%s] section is empty"
                     % (self.PACKAGES_KEY, section_name))
+            for package in packages.split(" "):
+                if not package:
+                    continue
+                if re.match(self.PACKAGE_REGEX, package) is None:
+                    raise HwpackConfigError(
+                        "Invalid value in %s in the [%s] section: %s"
+                        % (self.PACKAGES_KEY, section_name, package))
         except ConfigParser.NoOptionError:
             raise HwpackConfigError(
                 "No %s in the [%s] section"

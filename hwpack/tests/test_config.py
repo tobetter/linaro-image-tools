@@ -112,3 +112,13 @@ class ConfigTests(TestCase):
         self.assertEqual(
             "The packages in the [ubuntu] section is empty",
             str(e))
+
+    def test_validate_other_section_invalid_package_name(self):
+        config = Config(StringIO(
+                "[hwpack]\nname = ahwpack\n\n"
+                "[ubuntu]\nsources-entry = foo bar\n"
+                "packages = foo  ~~ bar\n"))
+        e = self.assertRaises(HwpackConfigError, config.validate)
+        self.assertEqual(
+            "Invalid value in packages in the [ubuntu] section: ~~",
+            str(e))
