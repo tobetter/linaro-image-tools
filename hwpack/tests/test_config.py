@@ -57,3 +57,41 @@ class ConfigTests(TestCase):
         e = self.assertRaises(HwpackConfigError, config.validate)
         self.assertEqual(
             "No sources-entry in the [ubuntu] section", str(e))
+
+    def test_validate_other_section_empty_sources_entry(self):
+        config = Config(StringIO(
+                "[hwpack]\nname = ahwpack\n\n"
+                "[ubuntu]\nsources-entry =  \n"))
+        e = self.assertRaises(HwpackConfigError, config.validate)
+        self.assertEqual(
+            "The sources-entry in the [ubuntu] section is missing the URI",
+            str(e))
+
+    def test_validate_other_section_only_uri_in_sources_entry(self):
+        config = Config(StringIO(
+                "[hwpack]\nname = ahwpack\n\n"
+                "[ubuntu]\nsources-entry =  foo\n"))
+        e = self.assertRaises(HwpackConfigError, config.validate)
+        self.assertEqual(
+            "The sources-entry in the [ubuntu] section is missing the "
+            "distribution", str(e))
+
+    def test_validate_other_section_sources_entry_starting_with_deb(self):
+        config = Config(StringIO(
+                "[hwpack]\nname = ahwpack\n\n"
+                "[ubuntu]\nsources-entry =  deb http://example.org/ "
+                "foo main\n"))
+        e = self.assertRaises(HwpackConfigError, config.validate)
+        self.assertEqual(
+            "The sources-entry in the [ubuntu] section shouldn't start "
+            "with 'deb'", str(e))
+
+    def test_validate_other_section_sources_entry_starting_with_deb_src(self):
+        config = Config(StringIO(
+                "[hwpack]\nname = ahwpack\n\n"
+                "[ubuntu]\nsources-entry =  deb-src http://example.org/ "
+                "foo main\n"))
+        e = self.assertRaises(HwpackConfigError, config.validate)
+        self.assertEqual(
+            "The sources-entry in the [ubuntu] section shouldn't start "
+            "with 'deb'", str(e))

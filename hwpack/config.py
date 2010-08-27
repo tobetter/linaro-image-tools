@@ -55,7 +55,20 @@ class Config(object):
 
     def _validate_section(self, section_name):
         try:
-            self.parser.get(section_name, self.SOURCES_ENTRY_KEY)
+            sources_entry = self.parser.get(
+                section_name, self.SOURCES_ENTRY_KEY)
+            if not sources_entry:
+                raise HwpackConfigError(
+                    "The %s in the [%s] section is missing the URI"
+                    % (self.SOURCES_ENTRY_KEY, section_name))
+            if len(sources_entry.split(" ", 1)) < 2:
+                raise HwpackConfigError(
+                    "The %s in the [%s] section is missing the distribution"
+                    % (self.SOURCES_ENTRY_KEY, section_name))
+            if sources_entry.startswith("deb"):
+                raise HwpackConfigError(
+                    "The %s in the [%s] section shouldn't start with 'deb'"
+                    % (self.SOURCES_ENTRY_KEY, section_name))
         except ConfigParser.NoOptionError:
             raise HwpackConfigError(
                 "No %s in the [%s] section"
