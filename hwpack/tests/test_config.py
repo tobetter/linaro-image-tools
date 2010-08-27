@@ -122,3 +122,10 @@ class ConfigTests(TestCase):
         self.assertEqual(
             "Invalid value in packages in the [ubuntu] section: ~~",
             str(e))
+
+    def test_validate_valid_config(self):
+        config = Config(StringIO(
+                "[hwpack]\nname = ahwpack\n\n"
+                "[ubuntu]\nsources-entry = foo bar\n"
+                "packages = foo  bar\n"))
+        self.assertEqual(None, config.validate())
