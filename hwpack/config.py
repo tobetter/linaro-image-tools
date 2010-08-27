@@ -21,9 +21,7 @@ class Config(object):
         self.parser = ConfigParser.RawConfigParser()
         self.parser.readfp(fp)
 
-    def validate(self):
-        if not self.parser.has_section(self.MAIN_SECTION):
-            raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
+    def _validate_name(self):
         try:
             name = self.parser.get(self.MAIN_SECTION, self.NAME_KEY)
             if re.match(self.NAME_REGEX, name) is None:
@@ -31,12 +29,19 @@ class Config(object):
         except ConfigParser.NoOptionError:
             raise HwpackConfigError(
                 "No name in the [%s] section" % self.MAIN_SECTION)
+
+    def _validate_include_debs(self):
         try:
-            name = self.parser.getboolean(
-                self.MAIN_SECTION, self.INCLUDE_DEBS_KEY)
+            self.parser.getboolean(self.MAIN_SECTION, self.INCLUDE_DEBS_KEY)
         except ConfigParser.NoOptionError:
             pass
         except ValueError:
             raise HwpackConfigError(
                 "Invalid value for include-debs: %s"
                 % self.parser.get("hwpack", "include-debs"))
+
+    def validate(self):
+        if not self.parser.has_section(self.MAIN_SECTION):
+            raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
+        self._validate_name()
+        self._validate_include_debs()
