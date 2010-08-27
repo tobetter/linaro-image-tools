@@ -179,3 +179,23 @@ class ConfigTests(TestCase):
         config = Config(StringIO(
             "[hwpack]\nname = ahwpack\nmaintainer =  \n"))
         self.assertEqual(None, config.maintainer)
+
+    def test_support_supported(self):
+        config = Config(StringIO(
+            "[hwpack]\nname = ahwpack\nsupport = supported\n"))
+        self.assertEqual("supported", config.support)
+
+    def test_support_unsupported(self):
+        config = Config(StringIO(
+            "[hwpack]\nname = ahwpack\nsupport = unsupported\n"))
+        self.assertEqual("unsupported", config.support)
+
+    def test_support_default_None(self):
+        config = Config(StringIO(
+            "[hwpack]\nname = ahwpack\n"))
+        self.assertEqual(None, config.support)
+
+    def test_support_None_on_empty(self):
+        config = Config(StringIO(
+            "[hwpack]\nname = ahwpack\nsupport =  \n"))
+        self.assertEqual(None, config.support)

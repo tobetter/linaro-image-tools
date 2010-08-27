@@ -75,6 +75,16 @@ class Config(object):
         except ConfigParser.NoOptionError:
             return None
 
+    @property
+    def support(self):
+        try:
+            support = self.parser.get(self.MAIN_SECTION, self.SUPPORT_KEY)
+            if not support:
+                return None
+            return support
+        except ConfigParser.NoOptionError:
+            return None
+
     def _validate_name(self):
         try:
             name = self.name
@@ -95,13 +105,10 @@ class Config(object):
                 % self.parser.get("hwpack", "include-debs"))
 
     def _validate_support(self):
-        try:
-            support = self.parser.get(self.MAIN_SECTION, self.SUPPORT_KEY)
-            if support not in ("supported", "unsupported"):
-                raise HwpackConfigError(
-                    "Invalid value for support: %s" % support)
-        except ConfigParser.NoOptionError:
-            pass
+        support = self.support
+        if support not in (None, "supported", "unsupported"):
+            raise HwpackConfigError(
+                "Invalid value for support: %s" % support)
 
     def _validate_section_sources_entry(self, section_name):
         try:
