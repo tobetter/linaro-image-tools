@@ -13,6 +13,7 @@ class Config(object):
     NAME_REGEX = "[a-z0-9][a-z0-9+0.]+"
     INCLUDE_DEBS_KEY = "include-debs"
     SUPPORT_KEY = "support"
+    SOURCES_ENTRY_KEY = "sources-entry"
 
     def __init__(self, fp):
         """Create a Config.
@@ -25,6 +26,8 @@ class Config(object):
     def _validate_name(self):
         try:
             name = self.parser.get(self.MAIN_SECTION, self.NAME_KEY)
+            if not name:
+                raise HwpackConfigError("Empty value for name")
             if re.match(self.NAME_REGEX, name) is None:
                 raise HwpackConfigError("Invalid name: %s" % name)
         except ConfigParser.NoOptionError:
@@ -50,12 +53,21 @@ class Config(object):
         except ConfigParser.NoOptionError:
             pass
 
+    def _validate_section(self, section_name):
+        try:
+            self.parser.get(section_name, self.SOURCES_ENTRY_KEY)
+        except ConfigParser.NoOptionError:
+            raise HwpackConfigError(
+                "No %s in the [%s] section"
+                % (self.SOURCES_ENTRY_KEY, section_name))
+
     def _validate_sections(self):
         sections = self.parser.sections()
         found = False
-        for section in sections:
-            if section == self.MAIN_SECTION:
+        for section_name in sections:
+            if section_name == self.MAIN_SECTION:
                 continue
+            self._validate_section(section_name)
             found = True
         if not found:
             raise HwpackConfigError(
