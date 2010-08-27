@@ -18,7 +18,8 @@ which "$1" 2>/dev/null 1>/dev/null || ( echo "Installing required command $1 fro
 
 ensure_command uuidgen uuidgen-runtime
 ensure_command parted parted
-ensure_command fdisk util-linux # threre is a fdisk binary provided by gnu-fdisk as well
+ensure_command sfdisk util-linux 
+ensure_command fdisk util-linux 
 ensure_command wget wget
 ensure_command mkfs.ext3 e2fsprogs
 ensure_command mkfs.ext4 e2fsprogs
@@ -129,10 +130,18 @@ partdev=${IMAGE_FILE}
 else
 partdev=${MMC}
 fi
-# Create a VFAT partition of 9 cylinders which is about 64M
+
+if [ "$FAT_SIZE" = "32" ]; then 
+	PARTITION_TYPE="0x0C"
+else
+	PARTITION_TYPE="0x0E"
+fi
+
+# Create a VFAT or FAT16 partition of 9 cylinders which is about 64M
 # and a linux partition of the rest
-sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev << 'THEEND'
-,9,0x0C,*
+
+sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev << THEEND
+,9,$PARTITION_TYPE,*
 ,,,-
 THEEND
 
@@ -279,14 +288,14 @@ function populate_rootfs {
 
 function check_mmc {
  DISK_NAME="Disk|Platte"
- FDISK=$(sudo fdisk -l | grep "[${DISK_NAME}] ${MMC}" | awk '{print $2}')
+ FDISK=$(sudo sfdisk -l | grep "[${DISK_NAME}] ${MMC}" | awk '{print $2}')
 
  if test "-$FDISK-" = "-$MMC:-"
  then
   echo ""
   echo "I see..."
-  echo "sudo fdisk -l:"
-  sudo fdisk -l | grep "[${DISK_NAME}] /dev/" --color=never
+  echo "sudo sfdisk -l:"
+  sudo sfdisk -l | grep "[${DISK_NAME}] /dev/" --color=never
   echo ""
   echo "mount:"
   mount | grep -v none | grep "/dev/" --color=never
@@ -298,8 +307,8 @@ function check_mmc {
   echo ""
   echo "Are you sure? I Don't see [${MMC}], here is what I do see..."
   echo ""
-  echo "sudo fdisk -l:"
-  sudo fdisk -l | grep "[${DISK_NAME}] /dev/" --color=never
+  echo "sudo sfdisk -l:"
+  sudo sfdisk -l | grep "[${DISK_NAME}] /dev/" --color=never
   echo ""
   echo "mount:"
   mount | grep -v none | grep "/dev/" --color=never
