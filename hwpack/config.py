@@ -55,7 +55,7 @@ class Config(object):
         except ConfigParser.NoOptionError:
             pass
 
-    def _validate_section(self, section_name):
+    def _validate_section_sources_entry(self, section_name):
         try:
             sources_entry = self.parser.get(
                 section_name, self.SOURCES_ENTRY_KEY)
@@ -75,6 +75,8 @@ class Config(object):
             raise HwpackConfigError(
                 "No %s in the [%s] section"
                 % (self.SOURCES_ENTRY_KEY, section_name))
+
+    def _validate_section_packages(self, section_name):
         try:
             packages = self.parser.get(section_name, self.PACKAGES_KEY)
             if not packages:
@@ -92,6 +94,10 @@ class Config(object):
             raise HwpackConfigError(
                 "No %s in the [%s] section"
                 % (self.PACKAGES_KEY, section_name))
+
+    def _validate_section(self, section_name):
+        self._validate_section_sources_entry(section_name)
+        self._validate_section_packages(section_name)
 
     def _validate_sections(self):
         sections = self.parser.sections()
