@@ -9,3 +9,11 @@ class HardwarePack(object):
         self.origin = origin
         self.maintainer = maintainer
         self.support = support
+
+    def filename(self):
+        if self.support is None:
+            support_suffix = ""
+        else:
+            support_suffix = "_%s" % self.support
+        return "hwpack_%s_%s%s.tar.gz" % (
+            self.name, self.version, support_suffix)

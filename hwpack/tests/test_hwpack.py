@@ -40,3 +40,12 @@ class HardwarePackTests(TestCase):
     def test_support(self):
         hwpack = HardwarePack("ahwpack", "4", support="supported")
         self.assertEqual("supported", hwpack.support)
+
+    def test_filename(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        self.assertEqual("hwpack_ahwpack_4.tar.gz", hwpack.filename())
+
+    def test_filename_with_support(self):
+        hwpack = HardwarePack("ahwpack", "4", support="supported")
+        self.assertEqual(
+            "hwpack_ahwpack_4_supported.tar.gz", hwpack.filename())
