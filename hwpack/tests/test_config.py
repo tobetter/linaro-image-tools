@@ -24,3 +24,10 @@ class ConfigTests(TestCase):
         config = Config(StringIO("[hwpack]\nname = ~~\n"))
         e = self.assertRaises(HwpackConfigError, config.validate)
         self.assertEqual("Invalid name: ~~", str(e))
+
+    def test_validate_invalid_include_debs(self):
+        config = Config(StringIO("[hwpack]\nname = ahwpack\n"
+                    "include-debs = if you don't mind\n"))
+        e = self.assertRaises(HwpackConfigError, config.validate)
+        self.assertEqual(
+            "Invalid value for include-debs: if you don't mind", str(e))
