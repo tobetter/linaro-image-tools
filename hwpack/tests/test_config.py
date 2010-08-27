@@ -19,3 +19,8 @@ class ConfigTests(TestCase):
         config = Config(StringIO("[hwpack]\n"))
         e = self.assertRaises(HwpackConfigError, config.validate)
         self.assertEqual("No name in the [hwpack] section", str(e))
+
+    def test_validate_invalid_name(self):
+        config = Config(StringIO("[hwpack]\nname = ~~\n"))
+        e = self.assertRaises(HwpackConfigError, config.validate)
+        self.assertEqual("Invalid name: ~~", str(e))
