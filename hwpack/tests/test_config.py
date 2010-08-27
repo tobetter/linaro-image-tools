@@ -129,3 +129,22 @@ class ConfigTests(TestCase):
                 "[ubuntu]\nsources-entry = foo bar\n"
                 "packages = foo  bar\n"))
         self.assertEqual(None, config.validate())
+
+    def test_name(self):
+        config = Config(StringIO("[hwpack]\nname = ahwpack\n"))
+        self.assertEqual("ahwpack", config.name)
+
+    def test_include_debs(self):
+        config = Config(StringIO(
+            "[hwpack]\nname = ahwpack\ninclude-debs = false\n"))
+        self.assertEqual(False, config.include_debs)
+
+    def test_include_debs_defaults_true(self):
+        config = Config(StringIO(
+            "[hwpack]\nname = ahwpack\n"))
+        self.assertEqual(True, config.include_debs)
+
+    def test_include_debs_defaults_true_on_empty(self):
+        config = Config(StringIO(
+            "[hwpack]\nname = ahwpack\ninclude-debs = \n"))
+        self.assertEqual(True, config.include_debs)

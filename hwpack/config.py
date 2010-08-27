@@ -25,9 +25,36 @@ class Config(object):
         self.parser = ConfigParser.RawConfigParser()
         self.parser.readfp(fp)
 
+    def validate(self):
+        """Check that this configuration follows the schema.
+
+        :raises HwpackConfigError: if it does not.
+        """
+        if not self.parser.has_section(self.MAIN_SECTION):
+            raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
+        self._validate_name()
+        self._validate_include_debs()
+        self._validate_support()
+        self._validate_sections()
+
+    @property
+    def name(self):
+        return self.parser.get(self.MAIN_SECTION, self.NAME_KEY)
+
+    @property
+    def include_debs(self):
+        try:
+            if not self.parser.get(
+                self.MAIN_SECTION, self.INCLUDE_DEBS_KEY):
+                return True
+            return self.parser.getboolean(
+                self.MAIN_SECTION, self.INCLUDE_DEBS_KEY)
+        except ConfigParser.NoOptionError:
+            return True
+
     def _validate_name(self):
         try:
-            name = self.parser.get(self.MAIN_SECTION, self.NAME_KEY)
+            name = self.name
             if not name:
                 raise HwpackConfigError("Empty value for name")
             if re.match(self.NAME_REGEX, name) is None:
@@ -38,9 +65,7 @@ class Config(object):
 
     def _validate_include_debs(self):
         try:
-            self.parser.getboolean(self.MAIN_SECTION, self.INCLUDE_DEBS_KEY)
-        except ConfigParser.NoOptionError:
-            pass
+            self.include_debs
         except ValueError:
             raise HwpackConfigError(
                 "Invalid value for include-debs: %s"
@@ -110,15 +135,3 @@ class Config(object):
         if not found:
             raise HwpackConfigError(
                 "No sections other than [%s]" % self.MAIN_SECTION)
-
-    def validate(self):
-        """Check that this configuration follows the schema.
-
-        :raises HwpackConfigError: if it does not.
-        """
-        if not self.parser.has_section(self.MAIN_SECTION):
-            raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
-        self._validate_name()
-        self._validate_include_debs()
-        self._validate_support()
-        self._validate_sections()
