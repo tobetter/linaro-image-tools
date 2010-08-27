@@ -95,3 +95,20 @@ class ConfigTests(TestCase):
         self.assertEqual(
             "The sources-entry in the [ubuntu] section shouldn't start "
             "with 'deb'", str(e))
+
+    def test_validate_other_section_no_packages(self):
+        config = Config(StringIO(
+                "[hwpack]\nname = ahwpack\n\n"
+                "[ubuntu]\nsources-entry = foo bar\n"))
+        e = self.assertRaises(HwpackConfigError, config.validate)
+        self.assertEqual(
+            "No packages in the [ubuntu] section", str(e))
+
+    def test_validate_other_section_empty_packages(self):
+        config = Config(StringIO(
+                "[hwpack]\nname = ahwpack\n\n"
+                "[ubuntu]\nsources-entry = foo bar\npackages = \n"))
+        e = self.assertRaises(HwpackConfigError, config.validate)
+        self.assertEqual(
+            "The packages in the [ubuntu] section is empty",
+            str(e))

@@ -14,6 +14,7 @@ class Config(object):
     INCLUDE_DEBS_KEY = "include-debs"
     SUPPORT_KEY = "support"
     SOURCES_ENTRY_KEY = "sources-entry"
+    PACKAGES_KEY = "packages"
 
     def __init__(self, fp):
         """Create a Config.
@@ -73,6 +74,16 @@ class Config(object):
             raise HwpackConfigError(
                 "No %s in the [%s] section"
                 % (self.SOURCES_ENTRY_KEY, section_name))
+        try:
+            packages = self.parser.get(section_name, self.PACKAGES_KEY)
+            if not packages:
+                raise HwpackConfigError(
+                    "The %s in the [%s] section is empty"
+                    % (self.PACKAGES_KEY, section_name))
+        except ConfigParser.NoOptionError:
+            raise HwpackConfigError(
+                "No %s in the [%s] section"
+                % (self.PACKAGES_KEY, section_name))
 
     def _validate_sections(self):
         sections = self.parser.sections()
