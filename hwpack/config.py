@@ -17,6 +17,7 @@ class Config(object):
     PACKAGES_KEY = "packages"
     PACKAGE_REGEX = NAME_REGEX
     ORIGIN_KEY = "origin"
+    MAINTAINER_KEY = "maintainer"
 
     def __init__(self, fp):
         """Create a Config.
@@ -60,6 +61,17 @@ class Config(object):
             if not origin:
                 return None
             return origin
+        except ConfigParser.NoOptionError:
+            return None
+
+    @property
+    def maintainer(self):
+        try:
+            maintainer = self.parser.get(
+                self.MAIN_SECTION, self.MAINTAINER_KEY)
+            if not maintainer:
+                return None
+            return maintainer
         except ConfigParser.NoOptionError:
             return None
 

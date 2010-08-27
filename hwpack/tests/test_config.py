@@ -163,3 +163,19 @@ class ConfigTests(TestCase):
         config = Config(StringIO(
             "[hwpack]\nname = ahwpack\norigin =  \n"))
         self.assertEqual(None, config.origin)
+
+    def test_maintainer(self):
+        maintainer = "Linaro Developers <linaro-dev@lists.linaro.org>"
+        config = Config(StringIO(
+            "[hwpack]\nname = ahwpack\nmaintainer = %s\n" % maintainer))
+        self.assertEqual(maintainer, config.maintainer)
+
+    def test_maintainer_default_None(self):
+        config = Config(StringIO(
+            "[hwpack]\nname = ahwpack\n"))
+        self.assertEqual(None, config.maintainer)
+
+    def test_maintainer_None_on_empty(self):
+        config = Config(StringIO(
+            "[hwpack]\nname = ahwpack\nmaintainer =  \n"))
+        self.assertEqual(None, config.maintainer)
