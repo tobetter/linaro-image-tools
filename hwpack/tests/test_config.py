@@ -31,3 +31,16 @@ class ConfigTests(TestCase):
         e = self.assertRaises(HwpackConfigError, config.validate)
         self.assertEqual(
             "Invalid value for include-debs: if you don't mind", str(e))
+
+    def test_validate_invalid_supported(self):
+        config = Config(StringIO("[hwpack]\nname = ahwpack\n"
+                    "support = if you pay us\n"))
+        e = self.assertRaises(HwpackConfigError, config.validate)
+        self.assertEqual(
+            "Invalid value for support: if you pay us", str(e))
+
+    def test_validate_no_other_sections(self):
+        config = Config(StringIO("[hwpack]\nname = ahwpack\n"))
+        e = self.assertRaises(HwpackConfigError, config.validate)
+        self.assertEqual(
+            "No sections other than [hwpack]", str(e))

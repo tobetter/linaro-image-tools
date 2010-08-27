@@ -12,6 +12,7 @@ class Config(object):
     NAME_KEY = "name"
     NAME_REGEX = "[a-z0-9][a-z0-9+0.]+"
     INCLUDE_DEBS_KEY = "include-debs"
+    SUPPORT_KEY = "support"
 
     def __init__(self, fp):
         """Create a Config.
@@ -40,8 +41,34 @@ class Config(object):
                 "Invalid value for include-debs: %s"
                 % self.parser.get("hwpack", "include-debs"))
 
+    def _validate_support(self):
+        try:
+            support = self.parser.get(self.MAIN_SECTION, self.SUPPORT_KEY)
+            if support not in ("supported", "unsupported"):
+                raise HwpackConfigError(
+                    "Invalid value for support: %s" % support)
+        except ConfigParser.NoOptionError:
+            pass
+
+    def _validate_sections(self):
+        sections = self.parser.sections()
+        found = False
+        for section in sections:
+            if section == self.MAIN_SECTION:
+                continue
+            found = True
+        if not found:
+            raise HwpackConfigError(
+                "No sections other than [%s]" % self.MAIN_SECTION)
+
     def validate(self):
+        """Check that this configuration follows the schema.
+
+        :raises HwpackConfigError: if it does not.
+        """
         if not self.parser.has_section(self.MAIN_SECTION):
             raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
         self._validate_name()
         self._validate_include_debs()
+        self._validate_support()
+        self._validate_sections()
