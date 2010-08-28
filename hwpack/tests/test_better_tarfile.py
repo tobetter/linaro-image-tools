@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from StringIO import StringIO
+import tarfile
 from tarfile import TarFile as StandardTarFile
 
 from testtools import TestCase
@@ -9,22 +10,22 @@ from hwpack.better_tarfile import TarFile
 
 @contextmanager
 def writeable_tarfile(backing_file):
-    tarfile = TarFile.open(mode="w", fileobj=backing_file)
+    tf = TarFile.open(mode="w", fileobj=backing_file)
     try:
-        yield tarfile
+        yield tf
     finally:
-        tarfile.close()
+        tf.close()
 
 
 @contextmanager
 def standard_tarfile(backing_file, seek=True):
     if seek:
         backing_file.seek(0)
-    tarfile = StandardTarFile.open(fileobj=backing_file)
+    tf = StandardTarFile.open(fileobj=backing_file)
     try:
-        yield tarfile
+        yield tf
     finally:
-        tarfile.close()
+        tf.close()
 
 
 class TarFileTests(TestCase):
@@ -33,33 +34,40 @@ class TarFileTests(TestCase):
         backing_file = StringIO()
         with writeable_tarfile(backing_file):
             pass
-        with standard_tarfile(backing_file, seek=False) as tarfile:
-            self.assertEqual([], tarfile.getnames())
+        with standard_tarfile(backing_file, seek=False) as tf:
+            self.assertEqual([], tf.getnames())
 
     def test_add_file_from_string_adds_path(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file) as tarfile:
-            tarfile.add_file_from_string("foo", "bar")
-        with standard_tarfile(backing_file) as tarfile:
-            self.assertEqual(["foo"], tarfile.getnames())
+        with writeable_tarfile(backing_file) as tf:
+            tf.add_file_from_string("foo", "bar")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual(["foo"], tf.getnames())
 
     def test_add_file_from_string_uses_content(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file) as tarfile:
-            tarfile.add_file_from_string("foo", "bar")
-        with standard_tarfile(backing_file) as tarfile:
-            self.assertEqual("bar", tarfile.extractfile("foo").read())
+        with writeable_tarfile(backing_file) as tf:
+            tf.add_file_from_string("foo", "bar")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual("bar", tf.extractfile("foo").read())
 
     def test_add_file_from_string_sets_size(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file) as tarfile:
-            tarfile.add_file_from_string("foo", "bar")
-        with standard_tarfile(backing_file) as tarfile:
-            self.assertEqual(3, tarfile.getmember("foo").size)
+        with writeable_tarfile(backing_file) as tf:
+            tf.add_file_from_string("foo", "bar")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual(3, tf.getmember("foo").size)
 
     def test_add_file_from_string_sets_mode(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file) as tarfile:
-            tarfile.add_file_from_string("foo", "bar")
-        with standard_tarfile(backing_file) as tarfile:
-            self.assertEqual(0644, tarfile.getmember("foo").mode)
+        with writeable_tarfile(backing_file) as tf:
+            tf.add_file_from_string("foo", "bar")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual(0644, tf.getmember("foo").mode)
+
+    def test_add_file_from_string_sets_type(self):
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file) as tf:
+            tf.add_file_from_string("foo", "bar")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual(tarfile.REGTYPE, tf.getmember("foo").type)
