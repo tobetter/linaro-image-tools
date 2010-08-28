@@ -91,12 +91,30 @@ class HardwarePackTests(TestCase):
         tf = self.get_tarfile(hwpack)
         self.assertNotIn("Origin", tf.extractfile("metadata").read())
 
+    def test_metadata_contains_origin_if_given(self):
+        hwpack = HardwarePack("ahwpack", "4", origin="linaro")
+        tf = self.get_tarfile(hwpack)
+        self.assertIn("Origin: linaro\n", tf.extractfile("metadata").read())
+
     def test_metadata_contains_no_maintainer_if_not_given(self):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
         self.assertNotIn("Maintainer", tf.extractfile("metadata").read())
 
+    def test_metadata_contains_maintainer_if_given(self):
+        hwpack = HardwarePack("ahwpack", "4", maintainer="Some Maintainer")
+        tf = self.get_tarfile(hwpack)
+        self.assertIn(
+            "Maintainer: Some Maintainer\n",
+            tf.extractfile("metadata").read())
+
     def test_metadata_contains_no_support_if_not_given(self):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
         self.assertNotIn("Support", tf.extractfile("metadata").read())
+
+    def test_metadata_contains_support_if_given(self):
+        hwpack = HardwarePack("ahwpack", "4", support="unsupported")
+        tf = self.get_tarfile(hwpack)
+        self.assertIn(
+            "Support: unsupported\n", tf.extractfile("metadata").read())

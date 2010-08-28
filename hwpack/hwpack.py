@@ -32,12 +32,21 @@ class HardwarePack(object):
         return "hwpack_%s_%s%s.tar.gz" % (
             self.name, self.version, support_suffix)
 
+    def _metadata_contents(self):
+        metadata = "Name: %s\n" % self.name
+        metadata += "Version: %s\n" % self.version
+        if self.origin is not None:
+            metadata += "Origin: %s\n" % self.origin
+        if self.maintainer is not None:
+            metadata += "Maintainer: %s\n" % self.maintainer
+        if self.support is not None:
+            metadata += "Support: %s\n" % self.support
+        return metadata
+
     def to_f(self, fileobj):
         tf = tarfile.open(mode="w:gz", fileobj=fileobj)
         try:
             add_file(tf, self.FORMAT_FILENAME, self.FORMAT + "\n")
-            add_file(tf, self.METADATA_FILENAME, """Name: %s
-Version: %s
-""" % (self.name, self.version))
+            add_file(tf, self.METADATA_FILENAME, self._metadata_contents())
         finally:
             tf.close()
