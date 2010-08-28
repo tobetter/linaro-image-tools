@@ -56,3 +56,10 @@ class TarFileTests(TestCase):
             tarfile.add_file_from_string("foo", "bar")
         with standard_tarfile(backing_file) as tarfile:
             self.assertEqual(3, tarfile.getmember("foo").size)
+
+    def test_add_file_from_string_sets_mode(self):
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file) as tarfile:
+            tarfile.add_file_from_string("foo", "bar")
+        with standard_tarfile(backing_file) as tarfile:
+            self.assertEqual(0644, tarfile.getmember("foo").mode)
