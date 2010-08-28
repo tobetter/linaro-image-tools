@@ -71,3 +71,10 @@ class TarFileTests(TestCase):
             tf.add_file_from_string("foo", "bar")
         with standard_tarfile(backing_file) as tf:
             self.assertEqual(tarfile.REGTYPE, tf.getmember("foo").type)
+
+    def test_add_file_from_string_sets_linkname(self):
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file) as tf:
+            tf.add_file_from_string("foo", "bar")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual('', tf.getmember("foo").linkname)
