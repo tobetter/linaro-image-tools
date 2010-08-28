@@ -70,3 +70,33 @@ class HardwarePackTests(TestCase):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
         self.assertEqual(hwpack.FORMAT+"\n", tf.extractfile("FORMAT").read())
+
+    def test_creates_metadata_file(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        tf = self.get_tarfile(hwpack)
+        self.assertIn("metadata", tf.getnames())
+
+    def test_metadata_contains_name(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        tf = self.get_tarfile(hwpack)
+        self.assertIn("Name: ahwpack\n", tf.extractfile("metadata").read())
+
+    def test_metadata_contains_version(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        tf = self.get_tarfile(hwpack)
+        self.assertIn("Version: 4\n", tf.extractfile("metadata").read())
+
+    def test_metadata_contains_no_origin_if_not_given(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        tf = self.get_tarfile(hwpack)
+        self.assertNotIn("Origin", tf.extractfile("metadata").read())
+
+    def test_metadata_contains_no_maintainer_if_not_given(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        tf = self.get_tarfile(hwpack)
+        self.assertNotIn("Maintainer", tf.extractfile("metadata").read())
+
+    def test_metadata_contains_no_support_if_not_given(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        tf = self.get_tarfile(hwpack)
+        self.assertNotIn("Support", tf.extractfile("metadata").read())

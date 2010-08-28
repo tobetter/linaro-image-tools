@@ -2,9 +2,19 @@ from StringIO import StringIO
 import tarfile
 
 
+def add_file(tf, name, content):
+    tarinfo = tarfile.TarInfo(name=name)
+    tarinfo.size = len(content)
+    # TODO: set other attributes
+    fileobj = StringIO(content)
+    tf.addfile(tarinfo, fileobj=fileobj)
+
+
 class HardwarePack(object):
 
     FORMAT = "1.0"
+    FORMAT_FILENAME = "FORMAT"
+    METADATA_FILENAME = "metadata"
 
     def __init__(self, name, version, origin=None, maintainer=None,
                  support=None):
@@ -25,9 +35,9 @@ class HardwarePack(object):
     def to_f(self, fileobj):
         tf = tarfile.open(mode="w:gz", fileobj=fileobj)
         try:
-            tarinfo = tarfile.TarInfo(name="FORMAT")
-            tarinfo.size = len(self.FORMAT) + 1
-            fileobj = StringIO(self.FORMAT+"\n")
-            tf.addfile(tarinfo, fileobj=fileobj)
+            add_file(tf, self.FORMAT_FILENAME, self.FORMAT + "\n")
+            add_file(tf, self.METADATA_FILENAME, """Name: %s
+Version: %s
+""" % (self.name, self.version))
         finally:
             tf.close()
