@@ -143,3 +143,13 @@ class HardwarePackTests(TestCase):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
         self.assertEqual("", tf.extractfile("pkgs/Packages").read())
+
+    def test_creates_sources_list_dir(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        tf = self.get_tarfile(hwpack)
+        self.assertIn("sources.list.d", tf.getnames())
+
+    def test_creates_sources_list_gpg_dir(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        tf = self.get_tarfile(hwpack)
+        self.assertIn("sources.list.d.gpg", tf.getnames())

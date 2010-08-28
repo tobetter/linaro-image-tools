@@ -24,6 +24,8 @@ class HardwarePack(object):
     MANIFEST_FILENAME = "manifest"
     PACKAGES_DIRNAME = "pkgs"
     PACKAGES_FILENAME = "%s/Packages" % PACKAGES_DIRNAME
+    SOURCES_LIST_DIRNAME = "sources.list.d"
+    SOURCES_LIST_GPG_DIRNAME = "sources.list.d.gpg"
 
     def __init__(self, name, version, origin=None, maintainer=None,
                  support=None):
@@ -62,5 +64,7 @@ class HardwarePack(object):
             add_file(tf, self.MANIFEST_FILENAME, "")
             add_dir(tf, self.PACKAGES_DIRNAME)
             add_file(tf, self.PACKAGES_FILENAME, "")
+            add_dir(tf, self.SOURCES_LIST_DIRNAME)
+            add_dir(tf, self.SOURCES_LIST_GPG_DIRNAME)
         finally:
             tf.close()
