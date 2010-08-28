@@ -1,3 +1,7 @@
+from StringIO import StringIO
+import tarfile
+
+
 class HardwarePack(object):
 
     FORMAT = "1.0"
@@ -17,3 +21,13 @@ class HardwarePack(object):
             support_suffix = "_%s" % self.support
         return "hwpack_%s_%s%s.tar.gz" % (
             self.name, self.version, support_suffix)
+
+    def to_f(self, fileobj):
+        tf = tarfile.open(mode="w:gz", fileobj=fileobj)
+        try:
+            tarinfo = tarfile.TarInfo(name="FORMAT")
+            tarinfo.size = len(self.FORMAT) + 1
+            fileobj = StringIO(self.FORMAT+"\n")
+            tf.addfile(tarinfo, fileobj=fileobj)
+        finally:
+            tf.close()
