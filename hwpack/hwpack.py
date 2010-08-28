@@ -10,12 +10,20 @@ def add_file(tf, name, content):
     tf.addfile(tarinfo, fileobj=fileobj)
 
 
+def add_dir(tf, name):
+    tarinfo = tarfile.TarInfo(name=name)
+    tarinfo.type = tarfile.DIRTYPE
+    tf.addfile(tarinfo)
+
+
 class HardwarePack(object):
 
     FORMAT = "1.0"
     FORMAT_FILENAME = "FORMAT"
     METADATA_FILENAME = "metadata"
     MANIFEST_FILENAME = "manifest"
+    PACKAGES_DIRNAME = "pkgs"
+    PACKAGES_FILENAME = "%s/Packages" % PACKAGES_DIRNAME
 
     def __init__(self, name, version, origin=None, maintainer=None,
                  support=None):
@@ -52,5 +60,7 @@ class HardwarePack(object):
             add_file(tf, self.FORMAT_FILENAME, self.FORMAT + "\n")
             add_file(tf, self.METADATA_FILENAME, self._metadata_contents())
             add_file(tf, self.MANIFEST_FILENAME, "")
+            add_dir(tf, self.PACKAGES_DIRNAME)
+            add_file(tf, self.PACKAGES_FILENAME, "")
         finally:
             tf.close()

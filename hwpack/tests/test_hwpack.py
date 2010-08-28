@@ -128,3 +128,18 @@ class HardwarePackTests(TestCase):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
         self.assertEqual("", tf.extractfile("manifest").read())
+
+    def test_creates_pkgs_dir(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        tf = self.get_tarfile(hwpack)
+        self.assertIn("pkgs", tf.getnames())
+
+    def test_creates_Packages_file(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        tf = self.get_tarfile(hwpack)
+        self.assertIn("pkgs/Packages", tf.getnames())
+
+    def test_Packages_file_empty_with_no_packages(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        tf = self.get_tarfile(hwpack)
+        self.assertEqual("", tf.extractfile("pkgs/Packages").read())
