@@ -118,3 +118,13 @@ class HardwarePackTests(TestCase):
         tf = self.get_tarfile(hwpack)
         self.assertIn(
             "Support: unsupported\n", tf.extractfile("metadata").read())
+
+    def test_creates_manifest_file(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        tf = self.get_tarfile(hwpack)
+        self.assertIn("manifest", tf.getnames())
+
+    def test_manifest_file_empty_with_no_packages(self):
+        hwpack = HardwarePack("ahwpack", "4")
+        tf = self.get_tarfile(hwpack)
+        self.assertEqual("", tf.extractfile("manifest").read())

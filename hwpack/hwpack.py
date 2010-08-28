@@ -15,6 +15,7 @@ class HardwarePack(object):
     FORMAT = "1.0"
     FORMAT_FILENAME = "FORMAT"
     METADATA_FILENAME = "metadata"
+    MANIFEST_FILENAME = "manifest"
 
     def __init__(self, name, version, origin=None, maintainer=None,
                  support=None):
@@ -33,6 +34,8 @@ class HardwarePack(object):
             self.name, self.version, support_suffix)
 
     def _metadata_contents(self):
+        # FIXME: if we stick with rfc2822 then we should ensure that
+        # we generate a proper file here given newlines etc.
         metadata = "Name: %s\n" % self.name
         metadata += "Version: %s\n" % self.version
         if self.origin is not None:
@@ -48,5 +51,6 @@ class HardwarePack(object):
         try:
             add_file(tf, self.FORMAT_FILENAME, self.FORMAT + "\n")
             add_file(tf, self.METADATA_FILENAME, self._metadata_contents())
+            add_file(tf, self.MANIFEST_FILENAME, "")
         finally:
             tf.close()
