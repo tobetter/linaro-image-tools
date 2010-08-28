@@ -2,6 +2,7 @@ import unittest
 
 def test_suite():
     module_names = ['hwpack.tests.test_config',
+                    'hwpack.tests.test_better_tarfile',
                    ]
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromNames(module_names)
