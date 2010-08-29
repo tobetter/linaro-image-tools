@@ -255,7 +255,6 @@ function populate_rootfs {
 
 # add fstab entry for rootfs and boot
  echo "UUID=${RFS_UUID} / ${RFS}  errors=remount-ro 0 1 " | sudo tee -a ${DIR}/disk/etc/fstab
- echo "LABEL=${BOOT_LABEL} /boot msdos noauto 1 2" | sudo tee -a ${DIR}/disk/etc/fstab
 
  if [ "$CREATE_SWAP" ] ; then
 
