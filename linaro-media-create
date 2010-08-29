@@ -35,7 +35,7 @@ RFS_LABEL=rootfs
 CODENAME=Chessy
 RFS_UUID=`uuidgen -r`
 IS_LIVE=
-FAT_SIZE=16
+FAT_SIZE=32
 IMAGE_SIZE=2G
 
 DIR=$PWD
@@ -376,7 +376,6 @@ function setup_sizes {
 }
 
 function setup_image {
-    FAT_SIZE=32
     sudo qemu-img create -f raw $IMAGE_FILE $IMAGE_SIZE
 }
 
