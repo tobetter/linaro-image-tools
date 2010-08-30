@@ -54,10 +54,13 @@ class Config(object):
         except ConfigParser.NoOptionError:
             return True
 
+    def _get_main_option(self, key):
+        return self.parser.get(self.MAIN_SECTION, key)
+
     @property
     def origin(self):
         try:
-            origin = self.parser.get(self.MAIN_SECTION, self.ORIGIN_KEY)
+            origin = self._get_main_option(self.ORIGIN_KEY)
             if not origin:
                 return None
             return origin
@@ -67,8 +70,7 @@ class Config(object):
     @property
     def maintainer(self):
         try:
-            maintainer = self.parser.get(
-                self.MAIN_SECTION, self.MAINTAINER_KEY)
+            maintainer = self._get_main_option(self.MAINTAINER_KEY)
             if not maintainer:
                 return None
             return maintainer
@@ -78,7 +80,7 @@ class Config(object):
     @property
     def support(self):
         try:
-            support = self.parser.get(self.MAIN_SECTION, self.SUPPORT_KEY)
+            support = self._get_main_option(self.SUPPORT_KEY)
             if not support:
                 return None
             return support
