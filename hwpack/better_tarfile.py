@@ -21,7 +21,7 @@ class TarFile(StandardTarFile):
         self.default_gname = get_arg_with_default(kwargs, "default_gname")
         super(TarFile, self).__init__(*args, **kwargs)
 
-    def add_file_from_string(self, filename, content):
+    def create_file_from_string(self, filename, content):
         tarinfo = TarInfo(name=filename)
         tarinfo.size = len(content)
         if self.default_mtime is not None:
@@ -37,7 +37,7 @@ class TarFile(StandardTarFile):
         fileobj = StringIO(content)
         self.addfile(tarinfo, fileobj=fileobj)
 
-    def add_dir(self, path):
+    def create_dir(self, path):
         tarinfo = TarInfo(name=path)
         tarinfo.type = DIRTYPE
         self.addfile(tarinfo)
