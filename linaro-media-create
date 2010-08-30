@@ -543,6 +543,7 @@ if [ "$DEVIMAGE" ]; then
       if [ "$IS_LIVE" ]; then
         serial_opts="$serial_opts serialtty=ttyAMA0"
       fi
+      FAT_SIZE=16
       ;;
     *)
       echo "unknown --dev paramater: $DEVIMAGE" 1>&2
