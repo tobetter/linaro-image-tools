@@ -110,3 +110,11 @@ class TarFileTests(TestCase):
             tf.add_file_from_string("foo", "bar")
         with standard_tarfile(backing_file) as tf:
             self.assertEqual(uname, tf.getmember("foo").uname)
+
+    def test_add_file_uses_default_gname(self):
+        gname = "somegroup"
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file, default_gname=gname) as tf:
+            tf.add_file_from_string("foo", "bar")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual(gname, tf.getmember("foo").gname)
