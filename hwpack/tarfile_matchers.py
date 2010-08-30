@@ -11,33 +11,39 @@ class TarfileMissingPathMismatch(Mismatch):
         return '"%s" has no path "%s"' % (self.tarball, self.path)
 
 
-class TarfileWrongTypeMismatch(Mismatch):
+class TarfileWrongValueMismatch(Mismatch):
 
-    def __init__(self, tarball, path, expected_type, actual_type):
+    def __init__(self, attribute, tarball, path, expected, actual):
+        self.attribute = attribute
         self.tarball = tarball
         self.path = path
-        self.expected_type = expected_type
-        self.actual_type = actual_type
+        self.expected = expected
+        self.actual = actual
 
     def describe(self):
-        return 'The path "%s" in "%s" has type %s, not type %s' % (
-            self.path, self.tarball, self.actual_type, self.expected_type)
+        return 'The path "%s" in "%s" has %s %s, expected %s' % (
+            self.path, self.tarball, self.attribute, self.actual,
+            self.expected)
 
 
 class TarfileHasFile(Matcher):
 
-    def __init__(self, path, type=None):
+    def __init__(self, path, type=None, size=None):
         self.path = path
         self.type = type
+        self.size = size
 
     def match(self, tarball):
         if self.path not in tarball.getnames():
             return TarfileMissingPathMismatch(tarball, self.path)
         info = tarball.getmember(self.path)
-        if self.type is not None:
-            if info.type != self.type:
-                return TarfileWrongTypeMismatch(
-                    tarball, self.path, self.type, info.type)
+        for attr in ("type", "size"):
+            expected = getattr(self, attr, None)
+            if expected is not None:
+                actual = getattr(info, attr)
+                if expected != actual:
+                    return TarfileWrongValueMismatch(
+                        attr, tarball, self.path, expected, actual)
         return None
 
     def __str__(self):
