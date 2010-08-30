@@ -40,4 +40,5 @@ class TarFile(StandardTarFile):
     def create_dir(self, path):
         tarinfo = TarInfo(name=path)
         tarinfo.type = DIRTYPE
+        tarinfo.mode = 0755
         self.addfile(tarinfo)

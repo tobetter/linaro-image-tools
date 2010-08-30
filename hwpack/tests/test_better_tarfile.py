@@ -126,9 +126,37 @@ class TarFileTests(TestCase):
         with standard_tarfile(backing_file) as tf:
             self.assertEqual(["foo"], tf.getnames())
 
+    def test_create_dir_sets_name(self):
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file) as tf:
+            tf.create_dir("foo")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual("foo", tf.getmember("foo").name)
+
     def test_create_dir_sets_type(self):
         backing_file = StringIO()
         with writeable_tarfile(backing_file) as tf:
             tf.create_dir("foo")
         with standard_tarfile(backing_file) as tf:
             self.assertEqual(tarfile.DIRTYPE, tf.getmember("foo").type)
+
+    def test_create_dir_sets_size(self):
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file) as tf:
+            tf.create_dir("foo")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual(0, tf.getmember("foo").size)
+
+    def test_create_dir_sets_mode(self):
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file) as tf:
+            tf.create_dir("foo")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual(0755, tf.getmember("foo").mode)
+
+    def test_create_dir_sets_linkname(self):
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file) as tf:
+            tf.create_dir("foo")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual('', tf.getmember("foo").linkname)
