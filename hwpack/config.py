@@ -41,10 +41,12 @@ class Config(object):
 
     @property
     def name(self):
+        """The name of the hardware pack. A str."""
         return self.parser.get(self.MAIN_SECTION, self.NAME_KEY)
 
     @property
     def include_debs(self):
+        """Whether the hardware pack should contain .debs. A bool."""
         try:
             if not self.parser.get(
                 self.MAIN_SECTION, self.INCLUDE_DEBS_KEY):
@@ -59,6 +61,10 @@ class Config(object):
 
     @property
     def origin(self):
+        """The origin that should be recorded in the hwpack.
+
+        A str or None if no origin should be recorded.
+        """
         try:
             origin = self._get_main_option(self.ORIGIN_KEY)
             if not origin:
@@ -69,6 +75,10 @@ class Config(object):
 
     @property
     def maintainer(self):
+        """The maintainer that should be recorded in the hwpack.
+
+        A str or None if not maintainer should be recorded.
+        """
         try:
             maintainer = self._get_main_option(self.MAINTAINER_KEY)
             if not maintainer:
@@ -79,6 +89,10 @@ class Config(object):
 
     @property
     def support(self):
+        """The support level that should be recorded in the hwpack.
+
+        A str or None if no support level should be recorded.
+        """
         try:
             support = self._get_main_option(self.SUPPORT_KEY)
             if not support:
