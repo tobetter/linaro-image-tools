@@ -29,7 +29,8 @@ class TarfileWrongValueMismatch(Mismatch):
 class TarfileHasFile(Matcher):
 
     def __init__(self, path, type=None, size=None, mtime=None, mode=None,
-                 linkname=None, uid=None, gid=None, uname=None, gname=None):
+                 linkname=None, uid=None, gid=None, uname=None, gname=None,
+                 content=None):
         self.path = path
         self.type = type
         self.size = size
@@ -40,6 +41,7 @@ class TarfileHasFile(Matcher):
         self.gid = gid
         self.uname = uname
         self.gname = gname
+        self.content = content
 
     def match(self, tarball):
         if self.path not in tarball.getnames():
@@ -54,6 +56,11 @@ class TarfileHasFile(Matcher):
                 if expected != actual:
                     return TarfileWrongValueMismatch(
                         attr, tarball, self.path, expected, actual)
+        if self.content is not None:
+            actual = tarball.extractfile(self.path).read()
+            if actual != self.content:
+                return TarfileWrongValueMismatch(
+                    "content", tarball, self.path, self.content, actual)
         return None
 
     def __str__(self):
