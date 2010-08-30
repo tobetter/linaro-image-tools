@@ -97,3 +97,13 @@ class TarfileHasFileTests(TestCase):
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
                 mismatch, tf, "foo", "mode", 0000, 0644)
+
+    def test_mismatches_wrong_linkname(self):
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file) as tf:
+            tf.create_file_from_string("foo", "")
+        with standard_tarfile(backing_file) as tf:
+            matcher = TarfileHasFile("foo", linkname="somelink")
+            mismatch = matcher.match(tf)
+            self.assertValueMismatch(
+                mismatch, tf, "foo", "linkname", "somelink", "")
