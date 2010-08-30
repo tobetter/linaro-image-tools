@@ -48,8 +48,8 @@ class TarfileHasFileTests(TestCase):
             self.assertIsInstance(
                 matcher.match(tf), TarfileMissingPathMismatch)
 
-    def assertValueMismatch(self, mismatch, tarball, path, attribute, actual,
-                            expected):
+    def assertValueMismatch(self, mismatch, tarball, path, attribute,
+                            expected, actual):
         self.assertIsInstance(mismatch, TarfileWrongValueMismatch)
         self.assertEqual(attribute, mismatch.attribute)
         self.assertEqual(tarball, mismatch.tarball)
@@ -65,8 +65,8 @@ class TarfileHasFileTests(TestCase):
             matcher = TarfileHasFile("foo", type=tarfile.DIRTYPE)
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
-                mismatch, tf, "foo", "type", tarfile.REGTYPE,
-                tarfile.DIRTYPE)
+                mismatch, tf, "foo", "type", tarfile.DIRTYPE,
+                tarfile.REGTYPE)
 
     def test_mismatches_wrong_size(self):
         backing_file = StringIO()
@@ -76,4 +76,14 @@ class TarfileHasFileTests(TestCase):
             matcher = TarfileHasFile("foo", size=1235)
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
-                mismatch, tf, "foo", "size", 0, 1235)
+                mismatch, tf, "foo", "size", 1235, 0)
+
+    def test_mismatches_wrong_mtime(self):
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file, default_mtime=12345) as tf:
+            tf.create_file_from_string("foo", "")
+        with standard_tarfile(backing_file) as tf:
+            matcher = TarfileHasFile("foo", mtime=54321)
+            mismatch = matcher.match(tf)
+            self.assertValueMismatch(
+                mismatch, tf, "foo", "mtime", 54321, 12345)

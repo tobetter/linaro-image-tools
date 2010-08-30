@@ -28,16 +28,17 @@ class TarfileWrongValueMismatch(Mismatch):
 
 class TarfileHasFile(Matcher):
 
-    def __init__(self, path, type=None, size=None):
+    def __init__(self, path, type=None, size=None, mtime=None):
         self.path = path
         self.type = type
         self.size = size
+        self.mtime = mtime
 
     def match(self, tarball):
         if self.path not in tarball.getnames():
             return TarfileMissingPathMismatch(tarball, self.path)
         info = tarball.getmember(self.path)
-        for attr in ("type", "size"):
+        for attr in ("type", "size", "mtime"):
             expected = getattr(self, attr, None)
             if expected is not None:
                 actual = getattr(info, attr)
