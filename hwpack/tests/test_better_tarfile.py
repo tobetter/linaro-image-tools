@@ -9,8 +9,8 @@ from hwpack.better_tarfile import TarFile
 
 
 @contextmanager
-def writeable_tarfile(backing_file):
-    tf = TarFile.open(mode="w", fileobj=backing_file)
+def writeable_tarfile(backing_file, **kwargs):
+    tf = TarFile.open(mode="w", fileobj=backing_file, **kwargs)
     try:
         yield tf
     finally:
@@ -78,3 +78,11 @@ class TarFileTests(TestCase):
             tf.add_file_from_string("foo", "bar")
         with standard_tarfile(backing_file) as tf:
             self.assertEqual('', tf.getmember("foo").linkname)
+
+    def test_add_file_uses_default_mtime(self):
+        now = 126793
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file, default_mtime=now) as tf:
+            tf.add_file_from_string("foo", "bar")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual(now, tf.getmember("foo").mtime)
