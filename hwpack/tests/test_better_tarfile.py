@@ -86,3 +86,11 @@ class TarFileTests(TestCase):
             tf.add_file_from_string("foo", "bar")
         with standard_tarfile(backing_file) as tf:
             self.assertEqual(now, tf.getmember("foo").mtime)
+
+    def test_add_file_uses_default_uid(self):
+        uid = 1259
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file, default_uid=uid) as tf:
+            tf.add_file_from_string("foo", "bar")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual(uid, tf.getmember("foo").uid)
