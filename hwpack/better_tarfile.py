@@ -1,5 +1,5 @@
 from StringIO import StringIO
-from tarfile import TarFile as StandardTarFile, TarInfo
+from tarfile import DIRTYPE, TarFile as StandardTarFile, TarInfo
 
 
 def get_arg_with_default(kwargs, arg, default=None):
@@ -36,3 +36,8 @@ class TarFile(StandardTarFile):
             tarinfo.gname = self.default_gname
         fileobj = StringIO(content)
         self.addfile(tarinfo, fileobj=fileobj)
+
+    def add_dir(self, path):
+        tarinfo = TarInfo(name=path)
+        tarinfo.type = DIRTYPE
+        self.addfile(tarinfo)

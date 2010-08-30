@@ -118,3 +118,17 @@ class TarFileTests(TestCase):
             tf.add_file_from_string("foo", "bar")
         with standard_tarfile(backing_file) as tf:
             self.assertEqual(gname, tf.getmember("foo").gname)
+
+    def test_add_dir_adds_path(self):
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file) as tf:
+            tf.add_dir("foo")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual(["foo"], tf.getnames())
+
+    def test_add_dir_sets_type(self):
+        backing_file = StringIO()
+        with writeable_tarfile(backing_file) as tf:
+            tf.add_dir("foo")
+        with standard_tarfile(backing_file) as tf:
+            self.assertEqual(tarfile.DIRTYPE, tf.getmember("foo").type)
