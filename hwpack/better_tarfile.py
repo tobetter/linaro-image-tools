@@ -1,5 +1,26 @@
+from contextlib import contextmanager
 from StringIO import StringIO
 from tarfile import DIRTYPE, TarFile as StandardTarFile, TarInfo
+
+
+@contextmanager
+def writeable_tarfile(backing_file, **kwargs):
+    tf = TarFile.open(mode="w", fileobj=backing_file, **kwargs)
+    try:
+        yield tf
+    finally:
+        tf.close()
+
+
+@contextmanager
+def standard_tarfile(backing_file, seek=True):
+    if seek:
+        backing_file.seek(0)
+    tf = StandardTarFile.open(fileobj=backing_file)
+    try:
+        yield tf
+    finally:
+        tf.close()
 
 
 def get_arg_with_default(kwargs, arg, default=None):

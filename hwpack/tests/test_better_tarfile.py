@@ -1,31 +1,9 @@
-from contextlib import contextmanager
 from StringIO import StringIO
 import tarfile
-from tarfile import TarFile as StandardTarFile
 
 from testtools import TestCase
 
-from hwpack.better_tarfile import TarFile
-
-
-@contextmanager
-def writeable_tarfile(backing_file, **kwargs):
-    tf = TarFile.open(mode="w", fileobj=backing_file, **kwargs)
-    try:
-        yield tf
-    finally:
-        tf.close()
-
-
-@contextmanager
-def standard_tarfile(backing_file, seek=True):
-    if seek:
-        backing_file.seek(0)
-    tf = StandardTarFile.open(fileobj=backing_file)
-    try:
-        yield tf
-    finally:
-        tf.close()
+from hwpack.better_tarfile import writeable_tarfile, standard_tarfile
 
 
 class TarFileTests(TestCase):
