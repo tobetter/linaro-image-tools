@@ -3,12 +3,12 @@ import tarfile
 
 from testtools import TestCase
 
-from hwpack.better_tarfile import writeable_tarfile, standard_tarfile
 from hwpack.tarfile_matchers import (
     TarfileHasFile,
     TarfileMissingPathMismatch,
     TarfileWrongValueMismatch,
     )
+from hwpack.testing import test_tarfile
 
 
 class TarfileMissingPathMismatchTests(TestCase):
@@ -35,15 +35,13 @@ class TarfileHasFileTests(TestCase):
 
     def test_matches(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file) as tf:
-            tf.create_file_from_string("foo", "")
-        with standard_tarfile(backing_file) as tf:
+        with test_tarfile(contents=[("foo", "")]) as tf:
             matcher = TarfileHasFile("foo")
             self.assertIs(None, matcher.match(tf))
 
     def test_mismatches_missing_path(self):
         backing_file = StringIO()
-        with standard_tarfile(backing_file) as tf:
+        with test_tarfile() as tf:
             matcher = TarfileHasFile("foo")
             self.assertIsInstance(
                 matcher.match(tf), TarfileMissingPathMismatch)
@@ -59,9 +57,7 @@ class TarfileHasFileTests(TestCase):
 
     def test_mismatches_wrong_type(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file) as tf:
-            tf.create_file_from_string("foo", "")
-        with standard_tarfile(backing_file) as tf:
+        with test_tarfile(contents=[("foo", "")]) as tf:
             matcher = TarfileHasFile("foo", type=tarfile.DIRTYPE)
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
@@ -70,9 +66,7 @@ class TarfileHasFileTests(TestCase):
 
     def test_mismatches_wrong_size(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file) as tf:
-            tf.create_file_from_string("foo", "")
-        with standard_tarfile(backing_file) as tf:
+        with test_tarfile(contents=[("foo", "")]) as tf:
             matcher = TarfileHasFile("foo", size=1235)
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
@@ -80,9 +74,7 @@ class TarfileHasFileTests(TestCase):
 
     def test_mismatches_wrong_mtime(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file, default_mtime=12345) as tf:
-            tf.create_file_from_string("foo", "")
-        with standard_tarfile(backing_file) as tf:
+        with test_tarfile(contents=[("foo", "")], default_mtime=12345) as tf:
             matcher = TarfileHasFile("foo", mtime=54321)
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
@@ -90,9 +82,7 @@ class TarfileHasFileTests(TestCase):
 
     def test_mismatches_wrong_mode(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file) as tf:
-            tf.create_file_from_string("foo", "")
-        with standard_tarfile(backing_file) as tf:
+        with test_tarfile(contents=[("foo", "")]) as tf:
             matcher = TarfileHasFile("foo", mode=0000)
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
@@ -100,9 +90,7 @@ class TarfileHasFileTests(TestCase):
 
     def test_mismatches_wrong_linkname(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file) as tf:
-            tf.create_file_from_string("foo", "")
-        with standard_tarfile(backing_file) as tf:
+        with test_tarfile(contents=[("foo", "")]) as tf:
             matcher = TarfileHasFile("foo", linkname="somelink")
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
@@ -110,9 +98,7 @@ class TarfileHasFileTests(TestCase):
 
     def test_mismatches_wrong_uid(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file, default_uid=100) as tf:
-            tf.create_file_from_string("foo", "")
-        with standard_tarfile(backing_file) as tf:
+        with test_tarfile(contents=[("foo", "")], default_uid=100) as tf:
             matcher = TarfileHasFile("foo", uid=99)
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
@@ -120,9 +106,7 @@ class TarfileHasFileTests(TestCase):
 
     def test_mismatches_wrong_gid(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file, default_gid=100) as tf:
-            tf.create_file_from_string("foo", "")
-        with standard_tarfile(backing_file) as tf:
+        with test_tarfile(contents=[("foo", "")], default_gid=100) as tf:
             matcher = TarfileHasFile("foo", gid=99)
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
@@ -130,9 +114,8 @@ class TarfileHasFileTests(TestCase):
 
     def test_mismatches_wrong_uname(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file, default_uname="someuser") as tf:
-            tf.create_file_from_string("foo", "")
-        with standard_tarfile(backing_file) as tf:
+        with test_tarfile(
+            contents=[("foo", "")], default_uname="someuser") as tf:
             matcher = TarfileHasFile("foo", uname="otheruser")
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
@@ -140,9 +123,8 @@ class TarfileHasFileTests(TestCase):
 
     def test_mismatches_wrong_gname(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file, default_gname="somegroup") as tf:
-            tf.create_file_from_string("foo", "")
-        with standard_tarfile(backing_file) as tf:
+        with test_tarfile(
+            contents=[("foo", "")], default_gname="somegroup") as tf:
             matcher = TarfileHasFile("foo", gname="othergroup")
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
@@ -150,9 +132,7 @@ class TarfileHasFileTests(TestCase):
 
     def test_mismatches_wrong_content(self):
         backing_file = StringIO()
-        with writeable_tarfile(backing_file) as tf:
-            tf.create_file_from_string("foo", "somecontent")
-        with standard_tarfile(backing_file) as tf:
+        with test_tarfile(contents=[("foo", "somecontent")]) as tf:
             matcher = TarfileHasFile("foo", content="othercontent")
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
