@@ -81,13 +81,7 @@ function prepare_sources {
   rm -rf binary/initrd.img-* || true
   rm -rf binary/vmlinuz-* || true
 
-  case $BINARY_TARBALL in
-    *.bz2)  sudo tar -x --bzip2 -f $BINARY_TARBALL binary/${parts_dir};;
-    *.gz)   sudo tar -x --gzip  -f $BINARY_TARBALL binary/${parts_dir};;
-    *.lzma) lzcat $BINARY_TARBALL | sudo tar -x -f - binary/${parts_dir};;
-    *.xz)   xzcat $BINARY_TARBALL | sudo tar -x -f - binary/${parts_dir};;
-    *)      false;;
-  esac
+  sudo tar -xf $BINARY_TARBALL binary/${parts_dir}
 
   ln -sf binary/${parts_dir}/initrd.img-* .
   ln -sf binary/${parts_dir}/vmlinuz-* .
@@ -206,7 +200,7 @@ function populate_boot {
      sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
      ;;
    vexpress)
-     sudo tar -x --gzip  -f $BINARY_TARBALL binary/usr/lib/u-boot/
+     sudo tar -xf $BINARY_TARBALL binary/usr/lib/u-boot/
      sudo cp -v ${DIR}/binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin ${DIR}/disk/ubootca9.bin
      sudo cp -f ${DIR}/binary/${parts_dir}/vmlinuz*-vexpress ${DIR}/disk/vmlinuz
      sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 -e 0x60008000 \
@@ -245,13 +239,7 @@ function populate_rootfs {
  echo ""
  sudo mount ${MMC2} ${DIR}/disk
 
- case $BINARY_TARBALL in
-   *.bz2)  sudo tar -x --bzip2 -f $BINARY_TARBALL --strip-components=1 -C disk/;;
-   *.gz)   sudo tar -x --gzip -f $BINARY_TARBALL --strip-components=1 -C disk/;;
-   *.lzma) lzcat $BINARY_TARBALL | sudo tar -x -f --strip-components=1 -C disk/ -;;
-   *.xz)   xzcat $BINARY_TARBALL | sudo tar -x -f --strip-components=1 -C disk/ -;;
-   *)      false;;
- esac
+ sudo tar -xf $BINARY_TARBALL --strip-components=1 -C disk/
 
 # add fstab entry for rootfs and boot
  echo "UUID=${RFS_UUID} / ${RFS}  errors=remount-ro 0 1 " | sudo tee -a ${DIR}/disk/etc/fstab
