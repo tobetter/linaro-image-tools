@@ -1,0 +1,5 @@
+linaro-image-tools (0.1) UNRELEASED; urgency=low
+
+  * Initial packaging
+
+ -- Loïc Minier <loic.minier@linaro.org>  Tue, 31 Aug 2010 22:32:49 +0200
