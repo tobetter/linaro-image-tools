@@ -17,6 +17,36 @@ class TarfileMissingPathMismatchTests(TestCase):
         mismatch = TarfileMissingPathMismatch("foo", "bar")
         self.assertEqual('"foo" has no path "bar"', mismatch.describe())
 
+    def test_eq(self):
+        mismatch1 = TarfileMissingPathMismatch("foo", "bar")
+        mismatch2 = TarfileMissingPathMismatch("foo", "bar")
+        self.assertEqual(mismatch1, mismatch2)
+
+    def test_no_eq_different_tarball(self):
+        mismatch1 = TarfileMissingPathMismatch("foo", "bar")
+        mismatch2 = TarfileMissingPathMismatch("baz", "bar")
+        self.assertNotEqual(mismatch1, mismatch2)
+
+    def test_no_eq_different_path(self):
+        mismatch1 = TarfileMissingPathMismatch("foo", "bar")
+        mismatch2 = TarfileMissingPathMismatch("foo", "baz")
+        self.assertNotEqual(mismatch1, mismatch2)
+
+    def test_hash_equal(self):
+        mismatch1 = TarfileMissingPathMismatch("foo", "bar")
+        mismatch2 = TarfileMissingPathMismatch("foo", "bar")
+        self.assertEqual(hash(mismatch1), hash(mismatch2))
+
+    def test_different_tarball_different_hash(self):
+        mismatch1 = TarfileMissingPathMismatch("foo", "bar")
+        mismatch2 = TarfileMissingPathMismatch("baz", "bar")
+        self.assertNotEqual(hash(mismatch1), hash(mismatch2))
+
+    def test_different_path_different_hash(self):
+        mismatch1 = TarfileMissingPathMismatch("foo", "bar")
+        mismatch2 = TarfileMissingPathMismatch("foo", "baz")
+        self.assertNotEqual(hash(mismatch1), hash(mismatch2))
+
 
 class TarfileWrongTypeMismatchTests(TestCase):
 
@@ -25,6 +55,66 @@ class TarfileWrongTypeMismatchTests(TestCase):
         self.assertEqual(
             'The path "bar" in "foo" has type 2, expected 1',
             mismatch.describe())
+
+    def test_eq(self):
+        mismatch1 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        mismatch2 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        self.assertEqual(mismatch1, mismatch2)
+
+    def test_not_eq_different_attribute(self):
+        mismatch1 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        mismatch2 = TarfileWrongValueMismatch("size", "foo", "bar", 1, 2)
+        self.assertNotEqual(mismatch1, mismatch2)
+
+    def test_not_eq_different_tarball(self):
+        mismatch1 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        mismatch2 = TarfileWrongValueMismatch("type", "baz", "bar", 1, 2)
+        self.assertNotEqual(mismatch1, mismatch2)
+
+    def test_not_eq_different_path(self):
+        mismatch1 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        mismatch2 = TarfileWrongValueMismatch("type", "foo", "baz", 1, 2)
+        self.assertNotEqual(mismatch1, mismatch2)
+
+    def test_not_eq_different_expected(self):
+        mismatch1 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        mismatch2 = TarfileWrongValueMismatch("type", "foo", "bar", 3, 2)
+        self.assertNotEqual(mismatch1, mismatch2)
+
+    def test_not_eq_different_actual(self):
+        mismatch1 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        mismatch2 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 3)
+        self.assertNotEqual(mismatch1, mismatch2)
+
+    def test_hash_equal(self):
+        mismatch1 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        mismatch2 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        self.assertEqual(hash(mismatch1), hash(mismatch2))
+
+    def test_different_attribute_different_hash(self):
+        mismatch1 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        mismatch2 = TarfileWrongValueMismatch("size", "foo", "bar", 1, 2)
+        self.assertNotEqual(hash(mismatch1), hash(mismatch2))
+
+    def test_different_tarball_different_hash(self):
+        mismatch1 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        mismatch2 = TarfileWrongValueMismatch("type", "baz", "bar", 1, 2)
+        self.assertNotEqual(hash(mismatch1), hash(mismatch2))
+
+    def test_different_path_different_hash(self):
+        mismatch1 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        mismatch2 = TarfileWrongValueMismatch("type", "foo", "baz", 1, 2)
+        self.assertNotEqual(hash(mismatch1), hash(mismatch2))
+
+    def test_different_expected_different_hash(self):
+        mismatch1 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        mismatch2 = TarfileWrongValueMismatch("type", "foo", "bar", 3, 2)
+        self.assertNotEqual(hash(mismatch1), hash(mismatch2))
+
+    def test_different_actual_different_hash(self):
+        mismatch1 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 2)
+        mismatch2 = TarfileWrongValueMismatch("type", "foo", "bar", 1, 3)
+        self.assertNotEqual(hash(mismatch1), hash(mismatch2))
 
 
 class TarfileHasFileTests(TestCase):
