@@ -4,6 +4,7 @@ import tarfile
 from testtools import TestCase
 
 from hwpack.hwpack import HardwarePack
+from hwpack.tarfile_matchers import TarfileHasFile
 
 
 class HardwarePackTests(TestCase):
@@ -61,20 +62,19 @@ class HardwarePackTests(TestCase):
         self.addCleanup(tf.close)
         return tf
 
+    def assertHasPath(self, tarball, path, **kwargs):
+        kwargs.setdefault("type", tarfile.REGTYPE)
+        self.assertThat(tarball, TarfileHasFile(path, **kwargs))
+
     def test_creates_FORMAT_file(self):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
-        self.assertIn("FORMAT", tf.getnames())
-
-    def test_FORMAT_file_contents(self):
-        hwpack = HardwarePack("ahwpack", "4")
-        tf = self.get_tarfile(hwpack)
-        self.assertEqual(hwpack.FORMAT+"\n", tf.extractfile("FORMAT").read())
+        self.assertHasPath(tf, "FORMAT", content=hwpack.FORMAT+"\n")
 
     def test_creates_metadata_file(self):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
-        self.assertIn("metadata", tf.getnames())
+        self.assertHasPath(tf, "metadata")
 
     def test_metadata_contains_name(self):
         hwpack = HardwarePack("ahwpack", "4")
@@ -122,34 +122,34 @@ class HardwarePackTests(TestCase):
     def test_creates_manifest_file(self):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
-        self.assertIn("manifest", tf.getnames())
+        self.assertHasPath(tf, "manifest")
 
     def test_manifest_file_empty_with_no_packages(self):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
-        self.assertEqual("", tf.extractfile("manifest").read())
+        self.assertHasPath(tf, "manifest", content="")
 
     def test_creates_pkgs_dir(self):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
-        self.assertIn("pkgs", tf.getnames())
+        self.assertHasPath(tf, "pkgs", type=tarfile.DIRTYPE)
 
     def test_creates_Packages_file(self):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
-        self.assertIn("pkgs/Packages", tf.getnames())
+        self.assertHasPath(tf, "pkgs/Packages")
 
     def test_Packages_file_empty_with_no_packages(self):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
-        self.assertEqual("", tf.extractfile("pkgs/Packages").read())
+        self.assertHasPath(tf, "pkgs/Packages", content="")
 
     def test_creates_sources_list_dir(self):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
-        self.assertIn("sources.list.d", tf.getnames())
+        self.assertHasPath(tf, "sources.list.d", type=tarfile.DIRTYPE)
 
     def test_creates_sources_list_gpg_dir(self):
         hwpack = HardwarePack("ahwpack", "4")
         tf = self.get_tarfile(hwpack)
-        self.assertIn("sources.list.d.gpg", tf.getnames())
+        self.assertHasPath(tf, "sources.list.d.gpg", type=tarfile.DIRTYPE)
