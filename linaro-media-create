@@ -11,7 +11,7 @@ UBOOT_FILE="u-boot.bin.omap"
 
 unset MMC MMC1 MMC2 MMC3 IMAGE_FILE
 
-function ensure_command {
+ensure_command() {
 # ensure_command foo foo-package
 which "$1" 2>/dev/null 1>/dev/null || ( echo "Installing required command $1 from package $2" && sudo apt-get install "$2" )
 }
@@ -40,7 +40,7 @@ IMAGE_SIZE=2G
 
 DIR=$PWD
 
-function get_mmcs_by_id {
+get_mmcs_by_id() {
 if [ ! ${IMAGE_FILE} ]; then
   for device in /dev/disk/by-id/*; do
     if [ `realpath $device` = $MMC ]; then
@@ -66,7 +66,7 @@ if [ ! ${IMAGE_FILE} ]; then
 fi
 }
 
-function prepare_sources {
+prepare_sources() {
   if [ "$IS_LIVE" ]; then
     parts_dir=casper
     boot_snippet='boot=casper'
@@ -101,7 +101,7 @@ BOOTCMD
   fi
 }
 
-function cleanup_sd {
+cleanup_sd() {
 
  echo ""
  echo "Umounting Partitions"
@@ -118,7 +118,7 @@ function cleanup_sd {
  fi
 }
 
-function create_partitions {
+create_partitions() {
 if [ "${IMAGE_FILE}" ]; then
 partdev=${IMAGE_FILE}
 else
@@ -152,7 +152,7 @@ fi
 }
 
 
-function prepare_partitions {
+prepare_partitions() {
 
 echo ""
 echo "Formating Boot Partition"
@@ -166,7 +166,7 @@ echo ""
 sudo mkfs.${RFS} -U "$RFS_UUID" ${MMC2} -L ${RFS_LABEL}
 }
 
-function populate_boot {
+populate_boot() {
  echo ""
  echo "Populating Boot Partition"
  echo ""
@@ -232,7 +232,7 @@ function populate_boot {
  sudo umount ${DIR}/disk || true
 }
 
-function populate_rootfs {
+populate_rootfs() {
  echo ""
  echo "Populating rootfs Partition"
  echo "Be patient, this may take a few minutes"
@@ -277,7 +277,7 @@ function populate_rootfs {
  sudo umount ${DIR}/disk || true
 }
 
-function check_mmc {
+check_mmc() {
  DISK_NAME="Disk|Platte"
  FDISK=$(sudo sfdisk -l | grep "[${DISK_NAME}] ${MMC}" | awk '{print $2}')
 
@@ -308,7 +308,7 @@ function check_mmc {
  fi
 }
 
-function check_fs_type {
+check_fs_type() {
  IN_VALID_FS=1
 
  if test "-$FS_TYPE-" = "-ext2-"
@@ -340,14 +340,14 @@ function check_fs_type {
  fi
 }
 
-function calculatesize {
+calculatesize() {
     IMAGE_SIZE=${IMAGE_SIZE/G/M*1024}
     IMAGE_SIZE=${IMAGE_SIZE/M/K*1024}
     IMAGE_SIZE=${IMAGE_SIZE/K/*1024}
     IMAGE_SIZE=$(($IMAGE_SIZE))
 }
 
-function setup_sizes {
+setup_sizes() {
     HEADS=255
     SECTORS=63
     SECTORSIZE=512
@@ -362,11 +362,11 @@ function setup_sizes {
     fi
 }
 
-function setup_image {
+setup_image() {
     sudo qemu-img create -f raw $IMAGE_FILE $IMAGE_SIZE
 }
 
-function usage {
+usage() {
     echo "usage: $(basename $0) --mmc /dev/sdd"
     echo "<or>"
     echo "usage: $(basename $0) --image_file mmc.img"
@@ -426,14 +426,14 @@ EOF
 exit
 }
 
-function checkparm {
+checkparm() {
     if [ "$(echo $1|grep ^'\-')" ];then
         echo "E: Need an argument"
         usage
     fi
 }
 
-function cleanup_workdir {
+cleanup_workdir() {
   if [ -d binary/ ]; then
     sudo rm -rf binary/
   fi
