@@ -133,8 +133,9 @@ class TarfileHasFileTests(TestCase):
         backing_file = StringIO()
         with test_tarfile() as tf:
             matcher = TarfileHasFile("foo")
-            self.assertIsInstance(
-                matcher.match(tf), TarfileMissingPathMismatch)
+            mismatch = matcher.match(tf)
+            self.assertIsInstance(mismatch, TarfileMissingPathMismatch)
+            self.assertEqual(TarfileMissingPathMismatch(tf, "foo"), mismatch)
 
     def assertValueMismatch(self, mismatch, tarball, path, attribute,
                             expected, actual):
