@@ -17,6 +17,12 @@ class TarfileMissingPathMismatch(Mismatch):
     def describe(self):
         return '"%s" has no path "%s"' % (self.tarball, self.path)
 
+    def __eq__(self, other):
+        return self.tarball == other.tarball and self.path == other.path
+
+    def __hash__(self):
+        return hash((self.tarball, self.path))
+
 
 class TarfileWrongValueMismatch(Mismatch):
     """A Mismatch indicating that an entry in a tarfile was not as expected.
@@ -42,6 +48,18 @@ class TarfileWrongValueMismatch(Mismatch):
         return 'The path "%s" in "%s" has %s %s, expected %s' % (
             self.path, self.tarball, self.attribute, self.actual,
             self.expected)
+
+    def __eq__(self, other):
+        return (self.attribute == other.attribute
+                and self.tarball == other.tarball
+                and self.path == other.path
+                and self.expected == other.expected
+                and self.actual == other.actual)
+
+    def __hash__(self):
+        return hash(
+            (self.attribute, self.tarball, self.path, self.expected,
+             self.actual))
 
 
 class TarfileHasFile(Matcher):
