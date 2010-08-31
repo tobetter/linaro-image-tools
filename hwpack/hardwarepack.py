@@ -1,6 +1,28 @@
 from hwpack.better_tarfile import writeable_tarfile
 
 
+class Metadata(object):
+
+    def __init__(self, name, version, origin=None, maintainer=None,
+                 support=None):
+        self.name = name
+        self.version = version
+        self.origin = origin
+        self.maintainer = maintainer
+        self.support = support
+
+    def __str__(self):
+        metadata = "NAME=%s\n" % self.name
+        metadata += "VERSION=%s\n" % self.version
+        if self.origin is not None:
+            metadata += "ORIGIN=%s\n" % self.origin
+        if self.maintainer is not None:
+            metadata += "MAINTAINER=%s\n" % self.maintainer
+        if self.support is not None:
+            metadata += "SUPPORT=%s\n" % self.support
+        return metadata
+
+
 class HardwarePack(object):
 
     FORMAT = "1.0"
@@ -12,34 +34,16 @@ class HardwarePack(object):
     SOURCES_LIST_DIRNAME = "sources.list.d"
     SOURCES_LIST_GPG_DIRNAME = "sources.list.d.gpg"
 
-    def __init__(self, name, version, origin=None, maintainer=None,
-                 support=None):
-        self.name = name
-        self.version = version
-        self.origin = origin
-        self.maintainer = maintainer
-        self.support = support
+    def __init__(self, metadata):
+        self.metadata = metadata
 
     def filename(self):
-        if self.support is None:
+        if self.metadata.support is None:
             support_suffix = ""
         else:
-            support_suffix = "_%s" % self.support
+            support_suffix = "_%s" % self.metadata.support
         return "hwpack_%s_%s%s.tar.gz" % (
-            self.name, self.version, support_suffix)
-
-    def _metadata_contents(self):
-        # FIXME: if we stick with rfc2822 then we should ensure that
-        # we generate a proper file here given newlines etc.
-        metadata = "Name: %s\n" % self.name
-        metadata += "Version: %s\n" % self.version
-        if self.origin is not None:
-            metadata += "Origin: %s\n" % self.origin
-        if self.maintainer is not None:
-            metadata += "Maintainer: %s\n" % self.maintainer
-        if self.support is not None:
-            metadata += "Support: %s\n" % self.support
-        return metadata
+            self.metadata.name, self.metadata.version, support_suffix)
 
     def to_f(self, fileobj):
         kwargs = {}
@@ -51,7 +55,7 @@ class HardwarePack(object):
             tf.create_file_from_string(
                 self.FORMAT_FILENAME, self.FORMAT + "\n")
             tf.create_file_from_string(
-                self.METADATA_FILENAME, self._metadata_contents())
+                self.METADATA_FILENAME, str(self.metadata))
             tf.create_file_from_string(self.MANIFEST_FILENAME, "")
             tf.create_dir(self.PACKAGES_DIRNAME)
             tf.create_file_from_string(self.PACKAGES_FILENAME, "")
