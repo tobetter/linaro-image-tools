@@ -209,7 +209,7 @@ function populate_boot {
      sudo tar -x --gzip  -f $BINARY_TARBALL binary/usr/lib/u-boot/
      sudo cp -v ${DIR}/binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin ${DIR}/disk/ubootca9.bin
      sudo cp -f ${DIR}/binary/${parts_dir}/vmlinuz*-vexpress ${DIR}/disk/vmlinuz
-     mkimage -A arm -O linux -T kernel -C none -a 0x60008000 -e 0x60008000 \
+     sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 -e 0x60008000 \
           -n "Linux" -d  ${DIR}/disk/vmlinuz  ${DIR}/disk/uImage.vxp
      # TODO add uInitrd once we have daily images
      #sudo cp -f ${DIR}/binary/${parts_dir}/uInitrd.vexpress ${DIR}/disk/uInitrd
