@@ -28,7 +28,7 @@ ensure_command() {
 which "$1" 2>/dev/null 1>/dev/null || ( echo "Installing required command $1 from package $2" && sudo apt-get install "$2" )
 }
 
-ensure_command uuidgen uuidgen-runtime
+ensure_command uuidgen uuid-runtime
 ensure_command parted parted
 ensure_command sfdisk util-linux 
 ensure_command fdisk util-linux 
