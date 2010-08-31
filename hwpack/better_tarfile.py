@@ -4,8 +4,17 @@ from tarfile import DIRTYPE, TarFile as StandardTarFile, TarInfo
 
 
 @contextmanager
-def writeable_tarfile(backing_file, **kwargs):
-    tf = TarFile.open(mode="w", fileobj=backing_file, **kwargs)
+def writeable_tarfile(backing_file, mode="w", **kwargs):
+    """A context manager to get a writeable better tarfile.
+
+    :param backing_file: a file object to write the tarfile contents
+        to.
+    :param mode: the mode to open the tarfile with. Default is
+        "w".
+    :param kwargs: other keyword arguments to pass to the TarFile
+        constructor.
+    """
+    tf = TarFile.open(mode=mode, fileobj=backing_file, **kwargs)
     try:
         yield tf
     finally:
@@ -13,17 +22,25 @@ def writeable_tarfile(backing_file, **kwargs):
 
 
 @contextmanager
-def standard_tarfile(backing_file, seek=True):
+def standard_tarfile(backing_file, mode="r", seek=True):
+    """A context manager to open a stdlib tarfile.
+
+    :param backing_file: the file object to take the tarfile
+        contents from.
+    :param mode: the mode to open the tarfile with.
+    :param seek: whether to seek the backing file to 0 before
+        opening.
+    """
     if seek:
         backing_file.seek(0)
-    tf = StandardTarFile.open(fileobj=backing_file)
+    tf = StandardTarFile.open(mode=mode, fileobj=backing_file)
     try:
         yield tf
     finally:
         tf.close()
 
 
-def get_arg_with_default(kwargs, arg, default=None):
+def _get_arg_with_default(kwargs, arg, default=None):
     if arg in kwargs:
         result = kwargs[arg]
         del kwargs[arg]
@@ -33,13 +50,35 @@ def get_arg_with_default(kwargs, arg, default=None):
 
 
 class TarFile(StandardTarFile):
+    """An improvement to tarfile that can add paths not on the filesystem.
+
+    With the standard tarfile implementation adding paths that are not
+    present on the filesystem is convoluted. This subclass adds methods
+    to create paths in the tarfile that are not present on the filesystem.
+
+    In addition, it can take constructor parameters to set the defaults
+    of various attributes of the paths that it adds.
+    """
 
     def __init__(self, *args, **kwargs):
-        self.default_mtime = get_arg_with_default(kwargs, "default_mtime")
-        self.default_uid = get_arg_with_default(kwargs, "default_uid")
-        self.default_gid = get_arg_with_default(kwargs, "default_gid")
-        self.default_uname = get_arg_with_default(kwargs, "default_uname")
-        self.default_gname = get_arg_with_default(kwargs, "default_gname")
+        """Create a TarFile.
+
+        :param default_mtime: the default mtime to create paths with,
+            an int or None to use the stdlib default.
+        :param default_uid: the default user id to set as the owner of
+            created paths, an int or None to use the stdlib default.
+        :param default_gid: the default group id to set as the owner of
+            created paths, an int or None to use the stdlib default.
+        :param default_uname: the default user name to set as the owner
+            of created paths, a string, or None to use the stdlib default.
+        :param default_gname: the default group name ot set as the owner
+            of created paths, a string, or None to use the stdlib default.
+        """
+        self.default_mtime = _get_arg_with_default(kwargs, "default_mtime")
+        self.default_uid = _get_arg_with_default(kwargs, "default_uid")
+        self.default_gid = _get_arg_with_default(kwargs, "default_gid")
+        self.default_uname = _get_arg_with_default(kwargs, "default_uname")
+        self.default_gname = _get_arg_with_default(kwargs, "default_gname")
         super(TarFile, self).__init__(*args, **kwargs)
 
     def _set_defaults(self, tarinfo):
@@ -55,6 +94,12 @@ class TarFile(StandardTarFile):
             tarinfo.gname = self.default_gname
 
     def create_file_from_string(self, filename, content):
+        """Create a file with the contents passed as a string.
+
+        :param filename: the path to put the file at inside the
+            tarfile.
+        :param content: the content to put in the created file.
+        """
         tarinfo = TarInfo(name=filename)
         tarinfo.size = len(content)
         self._set_defaults(tarinfo)
@@ -62,6 +107,10 @@ class TarFile(StandardTarFile):
         self.addfile(tarinfo, fileobj=fileobj)
 
     def create_dir(self, path):
+        """Create a directory within the tarfile.
+
+        :param path: the path to put the directory at.
+        """
         tarinfo = TarInfo(name=path)
         tarinfo.type = DIRTYPE
         tarinfo.mode = 0755
