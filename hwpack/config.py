@@ -56,7 +56,15 @@ class Config(object):
         except ConfigParser.NoOptionError:
             return True
 
-    def _get_main_option(self, key):
+    def _get_option_from_main_section(self, key):
+        """Get the value from the main section for the given key.
+
+        :param key: the key to return the value for.
+        :type key: str.
+        :return: the value for that key, or None if the key is not present
+            or the value is empty.
+        :rtype: str or None.
+        """
         try:
             result = self.parser.get(self.MAIN_SECTION, key)
             if not result:
@@ -71,7 +79,7 @@ class Config(object):
 
         A str or None if no origin should be recorded.
         """
-        return self._get_main_option(self.ORIGIN_KEY)
+        return self._get_option_from_main_section(self.ORIGIN_KEY)
 
     @property
     def maintainer(self):
@@ -79,7 +87,7 @@ class Config(object):
 
         A str or None if not maintainer should be recorded.
         """
-        return self._get_main_option(self.MAINTAINER_KEY)
+        return self._get_option_from_main_section(self.MAINTAINER_KEY)
 
     @property
     def support(self):
@@ -87,7 +95,7 @@ class Config(object):
 
         A str or None if no support level should be recorded.
         """
-        return self._get_main_option(self.SUPPORT_KEY)
+        return self._get_option_from_main_section(self.SUPPORT_KEY)
 
     def _validate_name(self):
         try:
