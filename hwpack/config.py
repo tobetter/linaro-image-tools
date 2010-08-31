@@ -41,10 +41,12 @@ class Config(object):
 
     @property
     def name(self):
+        """The name of the hardware pack. A str."""
         return self.parser.get(self.MAIN_SECTION, self.NAME_KEY)
 
     @property
     def include_debs(self):
+        """Whether the hardware pack should contain .debs. A bool."""
         try:
             if not self.parser.get(
                 self.MAIN_SECTION, self.INCLUDE_DEBS_KEY):
@@ -54,36 +56,46 @@ class Config(object):
         except ConfigParser.NoOptionError:
             return True
 
-    @property
-    def origin(self):
+    def _get_option_from_main_section(self, key):
+        """Get the value from the main section for the given key.
+
+        :param key: the key to return the value for.
+        :type key: str.
+        :return: the value for that key, or None if the key is not present
+            or the value is empty.
+        :rtype: str or None.
+        """
         try:
-            origin = self.parser.get(self.MAIN_SECTION, self.ORIGIN_KEY)
-            if not origin:
+            result = self.parser.get(self.MAIN_SECTION, key)
+            if not result:
                 return None
-            return origin
+            return result
         except ConfigParser.NoOptionError:
             return None
+
+    @property
+    def origin(self):
+        """The origin that should be recorded in the hwpack.
+
+        A str or None if no origin should be recorded.
+        """
+        return self._get_option_from_main_section(self.ORIGIN_KEY)
 
     @property
     def maintainer(self):
-        try:
-            maintainer = self.parser.get(
-                self.MAIN_SECTION, self.MAINTAINER_KEY)
-            if not maintainer:
-                return None
-            return maintainer
-        except ConfigParser.NoOptionError:
-            return None
+        """The maintainer that should be recorded in the hwpack.
+
+        A str or None if not maintainer should be recorded.
+        """
+        return self._get_option_from_main_section(self.MAINTAINER_KEY)
 
     @property
     def support(self):
-        try:
-            support = self.parser.get(self.MAIN_SECTION, self.SUPPORT_KEY)
-            if not support:
-                return None
-            return support
-        except ConfigParser.NoOptionError:
-            return None
+        """The support level that should be recorded in the hwpack.
+
+        A str or None if no support level should be recorded.
+        """
+        return self._get_option_from_main_section(self.SUPPORT_KEY)
 
     def _validate_name(self):
         try:
