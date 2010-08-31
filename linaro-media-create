@@ -520,6 +520,9 @@ if [ "$DEVIMAGE" ]; then
       if [ "$IS_LIVE" ]; then
         serial_opts="$serial_opts serialtty=ttyAMA0"
       fi
+      # ARM Boot Monitor is used to load u-boot, uImage etc. into flash and
+      # only allows for FAT16
+      FAT_SIZE=16
       ;;
     *)
       echo "unknown --dev paramater: $DEVIMAGE" 1>&2
