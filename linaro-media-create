@@ -200,8 +200,7 @@ populate_boot() {
      sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
      ;;
    vexpress)
-     sudo tar -xf $BINARY_TARBALL binary/usr/lib/u-boot/
-     sudo cp -v ${DIR}/binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin ${DIR}/disk/ubootca9.bin
+     sudo tar --strip-components=5 -C ${DIR}/disk/ -xf $BINARY_TARBALL binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin
      sudo cp -f ${DIR}/binary/${parts_dir}/vmlinuz*-vexpress ${DIR}/disk/vmlinuz
      sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 -e 0x60008000 \
           -n "Linux" -d  ${DIR}/disk/vmlinuz  ${DIR}/disk/uImage.vxp
