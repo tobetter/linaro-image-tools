@@ -2,6 +2,13 @@ from contextlib import contextmanager
 from StringIO import StringIO
 from tarfile import DIRTYPE, TarFile as StandardTarFile, TarInfo
 
+"""Improvements to the standard library's tarfile module.
+
+In particular this module provides a tarfile.TarFile subclass that aids
+in adding paths to the tarfile that aren't present on the filesystem,
+with the ability to specify file content as strings, and provide
+default values for the mtime, uid, etc. of the created paths.
+"""
 
 @contextmanager
 def writeable_tarfile(backing_file, mode="w", **kwargs):
