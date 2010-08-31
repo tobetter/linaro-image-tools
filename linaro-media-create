@@ -30,8 +30,8 @@ which "$1" 2>/dev/null 1>/dev/null || ( echo "Installing required command $1 fro
 
 ensure_command uuidgen uuid-runtime
 ensure_command parted parted
-ensure_command sfdisk util-linux 
-ensure_command fdisk util-linux 
+ensure_command sfdisk util-linux
+ensure_command fdisk util-linux
 ensure_command wget wget
 ensure_command mkfs.ext3 e2fsprogs
 ensure_command mkfs.ext4 e2fsprogs
@@ -58,11 +58,11 @@ if [ ! ${IMAGE_FILE} ]; then
     if [ `realpath $device` = $MMC ]; then
       if echo $device | grep -q -- "-part[0-9]*$"; then
         echo "device $MMC must not be a partition part ($device)" 1>&2
-	exit 1
+        exit 1
       fi
       for part_id in `ls $device-part*`; do
         part=`realpath $part_id`
-	part_no=`echo $part_id | sed -e 's/.*-part//g'`
+        part_no=`echo $part_id | sed -e 's/.*-part//g'`
         # echo "part $part_no found: $part_id" 1>&2
         if test "$part_no" = 1; then
           MMC1=$part
@@ -137,10 +137,10 @@ else
 partdev=${MMC}
 fi
 
-if [ "$FAT_SIZE" = "32" ]; then 
-	PARTITION_TYPE="0x0C"
+if [ "$FAT_SIZE" = "32" ]; then
+    PARTITION_TYPE="0x0C"
 else
-	PARTITION_TYPE="0x0E"
+    PARTITION_TYPE="0x0E"
 fi
 
 # Create a VFAT or FAT16 partition of 9 cylinders which is about 64M
@@ -453,20 +453,20 @@ while [ ! -z "$1" ]; do
         --mmc)
             checkparm $2
             MMC="$2"
-            check_mmc 
+            check_mmc
             ;;
         --image_file)
-	    checkparm $2
-	    IMAGE_FILE="$2"
-	    ;;
-	--image_size)
-	    checkparm $2
-	    IMAGE_SIZE=$2
-	    ;;
+            checkparm $2
+            IMAGE_FILE="$2"
+            ;;
+        --image_size)
+            checkparm $2
+            IMAGE_SIZE=$2
+            ;;
         --rootfs)
             checkparm $2
             FS_TYPE="$2"
-            check_fs_type 
+            check_fs_type
             ;;
         --boot_label)
             checkparm $2
@@ -492,14 +492,14 @@ while [ ! -z "$1" ]; do
             checkparm $2
             consoles="$consoles $2"
             ;;
-	--dev)
+        --dev)
             checkparm $2
             DEVIMAGE=$2
             ;;
         --binary)
             checkparm $2
             BINARY_TARBALL="$2"
-            ;; 
+            ;;
     esac
     shift
 done
@@ -511,10 +511,10 @@ fi
 
 serial_opts=""
 if [ "$consoles" ]; then
-  for c in ${consoles}; do 
+  for c in ${consoles}; do
     serial_opts="$serial_opts console=$c"
   done
-  if [ "$IS_LIVE" ]; then 
+  if [ "$IS_LIVE" ]; then
     serial_opts="$serial_opts serialtty=ttyS2"
   fi
 fi
