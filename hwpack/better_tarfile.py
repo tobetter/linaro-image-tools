@@ -40,15 +40,6 @@ def standard_tarfile(backing_file, mode="r", seek=True):
         tf.close()
 
 
-def _get_arg_with_default(kwargs, arg, default=None):
-    if arg in kwargs:
-        result = kwargs[arg]
-        del kwargs[arg]
-    else:
-        result = default
-    return result
-
-
 class TarFile(StandardTarFile):
     """An improvement to tarfile that can add paths not on the filesystem.
 
@@ -74,11 +65,11 @@ class TarFile(StandardTarFile):
         :param default_gname: the default group name ot set as the owner
             of created paths, a string, or None to use the stdlib default.
         """
-        self.default_mtime = _get_arg_with_default(kwargs, "default_mtime")
-        self.default_uid = _get_arg_with_default(kwargs, "default_uid")
-        self.default_gid = _get_arg_with_default(kwargs, "default_gid")
-        self.default_uname = _get_arg_with_default(kwargs, "default_uname")
-        self.default_gname = _get_arg_with_default(kwargs, "default_gname")
+        self.default_mtime = kwargs.pop("default_mtime", None)
+        self.default_uid = kwargs.pop("default_uid", None)
+        self.default_gid = kwargs.pop("default_gid", None)
+        self.default_uname = kwargs.pop("default_uname", None)
+        self.default_gname = kwargs.pop("default_gname", None)
         super(TarFile, self).__init__(*args, **kwargs)
 
     def _set_defaults(self, tarinfo):
