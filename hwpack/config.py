@@ -57,7 +57,13 @@ class Config(object):
             return True
 
     def _get_main_option(self, key):
-        return self.parser.get(self.MAIN_SECTION, key)
+        try:
+            result = self.parser.get(self.MAIN_SECTION, key)
+            if not result:
+                return None
+            return result
+        except ConfigParser.NoOptionError:
+            return None
 
     @property
     def origin(self):
@@ -65,13 +71,7 @@ class Config(object):
 
         A str or None if no origin should be recorded.
         """
-        try:
-            origin = self._get_main_option(self.ORIGIN_KEY)
-            if not origin:
-                return None
-            return origin
-        except ConfigParser.NoOptionError:
-            return None
+        return self._get_main_option(self.ORIGIN_KEY)
 
     @property
     def maintainer(self):
@@ -79,13 +79,7 @@ class Config(object):
 
         A str or None if not maintainer should be recorded.
         """
-        try:
-            maintainer = self._get_main_option(self.MAINTAINER_KEY)
-            if not maintainer:
-                return None
-            return maintainer
-        except ConfigParser.NoOptionError:
-            return None
+        return self._get_main_option(self.MAINTAINER_KEY)
 
     @property
     def support(self):
@@ -93,13 +87,7 @@ class Config(object):
 
         A str or None if no support level should be recorded.
         """
-        try:
-            support = self._get_main_option(self.SUPPORT_KEY)
-            if not support:
-                return None
-            return support
-        except ConfigParser.NoOptionError:
-            return None
+        return self._get_main_option(self.SUPPORT_KEY)
 
     def _validate_name(self):
         try:
