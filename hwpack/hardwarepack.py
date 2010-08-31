@@ -1,19 +1,4 @@
-from StringIO import StringIO
-import tarfile
-
-
-def add_file(tf, name, content):
-    tarinfo = tarfile.TarInfo(name=name)
-    tarinfo.size = len(content)
-    # TODO: set other attributes
-    fileobj = StringIO(content)
-    tf.addfile(tarinfo, fileobj=fileobj)
-
-
-def add_dir(tf, name):
-    tarinfo = tarfile.TarInfo(name=name)
-    tarinfo.type = tarfile.DIRTYPE
-    tf.addfile(tarinfo)
+from hwpack.better_tarfile import writeable_tarfile
 
 
 class HardwarePack(object):
@@ -57,14 +42,18 @@ class HardwarePack(object):
         return metadata
 
     def to_f(self, fileobj):
-        tf = tarfile.open(mode="w:gz", fileobj=fileobj)
-        try:
-            add_file(tf, self.FORMAT_FILENAME, self.FORMAT + "\n")
-            add_file(tf, self.METADATA_FILENAME, self._metadata_contents())
-            add_file(tf, self.MANIFEST_FILENAME, "")
-            add_dir(tf, self.PACKAGES_DIRNAME)
-            add_file(tf, self.PACKAGES_FILENAME, "")
-            add_dir(tf, self.SOURCES_LIST_DIRNAME)
-            add_dir(tf, self.SOURCES_LIST_GPG_DIRNAME)
-        finally:
-            tf.close()
+        kwargs = {}
+        kwargs["default_uid"] = 1000
+        kwargs["default_gid"] = 1000
+        kwargs["default_uname"] = "user"
+        kwargs["default_gname"] = "group"
+        with writeable_tarfile(fileobj, mode="w:gz", **kwargs) as tf:
+            tf.create_file_from_string(
+                self.FORMAT_FILENAME, self.FORMAT + "\n")
+            tf.create_file_from_string(
+                self.METADATA_FILENAME, self._metadata_contents())
+            tf.create_file_from_string(self.MANIFEST_FILENAME, "")
+            tf.create_dir(self.PACKAGES_DIRNAME)
+            tf.create_file_from_string(self.PACKAGES_FILENAME, "")
+            tf.create_dir(self.SOURCES_LIST_DIRNAME)
+            tf.create_dir(self.SOURCES_LIST_GPG_DIRNAME)

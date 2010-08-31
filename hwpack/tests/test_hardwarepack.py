@@ -3,7 +3,7 @@ import tarfile
 
 from testtools import TestCase
 
-from hwpack.hwpack import HardwarePack
+from hwpack.hardwarepack import HardwarePack
 from hwpack.tarfile_matchers import TarfileHasFile
 
 
@@ -64,6 +64,17 @@ class HardwarePackTests(TestCase):
 
     def assertHasPath(self, tarball, path, **kwargs):
         kwargs.setdefault("type", tarfile.REGTYPE)
+        if "content" in kwargs:
+            kwargs.setdefault("size", len(kwargs["content"]))
+        if kwargs["type"] == tarfile.DIRTYPE:
+            kwargs.setdefault("mode", 0755)
+        else:
+            kwargs.setdefault("mode", 0644)
+        kwargs.setdefault("linkname", "")
+        kwargs.setdefault("uid", 1000)
+        kwargs.setdefault("gid", 1000)
+        kwargs.setdefault("uname", "user")
+        kwargs.setdefault("gname", "group")
         self.assertThat(tarball, TarfileHasFile(path, **kwargs))
 
     def test_creates_FORMAT_file(self):
