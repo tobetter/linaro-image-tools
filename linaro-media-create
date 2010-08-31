@@ -201,9 +201,8 @@ populate_boot() {
      ;;
    vexpress)
      sudo tar --strip-components=5 -C ${DIR}/disk/ -xf $BINARY_TARBALL binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin
-     sudo cp -f ${DIR}/binary/${parts_dir}/vmlinuz*-vexpress ${DIR}/disk/vmlinuz
      sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 -e 0x60008000 \
-          -n "Linux" -d  ${DIR}/disk/vmlinuz  ${DIR}/disk/uImage.vxp
+          -n "Linux" -d ${DIR}/binary/${parts_dir}/vmlinuz*-vexpress ${DIR}/disk/uImage
      # TODO add uInitrd once we have daily images
      #sudo cp -f ${DIR}/binary/${parts_dir}/uInitrd.vexpress ${DIR}/disk/uInitrd
      ;;
