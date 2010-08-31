@@ -8,7 +8,15 @@ Vcs-Bzr:
 
 Package: linaro-image-tools
 Architecture: all
-Depends: ${misc:Depends}
+Depends: ${misc:Depends},
+         parted,
+         uuidgen-runtime,
+         util-linux,
+         wget,
+         e2fsprogs,
+         uboot-mkimage,
+         coreutils,
+         realpath
 Description: collection of tools to work with Linaro images
  This package offers a set of tools for use with Linaro images.
  .
