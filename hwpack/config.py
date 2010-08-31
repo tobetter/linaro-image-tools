@@ -99,6 +99,18 @@ class Config(object):
         """
         return self._get_option_from_main_section(self.SUPPORT_KEY)
 
+    @property
+    def packages(self):
+        """The packages that should be contained in the hwpack.
+
+        A list of str.
+        """
+        raw_packages = self._get_option_from_main_section(self.PACKAGES_KEY)
+        if raw_packages is None:
+            return []
+        packages = re.split("\s+", raw_packages)
+        return packages
+
     def _validate_name(self):
         try:
             name = self.name
@@ -125,14 +137,12 @@ class Config(object):
                 "Invalid value for support: %s" % support)
 
     def _validate_packages(self):
-        packages = self._get_option_from_main_section(self.PACKAGES_KEY)
+        packages = self.packages
         if not packages:
             raise HwpackConfigError(
                 "No %s in the [%s] section"
                 % (self.PACKAGES_KEY, self.MAIN_SECTION))
-        for package in packages.split(" "):
-            if not package:
-                continue
+        for package in packages:
             if re.match(self.PACKAGE_REGEX, package) is None:
                 raise HwpackConfigError(
                     "Invalid value in %s in the [%s] section: %s"

@@ -176,3 +176,13 @@ class ConfigTests(TestCase):
     def test_support_None_on_empty(self):
         config = self.get_config(self.valid_start + "support =  \n")
         self.assertEqual(None, config.support)
+
+    def test_packages(self):
+        config = self.get_config(
+            "[hwpack]\nname=ahwpack\npackages=foo  bar\n")
+        self.assertEqual(["foo", "bar"], config.packages)
+
+    def test_packages_with_newline(self):
+        config = self.get_config(
+            "[hwpack]\nname=ahwpack\npackages=foo\n bar\n")
+        self.assertEqual(["foo", "bar"], config.packages)
