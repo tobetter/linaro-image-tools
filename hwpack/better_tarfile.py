@@ -28,25 +28,6 @@ def writeable_tarfile(backing_file, mode="w", **kwargs):
         tf.close()
 
 
-@contextmanager
-def standard_tarfile(backing_file, mode="r", seek=True):
-    """A context manager to open a stdlib tarfile.
-
-    :param backing_file: the file object to take the tarfile
-        contents from.
-    :param mode: the mode to open the tarfile with.
-    :param seek: whether to seek the backing file to 0 before
-        opening.
-    """
-    if seek:
-        backing_file.seek(0)
-    tf = StandardTarFile.open(mode=mode, fileobj=backing_file)
-    try:
-        yield tf
-    finally:
-        tf.close()
-
-
 class TarFile(StandardTarFile):
     """An improvement to tarfile that can add paths not on the filesystem.
 
