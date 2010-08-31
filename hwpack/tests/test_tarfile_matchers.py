@@ -139,11 +139,9 @@ class TarfileHasFileTests(TestCase):
     def assertValueMismatch(self, mismatch, tarball, path, attribute,
                             expected, actual):
         self.assertIsInstance(mismatch, TarfileWrongValueMismatch)
-        self.assertEqual(attribute, mismatch.attribute)
-        self.assertEqual(tarball, mismatch.tarball)
-        self.assertEqual(path, mismatch.path)
-        self.assertEqual(actual, mismatch.actual)
-        self.assertEqual(expected, mismatch.expected)
+        expected_mismatch = TarfileWrongValueMismatch(
+            attribute, tarball, path, expected, actual)
+        self.assertEqual(expected_mismatch, mismatch)
 
     def test_mismatches_wrong_type(self):
         backing_file = StringIO()
