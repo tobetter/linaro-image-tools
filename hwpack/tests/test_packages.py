@@ -75,6 +75,21 @@ class PackageFetcherTests(TestCase):
         self.addCleanup(fetcher.cleanup)
         self.assertRaises(KeyError, fetcher.fetch_packages, ["nothere"])
 
+    def test_fetch_packages_not_found_one_of_two_missing(self):
+        available_package = Package("foo", "1.0")
+        source = self.useFixture(AptSource([available_package]))
+        fetcher = PackageFetcher([source.sources_entry])
+        self.addCleanup(fetcher.cleanup)
+        self.assertRaises(
+            KeyError, fetcher.fetch_packages, ["foo", "nothere"])
+
+    def test_fetch_packges_fetches_no_packages(self):
+        available_package = Package("foo", "1.0")
+        source = self.useFixture(AptSource([available_package]))
+        fetcher = PackageFetcher([source.sources_entry])
+        self.addCleanup(fetcher.cleanup)
+        self.assertEqual(0, len(fetcher.fetch_packages([])))
+
     def test_fetch_packges_fetches_single_package(self):
         available_package = Package("foo", "1.0")
         source = self.useFixture(AptSource([available_package]))
@@ -100,3 +115,21 @@ class PackageFetcherTests(TestCase):
             available_package.content,
             fetcher.fetch_packages(
                 ["foo"])[available_package.filename].read())
+
+    def test_fetch_packges_fetches_multiple_packages(self):
+        available_packages = [Package("bar", 1.0), Package("foo", "1.0")]
+        source = self.useFixture(AptSource(available_packages))
+        fetcher = PackageFetcher([source.sources_entry])
+        self.addCleanup(fetcher.cleanup)
+        self.assertEqual(2, len(fetcher.fetch_packages(["foo", "bar"])))
+
+    def test_fetch_packges_fetches_multiple_packages_correctly(self):
+        available_packages = [Package("bar", 1.0), Package("foo", "1.0")]
+        source = self.useFixture(AptSource(available_packages))
+        fetcher = PackageFetcher([source.sources_entry])
+        self.addCleanup(fetcher.cleanup)
+        fetched_contents = fetcher.fetch_packages(["foo", "bar"])
+        self.assertEqual(
+            dict([(p.filename, p.content) for p in available_packages]),
+            dict([(fn, fetched_contents[fn].read())
+                for fn in fetched_contents]))
