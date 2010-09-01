@@ -6,6 +6,8 @@ import tempfile
 from StringIO import StringIO
 import tarfile
 
+from testtools import TestCase
+
 from hwpack.better_tarfile import writeable_tarfile
 
 
@@ -89,3 +91,11 @@ class AptSource(object):
     @property
     def sources_entry(self):
         return "file:" + os.path.abspath(self.rootdir) +" ./"
+
+
+class TestCaseWithFixtures(TestCase):
+
+    def useFixture(self, fixture):
+        self.addCleanup(fixture.tearDown)
+        fixture.setUp()
+        return fixture

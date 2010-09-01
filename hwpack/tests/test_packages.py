@@ -6,7 +6,7 @@ from hwpack.packages import (
     ensure_file_uri_starts_with_three_slashes,
     PackageFetcher,
     )
-from hwpack.testing import AptSource, Package
+from hwpack.testing import AptSource, Package, TestCaseWithFixtures
 
 
 class EnsureURITests(TestCase):
@@ -33,12 +33,7 @@ class EnsureURITests(TestCase):
             uri, ensure_file_uri_starts_with_three_slashes(uri))
 
 
-class PackageFetcherTests(TestCase):
-
-    def useFixture(self, fixture):
-        self.addCleanup(fixture.tearDown)
-        fixture.setUp()
-        return fixture
+class PackageFetcherTests(TestCaseWithFixtures):
 
     def test_cleanup_removes_tempdir(self):
         fetcher = PackageFetcher([])
