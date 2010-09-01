@@ -1,7 +1,4 @@
-import hashlib
 import os
-import shutil
-import tempfile
 
 from testtools import TestCase
 
@@ -9,54 +6,7 @@ from hwpack.packages import (
     ensure_file_uri_starts_with_three_slashes,
     PackageFetcher,
     )
-
-
-class Package(object):
-
-    def __init__(self, name, version, architecture="all"):
-        self.name = name
-        self.version = version
-        self.architecture = architecture
-
-    @property
-    def filename(self):
-        return "%s_%s_%s.deb" % (self.name, self.version, self.architecture)
-
-    @property
-    def content(self):
-        return "Content of %s" % self.filename
-
-
-class AptSource(object):
-
-    def __init__(self, packages):
-        self.packages = packages
-
-    def setUp(self):
-        self.rootdir = tempfile.mkdtemp(prefix="hwpack-apt-source-")
-        for package in self.packages:
-            with open(
-                os.path.join(self.rootdir, package.filename), 'wb') as f:
-                f.write(package.content)
-        with open(os.path.join(self.rootdir, "Packages"), 'wb') as f:
-            for package in self.packages:
-                f.write('Package: %s\n' % package.name)
-                f.write('Version: %s\n' % package.version)
-                f.write('Filename: %s\n' % package.filename)
-                f.write('Size: %d\n' % len(package.content))
-                f.write('Architecture: %s\n' % package.architecture)
-                md5sum = hashlib.md5()
-                md5sum.update(package.content)
-                f.write('MD5sum: %s\n' % md5sum.hexdigest())
-                f.write('\n')
-
-    def tearDown(self):
-        if os.path.exists(self.rootdir):
-            shutil.rmtree(self.rootdir)
-
-    @property
-    def sources_entry(self):
-        return "file:" + os.path.abspath(self.rootdir) +" ./"
+from hwpack.testing import AptSource, Package
 
 
 class EnsureURITests(TestCase):
