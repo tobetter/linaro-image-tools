@@ -1,36 +1,7 @@
 import os
 
-from testtools import TestCase
-
-from hwpack.packages import (
-    ensure_file_uri_starts_with_three_slashes,
-    PackageFetcher,
-    )
+from hwpack.packages import PackageFetcher
 from hwpack.testing import AptSource, Package, TestCaseWithFixtures
-
-
-class EnsureURITests(TestCase):
-
-    def test_modifies_file_uri_with_one_slash(self):
-        uri = "file:/something"
-        self.assertEqual(
-            "file:///something",
-            ensure_file_uri_starts_with_three_slashes(uri))
-
-    def test_doesnt_modify_file_uri_with_three_slashes(self):
-        uri = "file:///something"
-        self.assertEqual(
-            uri, ensure_file_uri_starts_with_three_slashes(uri))
-
-    def test_doesnt_modify_file_uri_with_hostname(self):
-        uri = "file://localhost/something"
-        self.assertEqual(
-            uri, ensure_file_uri_starts_with_three_slashes(uri))
-
-    def test_doesnt_modify_http_uri(self):
-        uri = "http://example.org/something"
-        self.assertEqual(
-            uri, ensure_file_uri_starts_with_three_slashes(uri))
 
 
 class PackageFetcherTests(TestCaseWithFixtures):

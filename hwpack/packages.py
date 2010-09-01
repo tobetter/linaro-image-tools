@@ -31,23 +31,6 @@ class DummyProgress(object):
         pass
 
 
-def ensure_file_uri_starts_with_three_slashes(uri):
-    """Ensure that file: URIs are in a format suitable for use with bzrlib.
-
-    apt can handle file:/something URIs with no problem, but bzrlib
-    rejects them. We therefore fix this up ourselves as we know how
-    apt would handle them.
-
-    :param uri: the uri to check.
-    :type uri: str
-    :return: the modified uri.
-    :rtype: str
-    """
-    if uri.startswith("file:/") and uri[len("file:/")] != '/':
-        uri = "file:///" + uri[len("file:/"):]
-    return uri
-
-
 class PackageFetcher(object):
     """A class to fetch packages from a defined list of sources."""
 
