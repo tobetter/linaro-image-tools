@@ -92,7 +92,7 @@ class HardwarePack(object):
         return "hwpack_%s_%s%s.tar.gz" % (
             self.metadata.name, self.metadata.version, support_suffix)
 
-    def to_f(self, fileobj):
+    def to_file(self, fileobj):
         """Write the hwpack to a file object.
 
         The full hardware pack will be written to the file object in

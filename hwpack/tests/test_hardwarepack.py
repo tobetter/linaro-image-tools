@@ -84,7 +84,7 @@ class HardwarePackTests(TestCase):
 
     def get_tarfile(self, hwpack):
         fileobj = StringIO()
-        hwpack.to_f(fileobj)
+        hwpack.to_file(fileobj)
         fileobj.seek(0)
         tf = tarfile.open(mode="r:gz", fileobj=fileobj)
         self.addCleanup(tf.close)
