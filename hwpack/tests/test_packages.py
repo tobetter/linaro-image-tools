@@ -90,6 +90,71 @@ class PackageFetcherTests(TestCase):
         fixture.setUp()
         return fixture
 
+    def test_cleanup_removes_tempdir(self):
+        fetcher = PackageFetcher([])
+        fetcher.prepare()
+        tempdir = fetcher.tempdir
+        fetcher.cleanup()
+        self.assertFalse(os.path.exists(tempdir))
+
+    def test_cleanup_ignores_missing_tempdir(self):
+        fetcher = PackageFetcher([])
+        fetcher.prepare()
+        tempdir = fetcher.tempdir
+        fetcher.cleanup()
+        # Check that there is no problem removing it again
+        fetcher.cleanup()
+
+    def test_cleanup_before_prepare(self):
+        fetcher = PackageFetcher([])
+        # Check that there is no problem cleaning up before we start
+        fetcher.cleanup()
+
+    def test_prepare_creates_tempdir(self):
+        fetcher = PackageFetcher([])
+        self.addCleanup(fetcher.cleanup)
+        fetcher.prepare()
+        self.assertTrue(os.path.isdir(fetcher.tempdir))
+
+    def test_prepare_creates_var_lib_dpkg_status_file(self):
+        fetcher = PackageFetcher([])
+        self.addCleanup(fetcher.cleanup)
+        fetcher.prepare()
+        self.assertEqual(
+            '',
+            open(os.path.join(
+                fetcher.tempdir, "var", "lib", "dpkg", "status")).read())
+
+    def test_prepare_creates_var_cache_apt_archives_partial_dir(self):
+        fetcher = PackageFetcher([])
+        self.addCleanup(fetcher.cleanup)
+        fetcher.prepare()
+        self.assertTrue(
+            os.path.isdir(os.path.join(
+                fetcher.tempdir, "var", "cache", "apt", "archives",
+                "partial")))
+
+    def test_prepare_creates_var_lib_apt_lists_partial_dir(self):
+        fetcher = PackageFetcher([])
+        self.addCleanup(fetcher.cleanup)
+        fetcher.prepare()
+        self.assertTrue(
+            os.path.isdir(os.path.join(
+                fetcher.tempdir, "var", "lib", "apt", "lists", "partial")))
+
+    def test_prepare_creates_etc_apt_sources_list_file(self):
+        source1 = self.useFixture(AptSource([]))
+        source2 = self.useFixture(AptSource([]))
+        fetcher = PackageFetcher(
+            [source1.sources_entry, source2.sources_entry])
+        self.addCleanup(fetcher.cleanup)
+        fetcher.prepare()
+        self.assertEqual(
+            "deb %s\ndeb %s\n" % (
+                source1.sources_entry, source2.sources_entry),
+            open(os.path.join(
+                fetcher.tempdir, "etc", "apt", "sources.list")).read())
+
     def get_fetcher(self, sources):
         fetcher = PackageFetcher([s.sources_entry for s in sources])
         self.addCleanup(fetcher.cleanup)
