@@ -133,3 +133,14 @@ class PackageFetcherTests(TestCase):
             dict([(p.filename, p.content) for p in available_packages]),
             dict([(fn, fetched_contents[fn].read())
                 for fn in fetched_contents]))
+
+    def test_fetch_packages_fetches_newest(self):
+        available_packages = [Package("bar", 1.0), Package("bar", "1.1")]
+        source = self.useFixture(AptSource(available_packages))
+        fetcher = PackageFetcher([source.sources_entry])
+        self.addCleanup(fetcher.cleanup)
+        fetched_contents = fetcher.fetch_packages(["bar"])
+        self.assertEqual(
+            {available_packages[1].filename: available_packages[1].content},
+            dict([(fn, fetched_contents[fn].read())
+                for fn in fetched_contents]))
