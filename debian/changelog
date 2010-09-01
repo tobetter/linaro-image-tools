@@ -1,4 +1,4 @@
-linaro-image-tools (0.1) UNRELEASED; urgency=low
+linaro-image-tools (0.1) maverick; urgency=low
 
   * Initial packaging
 
