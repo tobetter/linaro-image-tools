@@ -3,9 +3,32 @@ import shutil
 import tempfile
 
 from apt.cache import Cache
+from apt.package import FetchError
+import apt_pkg
 
-from bzrlib.transport import get_transport
-from bzrlib import urlutils
+
+class DummyProgress(object):
+
+    def start(self):
+        pass
+
+    def ims_hit(self, item):
+        pass
+
+    def fail(self, item):
+        pass
+
+    def fetch(self, item):
+        pass
+
+    def pulse(self, owner):
+        return True
+
+    def media_change(self):
+        return False
+
+    def stop(self):
+        pass
 
 
 def ensure_file_uri_starts_with_three_slashes(uri):
@@ -92,14 +115,18 @@ class PackageFetcher(object):
             be found.
         """
         results = {}
-        possible_transports = []
         for package in packages:
-            apt_pkg = self.cache[package]
-            candidate = apt_pkg.candidate
+            candidate = self.cache[package].candidate
             base = os.path.basename(candidate.filename)
-            dir_url = urlutils.dirname(candidate.uri)
-            dir_url = ensure_file_uri_starts_with_three_slashes(dir_url)
-            results[base] = get_transport(
-                dir_url,
-                possible_transports=possible_transports).get(base)
+            destfile = os.path.join(self.tempdir, base)
+            acq = apt_pkg.Acquire(DummyProgress())
+            acqfile = apt_pkg.AcquireFile(
+                acq, candidate.uri, candidate.md5, candidate.size,
+                base, destfile=destfile)
+            acq.run()
+            if acqfile.status != acqfile.STAT_DONE:
+                raise FetchError(
+                    "The item %r could not be fetched: %s" %
+                    (acqfile.destfile, acqfile.error_text))
+            results[base] = open(destfile)
         return results
