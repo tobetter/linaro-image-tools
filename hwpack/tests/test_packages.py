@@ -117,14 +117,14 @@ class PackageFetcherTests(TestCase):
                 ["foo"])[available_package.filename].read())
 
     def test_fetch_packges_fetches_multiple_packages(self):
-        available_packages = [Package("bar", 1.0), Package("foo", "1.0")]
+        available_packages = [Package("bar", "1.0"), Package("foo", "1.0")]
         source = self.useFixture(AptSource(available_packages))
         fetcher = PackageFetcher([source.sources_entry])
         self.addCleanup(fetcher.cleanup)
         self.assertEqual(2, len(fetcher.fetch_packages(["foo", "bar"])))
 
     def test_fetch_packges_fetches_multiple_packages_correctly(self):
-        available_packages = [Package("bar", 1.0), Package("foo", "1.0")]
+        available_packages = [Package("bar", "1.0"), Package("foo", "1.0")]
         source = self.useFixture(AptSource(available_packages))
         fetcher = PackageFetcher([source.sources_entry])
         self.addCleanup(fetcher.cleanup)
@@ -135,12 +135,26 @@ class PackageFetcherTests(TestCase):
                 for fn in fetched_contents]))
 
     def test_fetch_packages_fetches_newest(self):
-        available_packages = [Package("bar", 1.0), Package("bar", "1.1")]
+        available_packages = [Package("bar", "1.0"), Package("bar", "1.1")]
         source = self.useFixture(AptSource(available_packages))
         fetcher = PackageFetcher([source.sources_entry])
         self.addCleanup(fetcher.cleanup)
         fetched_contents = fetcher.fetch_packages(["bar"])
         self.assertEqual(
             {available_packages[1].filename: available_packages[1].content},
+            dict([(fn, fetched_contents[fn].read())
+                for fn in fetched_contents]))
+
+    def test_fetch_packages_fetches_newest_from_multiple_sources(self):
+        old_source_packages = [Package("bar", "1.0")]
+        new_source_packages = [Package("bar", "1.1")]
+        old_source = self.useFixture(AptSource(old_source_packages))
+        new_source = self.useFixture(AptSource(new_source_packages))
+        fetcher = PackageFetcher(
+            [old_source.sources_entry, new_source.sources_entry])
+        self.addCleanup(fetcher.cleanup)
+        fetched_contents = fetcher.fetch_packages(["bar"])
+        self.assertEqual(
+            {new_source_packages[0].filename: new_source_packages[0].content},
             dict([(fn, fetched_contents[fn].read())
                 for fn in fetched_contents]))
