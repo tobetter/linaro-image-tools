@@ -9,7 +9,7 @@ import tarfile
 from testtools import TestCase
 
 from hwpack.better_tarfile import writeable_tarfile
-from hwpack.packages import FetchedPackage
+from hwpack.packages import get_packages_file, FetchedPackage
 
 
 @contextmanager
@@ -60,6 +60,16 @@ class FetchedPackageFixture(FetchedPackage):
     def content(self):
         return StringIO("Content of %s" % self.filename)
 
+    @property
+    def size(self):
+        return len(self.content.read())
+
+    @property
+    def md5(self):
+        md5sum = hashlib.md5()
+        md5sum.update(self.content.read())
+        return md5sum.hexdigest()
+
 
 class AptSource(object):
 
@@ -73,16 +83,7 @@ class AptSource(object):
                 os.path.join(self.rootdir, package.filename), 'wb') as f:
                 f.write(package.content.read())
         with open(os.path.join(self.rootdir, "Packages"), 'wb') as f:
-            for package in self.packages:
-                f.write('Package: %s\n' % package.name)
-                f.write('Version: %s\n' % package.version)
-                f.write('Filename: %s\n' % package.filename)
-                f.write('Size: %d\n' % len(package.content.read()))
-                f.write('Architecture: all\n')
-                md5sum = hashlib.md5()
-                md5sum.update(package.content.read())
-                f.write('MD5sum: %s\n' % md5sum.hexdigest())
-                f.write('\n')
+            f.write(get_packages_file(self.packages))
 
     def tearDown(self):
         if os.path.exists(self.rootdir):

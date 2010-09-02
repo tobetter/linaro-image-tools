@@ -7,6 +7,22 @@ from apt.package import FetchError
 import apt_pkg
 
 
+def get_packages_file(packages):
+    content = ""
+    for package in packages:
+        parts = []
+        parts.append(('Package', package.name))
+        parts.append(('Version', package.version))
+        parts.append(('Filename', package.filename))
+        parts.append(('Size', str(package.size)))
+        # TODO: architecture support
+        parts.append(('Architecture', 'all'))
+        parts.append(('MD5sum', package.md5))
+        content += "\n".join([": ".join(p) for p in parts])
+        content += "\n\n"
+    return content
+
+
 class DummyProgress(object):
 
     def start(self):

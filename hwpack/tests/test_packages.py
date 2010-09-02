@@ -1,11 +1,38 @@
 import os
 
-from hwpack.packages import PackageFetcher
+from testtools import TestCase
+
+from hwpack.packages import get_packages_file, PackageFetcher
 from hwpack.testing import (
     AptSource,
     FetchedPackageFixture,
     TestCaseWithFixtures,
     )
+
+
+class GetPackagesFileTests(TestCase):
+
+    def test_single_stanza(self):
+        package = FetchedPackageFixture("foo", "1.1")
+        self.assertEqual("""Package: foo
+Version: 1.1
+Filename: %(filename)s
+Size: %(size)d
+Architecture: all
+MD5sum: %(md5)s
+
+""" % {
+            'filename': package.filename,
+            'size': package.size,
+            'md5': package.md5,
+            }, get_packages_file([package]))
+
+    def test_two_stanzas(self):
+        package1 = FetchedPackageFixture("foo", "1.1")
+        package2 = FetchedPackageFixture("bar", "1.2")
+        self.assertEqual(
+            get_packages_file([package1]) + get_packages_file([package2]),
+            get_packages_file([package1, package2]))
 
 
 class PackageFetcherTests(TestCaseWithFixtures):
