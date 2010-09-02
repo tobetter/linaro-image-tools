@@ -7,8 +7,10 @@ from StringIO import StringIO
 import tarfile
 
 from testtools import TestCase
+from testtools.matchers import Matcher, Mismatch
 
 from hwpack.better_tarfile import writeable_tarfile
+from hwpack.tarfile_matchers import TarfileHasFile
 from hwpack.packages import get_packages_file, FetchedPackage
 
 
@@ -136,3 +138,158 @@ class TestCaseWithFixtures(TestCase):
         self.addCleanup(fixture.tearDown)
         fixture.setUp()
         return fixture
+
+
+class ConfigFileFixture(object):
+
+    def __init__(self, contents):
+        self.contents = contents
+        self.filename = None
+
+    def setUp(self):
+        fh, self.filename = tempfile.mkstemp(prefix="hwpack-test-config-")
+        with os.fdopen(fh, 'w') as f:
+            f.write(self.contents)
+
+    def tearDown(self):
+        if self.filename is not None and os.path.exists(self.filename):
+            os.unlink(self.filename)
+
+
+class ChdirToTempdirFixture(object):
+
+    def __init__(self):
+        self._orig_dir = None
+        self.tempdir = None
+
+    def setUp(self):
+        self.tearDown()
+        self._orig_dir = os.getcwd()
+        self.tempdir = tempfile.mkdtemp(prefix="hwpack-tests-")
+        os.chdir(self.tempdir)
+
+    def tearDown(self):
+        if self._orig_dir is not None:
+            os.chdir(self._orig_dir)
+            self._orig_dir = None
+        if self.tempdir is not None and os.path.exists(self.tempdir):
+            shutil.rmtree(self.tempdir)
+            self.tempdir = None
+
+
+class MismatchesAll(Mismatch):
+    """A mismatch with many child mismatches."""
+
+    def __init__(self, mismatches):
+        self.mismatches = mismatches
+
+    def describe(self):
+        descriptions = ["Differences: ["]
+        for mismatch in self.mismatches:
+            descriptions.append(mismatch.describe())
+        descriptions.append("]\n")
+        return '\n'.join(descriptions)
+
+
+class MatchesAll(object):
+
+    def __init__(self, *matchers):
+        self.matchers = matchers
+
+    def __str__(self):
+        return 'MatchesAll(%s)' % ', '.join(map(str, self.matchers))
+
+    def match(self, matchee):
+        results = []
+        for matcher in self.matchers:
+            mismatch = matcher.match(matchee)
+            if mismatch is not None:
+                results.append(mismatch)
+        if results:
+            return MismatchesAll(results)
+        else:
+            return None
+
+
+class HardwarePackHasFile(TarfileHasFile):
+    """A subclass of TarfileHasFile specific to hardware packs.
+
+    We default to a set of attributes expected for files in a hardware
+    pack.
+    """
+
+    def __init__(self, path, **kwargs):
+        """Create a HardwarePackHasFile matcher.
+
+        The kwargs are the keyword arguments taken by TarfileHasFile.
+        If they are not given then defaults will be checked:
+            - The type should be a regular file
+            - If the content is given then the size will be checked
+                to ensure it indicates the length of the content
+                correctly.
+            - the mode is appropriate for the type. If the type is
+                regular file this is 0644, otherwise if it is
+                a directory then it is 0755.
+            - the linkname should be the empty string.
+            - the uid and gid should be 1000
+            - the uname and gname should be "user" and "group"
+                respectively.
+
+        :param path: the path that should be present.
+        :type path: str
+        """
+        kwargs.setdefault("type", tarfile.REGTYPE)
+        if "content" in kwargs:
+            kwargs.setdefault("size", len(kwargs["content"]))
+        if kwargs["type"] == tarfile.DIRTYPE:
+            kwargs.setdefault("mode", 0755)
+        else:
+            kwargs.setdefault("mode", 0644)
+        kwargs.setdefault("linkname", "")
+        kwargs.setdefault("uid", 1000)
+        kwargs.setdefault("gid", 1000)
+        kwargs.setdefault("uname", "user")
+        kwargs.setdefault("gname", "group")
+        # TODO: mtime checking
+        super(HardwarePackHasFile, self).__init__(path, **kwargs)
+
+
+class IsHardwarePack(Matcher):
+
+    def __init__(self, metadata, packages, sources):
+        self.metadata = metadata
+        self.packages = packages
+        self.sources = sources
+
+    def match(self, path):
+        tf = tarfile.open(name=path, mode="r:gz")
+        try:
+            matchers = []
+            matchers.append(HardwarePackHasFile("FORMAT", content="1.0\n"))
+            matchers.append(HardwarePackHasFile(
+                "metadata", content=str(self.metadata)))
+            manifest = ""
+            for package in self.packages:
+                manifest += "%s %s\n" % (package.name, package.version)
+            matchers.append(HardwarePackHasFile("manifest", content=manifest))
+            matchers.append(HardwarePackHasFile("pkgs", type=tarfile.DIRTYPE))
+            for package in self.packages:
+                matchers.append(HardwarePackHasFile(
+                    "pkgs/%s" % package.filename,
+                    content=package.content.read()))
+            matchers.append(HardwarePackHasFile(
+                "pkgs/Packages", content=get_packages_file(self.packages)))
+            matchers.append(HardwarePackHasFile(
+                "sources.list.d", type=tarfile.DIRTYPE))
+            for source_id, sources_entry in self.sources.items():
+                matchers.append(HardwarePackHasFile(
+                    "sources.list.d/%s" % source_id,
+                    content="deb " + sources_entry + "\n"))
+            matchers.append(HardwarePackHasFile(
+                "sources.list.d.gpg", type=tarfile.DIRTYPE))
+            return MatchesAll(*matchers).match(tf)
+        finally:
+            tf.close()
+
+    def __str__(self):
+        return "Is a valid hardware pack."
