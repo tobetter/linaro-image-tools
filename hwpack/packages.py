@@ -158,6 +158,7 @@ class PackageFetcher(object):
         self.cache = Cache(rootdir=self.tempdir, memonly=True)
         self.cache.update()
         self.cache.open()
+        return self
 
     __enter__ = prepare
 

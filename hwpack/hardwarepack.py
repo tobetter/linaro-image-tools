@@ -40,10 +40,9 @@ class Metadata(object):
         self.architecture = architecture
 
     @classmethod
-    def from_config(cls, config, architecture):
-        # TODO: version specification
+    def from_config(cls, config, version, architecture):
         return cls(
-            config.name, "dummy", architecture, origin=config.origin,
+            config.name, version, architecture, origin=config.origin,
             maintainer=config.maintainer, support=config.support)
 
     def __str__(self):
