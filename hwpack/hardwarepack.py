@@ -116,8 +116,9 @@ class HardwarePack(object):
             support_suffix = ""
         else:
             support_suffix = "_%s" % self.metadata.support
-        return "hwpack_%s_%s%s.tar.gz" % (
-            self.metadata.name, self.metadata.version, support_suffix)
+        return "hwpack_%s_%s_%s%s.tar.gz" % (
+            self.metadata.name, self.metadata.version,
+            self.metadata.architecture, support_suffix)
 
     def add_sources(self, sources):
         """Add sources to the hardware pack.
