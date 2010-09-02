@@ -119,8 +119,8 @@ class HardwarePack(object):
         return "hwpack_%s_%s%s.tar.gz" % (
             self.metadata.name, self.metadata.version, support_suffix)
 
-    def add_sources(self, sources):
-        """Add sources to the hardware pack.
+    def add_apt_sources(self, sources):
+        """Add APT sources to the hardware pack.
 
         Given a dict of names and the source lines this will add
         them to the hardware pack.
@@ -129,9 +129,9 @@ class HardwarePack(object):
         source lines should be what is put in sources.list for that
         source, minus the "deb" part.
 
-        Arguments passed to this method will overwrite any that were
-        passed in previous calls with the same identifier, but will
-        be used in addition to any with different identifiers.
+        If you pass an identifier that has already been passed to this
+        method, then the previous value will be replaced with the new
+        value.
 
         :param sources: the sources to use as a dict mapping identifiers
             to sources entries.
