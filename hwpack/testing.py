@@ -47,8 +47,19 @@ def test_tarfile(contents=[], **kwargs):
 
 
 class DummyFetchedPackage(FetchedPackage):
+    """A FetchedPackage with dummy information.
+
+    See FetchedPackage for the instance variables.
+    """
 
     def __init__(self, name, version):
+        """Create a DummyFetchedPackage.
+
+        :param name: the name of the package.
+        :type name: str
+        :param version: the version of the package.
+        :type version: str
+        """
         self.name = name
         self.version = version
 
@@ -71,9 +82,24 @@ class DummyFetchedPackage(FetchedPackage):
         return md5sum.hexdigest()
 
 
-class AptSource(object):
+class AptSourceFixture(object):
+    """A fixture that provides an apt source, with packages and indices.
+
+    An apt source provides a set of package files, and a Packages file
+    that allows apt to determine the contents of the source.
+
+    :ivar sources_entry: the URI and suite to give to apt to view the
+        source (i.e. a sources.list line without the "deb" prefix
+    :type sources_entry: str
+    """
 
     def __init__(self, packages):
+        """Create an AptSourceFixture.
+
+        :param packages: a list of packages to add to the source
+            and index.
+        :type packages: an iterable of FetchedPackages
+        """
         self.packages = packages
 
     def setUp(self):
@@ -95,8 +121,24 @@ class AptSource(object):
 
 
 class TestCaseWithFixtures(TestCase):
+    """A TestCase with the ability to easily add 'fixtures'.
+
+    A fixture is an object which can be created and cleaned up, and
+    this test case knows how to manage them to ensure that they will
+    always be cleaned up at the end of the test.
+    """
 
     def useFixture(self, fixture):
+        """Make use of a fixture, ensuring that it will be cleaned up.
+
+        Given a fixture, this method will run the `setUp` method of
+        the fixture, and ensure that its `tearDown` method will be
+        called at the end of the test, regardless of success or failure.
+
+        :param fixture: the fixture to use.
+        :type fixture: an object with setUp and tearDown methods.
+        :return: the fixture that was passed in.
+        """
         self.addCleanup(fixture.tearDown)
         fixture.setUp()
         return fixture
