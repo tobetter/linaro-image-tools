@@ -76,6 +76,7 @@ class HardwarePack(object):
         """
         self.metadata = metadata
         self.sources = {}
+        self.packages = []
 
     def filename(self):
         """The filename that this hardware pack should have.
@@ -113,6 +114,17 @@ class HardwarePack(object):
         """
         self.sources.update(sources)
 
+    def add_packages(self, packages):
+        """Add packages to the hardware pack.
+
+        Given a list of packages this will add them to the hardware
+        pack.
+
+        :param packages: the packages to add
+        :type packages: FetchedPackage
+        """
+        self.packages += packages
+
     def to_file(self, fileobj):
         """Write the hwpack to a file object.
 
@@ -133,9 +145,13 @@ class HardwarePack(object):
                 self.FORMAT_FILENAME, self.FORMAT + "\n")
             tf.create_file_from_string(
                 self.METADATA_FILENAME, str(self.metadata))
-            # TODO: include packages and sources keys etc.
+            # TODO: include sources keys etc.
             tf.create_file_from_string(self.MANIFEST_FILENAME, "")
             tf.create_dir(self.PACKAGES_DIRNAME)
+            for package in self.packages:
+                tf.create_file_from_string(
+                    self.PACKAGES_DIRNAME + "/" + package.filename,
+                    package.content.read())
             tf.create_file_from_string(self.PACKAGES_FILENAME, "")
             tf.create_dir(self.SOURCES_LIST_DIRNAME)
             for source_name, source_info in self.sources.items():

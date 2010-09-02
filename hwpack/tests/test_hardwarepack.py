@@ -5,6 +5,7 @@ from testtools import TestCase
 
 from hwpack.hardwarepack import HardwarePack, Metadata
 from hwpack.tarfile_matchers import TarfileHasFile
+from hwpack.testing import FetchedPackageFixture
 
 
 class MetadataTests(TestCase):
@@ -163,6 +164,47 @@ class HardwarePackTests(TestCase):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
         self.assertThat(tf, HardwarePackHasFile("pkgs", type=tarfile.DIRTYPE))
+
+    def test_adds_packages(self):
+        package = FetchedPackageFixture("foo", "1.1")
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_packages([package])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("pkgs/%s" % package.filename,
+                content=package.content.read()))
+
+    def test_adds_multiple_packages_at_once(self):
+        package1 = FetchedPackageFixture("foo", "1.1")
+        package2 = FetchedPackageFixture("bar", "1.1")
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_packages([package1, package2])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("pkgs/%s" % package1.filename,
+                content=package1.content.read()))
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("pkgs/%s" % package2.filename,
+                content=package2.content.read()))
+
+    def test_adds_multiple_in_multiple_steps(self):
+        package1 = FetchedPackageFixture("foo", "1.1")
+        package2 = FetchedPackageFixture("bar", "1.1")
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_packages([package1])
+        hwpack.add_packages([package2])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("pkgs/%s" % package1.filename,
+                content=package1.content.read()))
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("pkgs/%s" % package2.filename,
+                content=package2.content.read()))
 
     def test_creates_Packages_file(self):
         hwpack = HardwarePack(self.metadata)
