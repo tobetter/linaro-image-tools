@@ -18,13 +18,14 @@ def get_packages_file(packages):
     content = ""
     for package in packages:
         parts = []
-        parts.append(('Package', package.name))
-        parts.append(('Version', package.version))
-        parts.append(('Filename', package.filename))
-        parts.append(('Size', str(package.size)))
-        parts.append(('Architecture', package.architecture))
-        parts.append(('MD5sum', package.md5))
-        content += "\n".join([": ".join(p) for p in parts])
+        parts.append('Package: %s' % package.name)
+        parts.append('Version: %s' % package.version)
+        parts.append('Filename: %s' % package.filename)
+        parts.append('Size: %d' % package.size)
+        # TODO: architecture support
+        parts.append('Architecture: %s' % package.architecture)
+        parts.append('MD5sum: %s' % package.md5)
+        content += "\n".join(parts)
         content += "\n\n"
     return content
 
