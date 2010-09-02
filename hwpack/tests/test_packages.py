@@ -1,5 +1,6 @@
 import os
 from StringIO import StringIO
+import textwrap
 
 from testtools import TestCase
 
@@ -19,18 +20,18 @@ class GetPackagesFileTests(TestCase):
 
     def test_single_stanza(self):
         package = DummyFetchedPackage("foo", "1.1", architecture="armel")
-        self.assertEqual("""Package: foo
-Version: 1.1
-Filename: %(filename)s
-Size: %(size)d
-Architecture: armel
-MD5sum: %(md5)s
-
-""" % {
-            'filename': package.filename,
-            'size': package.size,
-            'md5': package.md5,
-            }, get_packages_file([package]))
+        self.assertEqual(textwrap.dedent("""\
+            Package: foo
+            Version: 1.1
+            Filename: %(filename)s
+            Size: %(size)d
+            Architecture: armel
+            MD5sum: %(md5)s
+            \n""" % {
+                'filename': package.filename,
+                'size': package.size,
+                'md5': package.md5,
+            }), get_packages_file([package]))
 
     def test_two_stanzas(self):
         package1 = DummyFetchedPackage("foo", "1.1")
@@ -226,26 +227,26 @@ class PackageFetcherTests(TestCaseWithFixtures):
         self.assertRaises(
             KeyError, fetcher.fetch_packages, ["foo", "nothere"])
 
-    def test_fetch_packges_fetches_no_packages(self):
+    def test_fetch_packages_fetches_no_packages(self):
         available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSourceFixture([available_package]))
         fetcher = self.get_fetcher([source])
         self.assertEqual(0, len(fetcher.fetch_packages([])))
 
-    def test_fetch_packges_fetches_single_package(self):
+    def test_fetch_packages_fetches_single_package(self):
         available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSourceFixture([available_package]))
         fetcher = self.get_fetcher([source])
         self.assertEqual(1, len(fetcher.fetch_packages(["foo"])))
 
-    def test_fetch_packges_fetches_correct_package(self):
+    def test_fetch_packages_fetches_correct_package(self):
         available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSourceFixture([available_package]))
         fetcher = self.get_fetcher([source])
         self.assertEqual(
             available_package, fetcher.fetch_packages(["foo"])[0])
 
-    def test_fetch_packges_fetches_multiple_packages(self):
+    def test_fetch_packages_fetches_multiple_packages(self):
         available_packages = [
             DummyFetchedPackage("bar", "1.0"),
             DummyFetchedPackage("foo", "1.0"),
@@ -254,7 +255,7 @@ class PackageFetcherTests(TestCaseWithFixtures):
         fetcher = self.get_fetcher([source])
         self.assertEqual(2, len(fetcher.fetch_packages(["foo", "bar"])))
 
-    def test_fetch_packges_fetches_multiple_packages_correctly(self):
+    def test_fetch_packages_fetches_multiple_packages_correctly(self):
         available_packages = [
             DummyFetchedPackage("foo", "1.0"),
             DummyFetchedPackage("bar", "1.0"),
