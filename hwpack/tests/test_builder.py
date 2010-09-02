@@ -36,17 +36,25 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         self.assertTrue(os.path.isfile("hwpack_ahwpack_1.0_armel.tar.gz"))
 
     def test_builds_correct_contents(self):
+        hwpack_name = "ahwpack"
+        hwpack_version = "1.0"
+        architecture = "armel"
+        package_name = "foo"
+        source_id = "ubuntu"
         available_package = DummyFetchedPackage(
-            "foo", "1.1", architecture="armel")
+            package_name, "1.1", architecture=architecture)
         source = self.useFixture(AptSourceFixture([available_package]))
         config = self.useFixture(ConfigFileFixture(
-            '[hwpack]\nname=ahwpack\npackages=foo\narchitectures=armel\n'
-            '\n[ubuntu]\nsources-entry=%s\n' % source.sources_entry))
-        builder = HardwarePackBuilder(config.filename, "1.0")
+            '[hwpack]\nname=%s\npackages=%s\narchitectures=%s\n'
+            '\n[%s]\nsources-entry=%s\n'
+            % (hwpack_name, package_name, architecture,
+                source_id, source.sources_entry)))
+        builder = HardwarePackBuilder(config.filename, hwpack_version)
         builder.build()
-        metadata = Metadata("ahwpack", "1.0", "armel")
+        metadata = Metadata(hwpack_name, hwpack_version, architecture)
         self.assertThat(
-            "hwpack_ahwpack_1.0_armel.tar.gz",
+            "hwpack_%s_%s_%s.tar.gz" % (hwpack_name, hwpack_version,
+                architecture),
             IsHardwarePack(
                 metadata, [available_package],
-                {"ubuntu": source.sources_entry}))
+                {source_id: source.sources_entry}))
