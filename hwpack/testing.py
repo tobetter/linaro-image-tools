@@ -9,6 +9,7 @@ import tarfile
 from testtools import TestCase
 
 from hwpack.better_tarfile import writeable_tarfile
+from hwpack.packages import FetchedPackage
 
 
 @contextmanager
@@ -45,20 +46,19 @@ def test_tarfile(contents=[], **kwargs):
         tf.close()
 
 
-class Package(object):
+class FetchedPackageFixture(FetchedPackage):
 
-    def __init__(self, name, version, architecture="all"):
+    def __init__(self, name, version):
         self.name = name
         self.version = version
-        self.architecture = architecture
 
     @property
     def filename(self):
-        return "%s_%s_%s.deb" % (self.name, self.version, self.architecture)
+        return "%s_%s_all.deb" % (self.name, self.version)
 
     @property
     def content(self):
-        return "Content of %s" % self.filename
+        return StringIO("Content of %s" % self.filename)
 
 
 class AptSource(object):
@@ -71,16 +71,16 @@ class AptSource(object):
         for package in self.packages:
             with open(
                 os.path.join(self.rootdir, package.filename), 'wb') as f:
-                f.write(package.content)
+                f.write(package.content.read())
         with open(os.path.join(self.rootdir, "Packages"), 'wb') as f:
             for package in self.packages:
                 f.write('Package: %s\n' % package.name)
                 f.write('Version: %s\n' % package.version)
                 f.write('Filename: %s\n' % package.filename)
-                f.write('Size: %d\n' % len(package.content))
-                f.write('Architecture: %s\n' % package.architecture)
+                f.write('Size: %d\n' % len(package.content.read()))
+                f.write('Architecture: all\n')
                 md5sum = hashlib.md5()
-                md5sum.update(package.content)
+                md5sum.update(package.content.read())
                 f.write('MD5sum: %s\n' % md5sum.hexdigest())
                 f.write('\n')
 
