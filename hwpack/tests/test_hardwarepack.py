@@ -74,6 +74,21 @@ class MetadataTests(TestCase):
             "SUPPORT=unsupported\n",
             str(metadata))
 
+    def test_from_config(self):
+        class Config:
+            name = "foo"
+            origin = "linaro"
+            maintainer = "someone"
+            support = "supported"
+        config = Config()
+        metadata = Metadata.from_config(config, "2.0", "i386")
+        self.assertEqual(config.name, metadata.name)
+        self.assertEqual(config.origin, metadata.origin)
+        self.assertEqual(config.maintainer, metadata.maintainer)
+        self.assertEqual(config.support, metadata.support)
+        self.assertEqual("2.0", metadata.version)
+        self.assertEqual("i386", metadata.architecture)
+
 
 class HardwarePackHasFile(TarfileHasFile):
     """A subclass of TarfileHasFile specific to hardware packs.
