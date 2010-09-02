@@ -19,6 +19,7 @@ class Config(object):
     PACKAGE_REGEX = NAME_REGEX
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
+    ARCHITECTURES_KEY = "architectures"
 
     def __init__(self, fp):
         """Create a Config.
@@ -39,6 +40,7 @@ class Config(object):
         self._validate_include_debs()
         self._validate_support()
         self._validate_packages()
+        self._validate_architectures()
         self._validate_sections()
 
     @property
@@ -116,6 +118,18 @@ class Config(object):
         return filtered_packages
 
     @property
+    def architectures(self):
+        """The architectures to build the hwpack for.
+
+        A list of str.
+        """
+        raw_architectures = self._get_option_from_main_section(
+            self.ARCHITECTURES_KEY)
+        if raw_architectures is None:
+            return []
+        return raw_architectures
+
+    @property
     def sources(self):
         sources = {}
         sections = self.parser.sections()
@@ -163,6 +177,13 @@ class Config(object):
                 raise HwpackConfigError(
                     "Invalid value in %s in the [%s] section: %s"
                     % (self.PACKAGES_KEY, self.MAIN_SECTION, package))
+
+    def _validate_architectures(self):
+        architectures = self.architectures
+        if not architectures:
+            raise HwpackConfigError(
+                "No %s in the [%s] section"
+                % (self.ARCHITECTURES_KEY, self.MAIN_SECTION))
 
     def _validate_section_sources_entry(self, section_name):
         try:
