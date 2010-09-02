@@ -127,7 +127,12 @@ class Config(object):
             self.ARCHITECTURES_KEY)
         if raw_architectures is None:
             return []
-        return raw_architectures
+        architectures = re.split("\s+", raw_architectures)
+        filtered_architectures = []
+        for architecture in architectures:
+            if architecture not in filtered_architectures:
+                filtered_architectures.append(architecture)
+        return filtered_architectures
 
     @property
     def sources(self):

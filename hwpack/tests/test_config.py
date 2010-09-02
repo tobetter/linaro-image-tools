@@ -226,3 +226,19 @@ class ConfigTests(TestCase):
             {"ubuntu": "http://example.org foo",
              "linaro": "http://example.org bar"},
             config.sources)
+
+    def test_architectures(self):
+        config = self.get_config(
+            "[hwpack]\nname=ahwpack\npackages=foo\narchitectures=foo  bar\n")
+        self.assertEqual(["foo", "bar"], config.architectures)
+
+    def test_architectures_with_newline(self):
+        config = self.get_config(
+            "[hwpack]\nname=ahwpack\npackages=foo\narchitectures=foo\n bar\n")
+        self.assertEqual(["foo", "bar"], config.architectures)
+
+    def test_architectures_filters_duplicates(self):
+        config = self.get_config(
+            "[hwpack]\nname=ahwpack\npackages=foo\n"
+            "architectures=foo bar foo\n")
+        self.assertEqual(["foo", "bar"], config.architectures)
