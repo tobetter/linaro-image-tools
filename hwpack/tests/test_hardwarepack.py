@@ -4,6 +4,7 @@ import tarfile
 from testtools import TestCase
 
 from hwpack.hardwarepack import HardwarePack, Metadata
+from hwpack.packages import get_packages_file
 from hwpack.tarfile_matchers import TarfileHasFile
 from hwpack.testing import FetchedPackageFixture
 
@@ -225,6 +226,18 @@ class HardwarePackTests(TestCase):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
         self.assertThat(tf, HardwarePackHasFile("pkgs/Packages", content=""))
+
+    def test_Packages_file_correct_contents_with_packges(self):
+        package1 = FetchedPackageFixture("foo", "1.1")
+        package2 = FetchedPackageFixture("bar", "1.1")
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_packages([package1, package2])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile(
+                "pkgs/Packages",
+                content=get_packages_file([package1, package2])))
 
     def test_creates_sources_list_dir(self):
         hwpack = HardwarePack(self.metadata)

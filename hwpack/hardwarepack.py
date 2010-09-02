@@ -1,4 +1,5 @@
 from hwpack.better_tarfile import writeable_tarfile
+from hwpack.packages import get_packages_file
 
 
 class Metadata(object):
@@ -155,7 +156,8 @@ class HardwarePack(object):
                     package.name, package.version)
             tf.create_file_from_string(
                 self.MANIFEST_FILENAME, manifest_content)
-            tf.create_file_from_string(self.PACKAGES_FILENAME, "")
+            tf.create_file_from_string(
+                self.PACKAGES_FILENAME, get_packages_file(self.packages))
             tf.create_dir(self.SOURCES_LIST_DIRNAME)
             for source_name, source_info in self.sources.items():
                 tf.create_file_from_string(
