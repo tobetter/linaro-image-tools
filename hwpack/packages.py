@@ -8,6 +8,11 @@ import apt_pkg
 
 
 class DummyProgress(object):
+    """An AcquireProgress that silences all output.
+
+    This can be used to ensure that apt produces no output
+    when fetching files.
+    """
 
     def start(self):
         pass
@@ -133,10 +138,9 @@ class PackageFetcher(object):
 
         :param packages: a list of package names to install
         :type packages: an iterable of str
-        :return: a dict containing the filenames of the .debs that were
-            fetched as the keys, and file objects with the contents of
-            those debs as the values.
-        :rtype: a dict mapping str to file-like objects.
+        :return: a list of the packages that were fetched, with relevant
+            metdata and the contents of the files available.
+        :rtype: an iterable of FetchedPackages.
         :raises KeyError: if any of the package names in the list couldn't
             be found.
         """
