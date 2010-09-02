@@ -194,6 +194,14 @@ class PackageFetcherTests(TestCaseWithFixtures):
             open(os.path.join(
                 fetcher.tempdir, "etc", "apt", "apt.conf")).read())
 
+    def test_context_manager(self):
+        # A smoketest that PackageFetcher can be used as a context
+        # manager
+        with PackageFetcher([]) as fetcher:
+            tempdir = fetcher.tempdir
+            self.assertTrue(os.path.isdir(tempdir))
+        self.assertFalse(os.path.exists(tempdir))
+
     def get_fetcher(self, sources, architecture=None):
         fetcher = PackageFetcher(
             [s.sources_entry for s in sources], architecture=architecture)
