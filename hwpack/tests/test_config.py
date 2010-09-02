@@ -186,3 +186,8 @@ class ConfigTests(TestCase):
         config = self.get_config(
             "[hwpack]\nname=ahwpack\npackages=foo\n bar\n")
         self.assertEqual(["foo", "bar"], config.packages)
+
+    def test_packages_filters_duplicates(self):
+        config = self.get_config(
+            "[hwpack]\nname=ahwpack\npackages=foo bar foo\n")
+        self.assertEqual(["foo", "bar"], config.packages)

@@ -109,7 +109,11 @@ class Config(object):
         if raw_packages is None:
             return []
         packages = re.split("\s+", raw_packages)
-        return packages
+        filtered_packages = []
+        for package in packages:
+            if package not in filtered_packages:
+                filtered_packages.append(package)
+        return filtered_packages
 
     def _validate_name(self):
         try:
