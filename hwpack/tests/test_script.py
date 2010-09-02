@@ -51,8 +51,7 @@ class ScriptTests(TestCaseWithFixtures):
     def test_errors_on_missing_configfile(self):
         stdout, stderr = self.run_script(
             ["nonexistant", "1.0"], expected_returncode=1)
-        # FIXME: make this work.
-        #self.assertEqual("No such file or directory: nonexistant", stderr)
+        self.assertEqual("No such config file: 'nonexistant'\n", stderr)
         self.assertEqual("", stdout)
 
     def test_builds_a_hwpack(self):

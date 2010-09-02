@@ -1,11 +1,17 @@
 #!/usr/bin/python
 
 from optparse import OptionParser
+import sys
 
-from hwpack.builder import HardwarePackBuilder
+from hwpack.builder import ConfigFileMissing, HardwarePackBuilder
 
 
 if __name__ == '__main__':
     parser = OptionParser()
     opts, args = parser.parse_args()
-    builder = HardwarePackBuilder(args[0], args[1]).build()
+    try:
+        builder = HardwarePackBuilder(args[0], args[1])
+    except ConfigFileMissing, e:
+        sys.stderr.write(str(e) + "\n")
+        sys.exit(1)
+    builder.build()
