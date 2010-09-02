@@ -31,6 +31,30 @@ class DummyProgress(object):
         pass
 
 
+class FetchedPackage(object):
+    """The result of fetching packages.
+
+    :ivar name: the name of the fetched package.
+    :type name: str
+    :ivar version: the version of the fetched package.
+    :type version: str
+    :ivar filename: the filename that the package has.
+    :type filename: str
+    :ivar content: a file that the content of the package can be read from.
+    :type content: a file-like object
+    """
+
+    def __init__(self, name, version, filename, content):
+        """Create a FetchedPackage.
+
+        See the instance variables for the arguments.
+        """
+        self.name = name
+        self.version = version
+        self.filename = filename
+        self.content = content
+
+
 class PackageFetcher(object):
     """A class to fetch packages from a defined list of sources."""
 
@@ -97,7 +121,7 @@ class PackageFetcher(object):
         :raises KeyError: if any of the package names in the list couldn't
             be found.
         """
-        results = {}
+        results = []
         for package in packages:
             candidate = self.cache[package].candidate
             base = os.path.basename(candidate.filename)
@@ -111,5 +135,8 @@ class PackageFetcher(object):
                 raise FetchError(
                     "The item %r could not be fetched: %s" %
                     (acqfile.destfile, acqfile.error_text))
-            results[base] = open(destfile)
+            result_package = FetchedPackage(
+                candidate.package.name, candidate.version, base,
+                open(destfile))
+            results.append(result_package)
         return results
