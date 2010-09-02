@@ -180,6 +180,39 @@ class HardwarePackTests(TestCase):
         self.assertThat(
             tf, HardwarePackHasFile("sources.list.d", type=tarfile.DIRTYPE))
 
+    def test_adds_sources_list_file(self):
+        hwpack = HardwarePack(self.metadata)
+        source = 'http://example.org/ ubuntu'
+        hwpack.add_sources({'ubuntu': source})
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf, HardwarePackHasFile("sources.list.d/ubuntu",
+                content="deb " + source + "\n"))
+
+    def test_adds_multiple_sources_list_files(self):
+        hwpack = HardwarePack(self.metadata)
+        source1 = 'http://example.org/ ubuntu main universe'
+        source2 = 'http://example.org/ linaro'
+        hwpack.add_sources({'ubuntu': source1, 'linaro': source2})
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf, HardwarePackHasFile("sources.list.d/ubuntu",
+                content="deb " + source1 + "\n"))
+        self.assertThat(
+            tf, HardwarePackHasFile("sources.list.d/linaro",
+                content="deb " + source2 + "\n"))
+
+    def test_overwrites_sources_list_file(self):
+        hwpack = HardwarePack(self.metadata)
+        old_source = 'http://example.org/ ubuntu'
+        hwpack.add_sources({'ubuntu': old_source})
+        new_source = 'http://example.org/ ubuntu main universe'
+        hwpack.add_sources({'ubuntu': new_source})
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf, HardwarePackHasFile("sources.list.d/ubuntu",
+                content="deb " + new_source + "\n"))
+
     def test_creates_sources_list_gpg_dir(self):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)

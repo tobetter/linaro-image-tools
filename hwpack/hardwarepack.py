@@ -75,6 +75,7 @@ class HardwarePack(object):
         :type metadata: Metadata
         """
         self.metadata = metadata
+        self.sources = {}
 
     def filename(self):
         """The filename that this hardware pack should have.
@@ -91,6 +92,9 @@ class HardwarePack(object):
             support_suffix = "_%s" % self.metadata.support
         return "hwpack_%s_%s%s.tar.gz" % (
             self.metadata.name, self.metadata.version, support_suffix)
+
+    def add_sources(self, sources):
+        self.sources.update(sources)
 
     def to_file(self, fileobj):
         """Write the hwpack to a file object.
@@ -112,9 +116,13 @@ class HardwarePack(object):
                 self.FORMAT_FILENAME, self.FORMAT + "\n")
             tf.create_file_from_string(
                 self.METADATA_FILENAME, str(self.metadata))
-            # TODO: include packages and sources etc.
+            # TODO: include packages and sources keys etc.
             tf.create_file_from_string(self.MANIFEST_FILENAME, "")
             tf.create_dir(self.PACKAGES_DIRNAME)
             tf.create_file_from_string(self.PACKAGES_FILENAME, "")
             tf.create_dir(self.SOURCES_LIST_DIRNAME)
+            for source_name, source_info in self.sources.items():
+                tf.create_file_from_string(
+                    self.SOURCES_LIST_DIRNAME + "/" + source_name,
+                    "deb " + source_info + "\n")
             tf.create_dir(self.SOURCES_LIST_GPG_DIRNAME)
