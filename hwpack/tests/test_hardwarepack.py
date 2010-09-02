@@ -227,7 +227,7 @@ class HardwarePackTests(TestCase):
         tf = self.get_tarfile(hwpack)
         self.assertThat(tf, HardwarePackHasFile("pkgs/Packages", content=""))
 
-    def test_Packages_file_correct_contents_with_packges(self):
+    def test_Packages_file_correct_contents_with_packages(self):
         package1 = DummyFetchedPackage("foo", "1.1")
         package2 = DummyFetchedPackage("bar", "1.1")
         hwpack = HardwarePack(self.metadata)
