@@ -1,6 +1,8 @@
 import os
 
-from hwpack.builder import HardwarePackBuilder
+from testtools import TestCase
+
+from hwpack.builder import ConfigFileMissing, HardwarePackBuilder
 from hwpack.config import HwpackConfigError
 from hwpack.hardwarepack import Metadata
 from hwpack.testing import (
@@ -13,11 +15,23 @@ from hwpack.testing import (
     )
 
 
+class ConfigFileMissingTests(TestCase):
+
+    def test_str(self):
+        exc = ConfigFileMissing("path")
+        self.assertEqual("No such config file: 'path'", str(exc))
+
+
 class HardwarePackBuilderTests(TestCaseWithFixtures):
 
     def setUp(self):
         super(HardwarePackBuilderTests, self).setUp()
         self.useFixture(ChdirToTempdirFixture())
+
+    def test_raises_on_missing_configuration(self):
+        e = self.assertRaises(
+            ConfigFileMissing, HardwarePackBuilder, "nonexistant", "1.0")
+        self.assertEqual("nonexistant", e.filename)
 
     def test_validates_configuration(self):
         config = self.useFixture(ConfigFileFixture(''))

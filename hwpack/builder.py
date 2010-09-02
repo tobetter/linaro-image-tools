@@ -1,13 +1,28 @@
+import errno
+
 from hwpack.config import Config
 from hwpack.hardwarepack import HardwarePack, Metadata
 from hwpack.packages import PackageFetcher
 
 
+class ConfigFileMissing(Exception):
+
+    def __init__(self, filename):
+        self.filename = filename
+        super(ConfigFileMissing, self).__init__(
+            "No such config file: '%s'" % self.filename)
+
+
 class HardwarePackBuilder(object):
 
     def __init__(self, config_path, version):
-        with open(config_path) as fp:
-            self.config = Config(fp)
+        try:
+            with open(config_path) as fp:
+                self.config = Config(fp)
+        except IOError, e:
+            if e.errno == errno.ENOENT:
+                raise ConfigFileMissing(config_path)
+            raise
         self.config.validate()
         self.version = version
 
