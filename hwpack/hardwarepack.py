@@ -39,6 +39,13 @@ class Metadata(object):
         self.support = support
         self.architecture = architecture
 
+    @classmethod
+    def from_config(cls, config, architecture):
+        # TODO: version specification
+        return cls(
+            config.name, "dummy", architecture, origin=config.origin,
+            maintainer=config.maintainer, support=config.support)
+
     def __str__(self):
         """Get the contents of the metadata file."""
         metadata = "NAME=%s\n" % self.name

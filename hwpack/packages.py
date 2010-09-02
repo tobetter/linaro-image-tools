@@ -147,6 +147,8 @@ class PackageFetcher(object):
         self.cache.update()
         self.cache.open()
 
+    __enter__ = prepare
+
     def cleanup(self):
         """Cleanup any remaining artefacts.
 
@@ -155,6 +157,10 @@ class PackageFetcher(object):
         """
         if self.tempdir is not None and os.path.exists(self.tempdir):
             shutil.rmtree(self.tempdir)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.cleanup()
+        return False
 
     def fetch_packages(self, packages):
         """Fetch the files for the given list of package names.

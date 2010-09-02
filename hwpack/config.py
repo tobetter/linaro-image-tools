@@ -115,6 +115,18 @@ class Config(object):
                 filtered_packages.append(package)
         return filtered_packages
 
+    @property
+    def sources(self):
+        sources = {}
+        sections = self.parser.sections()
+        found = False
+        for section_name in sections:
+            if section_name == self.MAIN_SECTION:
+                continue
+            sources[section_name] = self.parser.get(
+                section_name, self.SOURCES_ENTRY_KEY)
+        return sources
+
     def _validate_name(self):
         try:
             name = self.name

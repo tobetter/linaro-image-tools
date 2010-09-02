@@ -191,3 +191,19 @@ class ConfigTests(TestCase):
         config = self.get_config(
             "[hwpack]\nname=ahwpack\npackages=foo bar foo\n")
         self.assertEqual(["foo", "bar"], config.packages)
+
+    def test_sources_single(self):
+        config = self.get_config(
+            self.valid_start
+            + "\n[ubuntu]\nsources-entry = http://example.org foo\n")
+        self.assertEqual({"ubuntu": "http://example.org foo"}, config.sources)
+
+    def test_sources_multiple(self):
+        config = self.get_config(
+            self.valid_start
+            + "\n[ubuntu]\nsources-entry = http://example.org foo\n"
+            + "\n[linaro]\nsources-entry = http://example.org bar\n")
+        self.assertEqual(
+            {"ubuntu": "http://example.org foo",
+             "linaro": "http://example.org bar"},
+            config.sources)
