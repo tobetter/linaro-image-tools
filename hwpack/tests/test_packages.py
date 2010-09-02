@@ -279,7 +279,7 @@ class PackageFetcherTests(TestCaseWithFixtures):
     def test_fetch_package_records_correct_architecture(self):
         available_package = DummyFetchedPackage(
             "foo", "1.0", architecture="nonexistant")
-        source = self.useFixture(AptSource([available_package]))
+        source = self.useFixture(AptSourceFixture([available_package]))
         fetcher = self.get_fetcher([source], architecture="nonexistant")
         self.assertEqual(
             "nonexistant", fetcher.fetch_packages(["foo"])[0].architecture)
@@ -290,7 +290,7 @@ class PackageFetcherTests(TestCaseWithFixtures):
         unwanted_package = DummyFetchedPackage(
             "foo", "1.1", architecture="arch2")
         source = self.useFixture(
-            AptSource([wanted_package, unwanted_package]))
+            AptSourceFixture([wanted_package, unwanted_package]))
         fetcher = self.get_fetcher([source], architecture="arch1")
         self.assertEqual(
             wanted_package, fetcher.fetch_packages(["foo"])[0])
