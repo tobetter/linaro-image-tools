@@ -62,6 +62,49 @@ class MetadataTests(TestCase):
             "NAME=ahwpack\nVERSION=4\nSUPPORT=unsupported\n", str(metadata))
 
 
+class HardwarePackHasFile(TarfileHasFile):
+    """A subclass of TarfileHasFile specific to hardware packs.
+
+    We default to a set of attributes expected for files in a hardware
+    pack.
+    """
+
+    def __init__(self, path, **kwargs):
+        """Create a HardwarePackHasFile matcher.
+
+        The kwargs are the keyword arguments taken by TarfileHasFile.
+        If they are not given then defaults will be checked:
+            - The type should be a regular file
+            - If the content is given then the size will be checked
+                to ensure it indicates the length of the content
+                correctly.
+            - the mode is appropriate for the type. If the type is
+                regular file this is 0644, otherwise if it is
+                a directory then it is 0755.
+            - the linkname should be the empty string.
+            - the uid and gid should be 1000
+            - the uname and gname should be "user" and "group"
+                respectively.
+
+        :param path: the path that should be present.
+        :type path: str
+        """
+        kwargs.setdefault("type", tarfile.REGTYPE)
+        if "content" in kwargs:
+            kwargs.setdefault("size", len(kwargs["content"]))
+        if kwargs["type"] == tarfile.DIRTYPE:
+            kwargs.setdefault("mode", 0755)
+        else:
+            kwargs.setdefault("mode", 0644)
+        kwargs.setdefault("linkname", "")
+        kwargs.setdefault("uid", 1000)
+        kwargs.setdefault("gid", 1000)
+        kwargs.setdefault("uname", "user")
+        kwargs.setdefault("gname", "group")
+        # TODO: mtime checking
+        super(HardwarePackHasFile, self).__init__(path, **kwargs)
+
+
 class HardwarePackTests(TestCase):
 
     def setUp(self):
@@ -84,32 +127,18 @@ class HardwarePackTests(TestCase):
 
     def get_tarfile(self, hwpack):
         fileobj = StringIO()
-        hwpack.to_f(fileobj)
+        hwpack.to_file(fileobj)
         fileobj.seek(0)
         tf = tarfile.open(mode="r:gz", fileobj=fileobj)
         self.addCleanup(tf.close)
         return tf
 
-    def assertHasPath(self, tarball, path, **kwargs):
-        kwargs.setdefault("type", tarfile.REGTYPE)
-        if "content" in kwargs:
-            kwargs.setdefault("size", len(kwargs["content"]))
-        if kwargs["type"] == tarfile.DIRTYPE:
-            kwargs.setdefault("mode", 0755)
-        else:
-            kwargs.setdefault("mode", 0644)
-        kwargs.setdefault("linkname", "")
-        kwargs.setdefault("uid", 1000)
-        kwargs.setdefault("gid", 1000)
-        kwargs.setdefault("uname", "user")
-        kwargs.setdefault("gname", "group")
-        # TODO: mtime checking
-        self.assertThat(tarball, TarfileHasFile(path, **kwargs))
-
     def test_creates_FORMAT_file(self):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
-        self.assertHasPath(tf, "FORMAT", content=hwpack.FORMAT+"\n")
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("FORMAT", content=hwpack.FORMAT+"\n"))
 
     def test_creates_metadata_file(self):
         metadata = Metadata(
@@ -117,39 +146,43 @@ class HardwarePackTests(TestCase):
             maintainer="Some Maintainer", support="unsupported")
         hwpack = HardwarePack(metadata)
         tf = self.get_tarfile(hwpack)
-        self.assertHasPath(tf, "metadata", content=str(metadata))
+        self.assertThat(
+            tf, HardwarePackHasFile("metadata", content=str(metadata)))
 
     def test_creates_manifest_file(self):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
-        self.assertHasPath(tf, "manifest")
+        self.assertThat(tf, HardwarePackHasFile("manifest"))
 
     def test_manifest_file_empty_with_no_packages(self):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
-        self.assertHasPath(tf, "manifest", content="")
+        self.assertThat(tf, HardwarePackHasFile("manifest", content=""))
 
     def test_creates_pkgs_dir(self):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
-        self.assertHasPath(tf, "pkgs", type=tarfile.DIRTYPE)
+        self.assertThat(tf, HardwarePackHasFile("pkgs", type=tarfile.DIRTYPE))
 
     def test_creates_Packages_file(self):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
-        self.assertHasPath(tf, "pkgs/Packages")
+        self.assertThat(tf, HardwarePackHasFile("pkgs/Packages"))
 
     def test_Packages_file_empty_with_no_packages(self):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
-        self.assertHasPath(tf, "pkgs/Packages", content="")
+        self.assertThat(tf, HardwarePackHasFile("pkgs/Packages", content=""))
 
     def test_creates_sources_list_dir(self):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
-        self.assertHasPath(tf, "sources.list.d", type=tarfile.DIRTYPE)
+        self.assertThat(
+            tf, HardwarePackHasFile("sources.list.d", type=tarfile.DIRTYPE))
 
     def test_creates_sources_list_gpg_dir(self):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
-        self.assertHasPath(tf, "sources.list.d.gpg", type=tarfile.DIRTYPE)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("sources.list.d.gpg", type=tarfile.DIRTYPE))

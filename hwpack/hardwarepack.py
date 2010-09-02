@@ -92,7 +92,7 @@ class HardwarePack(object):
         return "hwpack_%s_%s%s.tar.gz" % (
             self.metadata.name, self.metadata.version, support_suffix)
 
-    def to_f(self, fileobj):
+    def to_file(self, fileobj):
         """Write the hwpack to a file object.
 
         The full hardware pack will be written to the file object in
@@ -112,6 +112,7 @@ class HardwarePack(object):
                 self.FORMAT_FILENAME, self.FORMAT + "\n")
             tf.create_file_from_string(
                 self.METADATA_FILENAME, str(self.metadata))
+            # TODO: include packages and sources etc.
             tf.create_file_from_string(self.MANIFEST_FILENAME, "")
             tf.create_dir(self.PACKAGES_DIRNAME)
             tf.create_file_from_string(self.PACKAGES_FILENAME, "")
