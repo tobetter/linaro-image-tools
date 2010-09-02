@@ -1,5 +1,6 @@
 import os
 from StringIO import StringIO
+import textwrap
 
 from testtools import TestCase
 
@@ -19,18 +20,18 @@ class GetPackagesFileTests(TestCase):
 
     def test_single_stanza(self):
         package = DummyFetchedPackage("foo", "1.1")
-        self.assertEqual("""Package: foo
-Version: 1.1
-Filename: %(filename)s
-Size: %(size)d
-Architecture: all
-MD5sum: %(md5)s
-
-""" % {
-            'filename': package.filename,
-            'size': package.size,
-            'md5': package.md5,
-            }, get_packages_file([package]))
+        self.assertEqual(textwrap.dedent("""\
+            Package: foo
+            Version: 1.1
+            Filename: %(filename)s
+            Size: %(size)d
+            Architecture: all
+            MD5sum: %(md5)s
+            \n""" % {
+                'filename': package.filename,
+                'size': package.size,
+                'md5': package.md5,
+            }), get_packages_file([package]))
 
     def test_two_stanzas(self):
         package1 = DummyFetchedPackage("foo", "1.1")
