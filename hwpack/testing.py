@@ -46,8 +46,28 @@ def test_tarfile(contents=[], **kwargs):
 
 
 class Package(object):
+    """A simple holder of information about a package.
+
+    :ivar name: the name of the package.
+    :type name: str
+    :ivar version: the version of the package.
+    :type version: str
+    :ivar architecture: the architecture of the package, may be 'all'.
+    :type architecture: str
+    :ivar filename: the filename of the package.
+    :type filename: str
+    :ivar content: the conten of the package
+    :type content: str
+    """
 
     def __init__(self, name, version, architecture="all"):
+        """Create a Package.
+
+        :param name: the name of the package.
+        :type name: str
+        :param version: the version of the package.
+        :type version: str
+        """
         self.name = name
         self.version = version
         self.architecture = architecture
