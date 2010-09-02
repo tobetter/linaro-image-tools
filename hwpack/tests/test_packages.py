@@ -10,7 +10,7 @@ from hwpack.packages import (
     )
 from hwpack.testing import (
     AptSource,
-    FetchedPackageFixture,
+    DummyFetchedPackage,
     TestCaseWithFixtures,
     )
 
@@ -18,7 +18,7 @@ from hwpack.testing import (
 class GetPackagesFileTests(TestCase):
 
     def test_single_stanza(self):
-        package = FetchedPackageFixture("foo", "1.1")
+        package = DummyFetchedPackage("foo", "1.1")
         self.assertEqual("""Package: foo
 Version: 1.1
 Filename: %(filename)s
@@ -33,8 +33,8 @@ MD5sum: %(md5)s
             }, get_packages_file([package]))
 
     def test_two_stanzas(self):
-        package1 = FetchedPackageFixture("foo", "1.1")
-        package2 = FetchedPackageFixture("bar", "1.2")
+        package1 = DummyFetchedPackage("foo", "1.1")
+        package2 = DummyFetchedPackage("bar", "1.2")
         self.assertEqual(
             get_packages_file([package1]) + get_packages_file([package2]),
             get_packages_file([package1, package2]))
@@ -187,32 +187,32 @@ class PackageFetcherTests(TestCaseWithFixtures):
         self.assertRaises(KeyError, fetcher.fetch_packages, ["nothere"])
 
     def test_fetch_packages_not_found_because_not_in_sources(self):
-        available_package = FetchedPackageFixture("foo", "1.0")
+        available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSource([available_package]))
         fetcher = self.get_fetcher([source])
         self.assertRaises(KeyError, fetcher.fetch_packages, ["nothere"])
 
     def test_fetch_packages_not_found_one_of_two_missing(self):
-        available_package = FetchedPackageFixture("foo", "1.0")
+        available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSource([available_package]))
         fetcher = self.get_fetcher([source])
         self.assertRaises(
             KeyError, fetcher.fetch_packages, ["foo", "nothere"])
 
     def test_fetch_packges_fetches_no_packages(self):
-        available_package = FetchedPackageFixture("foo", "1.0")
+        available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSource([available_package]))
         fetcher = self.get_fetcher([source])
         self.assertEqual(0, len(fetcher.fetch_packages([])))
 
     def test_fetch_packges_fetches_single_package(self):
-        available_package = FetchedPackageFixture("foo", "1.0")
+        available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSource([available_package]))
         fetcher = self.get_fetcher([source])
         self.assertEqual(1, len(fetcher.fetch_packages(["foo"])))
 
     def test_fetch_packges_fetches_correct_packge(self):
-        available_package = FetchedPackageFixture("foo", "1.0")
+        available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSource([available_package]))
         fetcher = self.get_fetcher([source])
         self.assertEqual(
@@ -220,8 +220,8 @@ class PackageFetcherTests(TestCaseWithFixtures):
 
     def test_fetch_packges_fetches_multiple_packages(self):
         available_packages = [
-            FetchedPackageFixture("bar", "1.0"),
-            FetchedPackageFixture("foo", "1.0"),
+            DummyFetchedPackage("bar", "1.0"),
+            DummyFetchedPackage("foo", "1.0"),
         ]
         source = self.useFixture(AptSource(available_packages))
         fetcher = self.get_fetcher([source])
@@ -229,8 +229,8 @@ class PackageFetcherTests(TestCaseWithFixtures):
 
     def test_fetch_packges_fetches_multiple_packages_correctly(self):
         available_packages = [
-            FetchedPackageFixture("foo", "1.0"),
-            FetchedPackageFixture("bar", "1.0"),
+            DummyFetchedPackage("foo", "1.0"),
+            DummyFetchedPackage("bar", "1.0"),
         ]
         source = self.useFixture(AptSource(available_packages))
         fetcher = self.get_fetcher([source])
@@ -240,8 +240,8 @@ class PackageFetcherTests(TestCaseWithFixtures):
 
     def test_fetch_packages_fetches_newest(self):
         available_packages = [
-            FetchedPackageFixture("bar", "1.0"),
-            FetchedPackageFixture("bar", "1.1"),
+            DummyFetchedPackage("bar", "1.0"),
+            DummyFetchedPackage("bar", "1.1"),
         ]
         source = self.useFixture(AptSource(available_packages))
         fetcher = self.get_fetcher([source])
@@ -249,8 +249,8 @@ class PackageFetcherTests(TestCaseWithFixtures):
         self.assertEqual(available_packages[1], fetched[0])
 
     def test_fetch_packages_fetches_newest_from_multiple_sources(self):
-        old_source_packages = [FetchedPackageFixture("bar", "1.0")]
-        new_source_packages = [FetchedPackageFixture("bar", "1.1")]
+        old_source_packages = [DummyFetchedPackage("bar", "1.0")]
+        new_source_packages = [DummyFetchedPackage("bar", "1.1")]
         old_source = self.useFixture(AptSource(old_source_packages))
         new_source = self.useFixture(AptSource(new_source_packages))
         fetcher = self.get_fetcher([old_source, new_source])

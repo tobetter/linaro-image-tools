@@ -6,7 +6,7 @@ from testtools import TestCase
 from hwpack.hardwarepack import HardwarePack, Metadata
 from hwpack.packages import get_packages_file
 from hwpack.tarfile_matchers import TarfileHasFile
-from hwpack.testing import FetchedPackageFixture
+from hwpack.testing import DummyFetchedPackage
 
 
 class MetadataTests(TestCase):
@@ -162,8 +162,8 @@ class HardwarePackTests(TestCase):
         self.assertThat(tf, HardwarePackHasFile("manifest", content=""))
 
     def test_manifest_contains_package_info(self):
-        package1 = FetchedPackageFixture("foo", "1.1")
-        package2 = FetchedPackageFixture("bar", "1.2")
+        package1 = DummyFetchedPackage("foo", "1.1")
+        package2 = DummyFetchedPackage("bar", "1.2")
         hwpack = HardwarePack(self.metadata)
         hwpack.add_packages([package1, package2])
         tf = self.get_tarfile(hwpack)
@@ -177,7 +177,7 @@ class HardwarePackTests(TestCase):
         self.assertThat(tf, HardwarePackHasFile("pkgs", type=tarfile.DIRTYPE))
 
     def test_adds_packages(self):
-        package = FetchedPackageFixture("foo", "1.1")
+        package = DummyFetchedPackage("foo", "1.1")
         hwpack = HardwarePack(self.metadata)
         hwpack.add_packages([package])
         tf = self.get_tarfile(hwpack)
@@ -187,8 +187,8 @@ class HardwarePackTests(TestCase):
                 content=package.content.read()))
 
     def test_adds_multiple_packages_at_once(self):
-        package1 = FetchedPackageFixture("foo", "1.1")
-        package2 = FetchedPackageFixture("bar", "1.1")
+        package1 = DummyFetchedPackage("foo", "1.1")
+        package2 = DummyFetchedPackage("bar", "1.1")
         hwpack = HardwarePack(self.metadata)
         hwpack.add_packages([package1, package2])
         tf = self.get_tarfile(hwpack)
@@ -202,8 +202,8 @@ class HardwarePackTests(TestCase):
                 content=package2.content.read()))
 
     def test_adds_multiple_in_multiple_steps(self):
-        package1 = FetchedPackageFixture("foo", "1.1")
-        package2 = FetchedPackageFixture("bar", "1.1")
+        package1 = DummyFetchedPackage("foo", "1.1")
+        package2 = DummyFetchedPackage("bar", "1.1")
         hwpack = HardwarePack(self.metadata)
         hwpack.add_packages([package1])
         hwpack.add_packages([package2])
@@ -228,8 +228,8 @@ class HardwarePackTests(TestCase):
         self.assertThat(tf, HardwarePackHasFile("pkgs/Packages", content=""))
 
     def test_Packages_file_correct_contents_with_packges(self):
-        package1 = FetchedPackageFixture("foo", "1.1")
-        package2 = FetchedPackageFixture("bar", "1.1")
+        package1 = DummyFetchedPackage("foo", "1.1")
+        package2 = DummyFetchedPackage("bar", "1.1")
         hwpack = HardwarePack(self.metadata)
         hwpack.add_packages([package1, package2])
         tf = self.get_tarfile(hwpack)

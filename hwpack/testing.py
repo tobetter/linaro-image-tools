@@ -46,7 +46,7 @@ def test_tarfile(contents=[], **kwargs):
         tf.close()
 
 
-class FetchedPackageFixture(FetchedPackage):
+class DummyFetchedPackage(FetchedPackage):
 
     def __init__(self, name, version):
         self.name = name
