@@ -15,8 +15,7 @@ def get_packages_file(packages):
         parts.append(('Version', package.version))
         parts.append(('Filename', package.filename))
         parts.append(('Size', str(package.size)))
-        # TODO: architecture support
-        parts.append(('Architecture', 'all'))
+        parts.append(('Architecture', package.architecture))
         parts.append(('MD5sum', package.md5))
         content += "\n".join([": ".join(p) for p in parts])
         content += "\n\n"

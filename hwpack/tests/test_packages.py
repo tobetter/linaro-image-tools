@@ -18,12 +18,12 @@ from hwpack.testing import (
 class GetPackagesFileTests(TestCase):
 
     def test_single_stanza(self):
-        package = DummyFetchedPackage("foo", "1.1")
+        package = DummyFetchedPackage("foo", "1.1", architecture="armel")
         self.assertEqual("""Package: foo
 Version: 1.1
 Filename: %(filename)s
 Size: %(size)d
-Architecture: all
+Architecture: armel
 MD5sum: %(md5)s
 
 """ % {
