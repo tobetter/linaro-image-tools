@@ -1,7 +1,86 @@
 import os
+from StringIO import StringIO
 
-from hwpack.packages import PackageFetcher
-from hwpack.testing import AptSource, Package, TestCaseWithFixtures
+from testtools import TestCase
+
+from hwpack.packages import (
+    FetchedPackage,
+    PackageFetcher,
+    )
+from hwpack.testing import (
+    AptSource,
+    DummyFetchedPackage,
+    TestCaseWithFixtures,
+    )
+
+
+class FetchedPackageTests(TestCase):
+
+    def test_attributes(self):
+        package = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        self.assertEqual("foo", package.name)
+        self.assertEqual("1.1", package.version)
+        self.assertEqual("foo_1.1.deb", package.filename)
+        self.assertEqual("xxxx", package.content.read())
+        self.assertEqual(4, package.size)
+        self.assertEqual("aaaa", package.md5)
+
+    def test_equal(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        self.assertEqual(package1, package2)
+
+    def test_not_equal_different_name(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "bar", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_version(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.2", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_filename(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.1", "afoo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_content(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("yyyy"), 4, "aaaa")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_size(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 5, "aaaa")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_md5(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "bbbb")
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_hash_equal(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        self.assertEqual(hash(package1), hash(package2))
 
 
 class PackageFetcherTests(TestCaseWithFixtures):
@@ -82,104 +161,72 @@ class PackageFetcherTests(TestCaseWithFixtures):
         self.assertRaises(KeyError, fetcher.fetch_packages, ["nothere"])
 
     def test_fetch_packages_not_found_because_not_in_sources(self):
-        available_package = Package("foo", "1.0")
+        available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSource([available_package]))
         fetcher = self.get_fetcher([source])
         self.assertRaises(KeyError, fetcher.fetch_packages, ["nothere"])
 
     def test_fetch_packages_not_found_one_of_two_missing(self):
-        available_package = Package("foo", "1.0")
+        available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSource([available_package]))
         fetcher = self.get_fetcher([source])
         self.assertRaises(
             KeyError, fetcher.fetch_packages, ["foo", "nothere"])
 
     def test_fetch_packges_fetches_no_packages(self):
-        available_package = Package("foo", "1.0")
+        available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSource([available_package]))
         fetcher = self.get_fetcher([source])
         self.assertEqual(0, len(fetcher.fetch_packages([])))
 
     def test_fetch_packges_fetches_single_package(self):
-        available_package = Package("foo", "1.0")
+        available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSource([available_package]))
         fetcher = self.get_fetcher([source])
         self.assertEqual(1, len(fetcher.fetch_packages(["foo"])))
 
-    def test_fetch_packges_fetches_correct_filename(self):
-        available_package = Package("foo", "1.0")
+    def test_fetch_packges_fetches_correct_packge(self):
+        available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSource([available_package]))
         fetcher = self.get_fetcher([source])
         self.assertEqual(
-            available_package.filename,
-            fetcher.fetch_packages(["foo"])[0].filename)
-
-    def test_fetch_packges_fetches_correct_contents(self):
-        available_package = Package("foo", "1.0")
-        source = self.useFixture(AptSource([available_package]))
-        fetcher = self.get_fetcher([source])
-        self.assertEqual(
-            available_package.content,
-            fetcher.fetch_packages(["foo"])[0].content.read())
-
-    def test_fetch_packges_fetches_correct_name(self):
-        available_package = Package("foo", "1.0")
-        source = self.useFixture(AptSource([available_package]))
-        fetcher = self.get_fetcher([source])
-        self.assertEqual(
-            available_package.name,
-            fetcher.fetch_packages(["foo"])[0].name)
-
-    def test_fetch_packges_fetches_correct_version(self):
-        available_package = Package("foo", "1.0")
-        source = self.useFixture(AptSource([available_package]))
-        fetcher = self.get_fetcher([source])
-        self.assertEqual(
-            available_package.version,
-            fetcher.fetch_packages(["foo"])[0].version)
+            available_package, fetcher.fetch_packages(["foo"])[0])
 
     def test_fetch_packges_fetches_multiple_packages(self):
-        available_packages = [Package("bar", "1.0"), Package("foo", "1.0")]
+        available_packages = [
+            DummyFetchedPackage("bar", "1.0"),
+            DummyFetchedPackage("foo", "1.0"),
+        ]
         source = self.useFixture(AptSource(available_packages))
         fetcher = self.get_fetcher([source])
         self.assertEqual(2, len(fetcher.fetch_packages(["foo", "bar"])))
 
     def test_fetch_packges_fetches_multiple_packages_correctly(self):
-        available_packages = [Package("foo", "1.0"), Package("bar", "1.0")]
+        available_packages = [
+            DummyFetchedPackage("foo", "1.0"),
+            DummyFetchedPackage("bar", "1.0"),
+        ]
         source = self.useFixture(AptSource(available_packages))
         fetcher = self.get_fetcher([source])
         fetched = fetcher.fetch_packages(["foo", "bar"])
-        self.assertEqual(available_packages[0].name, fetched[0].name)
-        self.assertEqual(available_packages[0].version, fetched[0].version)
-        self.assertEqual(available_packages[0].filename, fetched[0].filename)
-        self.assertEqual(
-            available_packages[0].content, fetched[0].content.read())
-        self.assertEqual(available_packages[1].name, fetched[1].name)
-        self.assertEqual(available_packages[1].version, fetched[1].version)
-        self.assertEqual(available_packages[1].filename, fetched[1].filename)
-        self.assertEqual(
-            available_packages[1].content, fetched[1].content.read())
+        self.assertEqual(available_packages[0], fetched[0])
+        self.assertEqual(available_packages[1], fetched[1])
 
     def test_fetch_packages_fetches_newest(self):
-        available_packages = [Package("bar", "1.0"), Package("bar", "1.1")]
+        available_packages = [
+            DummyFetchedPackage("bar", "1.0"),
+            DummyFetchedPackage("bar", "1.1"),
+        ]
         source = self.useFixture(AptSource(available_packages))
         fetcher = self.get_fetcher([source])
         fetched = fetcher.fetch_packages(["bar"])
-        self.assertEqual(available_packages[1].name, fetched[0].name)
-        self.assertEqual(available_packages[1].version, fetched[0].version)
-        self.assertEqual(available_packages[1].filename, fetched[0].filename)
-        self.assertEqual(
-            available_packages[1].content, fetched[0].content.read())
+        self.assertEqual(available_packages[1], fetched[0])
 
     def test_fetch_packages_fetches_newest_from_multiple_sources(self):
-        old_source_packages = [Package("bar", "1.0")]
-        new_source_packages = [Package("bar", "1.1")]
+        old_source_packages = [DummyFetchedPackage("bar", "1.0")]
+        new_source_packages = [DummyFetchedPackage("bar", "1.1")]
         old_source = self.useFixture(AptSource(old_source_packages))
         new_source = self.useFixture(AptSource(new_source_packages))
         fetcher = self.get_fetcher([old_source, new_source])
         fetched = fetcher.fetch_packages(["bar"])
-        self.assertEqual(new_source_packages[0].name, fetched[0].name)
-        self.assertEqual(new_source_packages[0].version, fetched[0].version)
-        self.assertEqual(new_source_packages[0].filename, fetched[0].filename)
-        self.assertEqual(
-            new_source_packages[0].content, fetched[0].content.read())
+        self.assertEqual(new_source_packages[0], fetched[0])

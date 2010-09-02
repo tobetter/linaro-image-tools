@@ -9,6 +9,7 @@ import tarfile
 from testtools import TestCase
 
 from hwpack.better_tarfile import writeable_tarfile
+from hwpack.packages import FetchedPackage
 
 
 @contextmanager
@@ -45,8 +46,8 @@ def test_tarfile(contents=[], **kwargs):
         tf.close()
 
 
-class Package(object):
-    """A simple holder of information about a package.
+class DummyFetchedPackage(FetchedPackage):
+    """A FetchedPackage with dummy information.
 
     :ivar name: the name of the package.
     :type name: str
@@ -60,8 +61,8 @@ class Package(object):
     :type content: str
     """
 
-    def __init__(self, name, version, architecture="all"):
-        """Create a Package.
+    def __init__(self, name, version):
+        """Create a DummyFetchedPackage.
 
         :param name: the name of the package.
         :type name: str
@@ -70,15 +71,24 @@ class Package(object):
         """
         self.name = name
         self.version = version
-        self.architecture = architecture
 
     @property
     def filename(self):
-        return "%s_%s_%s.deb" % (self.name, self.version, self.architecture)
+        return "%s_%s_all.deb" % (self.name, self.version)
 
     @property
     def content(self):
-        return "Content of %s" % self.filename
+        return StringIO("Content of %s" % self.filename)
+
+    @property
+    def size(self):
+        return len(self.content.read())
+
+    @property
+    def md5(self):
+        md5sum = hashlib.md5()
+        md5sum.update(self.content.read())
+        return md5sum.hexdigest()
 
 
 class AptSource(object):
@@ -91,17 +101,15 @@ class AptSource(object):
         for package in self.packages:
             with open(
                 os.path.join(self.rootdir, package.filename), 'wb') as f:
-                f.write(package.content)
+                f.write(package.content.read())
         with open(os.path.join(self.rootdir, "Packages"), 'wb') as f:
             for package in self.packages:
                 f.write('Package: %s\n' % package.name)
                 f.write('Version: %s\n' % package.version)
                 f.write('Filename: %s\n' % package.filename)
-                f.write('Size: %d\n' % len(package.content))
-                f.write('Architecture: %s\n' % package.architecture)
-                md5sum = hashlib.md5()
-                md5sum.update(package.content)
-                f.write('MD5sum: %s\n' % md5sum.hexdigest())
+                f.write('Size: %d\n' % package.size)
+                f.write('Architecture: all\n')
+                f.write('MD5sum: %s\n' % package.md5)
                 f.write('\n')
 
     def tearDown(self):
