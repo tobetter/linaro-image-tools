@@ -12,56 +12,67 @@ from hwpack.testing import DummyFetchedPackage
 class MetadataTests(TestCase):
 
     def test_name(self):
-        metadata = Metadata("ahwpack", "3")
+        metadata = Metadata("ahwpack", "3", "armel")
         self.assertEqual("ahwpack", metadata.name)
 
     def test_version(self):
-        metadata = Metadata("ahwpack", "3")
+        metadata = Metadata("ahwpack", "3", "armel")
         self.assertEqual("3", metadata.version)
 
+    def test_architecture(self):
+        metadata = Metadata("ahwpack", "3", "armel")
+        self.assertEqual("armel", metadata.architecture)
+
     def test_default_origin_is_None(self):
-        metadata = Metadata("ahwpack", "4")
+        metadata = Metadata("ahwpack", "4", "armel")
         self.assertEqual(None, metadata.origin)
 
     def test_origin(self):
-        metadata = Metadata("ahwpack", "4", origin="linaro")
+        metadata = Metadata("ahwpack", "4", "armel", origin="linaro")
         self.assertEqual("linaro", metadata.origin)
 
     def test_default_maintainer_is_None(self):
-        metadata = Metadata("ahwpack", "4")
+        metadata = Metadata("ahwpack", "4", "armel")
         self.assertEqual(None, metadata.maintainer)
 
     def test_maintainer(self):
-        metadata = Metadata("ahwpack", "4", maintainer="Some maintainer")
+        metadata = Metadata(
+            "ahwpack", "4", "armel", maintainer="Some maintainer")
         self.assertEqual("Some maintainer", metadata.maintainer)
 
     def test_default_support_is_None(self):
-        metadata = Metadata("ahwpack", "4")
+        metadata = Metadata("ahwpack", "4", "armel")
         self.assertEqual(None, metadata.support)
 
     def test_support(self):
-        metadata = Metadata("ahwpack", "4", support="supported")
+        metadata = Metadata("ahwpack", "4", "armel", support="supported")
         self.assertEqual("supported", metadata.support)
 
     def test_str(self):
-        metadata = Metadata("ahwpack", "4")
-        self.assertEqual("NAME=ahwpack\nVERSION=4\n", str(metadata))
+        metadata = Metadata("ahwpack", "4", "armel")
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n", str(metadata))
 
     def test_str_with_origin(self):
-        metadata = Metadata("ahwpack", "4", origin="linaro")
+        metadata = Metadata("ahwpack", "4", "armel", origin="linaro")
         self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nORIGIN=linaro\n", str(metadata))
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\nORIGIN=linaro\n",
+            str(metadata))
 
     def test_str_with_maintainer(self):
-        metadata = Metadata("ahwpack", "4", maintainer="Some Maintainer")
+        metadata = Metadata(
+            "ahwpack", "4", "armel", maintainer="Some Maintainer")
         self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nMAINTAINER=Some Maintainer\n",
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "MAINTAINER=Some Maintainer\n",
             str(metadata))
 
     def test_str_with_support(self):
-        metadata = Metadata("ahwpack", "4", support="unsupported")
+        metadata = Metadata("ahwpack", "4", "armel", support="unsupported")
         self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nSUPPORT=unsupported\n", str(metadata))
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "SUPPORT=unsupported\n",
+            str(metadata))
 
 
 class HardwarePackHasFile(TarfileHasFile):
@@ -111,7 +122,7 @@ class HardwarePackTests(TestCase):
 
     def setUp(self):
         super(HardwarePackTests, self).setUp()
-        self.metadata = Metadata("ahwpack", 4)
+        self.metadata = Metadata("ahwpack", 4, "armel")
 
     def test_format_is_1_0(self):
         hwpack = HardwarePack(self.metadata)
@@ -122,7 +133,7 @@ class HardwarePackTests(TestCase):
         self.assertEqual("hwpack_ahwpack_4.tar.gz", hwpack.filename())
 
     def test_filename_with_support(self):
-        metadata = Metadata("ahwpack", "4", support="supported")
+        metadata = Metadata("ahwpack", "4", "armel", support="supported")
         hwpack = HardwarePack(metadata)
         self.assertEqual(
             "hwpack_ahwpack_4_supported.tar.gz", hwpack.filename())
@@ -144,7 +155,7 @@ class HardwarePackTests(TestCase):
 
     def test_creates_metadata_file(self):
         metadata = Metadata(
-            "ahwpack", "4", origin="linaro",
+            "ahwpack", "4", "armel", origin="linaro",
             maintainer="Some Maintainer", support="unsupported")
         hwpack = HardwarePack(metadata)
         tf = self.get_tarfile(hwpack)
