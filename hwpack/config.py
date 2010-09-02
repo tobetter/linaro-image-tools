@@ -136,6 +136,10 @@ class Config(object):
 
     @property
     def sources(self):
+        """The sources defined in the configuration.
+
+        A dict mapping source identifiers to sources entries.
+        """
         sources = {}
         sections = self.parser.sections()
         found = False
