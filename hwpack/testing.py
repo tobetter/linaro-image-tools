@@ -48,9 +48,10 @@ def test_tarfile(contents=[], **kwargs):
 
 class DummyFetchedPackage(FetchedPackage):
 
-    def __init__(self, name, version):
+    def __init__(self, name, version, architecture="all"):
         self.name = name
         self.version = version
+        self.architecture = architecture
 
     @property
     def filename(self):

@@ -63,9 +63,13 @@ class FetchedPackage(object):
     :ivar md5: the hex representation of the md5sum of the contents of
         the package.
     :type md5: str
+    :ivar architecture: the architecture that the package is for, may be
+        'all'.
+    :type architecture: str
     """
 
-    def __init__(self, name, version, filename, content, size, md5):
+    def __init__(self, name, version, filename, content, size, md5,
+                 architecture):
         """Create a FetchedPackage.
 
         See the instance variables for the arguments.
@@ -76,6 +80,7 @@ class FetchedPackage(object):
         self.content = content
         self.size = size
         self.md5 = md5
+        self.architecture = architecture
 
     def __eq__(self, other):
         return (self.name == other.name
@@ -83,7 +88,8 @@ class FetchedPackage(object):
                 and self.filename == other.filename
                 and self.content.read() == other.content.read()
                 and self.size == other.size
-                and self.md5 == other.md5)
+                and self.md5 == other.md5
+                and self.architecture == other.architecture)
 
     def __hash__(self):
         return hash(
@@ -172,6 +178,7 @@ class PackageFetcher(object):
                     (acqfile.destfile, acqfile.error_text))
             result_package = FetchedPackage(
                 candidate.package.name, candidate.version, base,
-                open(destfile), candidate.size, candidate.md5)
+                open(destfile), candidate.size, candidate.md5,
+                candidate.architecture)
             results.append(result_package)
         return results
