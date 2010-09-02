@@ -8,6 +8,13 @@ import apt_pkg
 
 
 def get_packages_file(packages):
+    """Get the Packages file contents indexing `packages`.
+
+    :param packages: the packages to index.
+    :type packages: an iterable of FetchedPackages.
+    :return: the Packages file contents indexing `packages`.
+    :rtype: str
+    """
     content = ""
     for package in packages:
         parts = []
