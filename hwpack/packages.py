@@ -58,9 +58,14 @@ class FetchedPackage(object):
     :type filename: str
     :ivar content: a file that the content of the package can be read from.
     :type content: a file-like object
+    :ivar size: the size of the package
+    :type size: int
+    :ivar md5: the hex representation of the md5sum of the contents of
+        the package.
+    :type md5: str
     """
 
-    def __init__(self, name, version, filename, content):
+    def __init__(self, name, version, filename, content, size, md5):
         """Create a FetchedPackage.
 
         See the instance variables for the arguments.
@@ -69,6 +74,20 @@ class FetchedPackage(object):
         self.version = version
         self.filename = filename
         self.content = content
+        self.size = size
+        self.md5 = md5
+
+    def __eq__(self, other):
+        return (self.name == other.name
+                and self.version == other.version
+                and self.filename == other.filename
+                and self.content.read() == other.content.read()
+                and self.size == other.size
+                and self.md5 == other.md5)
+
+    def __hash__(self):
+        return hash(
+            (self.name, self.version, self.filename, self.size, self.md5))
 
 
 class PackageFetcher(object):
@@ -153,6 +172,6 @@ class PackageFetcher(object):
                     (acqfile.destfile, acqfile.error_text))
             result_package = FetchedPackage(
                 candidate.package.name, candidate.version, base,
-                open(destfile))
+                open(destfile), candidate.size, candidate.md5)
             results.append(result_package)
         return results

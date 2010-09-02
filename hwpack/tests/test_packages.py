@@ -1,8 +1,13 @@
 import os
+from StringIO import StringIO
 
 from testtools import TestCase
 
-from hwpack.packages import get_packages_file, PackageFetcher
+from hwpack.packages import (
+    FetchedPackage,
+    get_packages_file,
+    PackageFetcher,
+    )
 from hwpack.testing import (
     AptSource,
     FetchedPackageFixture,
@@ -33,6 +38,75 @@ MD5sum: %(md5)s
         self.assertEqual(
             get_packages_file([package1]) + get_packages_file([package2]),
             get_packages_file([package1, package2]))
+
+
+class FetchedPackageTests(TestCase):
+
+    def test_attributes(self):
+        package = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        self.assertEqual("foo", package.name)
+        self.assertEqual("1.1", package.version)
+        self.assertEqual("foo_1.1.deb", package.filename)
+        self.assertEqual("xxxx", package.content.read())
+        self.assertEqual(4, package.size)
+        self.assertEqual("aaaa", package.md5)
+
+    def test_equal(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        self.assertEqual(package1, package2)
+
+    def test_not_equal_different_name(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "bar", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_version(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.2", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_filename(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.1", "afoo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_content(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("yyyy"), 4, "aaaa")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_size(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 5, "aaaa")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_md5(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "bbbb")
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_hash_equal(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa")
+        self.assertEqual(hash(package1), hash(package2))
 
 
 class PackageFetcherTests(TestCaseWithFixtures):
