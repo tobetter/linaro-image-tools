@@ -160,6 +160,16 @@ class HardwarePackTests(TestCase):
         tf = self.get_tarfile(hwpack)
         self.assertThat(tf, HardwarePackHasFile("manifest", content=""))
 
+    def test_manifest_contains_package_info(self):
+        package1 = FetchedPackageFixture("foo", "1.1")
+        package2 = FetchedPackageFixture("bar", "1.2")
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_packages([package1, package2])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("manifest", content="foo 1.1\nbar 1.2\n"))
+
     def test_creates_pkgs_dir(self):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
