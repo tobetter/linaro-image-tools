@@ -98,7 +98,7 @@ class FetchedPackage(object):
 class PackageFetcher(object):
     """A class to fetch packages from a defined list of sources."""
 
-    def __init__(self, sources):
+    def __init__(self, sources, architecture=None):
         """Create a PackageFetcher.
 
         Once created a PackageFetcher should have its `prepare` method
@@ -107,8 +107,11 @@ class PackageFetcher(object):
         :param sources: a list of sources such that they can be prefixed
             with "deb " and fed to apt.
         :type sources: an iterable of str
+        :param architecture: the architecture to fetch packages for.
+        :type architecture: str
         """
         self.sources = sources
+        self.architecture = architecture
         self.tempdir = None
 
     def prepare(self):
@@ -136,6 +139,10 @@ class PackageFetcher(object):
         with open(sources_list, 'w') as f:
             for source in self.sources:
                 f.write("deb %s\n" % source)
+        if self.architecture is not None:
+            apt_conf = os.path.join(self.tempdir, "etc", "apt", "apt.conf")
+            with open(apt_conf, 'w') as f:
+                f.write('Apt {\nArchitecture "%s";\n}\n' % self.architecture)
         self.cache = Cache(rootdir=self.tempdir, memonly=True)
         self.cache.update()
         self.cache.open()

@@ -185,8 +185,18 @@ class PackageFetcherTests(TestCaseWithFixtures):
             open(os.path.join(
                 fetcher.tempdir, "etc", "apt", "sources.list")).read())
 
-    def get_fetcher(self, sources):
-        fetcher = PackageFetcher([s.sources_entry for s in sources])
+    def test_prepare_with_arch_creates_etc_apt_apt_conf(self):
+        fetcher = PackageFetcher([], architecture="arch")
+        self.addCleanup(fetcher.cleanup)
+        fetcher.prepare()
+        self.assertEqual(
+            'Apt {\nArchitecture "arch";\n}\n',
+            open(os.path.join(
+                fetcher.tempdir, "etc", "apt", "apt.conf")).read())
+
+    def get_fetcher(self, sources, architecture=None):
+        fetcher = PackageFetcher(
+            [s.sources_entry for s in sources], architecture=architecture)
         self.addCleanup(fetcher.cleanup)
         fetcher.prepare()
         return fetcher
@@ -220,7 +230,7 @@ class PackageFetcherTests(TestCaseWithFixtures):
         fetcher = self.get_fetcher([source])
         self.assertEqual(1, len(fetcher.fetch_packages(["foo"])))
 
-    def test_fetch_packges_fetches_correct_packge(self):
+    def test_fetch_packges_fetches_correct_package(self):
         available_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSource([available_package]))
         fetcher = self.get_fetcher([source])
@@ -265,3 +275,22 @@ class PackageFetcherTests(TestCaseWithFixtures):
         fetcher = self.get_fetcher([old_source, new_source])
         fetched = fetcher.fetch_packages(["bar"])
         self.assertEqual(new_source_packages[0], fetched[0])
+
+    def test_fetch_package_records_correct_architecture(self):
+        available_package = DummyFetchedPackage(
+            "foo", "1.0", architecture="nonexistant")
+        source = self.useFixture(AptSource([available_package]))
+        fetcher = self.get_fetcher([source], architecture="nonexistant")
+        self.assertEqual(
+            "nonexistant", fetcher.fetch_packages(["foo"])[0].architecture)
+
+    def test_fetch_package_fetches_from_correct_architecture(self):
+        wanted_package = DummyFetchedPackage(
+            "foo", "1.0", architecture="arch1")
+        unwanted_package = DummyFetchedPackage(
+            "foo", "1.1", architecture="arch2")
+        source = self.useFixture(
+            AptSource([wanted_package, unwanted_package]))
+        fetcher = self.get_fetcher([source], architecture="arch1")
+        self.assertEqual(
+            wanted_package, fetcher.fetch_packages(["foo"])[0])
