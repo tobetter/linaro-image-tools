@@ -209,7 +209,7 @@ class HardwarePackTests(TestCase):
         tf = self.get_tarfile(hwpack)
         self.assertThat(tf, HardwarePackHasFile("pkgs/Packages", content=""))
 
-    def test_Packages_file_correct_contents_with_packges(self):
+    def test_Packages_file_correct_contents_with_packages(self):
         package1 = DummyFetchedPackage("foo", "1.1")
         package2 = DummyFetchedPackage("bar", "1.1")
         hwpack = HardwarePack(self.metadata)
@@ -230,7 +230,7 @@ class HardwarePackTests(TestCase):
     def test_adds_sources_list_file(self):
         hwpack = HardwarePack(self.metadata)
         source = 'http://example.org/ ubuntu'
-        hwpack.add_sources({'ubuntu': source})
+        hwpack.add_apt_sources({'ubuntu': source})
         tf = self.get_tarfile(hwpack)
         self.assertThat(
             tf, HardwarePackHasFile("sources.list.d/ubuntu",
@@ -240,7 +240,7 @@ class HardwarePackTests(TestCase):
         hwpack = HardwarePack(self.metadata)
         source1 = 'http://example.org/ ubuntu main universe'
         source2 = 'http://example.org/ linaro'
-        hwpack.add_sources({'ubuntu': source1, 'linaro': source2})
+        hwpack.add_apt_sources({'ubuntu': source1, 'linaro': source2})
         tf = self.get_tarfile(hwpack)
         self.assertThat(
             tf, HardwarePackHasFile("sources.list.d/ubuntu",
@@ -252,9 +252,9 @@ class HardwarePackTests(TestCase):
     def test_overwrites_sources_list_file(self):
         hwpack = HardwarePack(self.metadata)
         old_source = 'http://example.org/ ubuntu'
-        hwpack.add_sources({'ubuntu': old_source})
+        hwpack.add_apt_sources({'ubuntu': old_source})
         new_source = 'http://example.org/ ubuntu main universe'
-        hwpack.add_sources({'ubuntu': new_source})
+        hwpack.add_apt_sources({'ubuntu': new_source})
         tf = self.get_tarfile(hwpack)
         self.assertThat(
             tf, HardwarePackHasFile("sources.list.d/ubuntu",
