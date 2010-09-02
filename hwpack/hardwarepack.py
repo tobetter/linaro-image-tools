@@ -94,6 +94,23 @@ class HardwarePack(object):
             self.metadata.name, self.metadata.version, support_suffix)
 
     def add_sources(self, sources):
+        """Add sources to the hardware pack.
+
+        Given a dict of names and the source lines this will add
+        them to the hardware pack.
+
+        The names should be an identifier for the source, and the
+        source lines should be what is put in sources.list for that
+        source, minus the "deb" part.
+
+        Arguments passed to this method will overwrite any that were
+        passed in previous calls with the same identifier, but will
+        be used in addition to any with different identifiers.
+
+        :param sources: the sources to use as a dict mapping identifiers
+            to sources entries.
+        :type sources: a dict mapping str to str
+        """
         self.sources.update(sources)
 
     def to_file(self, fileobj):
