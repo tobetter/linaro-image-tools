@@ -1,0 +1,11 @@
+#!/usr/bin/python
+
+from optparse import OptionParser
+
+from hwpack.builder import HardwarePackBuilder
+
+
+if __name__ == '__main__':
+    parser = OptionParser()
+    opts, args = parser.parse_args()
+    builder = HardwarePackBuilder(args[0], args[1]).build()
