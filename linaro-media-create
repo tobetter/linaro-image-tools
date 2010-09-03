@@ -212,6 +212,16 @@ populate_boot() {
      sudo mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "$CODENAME 10.05" -d ${DIR}/binary/boot.cmd ${DIR}/disk/boot.scr
      sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
      ;;
+   igep)
+     sync
+     cd ${DIR}
+
+     sudo cp -f ${DIR}/binary/${parts_dir}/uImage.omap ${DIR}/disk/uImage
+     sudo cp -f ${DIR}/binary/${parts_dir}/uInitrd.omap ${DIR}/disk/uInitrd
+
+     sudo mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "$CODENAME 10.05" -d ${DIR}/binary/boot.cmd ${DIR}/disk/boot.scr
+     sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
+     ;;
    vexpress)
      sudo tar --strip-components=5 -C ${DIR}/disk/ -xf $BINARY_TARBALL binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin
      sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 -e 0x60008000 \
@@ -222,7 +232,7 @@ populate_boot() {
           "${DIR}"/disk/uInitrd
      ;;
    *)
-     echo "Set --dev parameter: --dev <beagle|vexpress>" 1>&2
+     echo "Set --dev parameter: --dev <beagle|igep|vexpress>" 1>&2
      cleanup_workdir
      exit
      ;;
@@ -386,6 +396,7 @@ required options:
     use development boot options; this includes setting up serial ttys as well
     as enabling normal debug options for the target board. Current board values:
     * beagle
+    * igep
     * vexpress
 
 Additional/Optional options:
@@ -523,7 +534,7 @@ fi
 
 if [ "$DEVIMAGE" ]; then
   case "$DEVIMAGE" in
-    beagle)
+    beagle|igep)
       serial_opts="$serial_opts console=tty0 console=ttyS2,115200n8"
       if [ "$IS_LIVE" ]; then
         serial_opts="$serial_opts serialtty=ttyS2"
