@@ -32,7 +32,7 @@ class HardwarePackBuilder(object):
                 self.config, self.version, architecture)
             hwpack = HardwarePack(metadata)
             sources = self.config.sources
-            hwpack.add_sources(sources)
+            hwpack.add_apt_sources(sources)
             fetcher = PackageFetcher(
                 sources.values(), architecture=architecture)
             with fetcher:
