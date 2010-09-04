@@ -197,24 +197,16 @@ populate_boot() {
  mkdir -p ${DIR}/disk || true
  sudo mount ${MMC1} ${DIR}/disk
  case "$DEVIMAGE" in
-   beagle)
-     if test -e binary/${parts_dir}/${MLO_FILE} -a -e binary/${parts_dir}/${UBOOT_FILE}; then
-       sudo cp -v binary/${parts_dir}/${MLO_FILE} ${DIR}/disk/MLO
-       sudo cp -v binary/${parts_dir}/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
+   beagle|igep)
+     if [ "$DEVIMAGE" == "beagle" ]; then
+          if test -e binary/${parts_dir}/${MLO_FILE} -a -e binary/${parts_dir}/${UBOOT_FILE}; then
+            sudo cp -v binary/${parts_dir}/${MLO_FILE} ${DIR}/disk/MLO
+            sudo cp -v binary/${parts_dir}/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
+          fi
      fi
      sync
      cd ${DIR}
      echo "done"
-
-     sudo cp -f ${DIR}/binary/${parts_dir}/uImage.omap ${DIR}/disk/uImage
-     sudo cp -f ${DIR}/binary/${parts_dir}/uInitrd.omap ${DIR}/disk/uInitrd
-
-     sudo mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "$CODENAME 10.05" -d ${DIR}/binary/boot.cmd ${DIR}/disk/boot.scr
-     sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
-     ;;
-   igep)
-     sync
-     cd ${DIR}
 
      sudo cp -f ${DIR}/binary/${parts_dir}/uImage.omap ${DIR}/disk/uImage
      sudo cp -f ${DIR}/binary/${parts_dir}/uInitrd.omap ${DIR}/disk/uInitrd
