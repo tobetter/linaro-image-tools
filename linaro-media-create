@@ -197,10 +197,12 @@ populate_boot() {
  mkdir -p ${DIR}/disk || true
  sudo mount ${MMC1} ${DIR}/disk
  case "$DEVIMAGE" in
-   beagle)
-     if test -e binary/${parts_dir}/${MLO_FILE} -a -e binary/${parts_dir}/${UBOOT_FILE}; then
-       sudo cp -v binary/${parts_dir}/${MLO_FILE} ${DIR}/disk/MLO
-       sudo cp -v binary/${parts_dir}/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
+   beagle|igep)
+     if [ "$DEVIMAGE" = "beagle" ]; then
+          if [ -e binary/${parts_dir}/${MLO_FILE} ] && [ -e binary/${parts_dir}/${UBOOT_FILE} ]; then
+              sudo cp -v binary/${parts_dir}/${MLO_FILE}   ${DIR}/disk/MLO
+              sudo cp -v binary/${parts_dir}/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
+          fi
      fi
      sync
      cd ${DIR}
@@ -222,7 +224,7 @@ populate_boot() {
           "${DIR}"/disk/uInitrd
      ;;
    *)
-     echo "Set --dev parameter: --dev <beagle|vexpress>" 1>&2
+     echo "Set --dev parameter: --dev <beagle|igep|vexpress>" 1>&2
      cleanup_workdir
      exit
      ;;
@@ -386,6 +388,7 @@ required options:
     use development boot options; this includes setting up serial ttys as well
     as enabling normal debug options for the target board. Current board values:
     * beagle
+    * igep
     * vexpress
 
 Additional/Optional options:
@@ -523,7 +526,7 @@ fi
 
 if [ "$DEVIMAGE" ]; then
   case "$DEVIMAGE" in
-    beagle)
+    beagle|igep)
       serial_opts="$serial_opts console=tty0 console=ttyS2,115200n8"
       if [ "$IS_LIVE" ]; then
         serial_opts="$serial_opts serialtty=ttyS2"
