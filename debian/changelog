@@ -1,7 +1,7 @@
 linaro-image-tools (0.1ubuntu1) UNRELEASED; urgency=low
 
   [ Torez Smith ]
-  * Add IGEP support.
+  * Add IGEP support; LP: #627611.
 
  -- Loïc Minier <loic.minier@linaro.org>  Sun, 05 Sep 2010 10:26:20 +0200
 
