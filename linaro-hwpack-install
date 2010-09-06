@@ -15,44 +15,55 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-# XXX: Not sure this is a good idea as there's some things we need to clean up
-# either on success or error.
 set -e
 
+die() {
+  echo "$@"
+  exit 1
+}
+
+die_without_cleanup() {
+  trap - EXIT
+  die "$@"
+}
+
+cleanup() {
+  # Ensure our temp dir and apt sources are removed, unless they belong to 
+  # another running instance.
+  echo -n "Cleaning up ..."
+  rm -rf $TEMP_DIR
+  sudo rm -f $HWPACK_PKGS_SOURCE
+  sudo rm -f /etc/apt/sources.list.d/hwpack.*
+  echo "Done"
+}
+
+trap cleanup EXIT
+
 LOCKFILE="/var/lock/hwpack"
+# TODO: Use a random name for this directory to reduce risk of clashes.
 TEMP_DIR="/var/tmp/hwpack"
-HWPACK_DIR="/var/tmp/hwpack/unpacked"
+HWPACK_DIR="${TEMP_DIR}/unpacked"
 HWPACK_TARBALL="${TEMP_DIR}/hwpack.tgz"
 HWPACK_PKGS_SOURCE=/etc/apt/sources.list.d/hwpack-pkgs.list
 OTHER_INSTANCE_RUNNING=0
-
-clean_apt_sources() {
-  sudo rm -f $HWPACK_PKGS_SOURCE
-  sudo rm -f /etc/apt/sources.list.d/hwpack.*
-}
-
-# This creates all the directories we need.
-mkdir -p $HWPACK_DIR
 
 if [ $# -eq 0 ]; then
   echo "Usage: `basename $0` HWPACK_URL"
   exit 1
 fi
 
-(
 # Try to acquire fd #9 (i.e. /var/lock/hwpack) for 5 seconds.
-flock -w5 9
-if [ $? -ne 0 ]; then
-  OTHER_INSTANCE_RUNNING=1
-  echo "Could not acquire lock: $LOCKFILE"
-  exit 1
-fi
+# Using 9 as the file descriptor because of https://launchpad.net/bugs/249620
+exec 9>$LOCKFILE
+flock -w5 9 || die_without_cleanup "Could not acquire lock: $LOCKFILE"
+
+# This creates all the directories we need.
+mkdir -p $HWPACK_DIR
 
 # Download and unpack the hwpack tarball.
 # XXX: Can we assume wget is available?
 echo -n "Downloading hardware pack from $1..."
-wget -q -O $HWPACK_TARBALL $1
+wget -q -O "$HWPACK_TARBALL" "$1"
 echo "Done"
 echo -n "Unpacking hardware pack ..."
 tar zxf $HWPACK_TARBALL -C $HWPACK_DIR
@@ -60,19 +71,16 @@ echo "Done"
 
 # Check the architecture of the hwpack matches that of the host system.
 HWPACK_ARCH=`grep ARCHITECTURE ${HWPACK_DIR}/metadata | cut -d "=" -f2`
-dpkg-architecture -e${HWPACK_ARCH}
-if [ $? -ne 0 ]; then
-  echo "Hardware pack architecture ($HWPACK_ARCH) does not match the"\
-       "host's architecture"
-  exit 1
-fi
+dpkg-architecture -e${HWPACK_ARCH} || \
+  die "Hardware pack architecture ($HWPACK_ARCH) does not match the host's architecture"
 
 CWD=`pwd`
 
 # Install the apt sources that contain the packages we need.
 cd ${HWPACK_DIR}/sources.list.d/
-for file in *; do
-  sudo cp $file /etc/apt/sources.list.d/hwpack.$file
+for file in ${HWPACK_DIR}/sources.list.d/*; do
+  filename=`basename $file`
+  sudo cp $file /etc/apt/sources.list.d/hwpack.$filename
   # TODO:
   #  * Skip any files that contain lines that are already present in the apt
   #  configuration outside of the "hwpack." prefixed files.
@@ -89,15 +97,13 @@ for file in `ls ${HWPACK_DIR}/sources.list.d.gpg/`; do
 done
 
 # Add one extra apt source for the packages included in the hwpack.
-sudo sh -c "echo deb file:${HWPACK_DIR} pkgs/ > $HWPACK_PKGS_SOURCE"
-
-cd $CWD
+sudo sh -c "echo deb file:${HWPACK_DIR}/pkgs ./ > $HWPACK_PKGS_SOURCE"
 
 sudo apt-get update -qq
 
 echo -n "Installing packages ..."
-  packages=`sed 's/ /=/' ${HWPACK_DIR}/manifest`
-  sudo apt-get -y install $packages
+packages=`sed 's/ /=/' ${HWPACK_DIR}/manifest`
+#sudo apt-get install $packages
 # TODO:
 #     * if package has version and --install-latest is not specified then add PACKAGE=VERSION to command line
 #     * else add PACKAGE to the command line
@@ -106,19 +112,9 @@ echo -n "Installing packages ..."
 #     * Then write the list of packages that it installed to "/var/lib/hwpack/packages", overwriting any that were there already.
 echo "Done"
 
-clean_apt_sources
 sudo apt-get update -qq
 sudo apt-get clean -qq
 
-# Using 9 as the file descriptor because of https://launchpad.net/bugs/249620
-) 9>$LOCKFILE
-
-# Ensure our temp dir and apt sources are removed, unless they belong to 
-# another running instance.
-if [ $OTHER_INSTANCE_RUNNING -eq 0 ]; then
-  rm -rf $TEMP_DIR
-  clean_apt_sources
-fi
-
+# TODO:
 #   * finally remove all apt caches etc. if the --release parameter is specified
 #     * What in particular should be removed?
