@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # linaro-hwpack-install - Install a Linaro Hardware Pack.
 
 # Copyright 2010 Linaro
@@ -15,70 +15,64 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# XXX: wget is not a dependency of ubuntu-minimal
+
 set -e
 
-die() {
-  echo "$@"
-  exit 1
-}
-
-die_without_cleanup() {
-  trap - EXIT
-  die "$@"
-}
-
-cleanup() {
-  # Ensure our temp dir and apt sources are removed, unless they belong to 
-  # another running instance.
-  echo -n "Cleaning up ..."
-  rm -rf $TEMP_DIR
-  sudo rm -f $HWPACK_PKGS_SOURCE
-  sudo rm -f /etc/apt/sources.list.d/hwpack.*
-  echo "Done"
-}
-
-trap cleanup EXIT
-
 LOCKFILE="/var/lock/hwpack"
-# TODO: Use a random name for this directory to reduce risk of clashes.
 TEMP_DIR="/var/tmp/hwpack"
 HWPACK_DIR="${TEMP_DIR}/unpacked"
 HWPACK_TARBALL="${TEMP_DIR}/hwpack.tgz"
 HWPACK_PKGS_SOURCE=/etc/apt/sources.list.d/hwpack-pkgs.list
-OTHER_INSTANCE_RUNNING=0
 
 if [ $# -eq 0 ]; then
   echo "Usage: `basename $0` HWPACK_URL"
   exit 1
 fi
 
-# Try to acquire fd #9 (i.e. /var/lock/hwpack) for 5 seconds.
+die() {
+  echo "$@"
+  exit 1
+}
+
+# Try to acquire fd #9 (i.e. /var/lock/hwpack) for 2 seconds.
 # Using 9 as the file descriptor because of https://launchpad.net/bugs/249620
 exec 9>$LOCKFILE
-flock -w5 9 || die_without_cleanup "Could not acquire lock: $LOCKFILE"
+flock -w2 9 || die "Could not acquire lock: $LOCKFILE"
+
+cleanup() {
+  # Ensure our temp dir and apt sources are removed.
+  echo -n "Cleaning up ..."
+  rm -rf $TEMP_DIR
+  sudo rm -f $HWPACK_PKGS_SOURCE
+  sudo rm -f /etc/apt/sources.list.d/hwpack.*
+  sudo apt-get update -qq
+  sudo apt-get clean -qq
+  echo "Done"
+}
+
+# From now on we'll be making changes to the system, so we need to clean
+# things up when the script exits.
+trap cleanup EXIT
 
 # This creates all the directories we need.
-mkdir -p $HWPACK_DIR
+mkdir -p "$HWPACK_DIR"
 
 # Download and unpack the hwpack tarball.
-# XXX: Can we assume wget is available?
 echo -n "Downloading hardware pack from $1..."
 wget -q -O "$HWPACK_TARBALL" "$1"
 echo "Done"
 echo -n "Unpacking hardware pack ..."
-tar zxf $HWPACK_TARBALL -C $HWPACK_DIR
+tar zxf "$HWPACK_TARBALL" -C "$HWPACK_DIR"
 echo "Done"
 
 # Check the architecture of the hwpack matches that of the host system.
-HWPACK_ARCH=`grep ARCHITECTURE ${HWPACK_DIR}/metadata | cut -d "=" -f2`
-dpkg-architecture -e${HWPACK_ARCH} || \
+HWPACK_ARCH=`grep ARCHITECTURE "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
+[ "$HWPACK_ARCH" == `dpkg --print-architecture` ] || \
   die "Hardware pack architecture ($HWPACK_ARCH) does not match the host's architecture"
 
-CWD=`pwd`
-
 # Install the apt sources that contain the packages we need.
-cd ${HWPACK_DIR}/sources.list.d/
-for file in ${HWPACK_DIR}/sources.list.d/*; do
+for file in "${HWPACK_DIR}"/sources.list.d/*; do
   filename=`basename $file`
   sudo cp $file /etc/apt/sources.list.d/hwpack.$filename
   # TODO:
@@ -92,7 +86,7 @@ for file in ${HWPACK_DIR}/sources.list.d/*; do
 done
 
 # Import the OpenPGP keys for the files installed above.
-for file in `ls ${HWPACK_DIR}/sources.list.d.gpg/`; do
+for file in `ls "${HWPACK_DIR}"/sources.list.d.gpg/`; do
   sudo apt-key add $file
 done
 
@@ -102,8 +96,8 @@ sudo sh -c "echo deb file:${HWPACK_DIR}/pkgs ./ > $HWPACK_PKGS_SOURCE"
 sudo apt-get update -qq
 
 echo -n "Installing packages ..."
-packages=`sed 's/ /=/' ${HWPACK_DIR}/manifest`
-#sudo apt-get install $packages
+packages=`sed 's/ /=/' "${HWPACK_DIR}"/manifest`
+sudo apt-get install $packages
 # TODO:
 #     * if package has version and --install-latest is not specified then add PACKAGE=VERSION to command line
 #     * else add PACKAGE to the command line
@@ -111,9 +105,6 @@ packages=`sed 's/ /=/' ${HWPACK_DIR}/manifest`
 #       * XXX: how to safely remove the packages?
 #     * Then write the list of packages that it installed to "/var/lib/hwpack/packages", overwriting any that were there already.
 echo "Done"
-
-sudo apt-get update -qq
-sudo apt-get clean -qq
 
 # TODO:
 #   * finally remove all apt caches etc. if the --release parameter is specified
