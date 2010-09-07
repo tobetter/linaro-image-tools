@@ -1,7 +1,12 @@
-linaro-image-tools (0.1ubuntu1) UNRELEASED; urgency=low
+linaro-image-tools (0.2) UNRELEASED; urgency=low
 
   [ Torez Smith ]
   * Add IGEP support; LP: #627611.
+
+  [ Loïc Minier ]
+  * Fix deps in control as well: depend on uuid-runtime rather than
+    uuidgen-runtime and do not depend on util-linux, e2fsprogs and coreutils
+    as these are Essential: yes; thanks Colin Watson.
 
  -- Loïc Minier <loic.minier@linaro.org>  Sun, 05 Sep 2010 10:26:20 +0200
 
