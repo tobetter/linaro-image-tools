@@ -57,11 +57,11 @@ get_mmcs_by_id() {
 if [ ! ${IMAGE_FILE} ]; then
   for device in /dev/disk/by-id/*; do
     if [ `realpath $device` = $MMC ]; then
-      if echo $device | grep -q -- "-part[0-9]*$"; then
+      if echo "$device" | grep -q -- "-part[0-9]*$"; then
         echo "device $MMC must not be a partition part ($device)" 1>&2
         exit 1
       fi
-      for part_id in `ls $device-part*`; do
+      for part_id in `ls "$device-part"*`; do
         part=`realpath $part_id`
         part_no=`echo $part_id | sed -e 's/.*-part//g'`
         # echo "part $part_no found: $part_id" 1>&2
