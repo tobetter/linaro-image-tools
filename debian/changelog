@@ -1,5 +1,10 @@
 linaro-image-tools (0.2) UNRELEASED; urgency=low
 
+  [ James Westby ]
+  * Add a module that provides some improvements to tarfile.
+  * Add some matchers for testing the content of tarfiles.
+  * Add the skeleton code to create empty hardware packs.
+
   [ Torez Smith ]
   * Add IGEP support; LP: #627611.
 
