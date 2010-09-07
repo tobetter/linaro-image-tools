@@ -1,4 +1,4 @@
-linaro-image-tools (0.2) UNRELEASED; urgency=low
+linaro-image-tools (0.2) maverick; urgency=low
 
   [ James Westby ]
   * Add a module that provides some improvements to tarfile.
