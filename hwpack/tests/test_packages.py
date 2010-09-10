@@ -311,15 +311,28 @@ class FetchedPackageTests(TestCaseWithFixtures):
                 candidate, target_package.filename, target_package.content)
             self.assertEqual(target_package, created_package)
 
-    def test_from_apt_with_depends(self):
-        target_package = DummyFetchedPackage(
-            "foo", "1.0", depends="bar | baz (>= 1.0), zap")
+    def assert_from_apt_translates_relationship(self, relationship):
+        kwargs = {}
+        kwargs[relationship] = "bar | baz (>= 1.0), zap"
+        target_package = DummyFetchedPackage("foo", "1.0", **kwargs)
         source = self.useFixture(AptSourceFixture([target_package]))
         with IsolatedAptCache([source.sources_entry]) as cache:
             candidate = cache.cache['foo'].candidate
             created_package = FetchedPackage.from_apt(
                 candidate, target_package.filename, target_package.content)
             self.assertEqual(target_package, created_package)
+
+    def test_from_apt_with_depends(self):
+        self.assert_from_apt_translates_relationship('depends')
+
+    def test_from_apt_with_pre_depends(self):
+        self.assert_from_apt_translates_relationship('pre_depends')
+
+    def test_from_apt_with_conflicts(self):
+        self.assert_from_apt_translates_relationship('conflicts')
+
+    def test_from_apt_with_recommends(self):
+        self.assert_from_apt_translates_relationship('recommends')
 
 
 class AptCacheTests(TestCaseWithFixtures):

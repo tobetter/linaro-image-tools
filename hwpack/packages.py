@@ -124,23 +124,32 @@ class FetchedPackage(object):
 
     @classmethod
     def from_apt(cls, pkg, filename, content):
-        depends = None
-        pkg_dependencies = pkg.get_dependencies("Depends")
-        if pkg_dependencies:
-            depends_list = []
-            for or_dep in pkg_dependencies:
-                or_list = []
-                for or_alternative in or_dep.or_dependencies:
-                    suffix = ""
-                    if or_alternative.relation:
-                        suffix = " (%s %s)" % (
-                            or_alternative.relation, or_alternative.version)
-                    or_list.append("%s%s" % (or_alternative.name, suffix))
-                depends_list.append(" | ".join(or_list))
-            depends = ", ".join(depends_list)
+        def stringify_relationship(relationship):
+            relationship_str = None
+            pkg_dependencies = pkg.get_dependencies(relationship)
+            if pkg_dependencies:
+                relationship_list = []
+                for or_dep in pkg_dependencies:
+                    or_list = []
+                    for or_alternative in or_dep.or_dependencies:
+                        suffix = ""
+                        if or_alternative.relation:
+                            suffix = " (%s %s)" % (
+                                or_alternative.relation,
+                                or_alternative.version)
+                        or_list.append("%s%s" % (or_alternative.name, suffix))
+                    relationship_list.append(" | ".join(or_list))
+                relationship_str = ", ".join(relationship_list)
+            return relationship_str
+        depends = stringify_relationship("Depends")
+        pre_depends = stringify_relationship("PreDepends")
+        conflicts = stringify_relationship("Conflicts")
+        recommends = stringify_relationship("Recommends")
         return cls(
             pkg.package.name, pkg.version, filename, content, pkg.size,
-            pkg.md5, pkg.architecture, depends=depends)
+            pkg.md5, pkg.architecture, depends=depends,
+            pre_depends=pre_depends, conflicts=conflicts,
+            recommends=recommends)
 
     def __eq__(self, other):
         return (self.name == other.name
