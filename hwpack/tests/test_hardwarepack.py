@@ -151,7 +151,7 @@ class HardwarePackTests(TestCase):
         tf = self.get_tarfile(hwpack)
         self.assertThat(
             tf,
-            HardwarePackHasFile("manifest", content="foo 1.1\nbar 1.2\n"))
+            HardwarePackHasFile("manifest", content="foo=1.1\nbar=1.2\n"))
 
     def test_creates_pkgs_dir(self):
         hwpack = HardwarePack(self.metadata)

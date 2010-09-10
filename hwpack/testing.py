@@ -270,7 +270,7 @@ class IsHardwarePack(Matcher):
                 "metadata", content=str(self.metadata)))
             manifest = ""
             for package in self.packages:
-                manifest += "%s %s\n" % (package.name, package.version)
+                manifest += "%s=%s\n" % (package.name, package.version)
             matchers.append(HardwarePackHasFile("manifest", content=manifest))
             matchers.append(HardwarePackHasFile("pkgs", type=tarfile.DIRTYPE))
             for package in self.packages:
