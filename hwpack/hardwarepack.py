@@ -26,8 +26,8 @@ class Metadata(object):
     :type support: str or None
     """
 
-    def __init__(self, name, version, origin=None, maintainer=None,
-                 support=None):
+    def __init__(self, name, version, architecture, origin=None,
+                 maintainer=None, support=None):
         """Create the Metadata for a hardware pack.
 
         See the instance variables for a description of the arguments.
@@ -37,11 +37,13 @@ class Metadata(object):
         self.origin = origin
         self.maintainer = maintainer
         self.support = support
+        self.architecture = architecture
 
     def __str__(self):
         """Get the contents of the metadata file."""
         metadata = "NAME=%s\n" % self.name
         metadata += "VERSION=%s\n" % self.version
+        metadata += "ARCHITECTURE=%s\n" % self.architecture
         if self.origin is not None:
             metadata += "ORIGIN=%s\n" % self.origin
         if self.maintainer is not None:

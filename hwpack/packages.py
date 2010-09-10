@@ -23,7 +23,7 @@ def get_packages_file(packages):
         parts.append('Filename: %s' % package.filename)
         parts.append('Size: %d' % package.size)
         # TODO: architecture support
-        parts.append('Architecture: all')
+        parts.append('Architecture: %s' % package.architecture)
         parts.append('MD5sum: %s' % package.md5)
         content += "\n".join(parts)
         content += "\n\n"
@@ -75,9 +75,13 @@ class FetchedPackage(object):
     :ivar md5: the hex representation of the md5sum of the contents of
         the package.
     :type md5: str
+    :ivar architecture: the architecture that the package is for, may be
+        'all'.
+    :type architecture: str
     """
 
-    def __init__(self, name, version, filename, content, size, md5):
+    def __init__(self, name, version, filename, content, size, md5,
+                 architecture):
         """Create a FetchedPackage.
 
         See the instance variables for the arguments.
@@ -88,6 +92,7 @@ class FetchedPackage(object):
         self.content = content
         self.size = size
         self.md5 = md5
+        self.architecture = architecture
 
     def __eq__(self, other):
         return (self.name == other.name
@@ -95,7 +100,8 @@ class FetchedPackage(object):
                 and self.filename == other.filename
                 and self.content.read() == other.content.read()
                 and self.size == other.size
-                and self.md5 == other.md5)
+                and self.md5 == other.md5
+                and self.architecture == other.architecture)
 
     def __hash__(self):
         return hash(
@@ -105,7 +111,7 @@ class FetchedPackage(object):
 class PackageFetcher(object):
     """A class to fetch packages from a defined list of sources."""
 
-    def __init__(self, sources):
+    def __init__(self, sources, architecture=None):
         """Create a PackageFetcher.
 
         Once created a PackageFetcher should have its `prepare` method
@@ -114,8 +120,11 @@ class PackageFetcher(object):
         :param sources: a list of sources such that they can be prefixed
             with "deb " and fed to apt.
         :type sources: an iterable of str
+        :param architecture: the architecture to fetch packages for.
+        :type architecture: str
         """
         self.sources = sources
+        self.architecture = architecture
         self.tempdir = None
 
     def prepare(self):
@@ -143,6 +152,10 @@ class PackageFetcher(object):
         with open(sources_list, 'w') as f:
             for source in self.sources:
                 f.write("deb %s\n" % source)
+        if self.architecture is not None:
+            apt_conf = os.path.join(self.tempdir, "etc", "apt", "apt.conf")
+            with open(apt_conf, 'w') as f:
+                f.write('Apt {\nArchitecture "%s";\n}\n' % self.architecture)
         self.cache = Cache(rootdir=self.tempdir, memonly=True)
         self.cache.update()
         self.cache.open()
@@ -183,6 +196,7 @@ class PackageFetcher(object):
                     (acqfile.destfile, acqfile.error_text))
             result_package = FetchedPackage(
                 candidate.package.name, candidate.version, base,
-                open(destfile), candidate.size, candidate.md5)
+                open(destfile), candidate.size, candidate.md5,
+                candidate.architecture)
             results.append(result_package)
         return results

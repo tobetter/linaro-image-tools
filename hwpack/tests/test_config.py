@@ -7,7 +7,8 @@ from hwpack.config import Config, HwpackConfigError
 
 class ConfigTests(TestCase):
 
-    valid_start = "[hwpack]\nname = ahwpack\npackages = foo\n"
+    valid_start = (
+        "[hwpack]\nname = ahwpack\npackages = foo\narchitectures = armel\n")
 
     def test_create(self):
         config = Config(StringIO())
@@ -70,6 +71,19 @@ class ConfigTests(TestCase):
             "Invalid value in packages in the [hwpack] section: ~~",
             config)
 
+    def test_validate_no_architectures(self):
+        config = self.get_config(
+                "[hwpack]\nname = ahwpack\npackages = foo\n")
+        self.assertValidationError(
+            "No architectures in the [hwpack] section", config)
+
+    def test_validate_empty_architectures(self):
+        config = self.get_config(
+                "[hwpack]\nname = ahwpack\npackages = foo\n"
+                "architectures = \n")
+        self.assertValidationError(
+            "No architectures in the [hwpack] section", config)
+
     def test_validate_no_other_sections(self):
         config = self.get_config(self.valid_start + "\n")
         self.assertValidationError(
@@ -119,7 +133,9 @@ class ConfigTests(TestCase):
         self.assertEqual(None, config.validate())
 
     def test_name(self):
-        config = self.get_config("[hwpack]\nname = ahwpack\npackages = foo\n")
+        config = self.get_config(
+            "[hwpack]\nname = ahwpack\npackages = foo\n"
+            "architectures = armel\n")
         self.assertEqual("ahwpack", config.name)
 
     def test_include_debs(self):
@@ -179,10 +195,50 @@ class ConfigTests(TestCase):
 
     def test_packages(self):
         config = self.get_config(
-            "[hwpack]\nname=ahwpack\npackages=foo  bar\n")
+            "[hwpack]\nname=ahwpack\npackages=foo  bar\n"
+            "architectures=armel\n")
         self.assertEqual(["foo", "bar"], config.packages)
 
     def test_packages_with_newline(self):
         config = self.get_config(
-            "[hwpack]\nname=ahwpack\npackages=foo\n bar\n")
+            "[hwpack]\nname=ahwpack\npackages=foo\n bar\n"
+            "architectures=armel\n")
         self.assertEqual(["foo", "bar"], config.packages)
+
+    def test_packages_filters_duplicates(self):
+        config = self.get_config(
+            "[hwpack]\nname=ahwpack\npackages=foo bar foo\n"
+            "architectures=armel\n")
+        self.assertEqual(["foo", "bar"], config.packages)
+
+    def test_sources_single(self):
+        config = self.get_config(
+            self.valid_start
+            + "\n[ubuntu]\nsources-entry = http://example.org foo\n")
+        self.assertEqual({"ubuntu": "http://example.org foo"}, config.sources)
+
+    def test_sources_multiple(self):
+        config = self.get_config(
+            self.valid_start
+            + "\n[ubuntu]\nsources-entry = http://example.org foo\n"
+            + "\n[linaro]\nsources-entry = http://example.org bar\n")
+        self.assertEqual(
+            {"ubuntu": "http://example.org foo",
+             "linaro": "http://example.org bar"},
+            config.sources)
+
+    def test_architectures(self):
+        config = self.get_config(
+            "[hwpack]\nname=ahwpack\npackages=foo\narchitectures=foo  bar\n")
+        self.assertEqual(["foo", "bar"], config.architectures)
+
+    def test_architectures_with_newline(self):
+        config = self.get_config(
+            "[hwpack]\nname=ahwpack\npackages=foo\narchitectures=foo\n bar\n")
+        self.assertEqual(["foo", "bar"], config.architectures)
+
+    def test_architectures_filters_duplicates(self):
+        config = self.get_config(
+            "[hwpack]\nname=ahwpack\npackages=foo\n"
+            "architectures=foo bar foo\n")
+        self.assertEqual(["foo", "bar"], config.architectures)

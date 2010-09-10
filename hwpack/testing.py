@@ -52,16 +52,10 @@ class DummyFetchedPackage(FetchedPackage):
     See FetchedPackage for the instance variables.
     """
 
-    def __init__(self, name, version):
-        """Create a DummyFetchedPackage.
-
-        :param name: the name of the package.
-        :type name: str
-        :param version: the version of the package.
-        :type version: str
-        """
+    def __init__(self, name, version, architecture="all"):
         self.name = name
         self.version = version
+        self.architecture = architecture
 
     @property
     def filename(self):
