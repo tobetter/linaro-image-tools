@@ -4,7 +4,9 @@ import tarfile
 from testtools import TestCase
 
 from hwpack.hardwarepack import HardwarePack, Metadata
+from hwpack.packages import get_packages_file
 from hwpack.tarfile_matchers import TarfileHasFile
+from hwpack.testing import DummyFetchedPackage
 
 
 class MetadataTests(TestCase):
@@ -159,10 +161,61 @@ class HardwarePackTests(TestCase):
         tf = self.get_tarfile(hwpack)
         self.assertThat(tf, HardwarePackHasFile("manifest", content=""))
 
+    def test_manifest_contains_package_info(self):
+        package1 = DummyFetchedPackage("foo", "1.1")
+        package2 = DummyFetchedPackage("bar", "1.2")
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_packages([package1, package2])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("manifest", content="foo=1.1\nbar=1.2\n"))
+
     def test_creates_pkgs_dir(self):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
         self.assertThat(tf, HardwarePackHasFile("pkgs", type=tarfile.DIRTYPE))
+
+    def test_adds_packages(self):
+        package = DummyFetchedPackage("foo", "1.1")
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_packages([package])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("pkgs/%s" % package.filename,
+                content=package.content.read()))
+
+    def test_adds_multiple_packages_at_once(self):
+        package1 = DummyFetchedPackage("foo", "1.1")
+        package2 = DummyFetchedPackage("bar", "1.1")
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_packages([package1, package2])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("pkgs/%s" % package1.filename,
+                content=package1.content.read()))
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("pkgs/%s" % package2.filename,
+                content=package2.content.read()))
+
+    def test_adds_multiple_in_multiple_steps(self):
+        package1 = DummyFetchedPackage("foo", "1.1")
+        package2 = DummyFetchedPackage("bar", "1.1")
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_packages([package1])
+        hwpack.add_packages([package2])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("pkgs/%s" % package1.filename,
+                content=package1.content.read()))
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("pkgs/%s" % package2.filename,
+                content=package2.content.read()))
 
     def test_creates_Packages_file(self):
         hwpack = HardwarePack(self.metadata)
@@ -174,11 +227,56 @@ class HardwarePackTests(TestCase):
         tf = self.get_tarfile(hwpack)
         self.assertThat(tf, HardwarePackHasFile("pkgs/Packages", content=""))
 
+    def test_Packages_file_correct_contents_with_packages(self):
+        package1 = DummyFetchedPackage("foo", "1.1")
+        package2 = DummyFetchedPackage("bar", "1.1")
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_packages([package1, package2])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile(
+                "pkgs/Packages",
+                content=get_packages_file([package1, package2])))
+
     def test_creates_sources_list_dir(self):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
         self.assertThat(
             tf, HardwarePackHasFile("sources.list.d", type=tarfile.DIRTYPE))
+
+    def test_adds_sources_list_file(self):
+        hwpack = HardwarePack(self.metadata)
+        source = 'http://example.org/ ubuntu'
+        hwpack.add_apt_sources({'ubuntu': source})
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf, HardwarePackHasFile("sources.list.d/ubuntu",
+                content="deb " + source + "\n"))
+
+    def test_adds_multiple_sources_list_files(self):
+        hwpack = HardwarePack(self.metadata)
+        source1 = 'http://example.org/ ubuntu main universe'
+        source2 = 'http://example.org/ linaro'
+        hwpack.add_apt_sources({'ubuntu': source1, 'linaro': source2})
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf, HardwarePackHasFile("sources.list.d/ubuntu",
+                content="deb " + source1 + "\n"))
+        self.assertThat(
+            tf, HardwarePackHasFile("sources.list.d/linaro",
+                content="deb " + source2 + "\n"))
+
+    def test_overwrites_sources_list_file(self):
+        hwpack = HardwarePack(self.metadata)
+        old_source = 'http://example.org/ ubuntu'
+        hwpack.add_apt_sources({'ubuntu': old_source})
+        new_source = 'http://example.org/ ubuntu main universe'
+        hwpack.add_apt_sources({'ubuntu': new_source})
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf, HardwarePackHasFile("sources.list.d/ubuntu",
+                content="deb " + new_source + "\n"))
 
     def test_creates_sources_list_gpg_dir(self):
         hwpack = HardwarePack(self.metadata)

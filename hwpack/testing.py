@@ -9,7 +9,7 @@ import tarfile
 from testtools import TestCase
 
 from hwpack.better_tarfile import writeable_tarfile
-from hwpack.packages import FetchedPackage
+from hwpack.packages import get_packages_file, FetchedPackage
 
 
 @contextmanager
@@ -109,14 +109,7 @@ class AptSourceFixture(object):
                 os.path.join(self.rootdir, package.filename), 'wb') as f:
                 f.write(package.content.read())
         with open(os.path.join(self.rootdir, "Packages"), 'wb') as f:
-            for package in self.packages:
-                f.write('Package: %s\n' % package.name)
-                f.write('Version: %s\n' % package.version)
-                f.write('Filename: %s\n' % package.filename)
-                f.write('Size: %d\n' % package.size)
-                f.write('Architecture: all\n')
-                f.write('MD5sum: %s\n' % package.md5)
-                f.write('\n')
+            f.write(get_packages_file(self.packages))
 
     def tearDown(self):
         if os.path.exists(self.rootdir):

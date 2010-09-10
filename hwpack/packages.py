@@ -7,6 +7,29 @@ from apt.package import FetchError
 import apt_pkg
 
 
+def get_packages_file(packages):
+    """Get the Packages file contents indexing `packages`.
+
+    :param packages: the packages to index.
+    :type packages: an iterable of FetchedPackages.
+    :return: the Packages file contents indexing `packages`.
+    :rtype: str
+    """
+    content = ""
+    for package in packages:
+        parts = []
+        parts.append('Package: %s' % package.name)
+        parts.append('Version: %s' % package.version)
+        parts.append('Filename: %s' % package.filename)
+        parts.append('Size: %d' % package.size)
+        # TODO: architecture support
+        parts.append('Architecture: all')
+        parts.append('MD5sum: %s' % package.md5)
+        content += "\n".join(parts)
+        content += "\n\n"
+    return content
+
+
 class DummyProgress(object):
     """An AcquireProgress that silences all output.
 

@@ -1,4 +1,5 @@
 from hwpack.better_tarfile import writeable_tarfile
+from hwpack.packages import get_packages_file
 
 
 class Metadata(object):
@@ -75,6 +76,8 @@ class HardwarePack(object):
         :type metadata: Metadata
         """
         self.metadata = metadata
+        self.sources = {}
+        self.packages = []
 
     def filename(self):
         """The filename that this hardware pack should have.
@@ -91,6 +94,37 @@ class HardwarePack(object):
             support_suffix = "_%s" % self.metadata.support
         return "hwpack_%s_%s%s.tar.gz" % (
             self.metadata.name, self.metadata.version, support_suffix)
+
+    def add_apt_sources(self, sources):
+        """Add APT sources to the hardware pack.
+
+        Given a dict of names and the source lines this will add
+        them to the hardware pack.
+
+        The names should be an identifier for the source, and the
+        source lines should be what is put in sources.list for that
+        source, minus the "deb" part.
+
+        If you pass an identifier that has already been passed to this
+        method, then the previous value will be replaced with the new
+        value.
+
+        :param sources: the sources to use as a dict mapping identifiers
+            to sources entries.
+        :type sources: a dict mapping str to str
+        """
+        self.sources.update(sources)
+
+    def add_packages(self, packages):
+        """Add packages to the hardware pack.
+
+        Given a list of packages this will add them to the hardware
+        pack.
+
+        :param packages: the packages to add
+        :type packages: FetchedPackage
+        """
+        self.packages += packages
 
     def to_file(self, fileobj):
         """Write the hwpack to a file object.
@@ -112,9 +146,22 @@ class HardwarePack(object):
                 self.FORMAT_FILENAME, self.FORMAT + "\n")
             tf.create_file_from_string(
                 self.METADATA_FILENAME, str(self.metadata))
-            # TODO: include packages and sources etc.
-            tf.create_file_from_string(self.MANIFEST_FILENAME, "")
             tf.create_dir(self.PACKAGES_DIRNAME)
-            tf.create_file_from_string(self.PACKAGES_FILENAME, "")
+            manifest_content = ""
+            for package in self.packages:
+                tf.create_file_from_string(
+                    self.PACKAGES_DIRNAME + "/" + package.filename,
+                    package.content.read())
+                manifest_content += "%s=%s\n" % (
+                    package.name, package.version)
+            tf.create_file_from_string(
+                self.MANIFEST_FILENAME, manifest_content)
+            tf.create_file_from_string(
+                self.PACKAGES_FILENAME, get_packages_file(self.packages))
             tf.create_dir(self.SOURCES_LIST_DIRNAME)
+            for source_name, source_info in self.sources.items():
+                tf.create_file_from_string(
+                    self.SOURCES_LIST_DIRNAME + "/" + source_name,
+                    "deb " + source_info + "\n")
+            # TODO: include sources keys etc.
             tf.create_dir(self.SOURCES_LIST_GPG_DIRNAME)
