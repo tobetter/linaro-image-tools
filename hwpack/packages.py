@@ -79,14 +79,27 @@ class FetchedPackage(object):
     :ivar architecture: the architecture that the package is for, may be
         'all'.
     :type architecture: str
-    :ivar depends: the depends string that the package has, i.e. the
+    :ivar depends: the Depends string that the package has, i.e. the
         dependencies as specified in debian/control. May be None if the
         package has none.
     :type depends: str or None
+    :ivar pre_depends: the Pre-Depends string that the package has, i.e. the
+        pre-dependencies as specified in debian/control. May be None if the
+        package has none.
+    :type pre_depends: str or None
+    :ivar conflicts: the Conflicts string that the package has, i.e. the
+        conflicts as specified in debian/control. May be None if the
+        package has none.
+    :type conflicts: str or None
+    :ivar recommends: the Recommends string that the package has, i.e. the
+        recommends as specified in debian/control. May be None if the
+        package has none.
+    :type recommends: str or None
     """
 
     def __init__(self, name, version, filename, content, size, md5,
-                 architecture, depends=None):
+                 architecture, depends=None, pre_depends=None,
+                 conflicts=None, recommends=None):
         """Create a FetchedPackage.
 
         See the instance variables for the arguments.
@@ -99,6 +112,9 @@ class FetchedPackage(object):
         self.md5 = md5
         self.architecture = architecture
         self.depends = depends
+        self.pre_depends = pre_depends
+        self.conflicts = conflicts
+        self.recommends = recommends
 
     @classmethod
     def from_apt(cls, pkg, filename, content):
@@ -128,7 +144,10 @@ class FetchedPackage(object):
                 and self.size == other.size
                 and self.md5 == other.md5
                 and self.architecture == other.architecture
-                and self.depends == other.depends)
+                and self.depends == other.depends
+                and self.pre_depends == other.pre_depends
+                and self.conflicts == other.conflicts
+                and self.recommends == other.recommends)
 
     def __hash__(self):
         return hash(
@@ -138,9 +157,10 @@ class FetchedPackage(object):
     def __repr__(self):
         return (
             '<%s name=%s version=%s size=%s md5=%s architecture=%s '
-            'depends="%s">' % (self.__class__.__name__, self.name,
-                self.version, self.size, self.md5, self.architecture,
-                self.depends))
+            'depends="%s" pre_depends="%s" conflicts="%s" recommends="%s">'
+            % (self.__class__.__name__, self.name, self.version, self.size,
+                self.md5, self.architecture, self.depends, self.pre_depends,
+                self.conflicts, self.recommends))
 
 
 class IsolatedAptCache(object):
