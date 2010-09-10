@@ -54,10 +54,11 @@ class DummyFetchedPackage(FetchedPackage):
     See FetchedPackage for the instance variables.
     """
 
-    def __init__(self, name, version, architecture="all"):
+    def __init__(self, name, version, architecture="all", depends=None):
         self.name = name
         self.version = version
         self.architecture = architecture
+        self.depends = depends
 
     @property
     def filename(self):

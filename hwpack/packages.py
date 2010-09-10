@@ -22,8 +22,9 @@ def get_packages_file(packages):
         parts.append('Version: %s' % package.version)
         parts.append('Filename: %s' % package.filename)
         parts.append('Size: %d' % package.size)
-        # TODO: architecture support
         parts.append('Architecture: %s' % package.architecture)
+        if package.depends:
+            parts.append('Depends: %s' % package.depends)
         parts.append('MD5sum: %s' % package.md5)
         content += "\n".join(parts)
         content += "\n\n"
@@ -78,6 +79,9 @@ class FetchedPackage(object):
     :ivar architecture: the architecture that the package is for, may be
         'all'.
     :type architecture: str
+    :ivar depends: the depends string that the package has, i.e. the
+        dependencies as specified in debian/control.
+    :type depends: str
     """
 
     def __init__(self, name, version, filename, content, size, md5,
@@ -93,6 +97,7 @@ class FetchedPackage(object):
         self.size = size
         self.md5 = md5
         self.architecture = architecture
+        self.depends = None
 
     def __eq__(self, other):
         return (self.name == other.name

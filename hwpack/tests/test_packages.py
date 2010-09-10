@@ -40,6 +40,22 @@ class GetPackagesFileTests(TestCase):
             get_packages_file([package1]) + get_packages_file([package2]),
             get_packages_file([package1, package2]))
 
+    def test_with_depends(self):
+        package = DummyFetchedPackage("foo", "1.1", depends="bar | baz")
+        self.assertEqual(textwrap.dedent("""\
+            Package: foo
+            Version: 1.1
+            Filename: %(filename)s
+            Size: %(size)d
+            Architecture: all
+            Depends: bar | baz
+            MD5sum: %(md5)s
+            \n""" % {
+                'filename': package.filename,
+                'size': package.size,
+                'md5': package.md5,
+            }), get_packages_file([package]))
+
 
 class FetchedPackageTests(TestCase):
 
