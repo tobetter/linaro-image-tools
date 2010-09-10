@@ -158,6 +158,20 @@ class FetchedPackage(object):
 
     @classmethod
     def from_apt(cls, pkg, filename, content):
+        """Create a FetchedPackage from a python-apt Version (package).
+
+        This is an alternative constructor for FetchedPackages that
+        takes most of the information from an apt.package.Version
+        object (i.e. a single version of a package), with some additional
+        information supplied by tha caller.
+
+        :param pkg: the python-apt package to take the information from.
+        :type pkg: apt.package.Version instance
+        :param filename: the filename that the package has.
+        :type filename: str
+        :param content: the content of the package.
+        :type content: file-like object
+        """
         depends = stringify_relationship(pkg, "Depends")
         pre_depends = stringify_relationship(pkg, "PreDepends")
         conflicts = stringify_relationship(pkg, "Conflicts")
