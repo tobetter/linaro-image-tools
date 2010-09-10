@@ -128,11 +128,47 @@ class FetchedPackageTests(TestCase):
             "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "i386")
         self.assertNotEqual(package1, package2)
 
+    def test_not_equal_different_depends(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="baz")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_depends_one_None(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends=None)
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_same_depends(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="bar")
+        self.assertEqual(package1, package2)
+
     def test_equal_hash_equal(self):
         package1 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
         package2 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+        self.assertEqual(hash(package1), hash(package2))
+
+    def test_equal_hash_equal_with_depends(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="bar")
         self.assertEqual(hash(package1), hash(package2))
 
 

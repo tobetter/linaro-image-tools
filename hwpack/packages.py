@@ -80,12 +80,13 @@ class FetchedPackage(object):
         'all'.
     :type architecture: str
     :ivar depends: the depends string that the package has, i.e. the
-        dependencies as specified in debian/control.
-    :type depends: str
+        dependencies as specified in debian/control. May be None if the
+        package has none.
+    :type depends: str or None
     """
 
     def __init__(self, name, version, filename, content, size, md5,
-                 architecture):
+                 architecture, depends=None):
         """Create a FetchedPackage.
 
         See the instance variables for the arguments.
@@ -97,7 +98,7 @@ class FetchedPackage(object):
         self.size = size
         self.md5 = md5
         self.architecture = architecture
-        self.depends = None
+        self.depends = depends
 
     def __eq__(self, other):
         return (self.name == other.name
@@ -106,11 +107,13 @@ class FetchedPackage(object):
                 and self.content.read() == other.content.read()
                 and self.size == other.size
                 and self.md5 == other.md5
-                and self.architecture == other.architecture)
+                and self.architecture == other.architecture
+                and self.depends == other.depends)
 
     def __hash__(self):
         return hash(
-            (self.name, self.version, self.filename, self.size, self.md5))
+            (self.name, self.version, self.filename, self.size, self.md5,
+             self.depends))
 
 
 class IsolatedAptCache(object):
