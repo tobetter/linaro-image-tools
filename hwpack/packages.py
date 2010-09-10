@@ -113,14 +113,15 @@ class FetchedPackage(object):
             (self.name, self.version, self.filename, self.size, self.md5))
 
 
-class PackageFetcher(object):
-    """A class to fetch packages from a defined list of sources."""
+class IsolatedAptCache(object):
+    """A apt.cache.Cache wrapper that isolates it from the system it runs on.
+
+    :ivar cache: the isolated cache.
+    :type cache: apt.cache.Cache
+    """
 
     def __init__(self, sources, architecture=None):
-        """Create a PackageFetcher.
-
-        Once created a PackageFetcher should have its `prepare` method
-        called before use.
+        """Create an IsolatedAptCache.
 
         :param sources: a list of sources such that they can be prefixed
             with "deb " and fed to apt.
@@ -133,7 +134,7 @@ class PackageFetcher(object):
         self.tempdir = None
 
     def prepare(self):
-        """Prepare a PackageFetcher for use.
+        """Prepare the IsolatedAptCache for use.
 
         Should be called before use, and after any modification to the list
         of sources.
@@ -171,11 +172,51 @@ class PackageFetcher(object):
     def cleanup(self):
         """Cleanup any remaining artefacts.
 
-        Should be called on all PackageFetchers when they are finished
+        Should be called on all IsolatedAptCache when they are finished
         with.
         """
         if self.tempdir is not None and os.path.exists(self.tempdir):
             shutil.rmtree(self.tempdir)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.cleanup()
+        return False
+
+
+class PackageFetcher(object):
+    """A class to fetch packages from a defined list of sources."""
+
+    def __init__(self, sources, architecture=None):
+        """Create a PackageFetcher.
+
+        Once created a PackageFetcher should have its `prepare` method
+        called before use.
+
+        :param sources: a list of sources such that they can be prefixed
+            with "deb " and fed to apt.
+        :type sources: an iterable of str
+        :param architecture: the architecture to fetch packages for.
+        :type architecture: str
+        """
+        self.cache = IsolatedAptCache(sources, architecture=architecture)
+
+    def prepare(self):
+        """Prepare the PackageFetcher for use.
+
+        Should be called before use.
+        """
+        self.cache.prepare()
+        return self
+
+    __enter__ = prepare
+
+    def cleanup(self):
+        """Cleanup any remaining artefacts.
+
+        Should be called on all PackageFetchers when they are finished
+        with.
+        """
+        self.cache.cleanup()
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.cleanup()
@@ -194,9 +235,9 @@ class PackageFetcher(object):
         """
         results = []
         for package in packages:
-            candidate = self.cache[package].candidate
+            candidate = self.cache.cache[package].candidate
             base = os.path.basename(candidate.filename)
-            destfile = os.path.join(self.tempdir, base)
+            destfile = os.path.join(self.cache.tempdir, base)
             acq = apt_pkg.Acquire(DummyProgress())
             acqfile = apt_pkg.AcquireFile(
                 acq, candidate.uri, candidate.md5, candidate.size,
