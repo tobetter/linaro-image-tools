@@ -530,3 +530,16 @@ class PackageFetcherTests(TestCaseWithFixtures):
         fetcher = self.get_fetcher([source], architecture="arch1")
         self.assertEqual(
             wanted_package, fetcher.fetch_packages(["foo"])[0])
+
+    def test_fetch_package_fetches_with_relationships(self):
+        depends = "foo"
+        pre_depends = "bar (>= 1.0)"
+        conflicts = "baz | zap"
+        recommends = "zing, zang"
+        wanted_package = DummyFetchedPackage(
+            "foo", "1.0", depends=depends, pre_depends=pre_depends,
+            conflicts=conflicts, recommends=recommends)
+        source = self.useFixture(AptSourceFixture([wanted_package]))
+        fetcher = self.get_fetcher([source])
+        self.assertEqual(
+            wanted_package, fetcher.fetch_packages(["foo"])[0])
