@@ -233,7 +233,7 @@ class HardwarePackTests(TestCase):
         hwpack.add_apt_sources({'ubuntu': source})
         tf = self.get_tarfile(hwpack)
         self.assertThat(
-            tf, HardwarePackHasFile("sources.list.d/ubuntu",
+            tf, HardwarePackHasFile("sources.list.d/ubuntu.list",
                 content="deb " + source + "\n"))
 
     def test_adds_multiple_sources_list_files(self):
@@ -243,10 +243,10 @@ class HardwarePackTests(TestCase):
         hwpack.add_apt_sources({'ubuntu': source1, 'linaro': source2})
         tf = self.get_tarfile(hwpack)
         self.assertThat(
-            tf, HardwarePackHasFile("sources.list.d/ubuntu",
+            tf, HardwarePackHasFile("sources.list.d/ubuntu.list",
                 content="deb " + source1 + "\n"))
         self.assertThat(
-            tf, HardwarePackHasFile("sources.list.d/linaro",
+            tf, HardwarePackHasFile("sources.list.d/linaro.list",
                 content="deb " + source2 + "\n"))
 
     def test_overwrites_sources_list_file(self):
@@ -257,7 +257,7 @@ class HardwarePackTests(TestCase):
         hwpack.add_apt_sources({'ubuntu': new_source})
         tf = self.get_tarfile(hwpack)
         self.assertThat(
-            tf, HardwarePackHasFile("sources.list.d/ubuntu",
+            tf, HardwarePackHasFile("sources.list.d/ubuntu.list",
                 content="deb " + new_source + "\n"))
 
     def test_creates_sources_list_gpg_dir(self):

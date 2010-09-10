@@ -186,7 +186,7 @@ class HardwarePack(object):
             tf.create_dir(self.SOURCES_LIST_DIRNAME)
             for source_name, source_info in self.sources.items():
                 tf.create_file_from_string(
-                    self.SOURCES_LIST_DIRNAME + "/" + source_name,
+                    self.SOURCES_LIST_DIRNAME + "/" + source_name + ".list",
                     "deb " + source_info + "\n")
             # TODO: include sources keys etc.
             tf.create_dir(self.SOURCES_LIST_GPG_DIRNAME)
