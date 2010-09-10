@@ -25,6 +25,12 @@ def get_packages_file(packages):
         parts.append('Architecture: %s' % package.architecture)
         if package.depends:
             parts.append('Depends: %s' % package.depends)
+        if package.pre_depends:
+            parts.append('Pre-Depends: %s' % package.pre_depends)
+        if package.conflicts:
+            parts.append('Conflicts: %s' % package.conflicts)
+        if package.recommends:
+            parts.append('Recommends: %s' % package.recommends)
         parts.append('MD5sum: %s' % package.md5)
         content += "\n".join(parts)
         content += "\n\n"

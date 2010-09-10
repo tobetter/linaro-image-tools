@@ -41,21 +41,44 @@ class GetPackagesFileTests(TestCase):
             get_packages_file([package1]) + get_packages_file([package2]),
             get_packages_file([package1, package2]))
 
-    def test_with_depends(self):
-        package = DummyFetchedPackage("foo", "1.1", depends="bar | baz")
-        self.assertEqual(textwrap.dedent("""\
+    def get_stanza(self, package, relationships=""):
+        stanza = textwrap.dedent("""\
             Package: foo
             Version: 1.1
             Filename: %(filename)s
             Size: %(size)d
             Architecture: all
-            Depends: bar | baz
-            MD5sum: %(md5)s
-            \n""" % {
-                'filename': package.filename,
-                'size': package.size,
-                'md5': package.md5,
-            }), get_packages_file([package]))
+            """ % {
+            'filename': package.filename,
+            'size': package.size,
+            })
+        stanza += relationships
+        stanza += "MD5sum: %s\n\n" % package.md5
+        return stanza
+
+    def test_with_depends(self):
+        package = DummyFetchedPackage("foo", "1.1", depends="bar | baz")
+        self.assertEqual(
+            self.get_stanza(package, "Depends: bar | baz\n"),
+            get_packages_file([package]))
+
+    def test_with_pre_depends(self):
+        package = DummyFetchedPackage("foo", "1.1", pre_depends="bar | baz")
+        self.assertEqual(
+            self.get_stanza(package, "Pre-Depends: bar | baz\n"),
+            get_packages_file([package]))
+
+    def test_with_conflicts(self):
+        package = DummyFetchedPackage("foo", "1.1", conflicts="bar | baz")
+        self.assertEqual(
+            self.get_stanza(package, "Conflicts: bar | baz\n"),
+            get_packages_file([package]))
+
+    def test_with_recommends(self):
+        package = DummyFetchedPackage("foo", "1.1", recommends="bar | baz")
+        self.assertEqual(
+            self.get_stanza(package, "Recommends: bar | baz\n"),
+            get_packages_file([package]))
 
 
 class FetchedPackageTests(TestCaseWithFixtures):
