@@ -1,0 +1,22 @@
+Source: linaro-image-tools
+Section: devel
+Priority: optional
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.9.1
+Maintainer: Linaro Developers <linaro-dev@lists.linaro.org>
+Vcs-Bzr: 
+
+Package: linaro-image-tools
+Architecture: all
+Depends: ${misc:Depends},
+         parted,
+         uuid-runtime,
+         wget,
+         uboot-mkimage,
+         realpath
+Description: collection of tools to work with Linaro images
+ This package offers a set of tools for use with Linaro images.
+ .
+ The provided linaro-media-create command allows writing Linaro images
+ to a SD card, or generating an image file which you can boot in QEMU.
+

@@ -177,7 +177,7 @@ class HardwarePack(object):
                 tf.create_file_from_string(
                     self.PACKAGES_DIRNAME + "/" + package.filename,
                     package.content.read())
-                manifest_content += "%s %s\n" % (
+                manifest_content += "%s=%s\n" % (
                     package.name, package.version)
             tf.create_file_from_string(
                 self.MANIFEST_FILENAME, manifest_content)
