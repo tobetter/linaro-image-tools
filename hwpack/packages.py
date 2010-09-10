@@ -100,6 +100,26 @@ class FetchedPackage(object):
         self.architecture = architecture
         self.depends = depends
 
+    @classmethod
+    def from_apt(cls, pkg, filename, content):
+        depends = None
+        pkg_dependencies = pkg.get_dependencies("Depends")
+        if pkg_dependencies:
+            depends_list = []
+            for or_dep in pkg_dependencies:
+                or_list = []
+                for or_alternative in or_dep.or_dependencies:
+                    suffix = ""
+                    if or_alternative.relation:
+                        suffix = " (%s %s)" % (
+                            or_alternative.relation, or_alternative.version)
+                    or_list.append("%s%s" % (or_alternative.name, suffix))
+                depends_list.append(" | ".join(or_list))
+            depends = ", ".join(depends_list)
+        return cls(
+            pkg.package.name, pkg.version, filename, content, pkg.size,
+            pkg.md5, pkg.architecture, depends=depends)
+
     def __eq__(self, other):
         return (self.name == other.name
                 and self.version == other.version
@@ -114,6 +134,13 @@ class FetchedPackage(object):
         return hash(
             (self.name, self.version, self.filename, self.size, self.md5,
              self.depends))
+
+    def __repr__(self):
+        return (
+            '<%s name=%s version=%s size=%s md5=%s architecture=%s '
+            'depends="%s">' % (self.__class__.__name__, self.name,
+                self.version, self.size, self.md5, self.architecture,
+                self.depends))
 
 
 class IsolatedAptCache(object):
@@ -250,9 +277,7 @@ class PackageFetcher(object):
                 raise FetchError(
                     "The item %r could not be fetched: %s" %
                     (acqfile.destfile, acqfile.error_text))
-            result_package = FetchedPackage(
-                candidate.package.name, candidate.version, base,
-                open(destfile), candidate.size, candidate.md5,
-                candidate.architecture)
+            result_package = FetchedPackage.from_apt(
+                candidate, base, open(destfile))
             results.append(result_package)
         return results

@@ -58,7 +58,7 @@ class GetPackagesFileTests(TestCase):
             }), get_packages_file([package]))
 
 
-class FetchedPackageTests(TestCase):
+class FetchedPackageTests(TestCaseWithFixtures):
 
     def test_attributes(self):
         package = FetchedPackage(
@@ -170,6 +170,25 @@ class FetchedPackageTests(TestCase):
             "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
             depends="bar")
         self.assertEqual(hash(package1), hash(package2))
+
+    def test_from_apt(self):
+        target_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            created_package = FetchedPackage.from_apt(
+                candidate, target_package.filename, target_package.content)
+            self.assertEqual(target_package, created_package)
+
+    def test_from_apt_with_depends(self):
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", depends="bar | baz (>= 1.0), zap")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            created_package = FetchedPackage.from_apt(
+                candidate, target_package.filename, target_package.content)
+            self.assertEqual(target_package, created_package)
 
 
 class AptCacheTests(TestCaseWithFixtures):
