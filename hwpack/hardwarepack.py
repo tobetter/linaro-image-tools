@@ -39,6 +39,28 @@ class Metadata(object):
         self.support = support
         self.architecture = architecture
 
+    @classmethod
+    def from_config(cls, config, version, architecture):
+        """Create a Metadata from a Config object.
+
+        As a Config will contain most of the information needed for a
+        Metadata, we can provide this convenient way to construct one.
+
+        Information that is not in the config has to be provided by
+        the caller.
+
+        :param config: the config to take values from.
+        :type config: Config
+        :param version: the version to record in the metadata.
+        :type version: str
+        :param architecture: the architecture that the hardware pack is
+            targetting.
+        :type architecture: str
+        """
+        return cls(
+            config.name, version, architecture, origin=config.origin,
+            maintainer=config.maintainer, support=config.support)
+
     def __str__(self):
         """Get the contents of the metadata file."""
         metadata = "NAME=%s\n" % self.name
