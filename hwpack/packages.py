@@ -37,6 +37,40 @@ def get_packages_file(packages):
     return content
 
 
+def stringify_relationship(pkg, relationship):
+    """Given a Package, return a string of the specified relationship.
+
+    apt.package.Version stores the relationship information of the
+    package as objects. This function will convert those objects
+    in to the string form that we are used to from debian/control
+    or Packages files.
+
+    :param pkg: the package to take the relationship information from.
+    :type pkg: apt.package.Version
+    :param relationship: the relationship to stringify, as understood
+        by apt.package.Package.get_dependencies, e.g. "Depends",
+        "PreDepends".
+    :type relationship: str or None if the package has no relationships
+         of that type.
+    """
+    relationship_str = None
+    pkg_dependencies = pkg.get_dependencies(relationship)
+    if pkg_dependencies:
+        relationship_list = []
+        for or_dep in pkg_dependencies:
+            or_list = []
+            for or_alternative in or_dep.or_dependencies:
+                suffix = ""
+                if or_alternative.relation:
+                    suffix = " (%s %s)" % (
+                        or_alternative.relation,
+                        or_alternative.version)
+                or_list.append("%s%s" % (or_alternative.name, suffix))
+            relationship_list.append(" | ".join(or_list))
+        relationship_str = ", ".join(relationship_list)
+    return relationship_str
+
+
 class DummyProgress(object):
     """An AcquireProgress that silences all output.
 
@@ -124,27 +158,10 @@ class FetchedPackage(object):
 
     @classmethod
     def from_apt(cls, pkg, filename, content):
-        def stringify_relationship(relationship):
-            relationship_str = None
-            pkg_dependencies = pkg.get_dependencies(relationship)
-            if pkg_dependencies:
-                relationship_list = []
-                for or_dep in pkg_dependencies:
-                    or_list = []
-                    for or_alternative in or_dep.or_dependencies:
-                        suffix = ""
-                        if or_alternative.relation:
-                            suffix = " (%s %s)" % (
-                                or_alternative.relation,
-                                or_alternative.version)
-                        or_list.append("%s%s" % (or_alternative.name, suffix))
-                    relationship_list.append(" | ".join(or_list))
-                relationship_str = ", ".join(relationship_list)
-            return relationship_str
-        depends = stringify_relationship("Depends")
-        pre_depends = stringify_relationship("PreDepends")
-        conflicts = stringify_relationship("Conflicts")
-        recommends = stringify_relationship("Recommends")
+        depends = stringify_relationship(pkg, "Depends")
+        pre_depends = stringify_relationship(pkg, "PreDepends")
+        conflicts = stringify_relationship(pkg, "Conflicts")
+        recommends = stringify_relationship(pkg, "Recommends")
         return cls(
             pkg.package.name, pkg.version, filename, content, pkg.size,
             pkg.md5, pkg.architecture, depends=depends,

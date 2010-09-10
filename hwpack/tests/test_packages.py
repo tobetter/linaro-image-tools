@@ -9,6 +9,7 @@ from hwpack.packages import (
     FetchedPackage,
     get_packages_file,
     PackageFetcher,
+    stringify_relationship,
     )
 from hwpack.testing import (
     AptSourceFixture,
@@ -79,6 +80,51 @@ class GetPackagesFileTests(TestCase):
         self.assertEqual(
             self.get_stanza(package, "Recommends: bar | baz\n"),
             get_packages_file([package]))
+
+
+class StringifyRelationshipTests(TestCaseWithFixtures):
+
+    def test_no_relationship(self):
+        target_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                None, stringify_relationship(candidate, "Depends"))
+
+    def test_single_package(self):
+        target_package = DummyFetchedPackage("foo", "1.0", depends="bar")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                "bar", stringify_relationship(candidate, "Depends"))
+
+    def test_multiple_package(self):
+        target_package = DummyFetchedPackage("foo", "1.0", depends="bar, baz")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                "bar, baz", stringify_relationship(candidate, "Depends"))
+
+    def test_alternative_packages(self):
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", depends="bar | baz")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                "bar | baz", stringify_relationship(candidate, "Depends"))
+
+    def test_package_with_version(self):
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", depends="baz (<= 2.0)")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                "baz (<= 2.0)", stringify_relationship(candidate, "Depends"))
 
 
 class FetchedPackageTests(TestCaseWithFixtures):
