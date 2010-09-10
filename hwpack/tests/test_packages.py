@@ -5,6 +5,7 @@ import textwrap
 from testtools import TestCase
 
 from hwpack.packages import (
+    IsolatedAptCache,
     FetchedPackage,
     get_packages_file,
     PackageFetcher,
@@ -119,87 +120,98 @@ class FetchedPackageTests(TestCase):
         self.assertEqual(hash(package1), hash(package2))
 
 
-class PackageFetcherTests(TestCaseWithFixtures):
+class AptCacheTests(TestCaseWithFixtures):
 
     def test_cleanup_removes_tempdir(self):
-        fetcher = PackageFetcher([])
-        fetcher.prepare()
-        tempdir = fetcher.tempdir
-        fetcher.cleanup()
+        cache = IsolatedAptCache([])
+        cache.prepare()
+        tempdir = cache.tempdir
+        cache.cleanup()
         self.assertFalse(os.path.exists(tempdir))
 
     def test_cleanup_ignores_missing_tempdir(self):
-        fetcher = PackageFetcher([])
-        fetcher.prepare()
-        tempdir = fetcher.tempdir
-        fetcher.cleanup()
+        cache = IsolatedAptCache([])
+        cache.prepare()
+        tempdir = cache.tempdir
+        cache.cleanup()
         # Check that there is no problem removing it again
-        fetcher.cleanup()
+        cache.cleanup()
 
     def test_cleanup_before_prepare(self):
-        fetcher = PackageFetcher([])
+        cache = IsolatedAptCache([])
         # Check that there is no problem cleaning up before we start
-        fetcher.cleanup()
+        cache.cleanup()
 
     def test_prepare_creates_tempdir(self):
-        fetcher = PackageFetcher([])
-        self.addCleanup(fetcher.cleanup)
-        fetcher.prepare()
-        self.assertTrue(os.path.isdir(fetcher.tempdir))
+        cache = IsolatedAptCache([])
+        self.addCleanup(cache.cleanup)
+        cache.prepare()
+        self.assertTrue(os.path.isdir(cache.tempdir))
 
     def test_prepare_creates_var_lib_dpkg_status_file(self):
-        fetcher = PackageFetcher([])
-        self.addCleanup(fetcher.cleanup)
-        fetcher.prepare()
+        cache = IsolatedAptCache([])
+        self.addCleanup(cache.cleanup)
+        cache.prepare()
         self.assertEqual(
             '',
             open(os.path.join(
-                fetcher.tempdir, "var", "lib", "dpkg", "status")).read())
+                cache.tempdir, "var", "lib", "dpkg", "status")).read())
 
     def test_prepare_creates_var_cache_apt_archives_partial_dir(self):
-        fetcher = PackageFetcher([])
-        self.addCleanup(fetcher.cleanup)
-        fetcher.prepare()
+        cache = IsolatedAptCache([])
+        self.addCleanup(cache.cleanup)
+        cache.prepare()
         self.assertTrue(
             os.path.isdir(os.path.join(
-                fetcher.tempdir, "var", "cache", "apt", "archives",
+                cache.tempdir, "var", "cache", "apt", "archives",
                 "partial")))
 
     def test_prepare_creates_var_lib_apt_lists_partial_dir(self):
-        fetcher = PackageFetcher([])
-        self.addCleanup(fetcher.cleanup)
-        fetcher.prepare()
+        cache = IsolatedAptCache([])
+        self.addCleanup(cache.cleanup)
+        cache.prepare()
         self.assertTrue(
             os.path.isdir(os.path.join(
-                fetcher.tempdir, "var", "lib", "apt", "lists", "partial")))
+                cache.tempdir, "var", "lib", "apt", "lists", "partial")))
 
     def test_prepare_creates_etc_apt_sources_list_file(self):
         source1 = self.useFixture(AptSourceFixture([]))
         source2 = self.useFixture(AptSourceFixture([]))
-        fetcher = PackageFetcher(
+        cache = IsolatedAptCache(
             [source1.sources_entry, source2.sources_entry])
-        self.addCleanup(fetcher.cleanup)
-        fetcher.prepare()
+        self.addCleanup(cache.cleanup)
+        cache.prepare()
         self.assertEqual(
             "deb %s\ndeb %s\n" % (
                 source1.sources_entry, source2.sources_entry),
             open(os.path.join(
-                fetcher.tempdir, "etc", "apt", "sources.list")).read())
+                cache.tempdir, "etc", "apt", "sources.list")).read())
 
     def test_prepare_with_arch_creates_etc_apt_apt_conf(self):
-        fetcher = PackageFetcher([], architecture="arch")
-        self.addCleanup(fetcher.cleanup)
-        fetcher.prepare()
+        cache = IsolatedAptCache([], architecture="arch")
+        self.addCleanup(cache.cleanup)
+        cache.prepare()
         self.assertEqual(
             'Apt {\nArchitecture "arch";\n}\n',
             open(os.path.join(
-                fetcher.tempdir, "etc", "apt", "apt.conf")).read())
+                cache.tempdir, "etc", "apt", "apt.conf")).read())
+
+    def test_context_manager(self):
+        # A smoketest that IsolatedAptCache can be used as a context
+        # manager
+        with IsolatedAptCache([]) as cache:
+            tempdir = cache.tempdir
+            self.assertTrue(os.path.isdir(tempdir))
+        self.assertFalse(os.path.exists(tempdir))
+
+
+class PackageFetcherTests(TestCaseWithFixtures):
 
     def test_context_manager(self):
         # A smoketest that PackageFetcher can be used as a context
         # manager
         with PackageFetcher([]) as fetcher:
-            tempdir = fetcher.tempdir
+            tempdir = fetcher.cache.tempdir
             self.assertTrue(os.path.isdir(tempdir))
         self.assertFalse(os.path.exists(tempdir))
 
