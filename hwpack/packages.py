@@ -279,6 +279,10 @@ class IsolatedAptCache(object):
         return False
 
 
+class DependencyNotSatisfied(Exception):
+    pass
+
+
 class PackageFetcher(object):
     """A class to fetch packages from a defined list of sources."""
 
@@ -331,7 +335,14 @@ class PackageFetcher(object):
         """
         results = []
         for package in packages:
-            candidate = self.cache.cache[package].candidate
+            self.cache.cache[package].mark_install(auto_fix=False)
+            if self.cache.cache.broken_count:
+                raise DependencyNotSatisfied(
+                    "Unable to satisfy dependencies of %s" %
+                    ", ".join([p.name for p in self.cache.cache
+                        if p.is_inst_broken]))
+        for package in self.cache.cache.get_changes():
+            candidate = package.candidate
             base = os.path.basename(candidate.filename)
             destfile = os.path.join(self.cache.tempdir, base)
             acq = apt_pkg.Acquire(DummyProgress())

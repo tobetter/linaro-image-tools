@@ -5,9 +5,10 @@ import textwrap
 from testtools import TestCase
 
 from hwpack.packages import (
-    IsolatedAptCache,
+    DependencyNotSatisfied,
     FetchedPackage,
     get_packages_file,
+    IsolatedAptCache,
     PackageFetcher,
     stringify_relationship,
     )
@@ -582,10 +583,41 @@ class PackageFetcherTests(TestCaseWithFixtures):
         pre_depends = "bar (>= 1.0)"
         conflicts = "baz | zap"
         recommends = "zing, zang"
+        dependency_packages = [
+            DummyFetchedPackage("foo", "1.0"),
+            DummyFetchedPackage("bar", "1.0"),
+            DummyFetchedPackage("baz", "1.0"),
+            DummyFetchedPackage("zap", "1.0"),
+            DummyFetchedPackage("zing", "1.0"),
+            DummyFetchedPackage("zang", "1.0"),
+        ]
         wanted_package = DummyFetchedPackage(
-            "foo", "1.0", depends=depends, pre_depends=pre_depends,
+            "top", "1.0", depends=depends, pre_depends=pre_depends,
             conflicts=conflicts, recommends=recommends)
-        source = self.useFixture(AptSourceFixture([wanted_package]))
+        source = self.useFixture(
+            AptSourceFixture([wanted_package] + dependency_packages))
+        fetcher = self.get_fetcher([source])
+        self.assertIn(
+            wanted_package, fetcher.fetch_packages(["top"]))
+
+    def test_fetches_dependencies(self):
+        wanted_package1 = DummyFetchedPackage(
+            "foo", "1.0", depends="bar")
+        wanted_package2 = DummyFetchedPackage(
+            "bar", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([wanted_package1, wanted_package2]))
         fetcher = self.get_fetcher([source])
         self.assertEqual(
-            wanted_package, fetcher.fetch_packages(["foo"])[0])
+            [wanted_package1, wanted_package2],
+            fetcher.fetch_packages(["foo"]))
+
+    def test_broken_dependencies(self):
+        wanted_package = DummyFetchedPackage(
+            "foo", "1.0", depends="bar")
+        source = self.useFixture(AptSourceFixture([wanted_package]))
+        fetcher = self.get_fetcher([source])
+        e = self.assertRaises(
+            DependencyNotSatisfied, fetcher.fetch_packages, ["foo"])
+        self.assertEqual(
+            "Unable to satisfy dependencies of foo", str(e))
