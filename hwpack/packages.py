@@ -341,15 +341,18 @@ class PackageFetcher(object):
                     "Unable to satisfy dependencies of %s" %
                     ", ".join([p.name for p in self.cache.cache
                         if p.is_inst_broken]))
+        acq = apt_pkg.Acquire(DummyProgress())
+        acqfiles = []
         for package in self.cache.cache.get_changes():
             candidate = package.candidate
             base = os.path.basename(candidate.filename)
             destfile = os.path.join(self.cache.tempdir, base)
-            acq = apt_pkg.Acquire(DummyProgress())
             acqfile = apt_pkg.AcquireFile(
                 acq, candidate.uri, candidate.md5, candidate.size,
                 base, destfile=destfile)
-            acq.run()
+            acqfiles.append((acqfile, candidate, base, destfile))
+        acq.run()
+        for acqfile, candidate, base, destfile in acqfiles:
             if acqfile.status != acqfile.STAT_DONE:
                 raise FetchError(
                     "The item %r could not be fetched: %s" %
