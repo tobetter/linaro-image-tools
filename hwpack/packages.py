@@ -222,12 +222,14 @@ class FetchedPackage(object):
              self.depends))
 
     def __repr__(self):
+        has_content = self.content and "yes" or "no"
         return (
             '<%s name=%s version=%s size=%s md5=%s architecture=%s '
-            'depends="%s" pre_depends="%s" conflicts="%s" recommends="%s">'
+            'depends="%s" pre_depends="%s" conflicts="%s" recommends="%s" '
+            'has_content=%s>'
             % (self.__class__.__name__, self.name, self.version, self.size,
                 self.md5, self.architecture, self.depends, self.pre_depends,
-                self.conflicts, self.recommends))
+                self.conflicts, self.recommends, has_content))
 
 
 class IsolatedAptCache(object):
@@ -357,6 +359,21 @@ class PackageFetcher(object):
         self.cleanup()
         return False
 
+    def _get_candidates(self, packages):
+        results = []
+        for package in packages:
+            candidate = self.cache.cache[package].candidate
+            yield candidate
+
+    def get_versions(self, packages):
+        results = []
+        for candidate in self._get_candidates(packages):
+            base = os.path.basename(candidate.filename)
+            result_package = FetchedPackage.from_apt(
+                candidate, base)
+            results.append(result_package)
+        return results
+
     def fetch_packages(self, packages):
         """Fetch the files for the given list of package names.
 
@@ -369,8 +386,7 @@ class PackageFetcher(object):
             be found.
         """
         results = []
-        for package in packages:
-            candidate = self.cache.cache[package].candidate
+        for candidate in self._get_candidates(packages):
             base = os.path.basename(candidate.filename)
             destfile = os.path.join(self.cache.tempdir, base)
             acq = apt_pkg.Acquire(DummyProgress())
