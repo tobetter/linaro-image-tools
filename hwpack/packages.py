@@ -7,11 +7,14 @@ from apt.package import FetchError
 import apt_pkg
 
 
-def get_packages_file(packages):
+def get_packages_file(packages, extra_text=None):
     """Get the Packages file contents indexing `packages`.
 
     :param packages: the packages to index.
     :type packages: an iterable of FetchedPackages.
+    :param extra_text: extra text to insert in to each stanza.
+         Should not end with a newline.
+    :type extra_text: str or None
     :return: the Packages file contents indexing `packages`.
     :rtype: str
     """
@@ -19,6 +22,8 @@ def get_packages_file(packages):
     for package in packages:
         parts = []
         parts.append('Package: %s' % package.name)
+        if extra_text is not None:
+            parts.append(extra_text)
         parts.append('Version: %s' % package.version)
         parts.append('Filename: %s' % package.filename)
         parts.append('Size: %d' % package.size)
