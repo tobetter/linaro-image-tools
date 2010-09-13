@@ -639,3 +639,8 @@ class PackageFetcherTests(TestCaseWithFixtures):
         fetcher.ignore_packages(["bar"])
         self.assertEqual(
             [wanted_package], fetcher.fetch_packages(["foo"]))
+
+    def test_ignore_unknown_package(self):
+        source = self.useFixture(AptSourceFixture([]))
+        fetcher = self.get_fetcher([source])
+        self.assertRaises(KeyError, fetcher.ignore_packages, ["unknown"])
