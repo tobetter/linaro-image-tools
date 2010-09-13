@@ -347,6 +347,14 @@ class PackageFetcher(object):
         return False
 
     def ignore_packages(self, packages):
+        """Ignore packages such that they will not be fetched.
+
+        If a package is ignored then neither it or any of its recursive
+        dependencies will be fetched by fetch_packages.
+
+        :param packages: the list of package names to ignore.
+        :type packages: an iterable of str
+        """
         for package in packages:
             self.cache.cache[package].mark_install(auto_fix=False)
             if self.cache.cache.broken_count:
