@@ -186,7 +186,9 @@ class HardwarePack(object):
             tf.create_file_from_string(
                 self.MANIFEST_FILENAME, manifest_content)
             tf.create_file_from_string(
-                self.PACKAGES_FILENAME, get_packages_file(self.packages))
+                self.PACKAGES_FILENAME,
+                get_packages_file(
+                    [p for p in self.packages if p.content is not None]))
             tf.create_dir(self.SOURCES_LIST_DIRNAME)
             for source_name, source_info in self.sources.items():
                 tf.create_file_from_string(

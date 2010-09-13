@@ -230,6 +230,28 @@ class HardwarePackTests(TestCase):
                 "pkgs/Packages",
                 content=get_packages_file([package1, package2])))
 
+    def test_Packages_file_empty_with_no_deb_content(self):
+        package1 = DummyFetchedPackage("foo", "1.1", no_content=True)
+        package2 = DummyFetchedPackage("bar", "1.1", no_content=True)
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_packages([package1, package2])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile("pkgs/Packages", content=""))
+
+    def test_Packages_file_correct_content_with_some_deb_content(self):
+        package1 = DummyFetchedPackage("foo", "1.1", no_content=True)
+        package2 = DummyFetchedPackage("bar", "1.1")
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_packages([package1, package2])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile(
+                "pkgs/Packages",
+                content=get_packages_file([package2])))
+
     def test_creates_sources_list_dir(self):
         hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
