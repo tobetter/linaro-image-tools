@@ -242,8 +242,6 @@ class IsolatedAptCache(object):
         """
         self.cleanup()
         self.tempdir = tempfile.mkdtemp(prefix="hwpack-apt-cache-")
-        files = ["var/lib/dpkg/status",
-                ]
         dirs = ["var/lib/dpkg",
                 "etc/apt/",
                 "var/cache/apt/archives/partial",
@@ -251,9 +249,7 @@ class IsolatedAptCache(object):
                ]
         for d in dirs:
             os.makedirs(os.path.join(self.tempdir, d))
-        for fn in files:
-            with open(os.path.join(self.tempdir, fn), 'w'):
-                pass
+        self.set_installed_packages([], reopen=False)
         sources_list = os.path.join(
             self.tempdir, "etc", "apt", "sources.list")
         with open(sources_list, 'w') as f:
@@ -267,6 +263,28 @@ class IsolatedAptCache(object):
         self.cache.update()
         self.cache.open()
         return self
+
+    def set_installed_packages(self, packages, reopen=True):
+        """Set a list of packages as those installed on the system.
+
+        This does no installing, just changes dpkg's database to have
+        the tools think the packages are installed.
+
+        :param packages: a list of packages to "install" on the system,
+            replacing any others.
+        :type packages: an iterable of FetchedPackages.
+        :param reopen: whether to reopen the apt cache after doing the
+            operation. Default is to do so. Note that if it is not done,
+            then the changes will not be visible in the cache until it
+            is reopened.
+        """
+        with open(
+            os.path.join(self.tempdir, "var/lib/dpkg/status"), "w") as f:
+            f.write(
+                get_packages_file(
+                    packages, extra_text="Status: install ok installed"))
+        if reopen:
+            self.cache.open()
 
     __enter__ = prepare
 
