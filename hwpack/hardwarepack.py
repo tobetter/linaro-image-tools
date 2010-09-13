@@ -1,3 +1,5 @@
+import time
+
 from hwpack.better_tarfile import writeable_tarfile
 from hwpack.packages import get_packages_file
 
@@ -166,6 +168,7 @@ class HardwarePack(object):
         kwargs["default_gid"] = 1000
         kwargs["default_uname"] = "user"
         kwargs["default_gname"] = "group"
+        kwargs["default_mtime"] = time.time()
         with writeable_tarfile(fileobj, mode="w:gz", **kwargs) as tf:
             tf.create_file_from_string(
                 self.FORMAT_FILENAME, self.FORMAT + "\n")

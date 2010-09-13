@@ -5,6 +5,7 @@ import shutil
 import tempfile
 from StringIO import StringIO
 import tarfile
+import time
 
 from testtools import TestCase
 from testtools.matchers import Matcher, Mismatch
@@ -255,7 +256,10 @@ class HardwarePackHasFile(TarfileHasFile):
         kwargs.setdefault("gid", 1000)
         kwargs.setdefault("uname", "user")
         kwargs.setdefault("gname", "group")
-        # TODO: mtime checking
+        kwargs.setdefault("mtime", time.time())
+        # Enough that it won't fail if the test is slow to execute, but
+        #  not enough that we can have a wildly wrong timestamp.
+        kwargs.setdefault("mtime_skew", 100)
         super(HardwarePackHasFile, self).__init__(path, **kwargs)
 
 
