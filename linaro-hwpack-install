@@ -81,8 +81,8 @@ HWPACK_ARCH=`grep ARCHITECTURE "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
   die "Hardware pack architecture ($HWPACK_ARCH) does not match the host's architecture"
 
 # Install the apt sources that contain the packages we need.
-for file in "${HWPACK_DIR}"/sources.list.d/*; do
-  filename=`basename $file`
+for filename in $(ls "${HWPACK_DIR}"/sources.list.d/); do
+  file="${HWPACK_DIR}"/sources.list.d/$filename
   while read line; do
     # Skip any files that contain lines that are already present in the apt
     # configuration.
@@ -94,7 +94,8 @@ for file in "${HWPACK_DIR}"/sources.list.d/*; do
 done
 
 # Import the OpenPGP keys for the files installed above.
-for file in `ls "${HWPACK_DIR}"/sources.list.d.gpg/`; do
+for filename in $(ls "${HWPACK_DIR}"/sources.list.d.gpg/); do
+  file="${HWPACK_DIR}"/sources.list.d.gpg/$filename
   sudo apt-key add $file
 done
 
