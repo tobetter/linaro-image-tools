@@ -114,8 +114,9 @@ class FetchedPackage(object):
     :type version: str
     :ivar filename: the filename that the package has.
     :type filename: str
-    :ivar content: a file that the content of the package can be read from.
-    :type content: a file-like object
+    :ivar content: a file that the content of the package can be read from,
+        or None if the content is not known.
+    :type content: a file-like object or None
     :ivar size: the size of the package
     :type size: int
     :ivar md5: the hex representation of the md5sum of the contents of
@@ -142,7 +143,7 @@ class FetchedPackage(object):
     :type recommends: str or None
     """
 
-    def __init__(self, name, version, filename, content, size, md5,
+    def __init__(self, name, version, filename, size, md5,
                  architecture, depends=None, pre_depends=None,
                  conflicts=None, recommends=None):
         """Create a FetchedPackage.
@@ -152,7 +153,6 @@ class FetchedPackage(object):
         self.name = name
         self.version = version
         self.filename = filename
-        self.content = content
         self.size = size
         self.md5 = md5
         self.architecture = architecture
@@ -160,9 +160,18 @@ class FetchedPackage(object):
         self.pre_depends = pre_depends
         self.conflicts = conflicts
         self.recommends = recommends
+        self.content = None
+
+    def set_content(self, content):
+        """Set the content of the package.
+
+        :param content: the content of the package
+        :type content: a file-like object
+        """
+        self.content = content
 
     @classmethod
-    def from_apt(cls, pkg, filename, content):
+    def from_apt(cls, pkg, filename, content=None):
         """Create a FetchedPackage from a python-apt Version (package).
 
         This is an alternative constructor for FetchedPackages that
@@ -181,17 +190,24 @@ class FetchedPackage(object):
         pre_depends = stringify_relationship(pkg, "PreDepends")
         conflicts = stringify_relationship(pkg, "Conflicts")
         recommends = stringify_relationship(pkg, "Recommends")
-        return cls(
-            pkg.package.name, pkg.version, filename, content, pkg.size,
+        pkg = cls(
+            pkg.package.name, pkg.version, filename, pkg.size,
             pkg.md5, pkg.architecture, depends=depends,
             pre_depends=pre_depends, conflicts=conflicts,
             recommends=recommends)
+        if content is not None:
+            pkg.set_content(content)
+        return pkg
 
     def __eq__(self, other):
+        def get_content(pkg):
+            return pkg.content and pkg.content.read()
+        content = get_content(self)
+        other_content = get_content(other)
         return (self.name == other.name
                 and self.version == other.version
                 and self.filename == other.filename
-                and self.content.read() == other.content.read()
+                and content == other_content
                 and self.size == other.size
                 and self.md5 == other.md5
                 and self.architecture == other.architecture
