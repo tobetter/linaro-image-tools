@@ -5,7 +5,7 @@ from testtools import TestCase
 
 from hwpack.hardwarepack import HardwarePack, Metadata
 from hwpack.packages import get_packages_file
-from hwpack.testing import DummyFetchedPackage, HardwarePackHasFile
+from hwpack.testing import DummyFetchedPackage, HardwarePackHasFile, Not
 
 
 class MetadataTests(TestCase):
@@ -198,6 +198,15 @@ class HardwarePackTests(TestCase):
             tf,
             HardwarePackHasFile("pkgs/%s" % package2.filename,
                 content=package2.content.read()))
+
+    def test_add_packages_without_content_leaves_out_debs(self):
+        package1 = DummyFetchedPackage("foo", "1.1", no_content=True)
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_packages([package1])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            Not(HardwarePackHasFile("pkgs/%s" % package1.filename)))
 
     def test_creates_Packages_file(self):
         hwpack = HardwarePack(self.metadata)
