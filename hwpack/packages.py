@@ -266,6 +266,19 @@ class IsolatedAptCache(object):
         return self
 
     def set_installed_packages(self, packages, reopen=True):
+        """Set a list of packages as those installed on the system.
+
+        This does no installing, just changes dpkg's database to have
+        the tools think the packages are installed.
+
+        :param packages: a list of packages to "install" on the system,
+            replacing any others.
+        :type packages: an iterable of FetchedPackages.
+        :param reopen: whether to reopen the apt cache after doing the
+            operation. Default is to do so. Note that if it is not done,
+            then the changes will not be visible in the cache until it
+            is reopened.
+        """
         with open(
             os.path.join(self.tempdir, "var/lib/dpkg/status"), "w") as f:
             f.write(
