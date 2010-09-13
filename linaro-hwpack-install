@@ -105,9 +105,9 @@ sudo apt-get update -qq
 
 echo -n "Installing packages ..."
 if [ $INSTALL_LATEST -ne 0 ]; then
-  packages=`sed 's/ .*//' "${HWPACK_DIR}"/manifest`
+  packages=`sed 's/=.*//' "${HWPACK_DIR}"/manifest`
 else
-  packages=`sed 's/ /=/' "${HWPACK_DIR}"/manifest`
+  packages=`cat "${HWPACK_DIR}"/manifest`
 fi
 sudo apt-get install $packages
 echo "Done"
