@@ -23,7 +23,7 @@
 set -e
 
 LOCKFILE="/var/lock/hwpack"
-TEMP_DIR="/var/tmp/hwpack"
+TEMP_DIR=$(mktemp -d)
 HWPACK_DIR="${TEMP_DIR}/unpacked"
 HWPACK_PKGS_SOURCE=/etc/apt/sources.list.d/hwpack-pkgs.list
 INSTALL_LATEST=0
