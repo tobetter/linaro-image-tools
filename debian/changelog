@@ -1,3 +1,20 @@
+linaro-image-tools (0.2) maverick; urgency=low
+
+  [ James Westby ]
+  * Add a module that provides some improvements to tarfile.
+  * Add some matchers for testing the content of tarfiles.
+  * Add the skeleton code to create empty hardware packs.
+
+  [ Torez Smith ]
+  * Add IGEP support; LP: #627611.
+
+  [ Loïc Minier ]
+  * Fix deps in control as well: depend on uuid-runtime rather than
+    uuidgen-runtime and do not depend on util-linux, e2fsprogs and coreutils
+    as these are Essential: yes; thanks Colin Watson.
+
+ -- Loïc Minier <loic.minier@linaro.org>  Sun, 05 Sep 2010 10:26:20 +0200
+
 linaro-image-tools (0.1) maverick; urgency=low
 
   * Initial packaging
