@@ -13,6 +13,9 @@ def get_packages_file(packages, extra_text=None):
 
     :param packages: the packages to index.
     :type packages: an iterable of FetchedPackages.
+    :param extra_text: extra text to insert in to each stanza.
+         Should not end with a newline.
+    :type extra_text: str or None
     :return: the Packages file contents indexing `packages`.
     :rtype: str
     """

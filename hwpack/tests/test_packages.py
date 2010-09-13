@@ -82,6 +82,22 @@ class GetPackagesFileTests(TestCase):
             self.get_stanza(package, "Recommends: bar | baz\n"),
             get_packages_file([package]))
 
+    def test_with_extra_text(self):
+        package = DummyFetchedPackage("foo", "1.1")
+        self.assertEqual(textwrap.dedent("""\
+            Package: foo
+            Status: bar
+            Version: 1.1
+            Filename: %(filename)s
+            Size: %(size)d
+            Architecture: all
+            MD5sum: %(md5)s
+            \n""" % {
+                'filename': package.filename,
+                'size': package.size,
+                'md5': package.md5,
+            }), get_packages_file([package], extra_text="Status: bar"))
+
 
 class StringifyRelationshipTests(TestCaseWithFixtures):
 
