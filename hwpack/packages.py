@@ -1,5 +1,6 @@
 import os
 import shutil
+from StringIO import StringIO
 import tempfile
 
 from apt.cache import Cache
@@ -7,7 +8,7 @@ from apt.package import FetchError
 import apt_pkg
 
 
-def get_packages_file(packages):
+def get_packages_file(packages, extra_text=None):
     """Get the Packages file contents indexing `packages`.
 
     :param packages: the packages to index.
@@ -19,6 +20,8 @@ def get_packages_file(packages):
     for package in packages:
         parts = []
         parts.append('Package: %s' % package.name)
+        if extra_text is not None:
+            parts.append(extra_text)
         parts.append('Version: %s' % package.version)
         parts.append('Filename: %s' % package.filename)
         parts.append('Size: %d' % package.size)
@@ -237,8 +240,6 @@ class IsolatedAptCache(object):
         """
         self.cleanup()
         self.tempdir = tempfile.mkdtemp(prefix="hwpack-apt-cache-")
-        files = ["var/lib/dpkg/status",
-                ]
         dirs = ["var/lib/dpkg",
                 "etc/apt/",
                 "var/cache/apt/archives/partial",
@@ -246,9 +247,7 @@ class IsolatedAptCache(object):
                ]
         for d in dirs:
             os.makedirs(os.path.join(self.tempdir, d))
-        for fn in files:
-            with open(os.path.join(self.tempdir, fn), 'w'):
-                pass
+        self.set_installed_packages([], _reopen=False)
         sources_list = os.path.join(
             self.tempdir, "etc", "apt", "sources.list")
         with open(sources_list, 'w') as f:
@@ -262,6 +261,15 @@ class IsolatedAptCache(object):
         self.cache.update()
         self.cache.open()
         return self
+
+    def set_installed_packages(self, packages, _reopen=True):
+        with open(
+            os.path.join(self.tempdir, "var/lib/dpkg/status"), "w") as f:
+            f.write(
+                get_packages_file(
+                    packages, extra_text="Status: install ok installed"))
+        if _reopen:
+            self.cache.open()
 
     __enter__ = prepare
 
@@ -321,6 +329,23 @@ class PackageFetcher(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.cleanup()
         return False
+
+    def ignore_packages(self, packages):
+        for package in packages:
+            self.cache.cache[package].mark_install(auto_fix=False)
+            if self.cache.cache.broken_count:
+                raise DependencyNotSatisfied(
+                    "Unable to satisfy dependencies of %s" %
+                    ", ".join([p.name for p in self.cache.cache
+                        if p.is_inst_broken]))
+        installed = []
+        for package in self.cache.cache.get_changes():
+            candidate = package.candidate
+            base = os.path.basename(candidate.filename)
+            installed.append(
+                FetchedPackage.from_apt(
+                    candidate, base, StringIO()))
+        self.cache.set_installed_packages(installed)
 
     def fetch_packages(self, packages):
         """Fetch the files for the given list of package names.

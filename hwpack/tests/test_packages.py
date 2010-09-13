@@ -621,3 +621,15 @@ class PackageFetcherTests(TestCaseWithFixtures):
             DependencyNotSatisfied, fetcher.fetch_packages, ["foo"])
         self.assertEqual(
             "Unable to satisfy dependencies of foo", str(e))
+
+    def test_ignore_packages(self):
+        wanted_package = DummyFetchedPackage(
+            "foo", "1.0", depends="bar")
+        ignored_package = DummyFetchedPackage(
+            "bar", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([wanted_package, ignored_package]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["bar"])
+        self.assertEqual(
+            [wanted_package], fetcher.fetch_packages(["foo"]))
