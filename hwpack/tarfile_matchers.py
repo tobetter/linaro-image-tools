@@ -123,18 +123,10 @@ class TarfileHasFile(Matcher):
                     return TarfileWrongValueMismatch(
                         attr, tarball, self.path, expected, actual)
         if self.mtime is not None:
-            if self.mtime_skew is None:
-                if self.mtime != info.mtime:
-                    return TarfileWrongValueMismatch(
-                        "mtime", tarball, self.path, self.mtime, info.mtime)
-            else:
-                if ((self.mtime > info.mtime
-                    and self.mtime - self.mtime_skew > info.mtime)
-                    or (self.mtime <= info.mtime
-                        and self.mtime + self.mtime_skew < info.mtime)):
-                        return TarfileWrongValueMismatch(
-                            "mtime", tarball, self.path, self.mtime,
-                            info.mtime)
+            mtime_skew = self.mtime_skew or 0
+            if abs(self.mtime - info.mtime) > self.mtime_skew:
+                return TarfileWrongValueMismatch(
+                    "mtime", tarball, self.path, self.mtime, info.mtime)
         if self.content is not None:
             actual = tarball.extractfile(self.path).read()
             if actual != self.content:
