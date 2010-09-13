@@ -11,7 +11,7 @@ class Config(object):
 
     MAIN_SECTION = "hwpack"
     NAME_KEY = "name"
-    NAME_REGEX = "[a-z0-9][a-z0-9+0.]+"
+    NAME_REGEX = "[a-z0-9][a-z0-9+-.]+$"
     INCLUDE_DEBS_KEY = "include-debs"
     SUPPORT_KEY = "support"
     SOURCES_ENTRY_KEY = "sources-entry"
