@@ -145,13 +145,13 @@ class HardwarePackTests(TestCase):
 
     def test_filename(self):
         hwpack = HardwarePack(self.metadata)
-        self.assertEqual("hwpack_ahwpack_4.tar.gz", hwpack.filename())
+        self.assertEqual("hwpack_ahwpack_4_armel.tar.gz", hwpack.filename())
 
     def test_filename_with_support(self):
         metadata = Metadata("ahwpack", "4", "armel", support="supported")
         hwpack = HardwarePack(metadata)
         self.assertEqual(
-            "hwpack_ahwpack_4_supported.tar.gz", hwpack.filename())
+            "hwpack_ahwpack_4_armel_supported.tar.gz", hwpack.filename())
 
     def get_tarfile(self, hwpack):
         fileobj = StringIO()
