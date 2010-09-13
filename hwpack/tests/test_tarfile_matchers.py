@@ -226,3 +226,10 @@ class TarfileHasFileTests(TestCase):
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
                 mismatch, tf, "foo", "content", "othercontent", "somecontent")
+
+    def test_matches_mtime_with_skew(self):
+        backing_file = StringIO()
+        with test_tarfile(contents=[("foo", "")], default_mtime=12345) as tf:
+            matcher = TarfileHasFile("foo", mtime=12346, mtime_skew=1)
+            mismatch = matcher.match(tf)
+            self.assertIs(None, mismatch)
