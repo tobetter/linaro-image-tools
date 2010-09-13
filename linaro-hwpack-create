@@ -1,19 +1,22 @@
 #!/usr/bin/python
 
-from optparse import OptionParser
+import argparse
 import sys
 
 from hwpack.builder import ConfigFileMissing, HardwarePackBuilder
 
 
 if __name__ == '__main__':
-    parser = OptionParser()
-    opts, args = parser.parse_args()
-    if len(args) < 2:
-        sys.stderr.write("Requires arguments CONFIG_FILE VERSION\n")
-        sys.exit(1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "CONFIG_FILE",
+        help="The configuration file to take the hardware pack information "
+        "from.")
+    parser.add_argument(
+        "VERSION", help="The version of the hardware pack to create.")
+    args = parser.parse_args()
     try:
-        builder = HardwarePackBuilder(args[0], args[1])
+        builder = HardwarePackBuilder(args.CONFIG_FILE, args.VERSION)
     except ConfigFileMissing, e:
         sys.stderr.write(str(e) + "\n")
         sys.exit(1)
