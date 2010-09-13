@@ -247,7 +247,7 @@ class IsolatedAptCache(object):
                ]
         for d in dirs:
             os.makedirs(os.path.join(self.tempdir, d))
-        self.set_installed_packages([], _reopen=False)
+        self.set_installed_packages([], reopen=False)
         sources_list = os.path.join(
             self.tempdir, "etc", "apt", "sources.list")
         with open(sources_list, 'w') as f:
@@ -262,13 +262,13 @@ class IsolatedAptCache(object):
         self.cache.open()
         return self
 
-    def set_installed_packages(self, packages, _reopen=True):
+    def set_installed_packages(self, packages, reopen=True):
         with open(
             os.path.join(self.tempdir, "var/lib/dpkg/status"), "w") as f:
             f.write(
                 get_packages_file(
                     packages, extra_text="Status: install ok installed"))
-        if _reopen:
+        if reopen:
             self.cache.open()
 
     __enter__ = prepare
