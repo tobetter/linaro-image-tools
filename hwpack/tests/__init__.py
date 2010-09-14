@@ -6,6 +6,7 @@ def test_suite():
                     'hwpack.tests.test_builder',
                     'hwpack.tests.test_hardwarepack',
                     'hwpack.tests.test_packages',
+                    'hwpack.tests.test_script',
                     'hwpack.tests.test_tarfile_matchers',
                    ]
     loader = unittest.TestLoader()

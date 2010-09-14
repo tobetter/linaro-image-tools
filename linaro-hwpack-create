@@ -1,0 +1,23 @@
+#!/usr/bin/python
+
+import argparse
+import sys
+
+from hwpack.builder import ConfigFileMissing, HardwarePackBuilder
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "CONFIG_FILE",
+        help="The configuration file to take the hardware pack information "
+        "from.")
+    parser.add_argument(
+        "VERSION", help="The version of the hardware pack to create.")
+    args = parser.parse_args()
+    try:
+        builder = HardwarePackBuilder(args.CONFIG_FILE, args.VERSION)
+    except ConfigFileMissing, e:
+        sys.stderr.write(str(e) + "\n")
+        sys.exit(1)
+    builder.build()
