@@ -147,222 +147,237 @@ class FetchedPackageTests(TestCaseWithFixtures):
 
     def test_attributes(self):
         package = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa",
             "armel")
         self.assertEqual("foo", package.name)
         self.assertEqual("1.1", package.version)
         self.assertEqual("foo_1.1.deb", package.filename)
-        self.assertEqual("xxxx", package.content.read())
+        self.assertEqual(None, package.content)
         self.assertEqual(4, package.size)
         self.assertEqual("aaaa", package.md5)
         self.assertEqual("armel", package.architecture)
 
     def test_equal(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         self.assertEqual(package1, package2)
 
     def test_not_equal_different_name(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         package2 = FetchedPackage(
-            "bar", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+            "bar", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         self.assertNotEqual(package1, package2)
 
     def test_not_equal_different_version(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         package2 = FetchedPackage(
-            "foo", "1.2", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+            "foo", "1.2", "foo_1.1.deb", 4, "aaaa", "armel")
         self.assertNotEqual(package1, package2)
 
     def test_not_equal_different_filename(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         package2 = FetchedPackage(
-            "foo", "1.1", "afoo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
-        self.assertNotEqual(package1, package2)
-
-    def test_not_equal_different_content(self):
-        package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
-        package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("yyyy"), 4, "aaaa", "armel")
+            "foo", "1.1", "afoo_1.1.deb", 4, "aaaa", "armel")
         self.assertNotEqual(package1, package2)
 
     def test_not_equal_different_size(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 5, "aaaa", "armel")
+            "foo", "1.1", "foo_1.1.deb", 5, "aaaa", "armel")
         self.assertNotEqual(package1, package2)
 
     def test_not_equal_different_md5(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "bbbb", "armel")
+            "foo", "1.1", "foo_1.1.deb", 4, "bbbb", "armel")
         self.assertNotEqual(package1, package2)
 
     def test_not_equal_different_architecture(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "i386")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "i386")
         self.assertNotEqual(package1, package2)
 
     def test_not_equal_different_depends(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
-            depends="bar")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel", depends="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
-            depends="baz")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel", depends="baz")
         self.assertNotEqual(package1, package2)
 
     def test_not_equal_different_depends_one_None(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
-            depends="bar")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel", depends="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
-            depends=None)
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel", depends=None)
         self.assertNotEqual(package1, package2)
 
     def test_equal_same_depends(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
-            depends="bar")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel", depends="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
-            depends="bar")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel", depends="bar")
         self.assertEqual(package1, package2)
 
     def test_not_equal_different_pre_depends(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             pre_depends="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             pre_depends="baz")
         self.assertNotEqual(package1, package2)
 
     def test_not_equal_different_pre_depends_one_None(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             pre_depends="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             pre_depends=None)
         self.assertNotEqual(package1, package2)
 
     def test_equal_same_pre_depends(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             pre_depends="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             pre_depends="bar")
         self.assertEqual(package1, package2)
 
     def test_not_equal_different_conflicts(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
-            conflicts="bar")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel", conflicts="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
-            conflicts="baz")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel", conflicts="baz")
         self.assertNotEqual(package1, package2)
 
     def test_not_equal_different_conflicts_one_None(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             conflicts="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             conflicts=None)
         self.assertNotEqual(package1, package2)
 
     def test_equal_same_conflicts(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
-            conflicts="bar")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel", conflicts="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
-            conflicts="bar")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel", conflicts="bar")
         self.assertEqual(package1, package2)
 
     def test_not_equal_different_recommends(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             recommends="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             recommends="baz")
         self.assertNotEqual(package1, package2)
 
     def test_not_equal_different_recommends_one_None(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             recommends="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             recommends=None)
         self.assertNotEqual(package1, package2)
 
     def test_equal_same_recommends(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             recommends="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             recommends="bar")
         self.assertEqual(package1, package2)
 
     def test_equal_hash_equal(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         self.assertEqual(hash(package1), hash(package2))
 
     def test_equal_hash_equal_with_depends(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             depends="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             depends="bar")
         self.assertEqual(hash(package1), hash(package2))
 
     def test_equal_hash_equal_with_pre_depends(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             pre_depends="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             pre_depends="bar")
         self.assertEqual(hash(package1), hash(package2))
 
     def test_equal_hash_equal_with_conflicts(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             conflicts="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             conflicts="bar")
         self.assertEqual(hash(package1), hash(package2))
 
     def test_equal_hash_equal_with_recommends(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             recommends="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
             recommends="bar")
         self.assertEqual(hash(package1), hash(package2))
+
+    def test_set_content(self):
+        package = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
+        package.set_content(StringIO("xxxx"))
+        self.assertEqual("xxxx", package.content.read())
+
+    def test_not_equal_different_contents(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
+        package1.set_content(StringIO("xxxx"))
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
+        package2.set_content(StringIO("yyyy"))
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_contents_one_unknown(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
+        package1.set_content(StringIO("xxxx"))
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_same_contents(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
+        package1.set_content(StringIO("xxxx"))
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
+        package2.set_content(StringIO("xxxx"))
+        self.assertEqual(package1, package2)
 
     def test_from_apt(self):
         target_package = DummyFetchedPackage("foo", "1.0")
@@ -370,7 +385,8 @@ class FetchedPackageTests(TestCaseWithFixtures):
         with IsolatedAptCache([source.sources_entry]) as cache:
             candidate = cache.cache['foo'].candidate
             created_package = FetchedPackage.from_apt(
-                candidate, target_package.filename, target_package.content)
+                candidate, target_package.filename,
+                content=target_package.content)
             self.assertEqual(target_package, created_package)
 
     def assert_from_apt_translates_relationship(self, relationship):
@@ -381,7 +397,8 @@ class FetchedPackageTests(TestCaseWithFixtures):
         with IsolatedAptCache([source.sources_entry]) as cache:
             candidate = cache.cache['foo'].candidate
             created_package = FetchedPackage.from_apt(
-                candidate, target_package.filename, target_package.content)
+                candidate, target_package.filename,
+                content=target_package.content)
             self.assertEqual(target_package, created_package)
 
     def test_from_apt_with_depends(self):
@@ -395,6 +412,15 @@ class FetchedPackageTests(TestCaseWithFixtures):
 
     def test_from_apt_with_recommends(self):
         self.assert_from_apt_translates_relationship('recommends')
+
+    def test_from_apt_without_content(self):
+        target_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            created_package = FetchedPackage.from_apt(
+                candidate, target_package.filename)
+            self.assertEqual(None, created_package.content)
 
 
 class AptCacheTests(TestCaseWithFixtures):
@@ -596,7 +622,7 @@ class PackageFetcherTests(TestCaseWithFixtures):
         fetched = fetcher.fetch_packages(["bar"])
         self.assertEqual(new_source_packages[0], fetched[0])
 
-    def test_fetch_package_records_correct_architecture(self):
+    def test_fetch_packages_records_correct_architecture(self):
         available_package = DummyFetchedPackage(
             "foo", "1.0", architecture="nonexistant")
         source = self.useFixture(AptSourceFixture([available_package]))
@@ -604,7 +630,7 @@ class PackageFetcherTests(TestCaseWithFixtures):
         self.assertEqual(
             "nonexistant", fetcher.fetch_packages(["foo"])[0].architecture)
 
-    def test_fetch_package_fetches_from_correct_architecture(self):
+    def test_fetch_packages_fetches_from_correct_architecture(self):
         wanted_package = DummyFetchedPackage(
             "foo", "1.0", architecture="arch1")
         unwanted_package = DummyFetchedPackage(
@@ -615,7 +641,7 @@ class PackageFetcherTests(TestCaseWithFixtures):
         self.assertEqual(
             wanted_package, fetcher.fetch_packages(["foo"])[0])
 
-    def test_fetch_package_fetches_with_relationships(self):
+    def test_fetch_packages_fetches_with_relationships(self):
         depends = "foo"
         pre_depends = "bar (>= 1.0)"
         conflicts = "baz | zap"
