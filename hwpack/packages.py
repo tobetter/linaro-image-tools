@@ -392,6 +392,17 @@ class PackageFetcher(object):
     def fetch_packages(self, packages, download_content=True):
         """Fetch the files for the given list of package names.
 
+        The files, and all their dependencies are download, and the metadata
+        and content returned as FetchedPackage objects.
+
+        If download_content is False then only the metadata is returned
+        (i.e. the FetchedPackages will have None for their content
+         attribute), and only information about the specified packages
+        will be returned, no dependencies.
+
+        No packages that have been ignored, or are recursive dependencies
+        of ignored packages will be returned.
+
         :param packages: a list of package names to install
         :type packages: an iterable of str
         :param download_content: whether to download the content of the
@@ -410,29 +421,35 @@ class PackageFetcher(object):
             base = os.path.basename(candidate.filename)
             result_package = FetchedPackage.from_apt(candidate, base)
             top_level_packages[package] = result_package
+        for package in packages:
+            self.cache.cache[package].mark_install(auto_fix=False)
+            if self.cache.cache.broken_count:
+                raise DependencyNotSatisfied(
+                    "Unable to satisfy dependencies of %s" %
+                    ", ".join([p.name for p in self.cache.cache
+                        if p.is_inst_broken]))
         if download_content:
-            for package in packages:
-                self.cache.cache[package].mark_install(auto_fix=False)
-                if self.cache.cache.broken_count:
-                    raise DependencyNotSatisfied(
-                        "Unable to satisfy dependencies of %s" %
-                        ", ".join([p.name for p in self.cache.cache
-                            if p.is_inst_broken]))
             acq = apt_pkg.Acquire(DummyProgress())
             acqfiles = []
-            for package in self.cache.cache.get_changes():
-                candidate = package.candidate
-                base = os.path.basename(candidate.filename)
-                if package.name not in top_level_packages:
+        non_ignored_top_level = {}
+        for package in self.cache.cache.get_changes():
+            candidate = package.candidate
+            base = os.path.basename(candidate.filename)
+            if package.name not in top_level_packages:
+                if download_content:
                     result_package = FetchedPackage.from_apt(candidate, base)
                     dependency_packages[package.name] = result_package
-                else:
-                    result_package = top_level_packages[package.name]
+            else:
+                result_package = top_level_packages[package.name]
+                non_ignored_top_level[package.name] = result_package
+            if download_content:
                 destfile = os.path.join(self.cache.tempdir, base)
                 acqfile = apt_pkg.AcquireFile(
                     acq, candidate.uri, candidate.md5, candidate.size,
                     base, destfile=destfile)
                 acqfiles.append((acqfile, result_package, destfile))
+        top_level_packages = non_ignored_top_level
+        if download_content:
             acq.run()
             for acqfile, result_package, destfile in acqfiles:
                 if acqfile.status != acqfile.STAT_DONE:

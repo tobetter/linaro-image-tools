@@ -691,6 +691,15 @@ class PackageFetcherTests(TestCaseWithFixtures):
         self.assertEqual(
             "Unable to satisfy dependencies of foo", str(e))
 
+    def test_download_content_False_fetches_no_dependencies(self):
+        wanted_package1 = DummyFetchedPackage("foo", "1.0", depends="bar")
+        wanted_package2 = DummyFetchedPackage("bar", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([wanted_package1, wanted_package2]))
+        fetcher = self.get_fetcher([source])
+        self.assertEqual(
+            1, len(fetcher.fetch_packages(["foo"], download_content=False)))
+
     def test_ignore_packages(self):
         wanted_package = DummyFetchedPackage("foo", "1.0", depends="bar")
         ignored_package = DummyFetchedPackage("bar", "1.0")
@@ -725,3 +734,21 @@ class PackageFetcherTests(TestCaseWithFixtures):
             DependencyNotSatisfied, fetcher.ignore_packages, ["foo"])
         self.assertEqual(
             "Unable to satisfy dependencies of foo", str(e))
+
+    def test_ignored_arent_fetched_even_if_explicitly_requested(self):
+        wanted_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([wanted_package]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["foo"])
+        self.assertEqual(
+            [], fetcher.fetch_packages(["foo"]))
+
+    def test_no_metadata_for_ignored_even_if_explicitly_requested(self):
+        wanted_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([wanted_package]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["foo"])
+        self.assertEqual(
+            [], fetcher.fetch_packages(["foo"], download_content=False))
