@@ -1,0 +1,114 @@
+#!/bin/bash
+# linaro-hwpack-install - Install a Linaro Hardware Pack.
+#   This script is meant to run inside a chroot containing nothing other than
+#   ubuntu-minimal, so it must not depend on anything that's not in
+#   there.
+# TODO: When upgrading to a newer hwpack, make sure packages and apt sources
+# that are no longer needed are removed.
+
+# Copyright 2010 Linaro
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3 as published
+# by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+LOCKFILE="/var/lock/hwpack"
+TEMP_DIR=$(mktemp -d)
+HWPACK_DIR="${TEMP_DIR}/unpacked"
+HWPACK_PKGS_SOURCE=/etc/apt/sources.list.d/hwpack-pkgs.list
+INSTALL_LATEST=0
+
+die() {
+  echo -e "$@"
+  exit 1
+}
+
+usage_msg="Usage: $(basename $0) [--install-latest] HWPACK_TARBALL"
+if [ $# -eq 0 ]; then
+  die $usage_msg
+elif [ $# -eq 1 ]; then
+  HWPACK_TARBALL=$1
+elif [ $# -eq 2 ]; then
+  if [ $1 != "--install-latest" ]; then
+    die "Unknown argument: $1 \n$usage_msg"
+  fi
+  INSTALL_LATEST=$1
+  HWPACK_TARBALL=$2
+else
+  die $usage_msg
+fi
+
+# Try to acquire fd #9 (i.e. /var/lock/hwpack) for 2 seconds.
+# Using 9 as the file descriptor because of https://launchpad.net/bugs/249620
+exec 9>$LOCKFILE
+flock -w2 9 || die "Could not acquire lock: $LOCKFILE"
+
+cleanup() {
+  # Ensure our temp dir and apt sources are removed.
+  echo -n "Cleaning up ..."
+  rm -rf $TEMP_DIR
+  sudo rm -f $HWPACK_PKGS_SOURCE
+  sudo apt-get update -qq
+  echo "Done"
+}
+
+# From now on we'll be making changes to the system, so we need to clean
+# things up when the script exits.
+trap cleanup EXIT
+
+# This creates all the directories we need.
+mkdir -p "$HWPACK_DIR"
+
+# Unpack the hwpack tarball. We don't download it here because the chroot may
+# not contain any tools that would allow us to do that.
+echo -n "Unpacking hardware pack ..."
+tar zxf "$HWPACK_TARBALL" -C "$HWPACK_DIR"
+echo "Done"
+
+# Check the architecture of the hwpack matches that of the host system.
+HWPACK_ARCH=`grep ARCHITECTURE "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
+[ "$HWPACK_ARCH" == `dpkg --print-architecture` ] || \
+  die "Hardware pack architecture ($HWPACK_ARCH) does not match the host's architecture"
+
+# Install the apt sources that contain the packages we need.
+for filename in $(ls "${HWPACK_DIR}"/sources.list.d/); do
+  file="${HWPACK_DIR}"/sources.list.d/$filename
+  while read line; do
+    # Skip any files that contain lines that are already present in the apt
+    # configuration.
+    grep -q "$line" /etc/apt/sources.list.d/* && continue
+    grep -q "$line" /etc/apt/sources.list && continue
+  done < $file
+
+  sudo cp $file /etc/apt/sources.list.d/hwpack.$filename
+done
+
+# Import the OpenPGP keys for the files installed above.
+for filename in $(ls "${HWPACK_DIR}"/sources.list.d.gpg/); do
+  file="${HWPACK_DIR}"/sources.list.d.gpg/$filename
+  sudo apt-key add $file
+done
+
+# Add one extra apt source for the packages included in the hwpack.
+sudo sh -c "echo deb file:${HWPACK_DIR}/pkgs ./ > $HWPACK_PKGS_SOURCE"
+
+sudo apt-get update -qq
+
+echo -n "Installing packages ..."
+if [ $INSTALL_LATEST -ne 0 ]; then
+  packages=`sed 's/=.*//' "${HWPACK_DIR}"/manifest`
+else
+  packages=`cat "${HWPACK_DIR}"/manifest`
+fi
+sudo apt-get install $packages
+echo "Done"
