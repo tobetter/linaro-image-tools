@@ -162,14 +162,6 @@ class FetchedPackage(object):
         self.recommends = recommends
         self.content = None
 
-    def set_content(self, content):
-        """Set the content of the package.
-
-        :param content: the content of the package
-        :type content: a file-like object
-        """
-        self.content = content
-
     @classmethod
     def from_apt(cls, pkg, filename, content=None):
         """Create a FetchedPackage from a python-apt Version (package).
@@ -196,7 +188,7 @@ class FetchedPackage(object):
             pre_depends=pre_depends, conflicts=conflicts,
             recommends=recommends)
         if content is not None:
-            pkg.set_content(content)
+            pkg.content = content
         return pkg
 
     def __eq__(self, other):
@@ -216,10 +208,8 @@ class FetchedPackage(object):
                 and self.conflicts == other.conflicts
                 and self.recommends == other.recommends)
 
-    def __hash__(self):
-        return hash(
-            (self.name, self.version, self.filename, self.size, self.md5,
-             self.depends))
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __repr__(self):
         has_content = self.content and "yes" or "no"
