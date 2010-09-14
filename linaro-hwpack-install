@@ -25,8 +25,9 @@ set -e
 LOCKFILE="/var/lock/hwpack"
 TEMP_DIR=$(mktemp -d)
 HWPACK_DIR="${TEMP_DIR}/unpacked"
-HWPACK_PKGS_SOURCE=/etc/apt/sources.list.d/hwpack-pkgs.list
-INSTALL_LATEST=0
+INSTALL_LATEST="no"
+SOURCES_LIST_FILE="${TEMP_DIR}/sources.list"
+APT_GET_OPTIONS="Dir::Etc::SourceList=${SOURCES_LIST_FILE}"
 
 die() {
   echo -e "$@"
@@ -42,7 +43,7 @@ elif [ $# -eq 2 ]; then
   if [ $1 != "--install-latest" ]; then
     die "Unknown argument: $1 \n$usage_msg"
   fi
-  INSTALL_LATEST=$1
+  INSTALL_LATEST="yes"
   HWPACK_TARBALL=$2
 else
   die $usage_msg
@@ -57,7 +58,6 @@ cleanup() {
   # Ensure our temp dir and apt sources are removed.
   echo -n "Cleaning up ..."
   rm -rf $TEMP_DIR
-  sudo rm -f $HWPACK_PKGS_SOURCE
   sudo apt-get update -qq
   echo "Done"
 }
@@ -99,16 +99,19 @@ for filename in $(ls "${HWPACK_DIR}"/sources.list.d.gpg/); do
   sudo apt-key add $file
 done
 
-# Add one extra apt source for the packages included in the hwpack.
-sudo sh -c "echo deb file:${HWPACK_DIR}/pkgs ./ > $HWPACK_PKGS_SOURCE"
+# Add one extra apt source for the packages included in the hwpack and make
+# sure it's the first on the list of sources so that it gets precedence over
+# the others.
+echo "deb file:${HWPACK_DIR}/pkgs ./" > "$SOURCES_LIST_FILE"
+cat /etc/apt/sources.list >> "$SOURCES_LIST_FILE"
 
-sudo apt-get update -qq
+sudo apt-get -o "$APT_GET_OPTIONS" update -qq
 
 echo -n "Installing packages ..."
-if [ $INSTALL_LATEST -ne 0 ]; then
+if [ "$INSTALL_LATEST" == "no" ]; then
   packages=`sed 's/=.*//' "${HWPACK_DIR}"/manifest`
 else
   packages=`cat "${HWPACK_DIR}"/manifest`
 fi
-sudo apt-get install $packages
+sudo apt-get -o "$APT_GET_OPTIONS" install $packages
 echo "Done"
