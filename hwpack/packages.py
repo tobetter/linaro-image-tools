@@ -389,6 +389,15 @@ class PackageFetcher(object):
                     candidate, base, StringIO()))
         self.cache.set_installed_packages(installed)
 
+    def _filter_ignored(self, package_dict):
+        seen_packages = set()
+        for package in self.cache.cache.get_changes():
+            if package.name in package_dict:
+                seen_packages.add(package.name)
+        all_packages = set(package_dict.keys())
+        for unseen_package in all_packages.difference(seen_packages):
+            del package_dict[unseen_package]
+
     def fetch_packages(self, packages, download_content=True):
         """Fetch the files for the given list of package names.
 
@@ -414,13 +423,12 @@ class PackageFetcher(object):
         :raises KeyError: if any of the package names in the list couldn't
             be found.
         """
-        top_level_packages = {}
-        dependency_packages = {}
+        fetched = {}
         for package in packages:
             candidate = self.cache.cache[package].candidate
             base = os.path.basename(candidate.filename)
             result_package = FetchedPackage.from_apt(candidate, base)
-            top_level_packages[package] = result_package
+            fetched[package] = result_package
         for package in packages:
             self.cache.cache[package].mark_install(auto_fix=False)
             if self.cache.cache.broken_count:
@@ -428,33 +436,28 @@ class PackageFetcher(object):
                     "Unable to satisfy dependencies of %s" %
                     ", ".join([p.name for p in self.cache.cache
                         if p.is_inst_broken]))
-        if download_content:
-            acq = apt_pkg.Acquire(DummyProgress())
-            acqfiles = []
-        non_ignored_top_level = {}
+        self._filter_ignored(fetched)
+        if not download_content:
+            return fetched.values()
+        acq = apt_pkg.Acquire(DummyProgress())
+        acqfiles = []
         for package in self.cache.cache.get_changes():
             candidate = package.candidate
             base = os.path.basename(candidate.filename)
-            if package.name not in top_level_packages:
-                if download_content:
-                    result_package = FetchedPackage.from_apt(candidate, base)
-                    dependency_packages[package.name] = result_package
-            else:
-                result_package = top_level_packages[package.name]
-                non_ignored_top_level[package.name] = result_package
-            if download_content:
-                destfile = os.path.join(self.cache.tempdir, base)
-                acqfile = apt_pkg.AcquireFile(
-                    acq, candidate.uri, candidate.md5, candidate.size,
-                    base, destfile=destfile)
-                acqfiles.append((acqfile, result_package, destfile))
-        top_level_packages = non_ignored_top_level
-        if download_content:
-            acq.run()
-            for acqfile, result_package, destfile in acqfiles:
-                if acqfile.status != acqfile.STAT_DONE:
-                    raise FetchError(
-                        "The item %r could not be fetched: %s" %
-                        (acqfile.destfile, acqfile.error_text))
-                result_package.set_content(open(destfile))
-        return top_level_packages.values() + dependency_packages.values()
+            if package.name not in fetched:
+                result_package = FetchedPackage.from_apt(candidate, base)
+                fetched[package.name] = result_package
+            result_package = fetched[package.name]
+            destfile = os.path.join(self.cache.tempdir, base)
+            acqfile = apt_pkg.AcquireFile(
+                acq, candidate.uri, candidate.md5, candidate.size,
+                base, destfile=destfile)
+            acqfiles.append((acqfile, result_package, destfile))
+        acq.run()
+        for acqfile, result_package, destfile in acqfiles:
+            if acqfile.status != acqfile.STAT_DONE:
+                raise FetchError(
+                    "The item %r could not be fetched: %s" %
+                    (acqfile.destfile, acqfile.error_text))
+            result_package.set_content(open(destfile))
+        return fetched.values()
