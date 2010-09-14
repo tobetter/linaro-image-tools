@@ -22,8 +22,9 @@ def get_packages_file(packages):
         parts.append('Version: %s' % package.version)
         parts.append('Filename: %s' % package.filename)
         parts.append('Size: %d' % package.size)
-        # TODO: architecture support
         parts.append('Architecture: %s' % package.architecture)
+        if package.depends:
+            parts.append('Depends: %s' % package.depends)
         parts.append('MD5sum: %s' % package.md5)
         content += "\n".join(parts)
         content += "\n\n"
@@ -78,10 +79,14 @@ class FetchedPackage(object):
     :ivar architecture: the architecture that the package is for, may be
         'all'.
     :type architecture: str
+    :ivar depends: the depends string that the package has, i.e. the
+        dependencies as specified in debian/control. May be None if the
+        package has none.
+    :type depends: str or None
     """
 
     def __init__(self, name, version, filename, content, size, md5,
-                 architecture):
+                 architecture, depends=None):
         """Create a FetchedPackage.
 
         See the instance variables for the arguments.
@@ -93,6 +98,41 @@ class FetchedPackage(object):
         self.size = size
         self.md5 = md5
         self.architecture = architecture
+        self.depends = depends
+
+    @classmethod
+    def from_apt(cls, pkg, filename, content):
+        """Create a FetchedPackage from a python-apt Version (package).
+
+        This is an alternative constructor for FetchedPackages that
+        takes most of the information from an apt.package.Version
+        object (i.e. a single version of a package), with some additional
+        information supplied by tha caller.
+
+        :param pkg: the python-apt package to take the information from.
+        :type pkg: apt.package.Version instance
+        :param filename: the filename that the package has.
+        :type filename: str
+        :param content: the content of the package.
+        :type content: file-like object
+        """
+        depends = None
+        pkg_dependencies = pkg.get_dependencies("Depends")
+        if pkg_dependencies:
+            depends_list = []
+            for or_dep in pkg_dependencies:
+                or_list = []
+                for or_alternative in or_dep.or_dependencies:
+                    suffix = ""
+                    if or_alternative.relation:
+                        suffix = " (%s %s)" % (
+                            or_alternative.relation, or_alternative.version)
+                    or_list.append("%s%s" % (or_alternative.name, suffix))
+                depends_list.append(" | ".join(or_list))
+            depends = ", ".join(depends_list)
+        return cls(
+            pkg.package.name, pkg.version, filename, content, pkg.size,
+            pkg.md5, pkg.architecture, depends=depends)
 
     def __eq__(self, other):
         return (self.name == other.name
@@ -101,11 +141,20 @@ class FetchedPackage(object):
                 and self.content.read() == other.content.read()
                 and self.size == other.size
                 and self.md5 == other.md5
-                and self.architecture == other.architecture)
+                and self.architecture == other.architecture
+                and self.depends == other.depends)
 
     def __hash__(self):
         return hash(
-            (self.name, self.version, self.filename, self.size, self.md5))
+            (self.name, self.version, self.filename, self.size, self.md5,
+             self.depends))
+
+    def __repr__(self):
+        return (
+            '<%s name=%s version=%s size=%s md5=%s architecture=%s '
+            'depends="%s">' % (self.__class__.__name__, self.name,
+                self.version, self.size, self.md5, self.architecture,
+                self.depends))
 
 
 class IsolatedAptCache(object):
@@ -242,9 +291,7 @@ class PackageFetcher(object):
                 raise FetchError(
                     "The item %r could not be fetched: %s" %
                     (acqfile.destfile, acqfile.error_text))
-            result_package = FetchedPackage(
-                candidate.package.name, candidate.version, base,
-                open(destfile), candidate.size, candidate.md5,
-                candidate.architecture)
+            result_package = FetchedPackage.from_apt(
+                candidate, base, open(destfile))
             results.append(result_package)
         return results

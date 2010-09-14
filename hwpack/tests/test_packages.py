@@ -41,8 +41,24 @@ class GetPackagesFileTests(TestCase):
             get_packages_file([package1]) + get_packages_file([package2]),
             get_packages_file([package1, package2]))
 
+    def test_with_depends(self):
+        package = DummyFetchedPackage("foo", "1.1", depends="bar | baz")
+        self.assertEqual(textwrap.dedent("""\
+            Package: foo
+            Version: 1.1
+            Filename: %(filename)s
+            Size: %(size)d
+            Architecture: all
+            Depends: bar | baz
+            MD5sum: %(md5)s
+            \n""" % {
+                'filename': package.filename,
+                'size': package.size,
+                'md5': package.md5,
+            }), get_packages_file([package]))
 
-class FetchedPackageTests(TestCase):
+
+class FetchedPackageTests(TestCaseWithFixtures):
 
     def test_attributes(self):
         package = FetchedPackage(
@@ -112,12 +128,67 @@ class FetchedPackageTests(TestCase):
             "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "i386")
         self.assertNotEqual(package1, package2)
 
+    def test_not_equal_different_depends(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="baz")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_depends_one_None(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends=None)
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_same_depends(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="bar")
+        self.assertEqual(package1, package2)
+
     def test_equal_hash_equal(self):
         package1 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
         package2 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
         self.assertEqual(hash(package1), hash(package2))
+
+    def test_equal_hash_equal_with_depends(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            depends="bar")
+        self.assertEqual(hash(package1), hash(package2))
+
+    def test_from_apt(self):
+        target_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            created_package = FetchedPackage.from_apt(
+                candidate, target_package.filename, target_package.content)
+            self.assertEqual(target_package, created_package)
+
+    def test_from_apt_with_depends(self):
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", depends="bar | baz (>= 1.0), zap")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            created_package = FetchedPackage.from_apt(
+                candidate, target_package.filename, target_package.content)
+            self.assertEqual(target_package, created_package)
 
 
 class AptCacheTests(TestCaseWithFixtures):
