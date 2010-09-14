@@ -9,6 +9,7 @@ from hwpack.packages import (
     FetchedPackage,
     get_packages_file,
     PackageFetcher,
+    stringify_relationship,
     )
 from hwpack.testing import (
     AptSourceFixture,
@@ -41,21 +42,89 @@ class GetPackagesFileTests(TestCase):
             get_packages_file([package1]) + get_packages_file([package2]),
             get_packages_file([package1, package2]))
 
-    def test_with_depends(self):
-        package = DummyFetchedPackage("foo", "1.1", depends="bar | baz")
-        self.assertEqual(textwrap.dedent("""\
+    def get_stanza(self, package, relationships=""):
+        stanza = textwrap.dedent("""\
             Package: foo
             Version: 1.1
             Filename: %(filename)s
             Size: %(size)d
             Architecture: all
-            Depends: bar | baz
-            MD5sum: %(md5)s
-            \n""" % {
-                'filename': package.filename,
-                'size': package.size,
-                'md5': package.md5,
-            }), get_packages_file([package]))
+            """ % {
+            'filename': package.filename,
+            'size': package.size,
+            })
+        stanza += relationships
+        stanza += "MD5sum: %s\n\n" % package.md5
+        return stanza
+
+    def test_with_depends(self):
+        package = DummyFetchedPackage("foo", "1.1", depends="bar | baz")
+        self.assertEqual(
+            self.get_stanza(package, "Depends: bar | baz\n"),
+            get_packages_file([package]))
+
+    def test_with_pre_depends(self):
+        package = DummyFetchedPackage("foo", "1.1", pre_depends="bar | baz")
+        self.assertEqual(
+            self.get_stanza(package, "Pre-Depends: bar | baz\n"),
+            get_packages_file([package]))
+
+    def test_with_conflicts(self):
+        package = DummyFetchedPackage("foo", "1.1", conflicts="bar | baz")
+        self.assertEqual(
+            self.get_stanza(package, "Conflicts: bar | baz\n"),
+            get_packages_file([package]))
+
+    def test_with_recommends(self):
+        package = DummyFetchedPackage("foo", "1.1", recommends="bar | baz")
+        self.assertEqual(
+            self.get_stanza(package, "Recommends: bar | baz\n"),
+            get_packages_file([package]))
+
+
+class StringifyRelationshipTests(TestCaseWithFixtures):
+
+    def test_no_relationship(self):
+        target_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                None, stringify_relationship(candidate, "Depends"))
+
+    def test_single_package(self):
+        target_package = DummyFetchedPackage("foo", "1.0", depends="bar")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                "bar", stringify_relationship(candidate, "Depends"))
+
+    def test_multiple_package(self):
+        target_package = DummyFetchedPackage("foo", "1.0", depends="bar, baz")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                "bar, baz", stringify_relationship(candidate, "Depends"))
+
+    def test_alternative_packages(self):
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", depends="bar | baz")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                "bar | baz", stringify_relationship(candidate, "Depends"))
+
+    def test_package_with_version(self):
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", depends="baz (<= 2.0)")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                "baz (<= 2.0)", stringify_relationship(candidate, "Depends"))
 
 
 class FetchedPackageTests(TestCaseWithFixtures):
@@ -78,6 +147,7 @@ class FetchedPackageTests(TestCaseWithFixtures):
         package2 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
         self.assertEqual(package1, package2)
+        self.assertFalse(package1 != package2)
 
     def test_not_equal_different_name(self):
         package1 = FetchedPackage(
@@ -155,21 +225,86 @@ class FetchedPackageTests(TestCaseWithFixtures):
             depends="bar")
         self.assertEqual(package1, package2)
 
-    def test_equal_hash_equal(self):
+    def test_not_equal_different_pre_depends(self):
         package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            pre_depends="bar")
         package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel")
-        self.assertEqual(hash(package1), hash(package2))
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            pre_depends="baz")
+        self.assertNotEqual(package1, package2)
 
-    def test_equal_hash_equal_with_depends(self):
+    def test_not_equal_different_pre_depends_one_None(self):
         package1 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
-            depends="bar")
+            pre_depends="bar")
         package2 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
-            depends="bar")
-        self.assertEqual(hash(package1), hash(package2))
+            pre_depends=None)
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_same_pre_depends(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            pre_depends="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            pre_depends="bar")
+        self.assertEqual(package1, package2)
+
+    def test_not_equal_different_conflicts(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            conflicts="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            conflicts="baz")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_conflicts_one_None(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            conflicts="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            conflicts=None)
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_same_conflicts(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            conflicts="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            conflicts="bar")
+        self.assertEqual(package1, package2)
+
+    def test_not_equal_different_recommends(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            recommends="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            recommends="baz")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_recommends_one_None(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            recommends="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            recommends=None)
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_same_recommends(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            recommends="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", StringIO("xxxx"), 4, "aaaa", "armel",
+            recommends="bar")
+        self.assertEqual(package1, package2)
 
     def test_from_apt(self):
         target_package = DummyFetchedPackage("foo", "1.0")
@@ -180,15 +315,28 @@ class FetchedPackageTests(TestCaseWithFixtures):
                 candidate, target_package.filename, target_package.content)
             self.assertEqual(target_package, created_package)
 
-    def test_from_apt_with_depends(self):
-        target_package = DummyFetchedPackage(
-            "foo", "1.0", depends="bar | baz (>= 1.0), zap")
+    def assert_from_apt_translates_relationship(self, relationship):
+        kwargs = {}
+        kwargs[relationship] = "bar | baz (>= 1.0), zap"
+        target_package = DummyFetchedPackage("foo", "1.0", **kwargs)
         source = self.useFixture(AptSourceFixture([target_package]))
         with IsolatedAptCache([source.sources_entry]) as cache:
             candidate = cache.cache['foo'].candidate
             created_package = FetchedPackage.from_apt(
                 candidate, target_package.filename, target_package.content)
             self.assertEqual(target_package, created_package)
+
+    def test_from_apt_with_depends(self):
+        self.assert_from_apt_translates_relationship('depends')
+
+    def test_from_apt_with_pre_depends(self):
+        self.assert_from_apt_translates_relationship('pre_depends')
+
+    def test_from_apt_with_conflicts(self):
+        self.assert_from_apt_translates_relationship('conflicts')
+
+    def test_from_apt_with_recommends(self):
+        self.assert_from_apt_translates_relationship('recommends')
 
 
 class AptCacheTests(TestCaseWithFixtures):
@@ -384,5 +532,18 @@ class PackageFetcherTests(TestCaseWithFixtures):
         source = self.useFixture(
             AptSourceFixture([wanted_package, unwanted_package]))
         fetcher = self.get_fetcher([source], architecture="arch1")
+        self.assertEqual(
+            wanted_package, fetcher.fetch_packages(["foo"])[0])
+
+    def test_fetch_package_fetches_with_relationships(self):
+        depends = "foo"
+        pre_depends = "bar (>= 1.0)"
+        conflicts = "baz | zap"
+        recommends = "zing, zang"
+        wanted_package = DummyFetchedPackage(
+            "foo", "1.0", depends=depends, pre_depends=pre_depends,
+            conflicts=conflicts, recommends=recommends)
+        source = self.useFixture(AptSourceFixture([wanted_package]))
+        fetcher = self.get_fetcher([source])
         self.assertEqual(
             wanted_package, fetcher.fetch_packages(["foo"])[0])
