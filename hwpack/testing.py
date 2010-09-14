@@ -283,7 +283,7 @@ class IsHardwarePack(Matcher):
                 "sources.list.d", type=tarfile.DIRTYPE))
             for source_id, sources_entry in self.sources.items():
                 matchers.append(HardwarePackHasFile(
-                    "sources.list.d/%s" % source_id,
+                    "sources.list.d/%s.list" % source_id,
                     content="deb " + sources_entry + "\n"))
             matchers.append(HardwarePackHasFile(
                 "sources.list.d.gpg", type=tarfile.DIRTYPE))
