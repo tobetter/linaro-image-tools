@@ -389,57 +389,55 @@ class PackageFetcher(object):
                     candidate, base, StringIO()))
         self.cache.set_installed_packages(installed)
 
-    def _get_candidates(self, packages):
-        results = []
-        for package in packages:
-            candidate = self.cache.cache[package].candidate
-            yield candidate
-
-    def get_versions(self, packages):
-        results = []
-        for candidate in self._get_candidates(packages):
-            base = os.path.basename(candidate.filename)
-            result_package = FetchedPackage.from_apt(
-                candidate, base)
-            results.append(result_package)
-        return results
-
-    def fetch_packages(self, packages):
+    def fetch_packages(self, packages, download_content=True):
         """Fetch the files for the given list of package names.
 
         :param packages: a list of package names to install
         :type packages: an iterable of str
+        :param download_content: whether to download the content of the
+            packages. Default is to do so.
+        :type download_content: bool
         :return: a list of the packages that were fetched, with relevant
             metdata and the contents of the files available.
         :rtype: an iterable of FetchedPackages.
         :raises KeyError: if any of the package names in the list couldn't
             be found.
         """
-        results = []
+        top_level_packages = {}
+        dependency_packages = {}
         for package in packages:
-            self.cache.cache[package].mark_install(auto_fix=False)
-            if self.cache.cache.broken_count:
-                raise DependencyNotSatisfied(
-                    "Unable to satisfy dependencies of %s" %
-                    ", ".join([p.name for p in self.cache.cache
-                        if p.is_inst_broken]))
-        acq = apt_pkg.Acquire(DummyProgress())
-        acqfiles = []
-        for package in self.cache.cache.get_changes():
-            candidate = package.candidate
+            candidate = self.cache.cache[package].candidate
             base = os.path.basename(candidate.filename)
-            destfile = os.path.join(self.cache.tempdir, base)
-            acqfile = apt_pkg.AcquireFile(
-                acq, candidate.uri, candidate.md5, candidate.size,
-                base, destfile=destfile)
-            acqfiles.append((acqfile, candidate, base, destfile))
-        acq.run()
-        for acqfile, candidate, base, destfile in acqfiles:
-            if acqfile.status != acqfile.STAT_DONE:
-                raise FetchError(
-                    "The item %r could not be fetched: %s" %
-                    (acqfile.destfile, acqfile.error_text))
-            result_package = FetchedPackage.from_apt(
-                candidate, base, open(destfile))
-            results.append(result_package)
-        return results
+            result_package = FetchedPackage.from_apt(candidate, base)
+            top_level_packages[package] = result_package
+        if download_content:
+            for package in packages:
+                self.cache.cache[package].mark_install(auto_fix=False)
+                if self.cache.cache.broken_count:
+                    raise DependencyNotSatisfied(
+                        "Unable to satisfy dependencies of %s" %
+                        ", ".join([p.name for p in self.cache.cache
+                            if p.is_inst_broken]))
+            acq = apt_pkg.Acquire(DummyProgress())
+            acqfiles = []
+            for package in self.cache.cache.get_changes():
+                candidate = package.candidate
+                base = os.path.basename(candidate.filename)
+                if package.name not in top_level_packages:
+                    result_package = FetchedPackage.from_apt(candidate, base)
+                    dependency_packages[package.name] = result_package
+                else:
+                    result_package = top_level_packages[package.name]
+                destfile = os.path.join(self.cache.tempdir, base)
+                acqfile = apt_pkg.AcquireFile(
+                    acq, candidate.uri, candidate.md5, candidate.size,
+                    base, destfile=destfile)
+                acqfiles.append((acqfile, result_package, destfile))
+            acq.run()
+            for acqfile, result_package, destfile in acqfiles:
+                if acqfile.status != acqfile.STAT_DONE:
+                    raise FetchError(
+                        "The item %r could not be fetched: %s" %
+                        (acqfile.destfile, acqfile.error_text))
+                result_package.set_content(open(destfile))
+        return top_level_packages.values() + dependency_packages.values()

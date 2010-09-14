@@ -664,6 +664,14 @@ class PackageFetcherTests(TestCaseWithFixtures):
         self.assertIn(
             wanted_package, fetcher.fetch_packages(["top"]))
 
+    def test_fetch_packages_download_content_False_doesnt_set_content(self):
+        available_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(AptSourceFixture([available_package]))
+        fetcher = self.get_fetcher([source])
+        fetched_package = fetcher.fetch_packages(
+            ["foo"], download_content=False)[0]
+        self.assertIs(None, fetched_package.content)
+
     def test_fetches_dependencies(self):
         wanted_package1 = DummyFetchedPackage("foo", "1.0", depends="bar")
         wanted_package2 = DummyFetchedPackage("bar", "1.0")
@@ -682,105 +690,6 @@ class PackageFetcherTests(TestCaseWithFixtures):
             DependencyNotSatisfied, fetcher.fetch_packages, ["foo"])
         self.assertEqual(
             "Unable to satisfy dependencies of foo", str(e))
-
-    def test_get_versions_not_found_because_no_sources(self):
-        fetcher = self.get_fetcher([])
-        self.assertRaises(KeyError, fetcher.get_versions, ["nothere"])
-
-    def test_get_versions_not_found_because_not_in_sources(self):
-        available_package = DummyFetchedPackage("foo", "1.0")
-        source = self.useFixture(AptSourceFixture([available_package]))
-        fetcher = self.get_fetcher([source])
-        self.assertRaises(KeyError, fetcher.get_versions, ["nothere"])
-
-    def test_get_versions_not_found_one_of_two_missing(self):
-        available_package = DummyFetchedPackage("foo", "1.0")
-        source = self.useFixture(AptSourceFixture([available_package]))
-        fetcher = self.get_fetcher([source])
-        self.assertRaises(
-            KeyError, fetcher.get_versions, ["foo", "nothere"])
-
-    def test_get_versions_fetches_no_packages(self):
-        available_package = DummyFetchedPackage("foo", "1.0")
-        source = self.useFixture(AptSourceFixture([available_package]))
-        fetcher = self.get_fetcher([source])
-        self.assertEqual(0, len(fetcher.get_versions([])))
-
-    def test_get_versions_fetches_single_package(self):
-        available_package = DummyFetchedPackage("foo", "1.0")
-        source = self.useFixture(AptSourceFixture([available_package]))
-        fetcher = self.get_fetcher([source])
-        self.assertEqual(1, len(fetcher.get_versions(["foo"])))
-
-    def test_get_versions_fetches_correct_package(self):
-        available_package = DummyFetchedPackage("foo", "1.0")
-        source = self.useFixture(AptSourceFixture([available_package]))
-        fetcher = self.get_fetcher([source])
-        package_info = fetcher.get_versions(["foo"])[0]
-        self.assertEqual(available_package.name, package_info.name)
-        self.assertEqual(available_package.version, package_info.version)
-
-    def test_get_versions_fetches_multiple_packages(self):
-        available_packages = [
-            DummyFetchedPackage("bar", "1.0"),
-            DummyFetchedPackage("foo", "1.0"),
-        ]
-        source = self.useFixture(AptSourceFixture(available_packages))
-        fetcher = self.get_fetcher([source])
-        self.assertEqual(2, len(fetcher.get_versions(["foo", "bar"])))
-
-    def test_get_versions_fetches_multiple_packages_correctly(self):
-        available_packages = [
-            DummyFetchedPackage("foo", "1.0"),
-            DummyFetchedPackage("bar", "1.0"),
-        ]
-        source = self.useFixture(AptSourceFixture(available_packages))
-        fetcher = self.get_fetcher([source])
-        fetched = fetcher.get_versions(["foo", "bar"])
-        self.assertEqual(available_packages[0].name, fetched[0].name)
-        self.assertEqual(available_packages[0].version, fetched[0].version)
-        self.assertEqual(available_packages[1].name, fetched[1].name)
-        self.assertEqual(available_packages[1].version, fetched[1].version)
-
-    def test_get_versions_fetches_newest(self):
-        available_packages = [
-            DummyFetchedPackage("bar", "1.0"),
-            DummyFetchedPackage("bar", "1.1"),
-        ]
-        source = self.useFixture(AptSourceFixture(available_packages))
-        fetcher = self.get_fetcher([source])
-        fetched = fetcher.get_versions(["bar"])
-        self.assertEqual(available_packages[1].name, fetched[0].name)
-        self.assertEqual(available_packages[1].version, fetched[0].version)
-
-    def test_get_versions_fetches_newest_from_multiple_sources(self):
-        old_source_packages = [DummyFetchedPackage("bar", "1.0")]
-        new_source_packages = [DummyFetchedPackage("bar", "1.1")]
-        old_source = self.useFixture(AptSourceFixture(old_source_packages))
-        new_source = self.useFixture(AptSourceFixture(new_source_packages))
-        fetcher = self.get_fetcher([old_source, new_source])
-        fetched = fetcher.get_versions(["bar"])
-        self.assertEqual(new_source_packages[0].name, fetched[0].name)
-        self.assertEqual(new_source_packages[0].version, fetched[0].version)
-
-    def test_get_versions_fetches_from_correct_architecture(self):
-        wanted_package = DummyFetchedPackage(
-            "foo", "1.0", architecture="arch1")
-        unwanted_package = DummyFetchedPackage(
-            "foo", "1.1", architecture="arch2")
-        source = self.useFixture(
-            AptSourceFixture([wanted_package, unwanted_package]))
-        fetcher = self.get_fetcher([source], architecture="arch1")
-        package_info = fetcher.get_versions(['foo'])[0]
-        self.assertEqual(wanted_package.name, package_info.name)
-        self.assertEqual(wanted_package.version, package_info.version)
-
-    def test_get_versions_doesnt_set_content(self):
-        available_package = DummyFetchedPackage("foo", "1.0")
-        source = self.useFixture(AptSourceFixture([available_package]))
-        fetcher = self.get_fetcher([source])
-        package_info = fetcher.get_versions(["foo"])[0]
-        self.assertIs(None, package_info.content)
 
     def test_ignore_packages(self):
         wanted_package = DummyFetchedPackage("foo", "1.0", depends="bar")
