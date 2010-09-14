@@ -56,7 +56,8 @@ class DummyFetchedPackage(FetchedPackage):
     """
 
     def __init__(self, name, version, architecture="all", depends=None,
-                 pre_depends=None, conflicts=None, recommends=None):
+                 pre_depends=None, conflicts=None, recommends=None,
+                 no_content=False):
         self.name = name
         self.version = version
         self.architecture = architecture
@@ -64,23 +65,29 @@ class DummyFetchedPackage(FetchedPackage):
         self.pre_depends = pre_depends
         self.conflicts = conflicts
         self.recommends = recommends
+        self._no_content = no_content
 
     @property
     def filename(self):
         return "%s_%s_all.deb" % (self.name, self.version)
 
+    def _content_str(self):
+        return "Content of %s" % self.filename
+
     @property
     def content(self):
-        return StringIO("Content of %s" % self.filename)
+        if self._no_content:
+            return None
+        return StringIO(self._content_str())
 
     @property
     def size(self):
-        return len(self.content.read())
+        return len(self._content_str())
 
     @property
     def md5(self):
         md5sum = hashlib.md5()
-        md5sum.update(self.content.read())
+        md5sum.update(self._content_str())
         return md5sum.hexdigest()
 
 
@@ -217,6 +224,34 @@ class MatchesAll(object):
             return None
 
 
+class Not:
+    """Inverts a matcher."""
+
+    def __init__(self, matcher):
+        self.matcher = matcher
+
+    def __str__(self):
+        return 'Not(%s)' % (self.matcher,)
+
+    def match(self, other):
+        mismatch = self.matcher.match(other)
+        if mismatch is None:
+            return MatchedUnexpectedly(self.matcher, other)
+        else:
+            return None
+
+
+class MatchedUnexpectedly:
+    """A thing matched when it wasn't supposed to."""
+
+    def __init__(self, matcher, other):
+        self.matcher = matcher
+        self.other = other
+
+    def describe(self):
+        return "%r matches %s" % (self.other, self.matcher)
+
+
 class HardwarePackHasFile(TarfileHasFile):
     """A subclass of TarfileHasFile specific to hardware packs.
 
@@ -265,10 +300,12 @@ class HardwarePackHasFile(TarfileHasFile):
 
 class IsHardwarePack(Matcher):
 
-    def __init__(self, metadata, packages, sources):
+    def __init__(self, metadata, packages, sources,
+                 packages_without_content=None):
         self.metadata = metadata
         self.packages = packages
         self.sources = sources
+        self.packages_without_content = packages_without_content or []
 
     def match(self, path):
         tf = tarfile.open(name=path, mode="r:gz")
@@ -282,12 +319,15 @@ class IsHardwarePack(Matcher):
                 manifest += "%s=%s\n" % (package.name, package.version)
             matchers.append(HardwarePackHasFile("manifest", content=manifest))
             matchers.append(HardwarePackHasFile("pkgs", type=tarfile.DIRTYPE))
-            for package in self.packages:
+            packages_with_content = [p for p in self.packages
+                if p not in self.packages_without_content]
+            for package in packages_with_content:
                 matchers.append(HardwarePackHasFile(
                     "pkgs/%s" % package.filename,
                     content=package.content.read()))
             matchers.append(HardwarePackHasFile(
-                "pkgs/Packages", content=get_packages_file(self.packages)))
+                "pkgs/Packages",
+                content=get_packages_file(packages_with_content)))
             matchers.append(HardwarePackHasFile(
                 "sources.list.d", type=tarfile.DIRTYPE))
             for source_id, sources_entry in self.sources.items():
