@@ -20,8 +20,8 @@ class TarfileMissingPathMismatch(Mismatch):
     def __eq__(self, other):
         return self.tarball == other.tarball and self.path == other.path
 
-    def __hash__(self):
-        return hash((self.tarball, self.path))
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class TarfileWrongValueMismatch(Mismatch):
@@ -56,10 +56,8 @@ class TarfileWrongValueMismatch(Mismatch):
                 and self.expected == other.expected
                 and self.actual == other.actual)
 
-    def __hash__(self):
-        return hash(
-            (self.attribute, self.tarball, self.path, self.expected,
-             self.actual))
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class TarfileHasFile(Matcher):

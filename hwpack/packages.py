@@ -195,10 +195,8 @@ class FetchedPackage(object):
                 and self.conflicts == other.conflicts
                 and self.recommends == other.recommends)
 
-    def __hash__(self):
-        return hash(
-            (self.name, self.version, self.filename, self.size, self.md5,
-             self.depends))
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __repr__(self):
         return (
