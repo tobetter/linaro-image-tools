@@ -5,8 +5,7 @@ from testtools import TestCase
 
 from hwpack.hardwarepack import HardwarePack, Metadata
 from hwpack.packages import get_packages_file
-from hwpack.tarfile_matchers import TarfileHasFile
-from hwpack.testing import DummyFetchedPackage
+from hwpack.testing import DummyFetchedPackage, HardwarePackHasFile
 
 
 class MetadataTests(TestCase):
@@ -90,49 +89,6 @@ class MetadataTests(TestCase):
         self.assertEqual("i386", metadata.architecture)
 
 
-class HardwarePackHasFile(TarfileHasFile):
-    """A subclass of TarfileHasFile specific to hardware packs.
-
-    We default to a set of attributes expected for files in a hardware
-    pack.
-    """
-
-    def __init__(self, path, **kwargs):
-        """Create a HardwarePackHasFile matcher.
-
-        The kwargs are the keyword arguments taken by TarfileHasFile.
-        If they are not given then defaults will be checked:
-            - The type should be a regular file
-            - If the content is given then the size will be checked
-                to ensure it indicates the length of the content
-                correctly.
-            - the mode is appropriate for the type. If the type is
-                regular file this is 0644, otherwise if it is
-                a directory then it is 0755.
-            - the linkname should be the empty string.
-            - the uid and gid should be 1000
-            - the uname and gname should be "user" and "group"
-                respectively.
-
-        :param path: the path that should be present.
-        :type path: str
-        """
-        kwargs.setdefault("type", tarfile.REGTYPE)
-        if "content" in kwargs:
-            kwargs.setdefault("size", len(kwargs["content"]))
-        if kwargs["type"] == tarfile.DIRTYPE:
-            kwargs.setdefault("mode", 0755)
-        else:
-            kwargs.setdefault("mode", 0644)
-        kwargs.setdefault("linkname", "")
-        kwargs.setdefault("uid", 1000)
-        kwargs.setdefault("gid", 1000)
-        kwargs.setdefault("uname", "user")
-        kwargs.setdefault("gname", "group")
-        # TODO: mtime checking
-        super(HardwarePackHasFile, self).__init__(path, **kwargs)
-
-
 class HardwarePackTests(TestCase):
 
     def setUp(self):
@@ -145,13 +101,13 @@ class HardwarePackTests(TestCase):
 
     def test_filename(self):
         hwpack = HardwarePack(self.metadata)
-        self.assertEqual("hwpack_ahwpack_4.tar.gz", hwpack.filename())
+        self.assertEqual("hwpack_ahwpack_4_armel.tar.gz", hwpack.filename())
 
     def test_filename_with_support(self):
         metadata = Metadata("ahwpack", "4", "armel", support="supported")
         hwpack = HardwarePack(metadata)
         self.assertEqual(
-            "hwpack_ahwpack_4_supported.tar.gz", hwpack.filename())
+            "hwpack_ahwpack_4_armel_supported.tar.gz", hwpack.filename())
 
     def get_tarfile(self, hwpack):
         fileobj = StringIO()
