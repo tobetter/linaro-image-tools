@@ -300,10 +300,12 @@ class HardwarePackHasFile(TarfileHasFile):
 
 class IsHardwarePack(Matcher):
 
-    def __init__(self, metadata, packages, sources):
+    def __init__(self, metadata, packages, sources,
+                 packages_without_content=None):
         self.metadata = metadata
         self.packages = packages
         self.sources = sources
+        self.packages_without_content = packages_without_content or []
 
     def match(self, path):
         tf = tarfile.open(name=path, mode="r:gz")
@@ -317,12 +319,15 @@ class IsHardwarePack(Matcher):
                 manifest += "%s=%s\n" % (package.name, package.version)
             matchers.append(HardwarePackHasFile("manifest", content=manifest))
             matchers.append(HardwarePackHasFile("pkgs", type=tarfile.DIRTYPE))
-            for package in self.packages:
+            packages_with_content = [p for p in self.packages
+                if p not in self.packages_without_content]
+            for package in packages_with_content:
                 matchers.append(HardwarePackHasFile(
                     "pkgs/%s" % package.filename,
                     content=package.content.read()))
             matchers.append(HardwarePackHasFile(
-                "pkgs/Packages", content=get_packages_file(self.packages)))
+                "pkgs/Packages",
+                content=get_packages_file(packages_with_content)))
             matchers.append(HardwarePackHasFile(
                 "sources.list.d", type=tarfile.DIRTYPE))
             for source_id, sources_entry in self.sources.items():
