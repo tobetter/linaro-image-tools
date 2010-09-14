@@ -36,11 +36,9 @@ class HardwarePackBuilder(object):
             fetcher = PackageFetcher(
                 sources.values(), architecture=architecture)
             with fetcher:
-                if self.config.include_debs:
-                    method = fetcher.fetch_packages
-                else:
-                    method = fetcher.get_versions
-                packages = method(self.config.packages)
+                packages = fetcher.fetch_packages(
+                    self.config.packages,
+                    download_content=self.config.include_debs)
                 hwpack.add_packages(packages)
                 with open(hwpack.filename(), 'w') as f:
                     hwpack.to_file(f)

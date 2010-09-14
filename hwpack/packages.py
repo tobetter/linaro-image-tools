@@ -359,26 +359,14 @@ class PackageFetcher(object):
         self.cleanup()
         return False
 
-    def _get_candidates(self, packages):
-        results = []
-        for package in packages:
-            candidate = self.cache.cache[package].candidate
-            yield candidate
-
-    def get_versions(self, packages):
-        results = []
-        for candidate in self._get_candidates(packages):
-            base = os.path.basename(candidate.filename)
-            result_package = FetchedPackage.from_apt(
-                candidate, base)
-            results.append(result_package)
-        return results
-
-    def fetch_packages(self, packages):
+    def fetch_packages(self, packages, download_content=True):
         """Fetch the files for the given list of package names.
 
         :param packages: a list of package names to install
         :type packages: an iterable of str
+        :param download_content: whether to download the content of the
+            packages. Default is to do so.
+        :type download_content: bool
         :return: a list of the packages that were fetched, with relevant
             metdata and the contents of the files available.
         :rtype: an iterable of FetchedPackages.
@@ -386,19 +374,21 @@ class PackageFetcher(object):
             be found.
         """
         results = []
-        for candidate in self._get_candidates(packages):
+        for package in packages:
+            candidate = self.cache.cache[package].candidate
             base = os.path.basename(candidate.filename)
-            destfile = os.path.join(self.cache.tempdir, base)
-            acq = apt_pkg.Acquire(DummyProgress())
-            acqfile = apt_pkg.AcquireFile(
-                acq, candidate.uri, candidate.md5, candidate.size,
-                base, destfile=destfile)
-            acq.run()
-            if acqfile.status != acqfile.STAT_DONE:
-                raise FetchError(
-                    "The item %r could not be fetched: %s" %
-                    (acqfile.destfile, acqfile.error_text))
-            result_package = FetchedPackage.from_apt(
-                candidate, base, open(destfile))
+            result_package = FetchedPackage.from_apt(candidate, base)
+            if download_content:
+                destfile = os.path.join(self.cache.tempdir, base)
+                acq = apt_pkg.Acquire(DummyProgress())
+                acqfile = apt_pkg.AcquireFile(
+                    acq, candidate.uri, candidate.md5, candidate.size,
+                    base, destfile=destfile)
+                acq.run()
+                if acqfile.status != acqfile.STAT_DONE:
+                    raise FetchError(
+                        "The item %r could not be fetched: %s" %
+                        (acqfile.destfile, acqfile.error_text))
+                result_package.set_content(open(destfile))
             results.append(result_package)
         return results
