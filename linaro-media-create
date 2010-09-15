@@ -132,249 +132,247 @@ cleanup_sd() {
 }
 
 create_partitions() {
-if [ "${IMAGE_FILE}" ]; then
-partdev=${IMAGE_FILE}
-else
-partdev=${MMC}
-fi
+  if [ "${IMAGE_FILE}" ]; then
+    partdev=${IMAGE_FILE}
+  else
+    partdev=${MMC}
+  fi
 
-if [ "$FAT_SIZE" = "32" ]; then
+  if [ "$FAT_SIZE" = "32" ]; then
     PARTITION_TYPE="0x0C"
-else
+  else
     PARTITION_TYPE="0x0E"
-fi
+  fi
 
-# Create a VFAT or FAT16 partition of 9 cylinders which is about 64M
-# and a linux partition of the rest
-
-sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev << THEEND
+  # Create a VFAT or FAT16 partition of 9 cylinders which is about 64M
+  # and a linux partition of the rest
+  sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev << THEEND
 ,9,$PARTITION_TYPE,*
 ,,,-
 THEEND
 
-if [ "${IMAGE_FILE}" ]; then
-VFATOFFSET=$(($(fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $3}')*512))
-VFATSIZE=$(($(fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $5}')*1024))
-ROOTOFFSET=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')*512))
-ROOTSIZE2=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $3}')))
-ROOTSIZE1=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')))
-ROOTSIZE=$((((ROOTSIZE2-ROOTSIZE1)/2)*1024))
-MMC1=$(sudo losetup -f --show $IMAGE_FILE --offset $VFATOFFSET --sizelimit $VFATSIZE)
-MMC2=$(sudo losetup -f --show $IMAGE_FILE --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
-fi
+  if [ "${IMAGE_FILE}" ]; then
+  VFATOFFSET=$(($(fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $3}')*512))
+  VFATSIZE=$(($(fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $5}')*1024))
+  ROOTOFFSET=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')*512))
+  ROOTSIZE2=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $3}')))
+  ROOTSIZE1=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')))
+  ROOTSIZE=$((((ROOTSIZE2-ROOTSIZE1)/2)*1024))
+  MMC1=$(sudo losetup -f --show $IMAGE_FILE --offset $VFATOFFSET --sizelimit $VFATSIZE)
+  MMC2=$(sudo losetup -f --show $IMAGE_FILE --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
+  fi
 }
 
 
 prepare_partitions() {
+  echo ""
+  echo "Formating Boot Partition"
+  echo ""
 
-echo ""
-echo "Formating Boot Partition"
-echo ""
+  sudo mkfs.vfat -F ${FAT_SIZE} ${MMC1} -n ${BOOT_LABEL}
 
-sudo mkfs.vfat -F ${FAT_SIZE} ${MMC1} -n ${BOOT_LABEL}
-
-echo ""
-echo "Formating ${RFS} Partition"
-echo ""
-sudo mkfs.${RFS} -U "$RFS_UUID" ${MMC2} -L ${RFS_LABEL}
+  echo ""
+  echo "Formating ${RFS} Partition"
+  echo ""
+  sudo mkfs.${RFS} -U "$RFS_UUID" ${MMC2} -L ${RFS_LABEL}
 }
 
 populate_boot() {
- echo ""
- echo "Populating Boot Partition"
- echo ""
+  echo ""
+  echo "Populating Boot Partition"
+  echo ""
 
- echo ""
- echo "Installing Boot Loader"
- echo ""
+  echo ""
+  echo "Installing Boot Loader"
+  echo ""
 
- if [ "$IS_LIVE" ]; then
-   parts_dir=casper
- else
-   parts_dir=boot
- fi
+  if [ "$IS_LIVE" ]; then
+    parts_dir=casper
+  else
+    parts_dir=boot
+  fi
 
- mkdir -p ${DIR}/disk || true
- sudo mount ${MMC1} ${DIR}/disk
- case "$DEVIMAGE" in
-   beagle|igep)
-     if [ "$DEVIMAGE" = "beagle" ]; then
-          if [ -e binary/${parts_dir}/${MLO_FILE} ] && [ -e binary/${parts_dir}/${UBOOT_FILE} ]; then
-              sudo cp -v binary/${parts_dir}/${MLO_FILE}   ${DIR}/disk/MLO
-              sudo cp -v binary/${parts_dir}/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
-          fi
-     fi
-     sync
-     cd ${DIR}
-     echo "done"
+  mkdir -p ${DIR}/disk || true
+  sudo mount ${MMC1} ${DIR}/disk
+  case "$DEVIMAGE" in
+    beagle|igep)
+      if [ "$DEVIMAGE" = "beagle" ]; then
+        if [ -e binary/${parts_dir}/${MLO_FILE} ] && [ -e binary/${parts_dir}/${UBOOT_FILE} ]; then
+          sudo cp -v binary/${parts_dir}/${MLO_FILE}   ${DIR}/disk/MLO
+          sudo cp -v binary/${parts_dir}/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
+        fi
+      fi
+      sync
+      cd ${DIR}
+      echo "done"
 
-     sudo cp -f ${DIR}/binary/${parts_dir}/uImage.omap ${DIR}/disk/uImage
-     sudo cp -f ${DIR}/binary/${parts_dir}/uInitrd.omap ${DIR}/disk/uInitrd
+      sudo cp -f ${DIR}/binary/${parts_dir}/uImage.omap ${DIR}/disk/uImage
+      sudo cp -f ${DIR}/binary/${parts_dir}/uInitrd.omap ${DIR}/disk/uInitrd
 
-     sudo mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "$CODENAME 10.05" -d ${DIR}/binary/boot.cmd ${DIR}/disk/boot.scr
-     sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
-     ;;
-   vexpress)
-     sudo tar --strip-components=5 -C ${DIR}/disk/ -xf $BINARY_TARBALL binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin
-     sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 -e 0x60008000 \
-          -n "Linux" -d ${DIR}/binary/${parts_dir}/vmlinuz*-vexpress ${DIR}/disk/uImage
-     sudo mkimage -A arm -O linux -T ramdisk -C none -a 0x81000000 \
-          -e 0x81000000 -n "initramfs" -d \
-          ${DIR}/binary/${parts_dir}/initrd.img-*-linaro-vexpress \
-          "${DIR}"/disk/uInitrd
-     ;;
-   *)
-     echo "Set --dev parameter: --dev <beagle|igep|vexpress>" 1>&2
-     cleanup_workdir
-     exit
-     ;;
- esac
+      sudo mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "$CODENAME 10.05" -d ${DIR}/binary/boot.cmd ${DIR}/disk/boot.scr
+      sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
+      ;;
+    vexpress)
+      sudo tar --strip-components=5 -C ${DIR}/disk/ -xf $BINARY_TARBALL binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin
+      sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 -e 0x60008000 \
+           -n "Linux" -d ${DIR}/binary/${parts_dir}/vmlinuz*-vexpress ${DIR}/disk/uImage
+      sudo mkimage -A arm -O linux -T ramdisk -C none -a 0x81000000 \
+           -e 0x81000000 -n "initramfs" -d \
+           ${DIR}/binary/${parts_dir}/initrd.img-*-linaro-vexpress \
+           "${DIR}"/disk/uInitrd
+      ;;
+    *)
+      echo "Set --dev parameter: --dev <beagle|igep|vexpress>" 1>&2
+      cleanup_workdir
+      exit
+      ;;
+  esac
 
- cd ${DIR}/disk/
- sync
- sync
- cd ${DIR}/
+  cd ${DIR}/disk/
+  sync
+  sync
+  cd ${DIR}/
 
- sudo umount ${DIR}/disk || true
+  sudo umount ${DIR}/disk || true
 }
 
 populate_rootfs() {
- echo ""
- echo "Populating rootfs Partition"
- echo "Be patient, this may take a few minutes"
- echo ""
- sudo mount ${MMC2} ${DIR}/disk
-
- sudo tar -xf $BINARY_TARBALL --strip-components=1 -C disk/
-
-# add fstab entry for rootfs and boot
- echo "UUID=${RFS_UUID} / ${RFS}  errors=remount-ro 0 1 " | sudo tee -a ${DIR}/disk/etc/fstab
-
- if [ "$CREATE_SWAP" ] ; then
-
   echo ""
-  echo "Creating SWAP File"
+  echo "Populating rootfs Partition"
+  echo "Be patient, this may take a few minutes"
   echo ""
+  sudo mount ${MMC2} ${DIR}/disk
 
-  SPACE_LEFT=$(df ${DIR}/disk/ | grep ${MMC2} | awk '{print $4}')
+  sudo tar -xf $BINARY_TARBALL --strip-components=1 -C disk/
 
-  let SIZE=$SWAP_SIZE*1024
+## add fstab entry for rootfs and boot
+  echo "UUID=${RFS_UUID} / ${RFS}  errors=remount-ro 0 1 " | sudo tee -a ${DIR}/disk/etc/fstab
 
-  if [ $SPACE_LEFT -ge $SIZE ] ; then
-   sudo dd if=/dev/zero of=${DIR}/disk/SWAP.swap bs=1M count=$SWAP_SIZE
-   sudo mkswap ${DIR}/disk/SWAP.swap
-   echo "/SWAP.swap  none  swap  sw  0 0" | sudo tee -a ${DIR}/disk/etc/fstab
-   else
-   echo "SWAP file bigger then whats left on partition"
+  if [ "$CREATE_SWAP" ] ; then
+
+    echo ""
+    echo "Creating SWAP File"
+    echo ""
+
+    SPACE_LEFT=$(df ${DIR}/disk/ | grep ${MMC2} | awk '{print $4}')
+
+    let SIZE=$SWAP_SIZE*1024
+
+    if [ $SPACE_LEFT -ge $SIZE ] ; then
+      sudo dd if=/dev/zero of=${DIR}/disk/SWAP.swap bs=1M count=$SWAP_SIZE
+      sudo mkswap ${DIR}/disk/SWAP.swap
+      echo "/SWAP.swap  none  swap  sw  0 0" | sudo tee -a ${DIR}/disk/etc/fstab
+      else
+      echo "SWAP file bigger then whats left on partition"
+    fi
   fi
- fi
 
- echo ""
- echo "Creating /etc/flash-kernel.conf"
- echo ""
+  echo ""
+  echo "Creating /etc/flash-kernel.conf"
+  echo ""
 
- echo "UBOOT_PART=/dev/mmcblk0p1" > ${DIR}/disk/etc/flash-kernel.conf
+  echo "UBOOT_PART=/dev/mmcblk0p1" > ${DIR}/disk/etc/flash-kernel.conf
 
- cd ${DIR}/disk/
- sync
- sync
- cd ${DIR}/
+  cd ${DIR}/disk/
+  sync
+  sync
+  cd ${DIR}/
 
- sudo umount ${DIR}/disk || true
+  sudo umount ${DIR}/disk || true
 }
 
 check_mmc() {
- FDISK=$(sudo LC_ALL=C sfdisk -l | grep "[Disk] ${MMC}" | awk '{print $2}')
+  FDISK=$(sudo LC_ALL=C sfdisk -l | grep "[Disk] ${MMC}" | awk '{print $2}')
 
- if test "-$FDISK-" = "-$MMC:-"
- then
-  echo ""
-  echo "I see..."
-  echo "sudo sfdisk -l:"
-  sudo LC_ALL=C sfdisk -l | grep "[Disk] /dev/" --color=never
-  echo ""
-  echo "mount:"
-  mount | grep -v none | grep "/dev/" --color=never
-  echo ""
-  read -p "Are you 100% sure, on selecting [${MMC}] (y/n)? "
-  [ "$REPLY" == "y" ] || exit
-  echo ""
- else
-  echo ""
-  echo "Are you sure? I Don't see [${MMC}], here is what I do see..."
-  echo ""
-  echo "sudo sfdisk -l:"
-  sudo LC_ALL=C sfdisk -l | grep "[Disk] /dev/" --color=never
-  echo ""
-  echo "mount:"
-  mount | grep -v none | grep "/dev/" --color=never
-  echo ""
-  exit
- fi
+  if test "-$FDISK-" = "-$MMC:-"
+  then
+    echo ""
+    echo "I see..."
+    echo "sudo sfdisk -l:"
+    sudo LC_ALL=C sfdisk -l | grep "[Disk] /dev/" --color=never
+    echo ""
+    echo "mount:"
+    mount | grep -v none | grep "/dev/" --color=never
+    echo ""
+    read -p "Are you 100% sure, on selecting [${MMC}] (y/n)? "
+    [ "$REPLY" == "y" ] || exit
+    echo ""
+  else
+    echo ""
+    echo "Are you sure? I Don't see [${MMC}], here is what I do see..."
+    echo ""
+    echo "sudo sfdisk -l:"
+    sudo LC_ALL=C sfdisk -l | grep "[Disk] /dev/" --color=never
+    echo ""
+    echo "mount:"
+    mount | grep -v none | grep "/dev/" --color=never
+    echo ""
+    exit
+  fi
 }
 
 check_fs_type() {
- IN_VALID_FS=1
+  IN_VALID_FS=1
 
- if test "-$FS_TYPE-" = "-ext2-"
- then
- RFS=ext2
- unset IN_VALID_FS
- fi
+  if test "-$FS_TYPE-" = "-ext2-"
+  then
+    RFS=ext2
+    unset IN_VALID_FS
+  fi
 
- if test "-$FS_TYPE-" = "-ext3-"
- then
- RFS=ext3
- unset IN_VALID_FS
- fi
+  if test "-$FS_TYPE-" = "-ext3-"
+  then
+    RFS=ext3
+    unset IN_VALID_FS
+  fi
 
- if test "-$FS_TYPE-" = "-ext4-"
- then
- RFS=ext4
- unset IN_VALID_FS
- fi
+  if test "-$FS_TYPE-" = "-ext4-"
+  then
+    RFS=ext4
+    unset IN_VALID_FS
+  fi
 
- if test "-$FS_TYPE-" = "-btrfs-"
- then
- RFS=btrfs
- unset IN_VALID_FS
- fi
+  if test "-$FS_TYPE-" = "-btrfs-"
+  then
+    RFS=btrfs
+    unset IN_VALID_FS
+  fi
 
- if [ "$IN_VALID_FS" ] ; then
-   usage
- fi
+  if [ "$IN_VALID_FS" ] ; then
+    usage
+  fi
 }
 
 calculatesize() {
-    IMAGE_SIZE=${IMAGE_SIZE/G/M*1024}
-    IMAGE_SIZE=${IMAGE_SIZE/M/K*1024}
-    IMAGE_SIZE=${IMAGE_SIZE/K/*1024}
-    IMAGE_SIZE=$(($IMAGE_SIZE))
+  IMAGE_SIZE=${IMAGE_SIZE/G/M*1024}
+  IMAGE_SIZE=${IMAGE_SIZE/M/K*1024}
+  IMAGE_SIZE=${IMAGE_SIZE/K/*1024}
+  IMAGE_SIZE=$(($IMAGE_SIZE))
 }
 
 setup_sizes() {
-    HEADS=255
-    SECTORS=63
-    SECTORSIZE=512
-    if [ "${IMAGE_FILE}" ]; then
+  HEADS=255
+  SECTORS=63
+  SECTORSIZE=512
+  if [ "${IMAGE_FILE}" ]; then
     calculatesize
     CYLINDERSIZE=$(($HEADS*$SECTORS*$SECTORSIZE))
     CYLINDERS=$(($IMAGE_SIZE/$CYLINDERSIZE))
     CYLINDER_ARG="-C $CYLINDERS"
     IMAGE_SIZE=$(($CYLINDERS*$CYLINDERSIZE))
-    else
+  else
     CYLINDER_ARG=""
-    fi
+  fi
 }
 
 setup_image() {
-    sudo qemu-img create -f raw $IMAGE_FILE $IMAGE_SIZE
+  sudo qemu-img create -f raw $IMAGE_FILE $IMAGE_SIZE
 }
 
 usage() {
-    echo "usage: $(basename $0) --mmc /dev/sdd"
-    echo "<or>"
-    echo "usage: $(basename $0) --image_file mmc.img"
+  echo "usage: $(basename $0) --mmc /dev/sdd"
+  echo "<or>"
+  echo "usage: $(basename $0) --image_file mmc.img"
 cat <<EOF
 
 required options:
@@ -433,10 +431,10 @@ exit
 }
 
 checkparm() {
-    if [ "$(echo $1|grep ^'\-')" ];then
-        echo "E: Need an argument"
-        usage
-    fi
+  if [ "$(echo $1|grep ^'\-')" ];then
+    echo "E: Need an argument"
+    usage
+  fi
 }
 
 cleanup_workdir() {
@@ -450,63 +448,63 @@ consoles=""
 
 # parse commandline options
 while [ ! -z "$1" ]; do
-    case $1 in
-        -h|--help)
-            usage
-            MMC=1
-            ;;
-        --mmc)
-            checkparm $2
-            MMC="$2"
-            check_mmc
-            ;;
-        --image_file)
-            checkparm $2
-            IMAGE_FILE="$2"
-            ;;
-        --image_size)
-            checkparm $2
-            IMAGE_SIZE=$2
-            ;;
-        --rootfs)
-            checkparm $2
-            FS_TYPE="$2"
-            check_fs_type
-            ;;
-        --boot_label)
-            checkparm $2
-            BOOT_LABEL="$2"
-            ;;
-        --rfs_label)
-            checkparm $2
-            RFS_LABEL="$2"
-            ;;
-        --swap_file)
-            checkparm $2
-            SWAP_SIZE="$2"
-            CREATE_SWAP=1
-            ;;
-        --live)
-            IS_LIVE=1
-            ;;
-        --live-256m)
-            IS_LIVE=1
-            IS_LOWMEM=1
-            ;;
-        --console)
-            checkparm $2
-            consoles="$consoles $2"
-            ;;
-        --dev)
-            checkparm $2
-            DEVIMAGE=$2
-            ;;
-        --binary)
-            checkparm $2
-            BINARY_TARBALL="$2"
-            ;;
-    esac
-    shift
+  case $1 in
+    -h|--help)
+      usage
+      MMC=1
+      ;;
+    --mmc)
+      checkparm $2
+      MMC="$2"
+      check_mmc
+      ;;
+    --image_file)
+      checkparm $2
+      IMAGE_FILE="$2"
+      ;;
+    --image_size)
+      checkparm $2
+      IMAGE_SIZE=$2
+      ;;
+    --rootfs)
+      checkparm $2
+      FS_TYPE="$2"
+      check_fs_type
+      ;;
+    --boot_label)
+      checkparm $2
+      BOOT_LABEL="$2"
+      ;;
+    --rfs_label)
+      checkparm $2
+      RFS_LABEL="$2"
+      ;;
+    --swap_file)
+      checkparm $2
+      SWAP_SIZE="$2"
+      CREATE_SWAP=1
+      ;;
+    --live)
+      IS_LIVE=1
+      ;;
+    --live-256m)
+      IS_LIVE=1
+      IS_LOWMEM=1
+      ;;
+    --console)
+      checkparm $2
+      consoles="$consoles $2"
+      ;;
+    --dev)
+      checkparm $2
+      DEVIMAGE=$2
+      ;;
+    --binary)
+      checkparm $2
+      BINARY_TARBALL="$2"
+      ;;
+  esac
+  shift
 done
 
 setup_sizes
@@ -552,7 +550,7 @@ else
 fi
 
 if [ ! "${MMC}" -a ! "${IMAGE_FILE}" ]; then
-    usage
+  usage
 fi
 
  prepare_sources
