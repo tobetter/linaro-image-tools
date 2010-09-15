@@ -30,12 +30,19 @@ BINARY_TARBALL='binary-tar.tar.gz'
 BOOT_LABEL=boot
 RFS_LABEL=rootfs
 CODENAME=Chessy
-RFS_UUID=`uuidgen -r`
 IS_LIVE=
 FAT_SIZE=32
 IMAGE_SIZE=2G
 
 DIR=$PWD
+
+ensure_command() {
+# ensure_command foo foo-package
+which "$1" 2>/dev/null 1>/dev/null || ( echo "Installing required command $1 from package $2" && sudo apt-get install "$2" )
+}
+
+ensure_command sfdisk util-linux
+ensure_command fdisk util-linux
 
 usage() {
   echo "usage: $(basename $0) --mmc /dev/sdd"
@@ -230,21 +237,16 @@ while [ ! -z "$1" ]; do
   shift
 done
 
-ensure_command() {
-# ensure_command foo foo-package
-which "$1" 2>/dev/null 1>/dev/null || ( echo "Installing required command $1 from package $2" && sudo apt-get install "$2" )
-}
-
 ensure_command uuidgen uuid-runtime
 ensure_command parted parted
-ensure_command sfdisk util-linux
-ensure_command fdisk util-linux
 ensure_command wget wget
 ensure_command mkfs.ext3 e2fsprogs
 ensure_command mkfs.ext4 e2fsprogs
 ensure_command mkimage uboot-mkimage
 ensure_command md5sum coreutils
 ensure_command realpath realpath
+
+RFS_UUID=`uuidgen -r`
 
 get_mmcs_by_id() {
 if [ ! ${IMAGE_FILE} ]; then
