@@ -132,6 +132,14 @@ class ConfigTests(TestCase):
                 + "\n[ubuntu]\nsources-entry = foo bar\n")
         self.assertEqual(None, config.validate())
 
+    def test_validate_valid_config_with_dash_in_package_name(self):
+        config = self.get_config(
+                "[hwpack]\nname = ahwpack\n"
+                "packages = u-boot\n"
+                "architectures = armel\n\n"
+                "[ubuntu]\nsources-entry = foo bar\n")
+        self.assertEqual(None, config.validate())
+
     def test_name(self):
         config = self.get_config(
             "[hwpack]\nname = ahwpack\npackages = foo\n"
