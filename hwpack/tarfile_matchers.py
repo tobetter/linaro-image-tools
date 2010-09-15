@@ -63,9 +63,9 @@ class TarfileWrongValueMismatch(Mismatch):
 class TarfileHasFile(Matcher):
     """Check that a tarfile has an entry with certain values."""
 
-    def __init__(self, path, type=None, size=None, mtime=None, mode=None,
-                 linkname=None, uid=None, gid=None, uname=None, gname=None,
-                 content=None):
+    def __init__(self, path, type=None, size=None, mtime=None,
+                 mtime_skew=None, mode=None, linkname=None, uid=None,
+                 gid=None, uname=None, gname=None, content=None):
         """Create a TarfileHasFile Matcher.
 
         :param path: the path that must be present.
@@ -76,6 +76,8 @@ class TarfileHasFile(Matcher):
             to not check.
         :param mtime: the mtime that the entry at `path` must have, or None
             to not check.
+        :param mtime_skew: the number of seconds that the file mtime can
+            be different to the required.
         :param mode: the mode that the entry at `path` must have, or None
             to not check.
         :param linkname: the linkname that the entry at `path` must have,
@@ -95,6 +97,7 @@ class TarfileHasFile(Matcher):
         self.type = type
         self.size = size
         self.mtime = mtime
+        self.mtime_skew = mtime_skew
         self.mode = mode
         self.linkname = linkname
         self.uid = uid
@@ -109,7 +112,7 @@ class TarfileHasFile(Matcher):
             return TarfileMissingPathMismatch(tarball, self.path)
         info = tarball.getmember(self.path)
         for attr in (
-            "type", "size", "mtime", "mode", "linkname", "uid", "gid",
+            "type", "size", "mode", "linkname", "uid", "gid",
             "uname", "gname"):
             expected = getattr(self, attr, None)
             if expected is not None:
@@ -117,6 +120,11 @@ class TarfileHasFile(Matcher):
                 if expected != actual:
                     return TarfileWrongValueMismatch(
                         attr, tarball, self.path, expected, actual)
+        if self.mtime is not None:
+            mtime_skew = self.mtime_skew or 0
+            if abs(self.mtime - info.mtime) > self.mtime_skew:
+                return TarfileWrongValueMismatch(
+                    "mtime", tarball, self.path, self.mtime, info.mtime)
         if self.content is not None:
             actual = tarball.extractfile(self.path).read()
             if actual != self.content:
