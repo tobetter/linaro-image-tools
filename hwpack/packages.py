@@ -25,10 +25,50 @@ def get_packages_file(packages):
         parts.append('Architecture: %s' % package.architecture)
         if package.depends:
             parts.append('Depends: %s' % package.depends)
+        if package.pre_depends:
+            parts.append('Pre-Depends: %s' % package.pre_depends)
+        if package.conflicts:
+            parts.append('Conflicts: %s' % package.conflicts)
+        if package.recommends:
+            parts.append('Recommends: %s' % package.recommends)
         parts.append('MD5sum: %s' % package.md5)
         content += "\n".join(parts)
         content += "\n\n"
     return content
+
+
+def stringify_relationship(pkg, relationship):
+    """Given a Package, return a string of the specified relationship.
+
+    apt.package.Version stores the relationship information of the
+    package as objects. This function will convert those objects
+    in to the string form that we are used to from debian/control
+    or Packages files.
+
+    :param pkg: the package to take the relationship information from.
+    :type pkg: apt.package.Version
+    :param relationship: the relationship to stringify, as understood
+        by apt.package.Package.get_dependencies, e.g. "Depends",
+        "PreDepends".
+    :type relationship: str or None if the package has no relationships
+         of that type.
+    """
+    relationship_str = None
+    pkg_dependencies = pkg.get_dependencies(relationship)
+    if pkg_dependencies:
+        relationship_list = []
+        for or_dep in pkg_dependencies:
+            or_list = []
+            for or_alternative in or_dep.or_dependencies:
+                suffix = ""
+                if or_alternative.relation:
+                    suffix = " (%s %s)" % (
+                        or_alternative.relation,
+                        or_alternative.version)
+                or_list.append("%s%s" % (or_alternative.name, suffix))
+            relationship_list.append(" | ".join(or_list))
+        relationship_str = ", ".join(relationship_list)
+    return relationship_str
 
 
 class DummyProgress(object):
@@ -79,14 +119,27 @@ class FetchedPackage(object):
     :ivar architecture: the architecture that the package is for, may be
         'all'.
     :type architecture: str
-    :ivar depends: the depends string that the package has, i.e. the
+    :ivar depends: the Depends string that the package has, i.e. the
         dependencies as specified in debian/control. May be None if the
         package has none.
     :type depends: str or None
+    :ivar pre_depends: the Pre-Depends string that the package has, i.e. the
+        pre-dependencies as specified in debian/control. May be None if the
+        package has none.
+    :type pre_depends: str or None
+    :ivar conflicts: the Conflicts string that the package has, i.e. the
+        conflicts as specified in debian/control. May be None if the
+        package has none.
+    :type conflicts: str or None
+    :ivar recommends: the Recommends string that the package has, i.e. the
+        recommends as specified in debian/control. May be None if the
+        package has none.
+    :type recommends: str or None
     """
 
     def __init__(self, name, version, filename, content, size, md5,
-                 architecture, depends=None):
+                 architecture, depends=None, pre_depends=None,
+                 conflicts=None, recommends=None):
         """Create a FetchedPackage.
 
         See the instance variables for the arguments.
@@ -99,6 +152,9 @@ class FetchedPackage(object):
         self.md5 = md5
         self.architecture = architecture
         self.depends = depends
+        self.pre_depends = pre_depends
+        self.conflicts = conflicts
+        self.recommends = recommends
 
     @classmethod
     def from_apt(cls, pkg, filename, content):
@@ -116,23 +172,15 @@ class FetchedPackage(object):
         :param content: the content of the package.
         :type content: file-like object
         """
-        depends = None
-        pkg_dependencies = pkg.get_dependencies("Depends")
-        if pkg_dependencies:
-            depends_list = []
-            for or_dep in pkg_dependencies:
-                or_list = []
-                for or_alternative in or_dep.or_dependencies:
-                    suffix = ""
-                    if or_alternative.relation:
-                        suffix = " (%s %s)" % (
-                            or_alternative.relation, or_alternative.version)
-                    or_list.append("%s%s" % (or_alternative.name, suffix))
-                depends_list.append(" | ".join(or_list))
-            depends = ", ".join(depends_list)
+        depends = stringify_relationship(pkg, "Depends")
+        pre_depends = stringify_relationship(pkg, "PreDepends")
+        conflicts = stringify_relationship(pkg, "Conflicts")
+        recommends = stringify_relationship(pkg, "Recommends")
         return cls(
             pkg.package.name, pkg.version, filename, content, pkg.size,
-            pkg.md5, pkg.architecture, depends=depends)
+            pkg.md5, pkg.architecture, depends=depends,
+            pre_depends=pre_depends, conflicts=conflicts,
+            recommends=recommends)
 
     def __eq__(self, other):
         return (self.name == other.name
@@ -142,19 +190,21 @@ class FetchedPackage(object):
                 and self.size == other.size
                 and self.md5 == other.md5
                 and self.architecture == other.architecture
-                and self.depends == other.depends)
+                and self.depends == other.depends
+                and self.pre_depends == other.pre_depends
+                and self.conflicts == other.conflicts
+                and self.recommends == other.recommends)
 
-    def __hash__(self):
-        return hash(
-            (self.name, self.version, self.filename, self.size, self.md5,
-             self.depends))
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __repr__(self):
         return (
             '<%s name=%s version=%s size=%s md5=%s architecture=%s '
-            'depends="%s">' % (self.__class__.__name__, self.name,
-                self.version, self.size, self.md5, self.architecture,
-                self.depends))
+            'depends="%s" pre_depends="%s" conflicts="%s" recommends="%s">'
+            % (self.__class__.__name__, self.name, self.version, self.size,
+                self.md5, self.architecture, self.depends, self.pre_depends,
+                self.conflicts, self.recommends))
 
 
 class IsolatedAptCache(object):
