@@ -177,15 +177,18 @@ class HardwarePack(object):
             tf.create_dir(self.PACKAGES_DIRNAME)
             manifest_content = ""
             for package in self.packages:
-                tf.create_file_from_string(
-                    self.PACKAGES_DIRNAME + "/" + package.filename,
-                    package.content.read())
+                if package.content is not None:
+                    tf.create_file_from_string(
+                        self.PACKAGES_DIRNAME + "/" + package.filename,
+                        package.content.read())
                 manifest_content += "%s=%s\n" % (
                     package.name, package.version)
             tf.create_file_from_string(
                 self.MANIFEST_FILENAME, manifest_content)
             tf.create_file_from_string(
-                self.PACKAGES_FILENAME, get_packages_file(self.packages))
+                self.PACKAGES_FILENAME,
+                get_packages_file(
+                    [p for p in self.packages if p.content is not None]))
             tf.create_dir(self.SOURCES_LIST_DIRNAME)
             for source_name, source_info in self.sources.items():
                 tf.create_file_from_string(
