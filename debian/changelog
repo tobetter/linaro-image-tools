@@ -1,3 +1,10 @@
+linaro-image-tools (0.3) UNRELEASED; urgency=low
+
+  * no longer using the 'omap' uboot flavor support in live-helper; instead,
+    run the mkimage commands directly for omap.
+
+ -- Steve Langasek <steve.langasek@ubuntu.com>  Tue, 14 Sep 2010 17:01:49 -0700
+
 linaro-image-tools (0.2) maverick; urgency=low
 
   [ James Westby ]
