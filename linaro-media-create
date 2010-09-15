@@ -297,7 +297,6 @@ prepare_sources() {
     boot_snippet='root=UUID='${RFS_UUID}
   fi
 
-  rm -rf ${DIR}/${parts_dir}/ || true
   rm -rf ${DIR}/binary/ || true
   rm -rf binary/initrd.img-* || true
   rm -rf binary/vmlinuz-* || true
@@ -306,7 +305,7 @@ prepare_sources() {
   if [ "$DEVIMAGE" = beagle ]; then
     extras="binary/${MLO_FILE} binary/${UBOOT_FILE}"
   fi
-  sudo tar -xf $BINARY_TARBALL binary/${parts_dir} $extras
+  tar -xf $BINARY_TARBALL binary/${parts_dir} $extras
 
   ln -sf binary/${parts_dir}/initrd.img-* .
   ln -sf binary/${parts_dir}/vmlinuz-* .
@@ -490,7 +489,7 @@ populate_rootfs() {
   echo "Creating /etc/flash-kernel.conf"
   echo ""
 
-  echo "UBOOT_PART=/dev/mmcblk0p1" > ${DIR}/disk/etc/flash-kernel.conf
+  echo "UBOOT_PART=/dev/mmcblk0p1" | sudo tee ${DIR}/disk/etc/flash-kernel.conf >/dev/null
 
   cd ${DIR}/disk/
   sync

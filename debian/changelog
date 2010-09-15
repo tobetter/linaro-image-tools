@@ -7,6 +7,8 @@ linaro-image-tools (0.3) UNRELEASED; urgency=low
     tarball; these don't belong in /boot at all, pull them from /usr/lib.
   * only enforce the presence of commands we're actually using; this lets
     us automatically pull in btrfs-tools when btrfs is specified.
+  * add sudo to a couple more commands in linaro-media-create, so the script
+    itself can run as non-root as intended.
 
   [ James Westby ]
   * Add a linaro-hwpack-creation script for the creation of hardware packs.
