@@ -1,3 +1,15 @@
+linaro-image-tools (0.3) UNRELEASED; urgency=low
+
+  [ Steve Langasek ]
+  * no longer using the 'omap' uboot flavor support in live-helper; instead,
+    run the mkimage commands directly for omap.
+
+  [ James Westby ]
+  * Add a linaro-hwpack-creation script for the creation of hardware packs.
+    Not yet installed in the binary packages.
+
+ -- Steve Langasek <steve.langasek@ubuntu.com>  Tue, 14 Sep 2010 17:01:49 -0700
+
 linaro-image-tools (0.2) maverick; urgency=low
 
   [ James Westby ]
