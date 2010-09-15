@@ -1,6 +1,5 @@
 import os
 import shutil
-from StringIO import StringIO
 import tempfile
 
 from apt.cache import Cache
@@ -405,10 +404,22 @@ class PackageFetcher(object):
         for package in self.cache.cache.get_changes():
             candidate = package.candidate
             base = os.path.basename(candidate.filename)
-            installed.append(
-                FetchedPackage.from_apt(
-                    candidate, base, StringIO()))
+            installed.append(FetchedPackage.from_apt(candidate, base))
+        for package in self.cache.cache:
+            if not package.isInstalled:
+                continue
+            candidate = package.installed
+            base = os.path.basename(candidate.filename)
+            installed.append(FetchedPackage.from_apt(candidate, base))
         self.cache.set_installed_packages(installed)
+        broken = [p.name for p in self.cache.cache
+                if p.is_inst_broken or p.is_now_broken]
+        if broken:
+            # If this happens then there is a bug, as we should have
+            # caught this problem earlier
+            raise DependencyNotSatisfied(
+                "Unable to satisfy dependencies of %s" %
+                ", ".join(broken))
 
     def _filter_ignored(self, package_dict):
         seen_packages = set()
@@ -474,11 +485,12 @@ class PackageFetcher(object):
                 acq, candidate.uri, candidate.md5, candidate.size,
                 base, destfile=destfile)
             acqfiles.append((acqfile, result_package, destfile))
+        self.cache.cache.clear()
         acq.run()
         for acqfile, result_package, destfile in acqfiles:
             if acqfile.status != acqfile.STAT_DONE:
                 raise FetchError(
                     "The item %r could not be fetched: %s" %
                     (acqfile.destfile, acqfile.error_text))
-            result_package.set_content(open(destfile))
+            result_package.content = open(destfile)
         return fetched.values()

@@ -758,6 +758,26 @@ class PackageFetcherTests(TestCaseWithFixtures):
         self.assertEqual(
             "Unable to satisfy dependencies of foo", str(e))
 
+    def test_fetch_packages_leaves_no_marked_changes(self):
+        wanted_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(AptSourceFixture([wanted_package]))
+        fetcher = self.get_fetcher([source])
+        fetcher.fetch_packages(["foo"])
+        self.assertEqual([], list(fetcher.cache.cache.get_changes()))
+
+    def test_ignore_with_provides(self):
+        ignored_package = DummyFetchedPackage(
+            "ubuntu-minimal", "1.0", depends="apt-utils")
+        middle_package = DummyFetchedPackage(
+            "apt-utils", "1.0", depends="libapt-pkg")
+        provides_package = DummyFetchedPackage(
+            "apt", "1.0", provides="libapt-pkg", replaces="someotherpackage")
+        source = self.useFixture(
+            AptSourceFixture(
+                [ignored_package, middle_package, provides_package]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["ubuntu-minimal"])
+
     def test_download_content_False_fetches_no_dependencies(self):
         wanted_package1 = DummyFetchedPackage("foo", "1.0", depends="bar")
         wanted_package2 = DummyFetchedPackage("bar", "1.0")
@@ -819,3 +839,24 @@ class PackageFetcherTests(TestCaseWithFixtures):
         fetcher.ignore_packages(["foo"])
         self.assertEqual(
             [], fetcher.fetch_packages(["foo"], download_content=False))
+
+    def test_ignore_is_cumalative(self):
+        package1 = DummyFetchedPackage("foo", "1.0")
+        package2 = DummyFetchedPackage("bar", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([package1, package2]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["foo"])
+        fetcher.ignore_packages(["bar"])
+        self.assertEqual(
+            [],
+            fetcher.fetch_packages(["foo", "bar"], download_content=False))
+
+    def test_ignore_leaves_no_marked_changes(self):
+        package1 = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(AptSourceFixture([package1]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["foo"])
+        self.assertEqual(
+            [],
+            list(fetcher.cache.cache.get_changes()))
