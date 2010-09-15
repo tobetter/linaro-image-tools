@@ -3,6 +3,8 @@ linaro-image-tools (0.3) UNRELEASED; urgency=low
   [ Steve Langasek ]
   * no longer using the 'omap' uboot flavor support in live-helper; instead,
     run the mkimage commands directly for omap.
+  * fix the paths used for looking up x-loader and u-boot binaries in the
+    tarball; these don't belong in /boot at all, pull them from /usr/lib.
 
   [ James Westby ]
   * Add a linaro-hwpack-creation script for the creation of hardware packs.
