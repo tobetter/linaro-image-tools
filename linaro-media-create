@@ -287,7 +287,11 @@ prepare_sources() {
   rm -rf binary/initrd.img-* || true
   rm -rf binary/vmlinuz-* || true
 
-  sudo tar -xf $BINARY_TARBALL binary/${parts_dir}
+  extras=
+  if [ "$DEVIMAGE" = beagle ]; then
+    extras="binary/${MLO_FILE} binary/${UBOOT_FILE}"
+  fi
+  sudo tar -xf $BINARY_TARBALL binary/${parts_dir} $extras
 
   ln -sf binary/${parts_dir}/initrd.img-* .
   ln -sf binary/${parts_dir}/vmlinuz-* .
