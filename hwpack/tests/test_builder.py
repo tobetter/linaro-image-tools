@@ -72,3 +72,28 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             IsHardwarePack(
                 metadata, [available_package],
                 {source_id: source.sources_entry}))
+
+    def test_obeys_include_debs(self):
+        hwpack_name = "ahwpack"
+        hwpack_version = "1.0"
+        architecture = "armel"
+        package_name = "foo"
+        source_id = "ubuntu"
+        available_package = DummyFetchedPackage(
+            package_name, "1.1", architecture=architecture)
+        source = self.useFixture(AptSourceFixture([available_package]))
+        config = self.useFixture(ConfigFileFixture(
+            '[hwpack]\nname=%s\npackages=%s\narchitectures=%s\n'
+            'include-debs=no\n\n[%s]\nsources-entry=%s\n'
+            % (hwpack_name, package_name, architecture,
+                source_id, source.sources_entry)))
+        builder = HardwarePackBuilder(config.filename, hwpack_version)
+        builder.build()
+        metadata = Metadata(hwpack_name, hwpack_version, architecture)
+        self.assertThat(
+            "hwpack_%s_%s_%s.tar.gz" % (hwpack_name, hwpack_version,
+                architecture),
+            IsHardwarePack(
+                metadata, [available_package],
+                {source_id: source.sources_entry},
+                packages_without_content=[available_package]))

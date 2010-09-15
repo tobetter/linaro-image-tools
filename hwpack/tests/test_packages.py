@@ -605,3 +605,11 @@ class PackageFetcherTests(TestCaseWithFixtures):
         fetcher = self.get_fetcher([source])
         self.assertEqual(
             wanted_package, fetcher.fetch_packages(["foo"])[0])
+
+    def test_fetch_packages_download_content_False_doesnt_set_content(self):
+        available_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(AptSourceFixture([available_package]))
+        fetcher = self.get_fetcher([source])
+        fetched_package = fetcher.fetch_packages(
+            ["foo"], download_content=False)[0]
+        self.assertIs(None, fetched_package.content)
