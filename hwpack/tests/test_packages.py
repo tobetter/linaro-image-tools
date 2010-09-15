@@ -439,6 +439,28 @@ class AptCacheTests(TestCaseWithFixtures):
             self.assertTrue(os.path.isdir(tempdir))
         self.assertFalse(os.path.exists(tempdir))
 
+    def test_set_installed_packages(self):
+        cache = IsolatedAptCache([])
+        self.addCleanup(cache.cleanup)
+        cache.prepare()
+        packages = [DummyFetchedPackage("foo", "1.0")]
+        cache.set_installed_packages(packages)
+        self.assertEqual(
+            get_packages_file(
+                packages, extra_text="Status: install ok installed"),
+            open(os.path.join(
+                cache.tempdir, "var", "lib", "dpkg", "status")).read())
+
+    def test_set_installed_packages_empty_list(self):
+        cache = IsolatedAptCache([])
+        self.addCleanup(cache.cleanup)
+        cache.prepare()
+        cache.set_installed_packages([])
+        self.assertEqual(
+            "",
+            open(os.path.join(
+                cache.tempdir, "var", "lib", "dpkg", "status")).read())
+
 
 class PackageFetcherTests(TestCaseWithFixtures):
 
