@@ -82,6 +82,24 @@ class GetPackagesFileTests(TestCase):
             self.get_stanza(package, "Recommends: bar | baz\n"),
             get_packages_file([package]))
 
+    def test_with_provides(self):
+        package = DummyFetchedPackage("foo", "1.1", provides="bar")
+        self.assertEqual(
+            self.get_stanza(package, "Provides: bar\n"),
+            get_packages_file([package]))
+
+    def test_with_replaces(self):
+        package = DummyFetchedPackage("foo", "1.1", replaces="bar (<< 2.0)")
+        self.assertEqual(
+            self.get_stanza(package, "Replaces: bar (<< 2.0)\n"),
+            get_packages_file([package]))
+
+    def test_with_breaks(self):
+        package = DummyFetchedPackage("foo", "1.1", breaks="bar (<< 2.0)")
+        self.assertEqual(
+            self.get_stanza(package, "Breaks: bar (<< 2.0)\n"),
+            get_packages_file([package]))
+
     def test_with_extra_text(self):
         package = DummyFetchedPackage("foo", "1.1")
         self.assertEqual(textwrap.dedent("""\
@@ -306,6 +324,87 @@ class FetchedPackageTests(TestCaseWithFixtures):
             recommends="bar")
         self.assertEqual(package1, package2)
 
+    def test_not_equal_different_provides(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            provides="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            provides="baz")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_provides_one_None(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            provides="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            provides=None)
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_same_provides(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            provides="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            provides="bar")
+        self.assertEqual(package1, package2)
+
+    def test_not_equal_different_replaces(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            replaces="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            replaces="baz")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_replaces_one_None(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            replaces="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            replaces=None)
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_same_replaces(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            replaces="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            replaces="bar")
+        self.assertEqual(package1, package2)
+
+    def test_not_equal_different_breaks(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            breaks="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            breaks="baz")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_breaks_one_None(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            breaks="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            breaks=None)
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_same_breaks(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            breaks="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            breaks="bar")
+        self.assertEqual(package1, package2)
+
     def test_not_equal_different_contents(self):
         package1 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
@@ -365,6 +464,22 @@ class FetchedPackageTests(TestCaseWithFixtures):
 
     def test_from_apt_with_recommends(self):
         self.assert_from_apt_translates_relationship('recommends')
+
+    def test_from_apt_with_replaces(self):
+        self.assert_from_apt_translates_relationship('replaces')
+
+    def test_from_apt_with_breaks(self):
+        self.assert_from_apt_translates_relationship('breaks')
+
+    def test_from_apt_with_provides(self):
+        target_package = DummyFetchedPackage("foo", "1.0", provides="bar")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            created_package = FetchedPackage.from_apt(
+                candidate, target_package.filename,
+                content=target_package.content)
+            self.assertEqual(target_package, created_package)
 
     def test_from_apt_without_content(self):
         target_package = DummyFetchedPackage("foo", "1.0")

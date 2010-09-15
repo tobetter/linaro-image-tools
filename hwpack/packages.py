@@ -37,6 +37,12 @@ def get_packages_file(packages, extra_text=None):
             parts.append('Conflicts: %s' % package.conflicts)
         if package.recommends:
             parts.append('Recommends: %s' % package.recommends)
+        if package.provides:
+            parts.append('Provides: %s' % package.provides)
+        if package.replaces:
+            parts.append('Replaces: %s' % package.replaces)
+        if package.breaks:
+            parts.append('Breaks: %s' % package.breaks)
         parts.append('MD5sum: %s' % package.md5)
         content += "\n".join(parts)
         content += "\n\n"
@@ -142,11 +148,24 @@ class FetchedPackage(object):
         recommends as specified in debian/control. May be None if the
         package has none.
     :type recommends: str or None
+    :ivar provides: the Provides string that the package has, i.e. the
+        provides as specified in debian/control. May be None if the
+        package has none.
+    :type provides: str or None
+    :ivar provides: the Replaces string that the package has, i.e. the
+        replaces as specified in debian/control. May be None if the
+        package has none.
+    :type provides: str or None
+    :ivar provides: the Breaks string that the package has, i.e. the
+        breaks as specified in debian/control. May be None if the
+        package has none.
+    :type provides: str or None
     """
 
     def __init__(self, name, version, filename, size, md5,
                  architecture, depends=None, pre_depends=None,
-                 conflicts=None, recommends=None):
+                 conflicts=None, recommends=None, provides=None,
+                 replaces=None, breaks=None):
         """Create a FetchedPackage.
 
         See the instance variables for the arguments.
@@ -161,6 +180,9 @@ class FetchedPackage(object):
         self.pre_depends = pre_depends
         self.conflicts = conflicts
         self.recommends = recommends
+        self.provides = provides
+        self.replaces = replaces
+        self.breaks = breaks
         self.content = None
 
     @classmethod
@@ -183,11 +205,15 @@ class FetchedPackage(object):
         pre_depends = stringify_relationship(pkg, "PreDepends")
         conflicts = stringify_relationship(pkg, "Conflicts")
         recommends = stringify_relationship(pkg, "Recommends")
+        replaces = stringify_relationship(pkg, "Replaces")
+        breaks = stringify_relationship(pkg, "Breaks")
+        provides = ", ".join([a[0] for a in pkg._cand.provides_list]) or None
         pkg = cls(
             pkg.package.name, pkg.version, filename, pkg.size,
             pkg.md5, pkg.architecture, depends=depends,
             pre_depends=pre_depends, conflicts=conflicts,
-            recommends=recommends)
+            recommends=recommends, provides=provides, replaces=replaces,
+            breaks=breaks)
         if content is not None:
             pkg.content = content
         return pkg
@@ -207,7 +233,11 @@ class FetchedPackage(object):
                 and self.depends == other.depends
                 and self.pre_depends == other.pre_depends
                 and self.conflicts == other.conflicts
-                and self.recommends == other.recommends)
+                and self.recommends == other.recommends
+                and self.provides == other.provides
+                and self.replaces == other.replaces
+                and self.breaks == other.breaks
+                )
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -217,10 +247,11 @@ class FetchedPackage(object):
         return (
             '<%s name=%s version=%s size=%s md5=%s architecture=%s '
             'depends="%s" pre_depends="%s" conflicts="%s" recommends="%s" '
-            'has_content=%s>'
+            'provides="%s" replaces="%s" breaks="%s" has_content=%s>'
             % (self.__class__.__name__, self.name, self.version, self.size,
                 self.md5, self.architecture, self.depends, self.pre_depends,
-                self.conflicts, self.recommends, has_content))
+                self.conflicts, self.recommends, self.provides,
+                self.replaces, self.breaks, has_content))
 
 
 class IsolatedAptCache(object):
