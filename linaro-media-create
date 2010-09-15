@@ -240,11 +240,24 @@ done
 ensure_command uuidgen uuid-runtime
 ensure_command parted parted
 ensure_command wget wget
-ensure_command mkfs.ext3 e2fsprogs
-ensure_command mkfs.ext4 e2fsprogs
-ensure_command mkimage uboot-mkimage
 ensure_command md5sum coreutils
 ensure_command realpath realpath
+case $RFS in
+  ext3)
+    ensure_command mkfs.ext3 e2fsprogs
+    ;;
+  ext4)
+    ensure_command mkfs.ext4 e2fsprogs
+    ;;
+  btrfs)
+    ensure_command mkfs.btrfs btrfs-tools
+    ;;
+esac
+case $DEVNAME in
+  beagle|igep|vexpress)
+    ensure_command mkimage uboot-mkimage
+    ;;
+esac
 
 RFS_UUID=`uuidgen -r`
 
