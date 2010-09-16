@@ -20,7 +20,6 @@
 set -e
 
 MLO_FILE=usr/lib/x-loader-omap/MLO
-UBOOT_FILE=usr/lib/u-boot/omap3_beagle/u-boot.bin
 
 unset MMC MMC1 MMC2 MMC3 IMAGE_FILE
 
@@ -242,6 +241,7 @@ ensure_command parted parted
 ensure_command wget wget
 ensure_command md5sum coreutils
 ensure_command realpath realpath
+
 case $RFS in
   ext3)
     ensure_command mkfs.ext3 e2fsprogs
@@ -253,11 +253,24 @@ case $RFS in
     ensure_command mkfs.btrfs btrfs-tools
     ;;
 esac
-case $DEVNAME in
-  beagle|igep|vexpress)
+
+case $DEVIMAGE in
+  beagle)
+    UBOOT_FLAVOR=omap3_beagle
+    ensure_command mkimage uboot-mkimage
+    ;;
+  igep)
+    ensure_command mkimage uboot-mkimage
+    ;;
+  vexpress)
+    UBOOT_FLAVOR=ca9x4_ct_vxp
     ensure_command mkimage uboot-mkimage
     ;;
 esac
+
+if [ -n "$UBOOT_FLAVOR" ]; then
+  UBOOT_FILE="usr/lib/u-boot/$UBOOT_FLAVOR/u-boot.bin"
+fi
 
 RFS_UUID=`uuidgen -r`
 
@@ -302,8 +315,11 @@ prepare_sources() {
   rm -rf binary/vmlinuz-* || true
 
   extras=
+  if [ -n "$UBOOT_FILE" ]; then
+    extras="binary/$UBOOT_FILE"
+  fi
   if [ "$DEVIMAGE" = beagle ]; then
-    extras="binary/${MLO_FILE} binary/${UBOOT_FILE}"
+    extras="$extras binary/${MLO_FILE}"
   fi
   tar -xf $BINARY_TARBALL binary/${parts_dir} $extras
 
@@ -405,12 +421,16 @@ populate_boot() {
  
   mkdir -p ${DIR}/disk || true
   sudo mount ${MMC1} ${DIR}/disk
+
+  if [ -n "$UBOOT_FILE" ] && [ -e "binary/$UBOOT_FILE" ]; then
+    sudo cp -v binary/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
+  fi
+
   case "$DEVIMAGE" in
     beagle|igep)
       if [ "$DEVIMAGE" = "beagle" ]; then
-        if [ -e binary/${MLO_FILE} ] && [ -e binary/${UBOOT_FILE} ]; then
+        if [ -e binary/${MLO_FILE} ]; then
           sudo cp -v binary/${MLO_FILE}   ${DIR}/disk/MLO
-          sudo cp -v binary/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
         fi
       fi
       sync
@@ -431,7 +451,6 @@ populate_boot() {
       sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
       ;;
     vexpress)
-      sudo tar --strip-components=5 -C ${DIR}/disk/ -xf $BINARY_TARBALL binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 -e 0x60008000 \
            -n "Linux" -d ${DIR}/binary/${parts_dir}/vmlinuz*-vexpress ${DIR}/disk/uImage
       sudo mkimage -A arm -O linux -T ramdisk -C none -a 0x81000000 \
