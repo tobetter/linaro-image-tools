@@ -325,9 +325,13 @@ install_hwpack_into_tarball() {
   sudo rm -f ${chroot}/usr/bin/linaro-hwpack-install
   sudo rm -f ${chroot}/$(basename "$HWPACK_FILE")
 
-  tar cf binary-with-hwpack.tar -C hwpack-tmp/ .
+  tar cf binary-with-hwpack.tar -C hwpack-tmp/ binary
   sudo rm -rf hwpack-tmp/
   BINARY_TARBALL=${DIR}/binary-with-hwpack.tar
+
+  # TODO: In the new tarball, these files are somewhere else, apparently.
+  MLO_FILE=usr/lib/x-loader-omap/MLO
+  UBOOT_FILE=usr/lib/u-boot/omap3_beagle/u-boot.bin
 }
 
 prepare_sources() {
