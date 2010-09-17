@@ -306,10 +306,10 @@ install_hwpack_into_tarball() {
   LINARO_HWPACK_INSTALL=$(dirname $0)/linaro-hwpack-install
 
   chroot=${tmp_dir}/binary
-  sudo mv -f ${chroot}/etc/resolv.conf ${DIR}/resolv.conf.orig
+  sudo mv -f ${chroot}/etc/resolv.conf ${tmp_dir}/resolv.conf.orig
   sudo cp /etc/resolv.conf ${chroot}/etc/resolv.conf
 
-  sudo mv -f ${chroot}/etc/hosts ${DIR}/hosts.orig
+  sudo mv -f ${chroot}/etc/hosts ${tmp_dir}/hosts.orig
   sudo cp /etc/hosts ${chroot}/etc/hosts
 
   sudo cp /usr/bin/qemu-arm-static ${chroot}/usr/bin
@@ -320,8 +320,8 @@ install_hwpack_into_tarball() {
   sudo chroot "$chroot" linaro-hwpack-install /$(basename "$HWPACK_FILE")
   sudo umount ${chroot}/proc
 
-  sudo mv -f ${DIR}/resolv.conf.orig ${chroot}/etc/resolv.conf
-  sudo mv -f ${DIR}/hosts.orig ${chroot}/etc/hosts
+  sudo mv -f ${tmp_dir}/resolv.conf.orig ${chroot}/etc/resolv.conf
+  sudo mv -f ${tmp_dir}/hosts.orig ${chroot}/etc/hosts
   sudo rm -f ${chroot}/usr/bin/qemu-arm-static
   sudo rm -f ${chroot}/usr/bin/linaro-hwpack-install
   sudo rm -f ${chroot}/$(basename "$HWPACK_FILE")
