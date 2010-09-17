@@ -297,27 +297,28 @@ get_mmcs_by_id() {
 install_hwpack_into_tarball() {
   ensure_command qemu-arm-static qemu-arm-static
 
-  mkdir hwpack-tmp
-  sudo tar -xf $BINARY_TARBALL -C ${DIR}/hwpack-tmp/
+  tmp_dir=$(mktemp -d)
+  trap "rm -rf $tmp_dir" EXIT
+  sudo tar -xf $BINARY_TARBALL -C $tmp_dir
 
   # XXX: Assume linaro-hwpack-install lives on the same directory as this
   # script. This is far from optimal but should do for now.
   LINARO_HWPACK_INSTALL=$(dirname $0)/linaro-hwpack-install
 
-  chroot=${DIR}/hwpack-tmp/binary
-  sudo mv ${chroot}/etc/resolv.conf ${DIR}/resolv.conf.orig
+  chroot=${tmp_dir}/binary
+  sudo mv -f ${chroot}/etc/resolv.conf ${DIR}/resolv.conf.orig
   sudo cp /etc/resolv.conf ${chroot}/etc/resolv.conf
 
-  sudo mv ${chroot}/etc/hosts ${DIR}/hosts.orig
+  sudo mv -f ${chroot}/etc/hosts ${DIR}/hosts.orig
   sudo cp /etc/hosts ${chroot}/etc/hosts
 
   sudo cp /usr/bin/qemu-arm-static ${chroot}/usr/bin
   sudo cp $LINARO_HWPACK_INSTALL ${chroot}/usr/bin
   sudo cp "$HWPACK_FILE" "$chroot"
 
-  sudo chroot "$chroot" mount proc /proc -t proc
+  sudo mount proc ${chroot}/proc -t proc
   sudo chroot "$chroot" linaro-hwpack-install /$(basename "$HWPACK_FILE")
-  sudo chroot "$chroot" umount /proc
+  sudo umount ${chroot}/proc
 
   sudo mv -f ${DIR}/resolv.conf.orig ${chroot}/etc/resolv.conf
   sudo mv -f ${DIR}/hosts.orig ${chroot}/etc/hosts
@@ -325,13 +326,8 @@ install_hwpack_into_tarball() {
   sudo rm -f ${chroot}/usr/bin/linaro-hwpack-install
   sudo rm -f ${chroot}/$(basename "$HWPACK_FILE")
 
-  tar cf binary-with-hwpack.tar -C hwpack-tmp/ binary
-  sudo rm -rf hwpack-tmp/
+  sudo tar cf binary-with-hwpack.tar -C "$tmp_dir" binary
   BINARY_TARBALL=${DIR}/binary-with-hwpack.tar
-
-  # TODO: In the new tarball, these files are somewhere else, apparently.
-  MLO_FILE=usr/lib/x-loader-omap/MLO
-  UBOOT_FILE=usr/lib/u-boot/omap3_beagle/u-boot.bin
 }
 
 prepare_sources() {
