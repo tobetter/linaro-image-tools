@@ -83,14 +83,19 @@ HWPACK_ARCH=`grep ARCHITECTURE "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
 # Install the apt sources that contain the packages we need.
 for filename in $(ls "${HWPACK_DIR}"/sources.list.d/); do
   file="${HWPACK_DIR}"/sources.list.d/$filename
+  should_install=0
+  stripped_file=${TEMP_DIR}/$filename
+  grep -v "\(^#\|^\s*$\)" $file > $stripped_file
   while read line; do
-    # Skip any files that contain lines that are already present in the apt
-    # configuration.
-    grep -q "$line" /etc/apt/sources.list.d/* && continue
-    grep -q "$line" /etc/apt/sources.list && continue
-  done < $file
+    # Only install files that have at least one line not present in the
+    # existing sources lists.
+    grep -qF "$line" /etc/apt/sources.list.d/* /etc/apt/sources.list \
+      || should_install=1
+  done < $stripped_file
 
-  sudo cp $file /etc/apt/sources.list.d/hwpack.$filename
+  if [ $should_install -eq 1 ]; then
+    sudo cp $file /etc/apt/sources.list.d/hwpack.$filename
+  fi
 done
 
 # Import the OpenPGP keys for the files installed above.
