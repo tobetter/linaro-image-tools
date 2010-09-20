@@ -301,7 +301,7 @@ install_hwpack_into_tarball() {
   chroot=${tmp_dir}/binary
   # Make sure the tmp_dir where we unpack the tarball is removed when this
   # script exits.
-  trap "sudo umount ${chroot}/proc || true; rm -rf $tmp_dir" EXIT
+  trap "sudo umount ${chroot}/proc || true; sudo rm -rf $tmp_dir" EXIT
 
   sudo tar -xf $BINARY_TARBALL -C $tmp_dir
 
