@@ -298,14 +298,17 @@ install_hwpack_into_tarball() {
   ensure_command qemu-arm-static qemu-arm-static
 
   tmp_dir=$(mktemp -d)
-  trap "rm -rf $tmp_dir" EXIT
+  chroot=${tmp_dir}/binary
+  # Make sure the tmp_dir where we unpack the tarball is removed when this
+  # script exits.
+  trap "sudo umount ${chroot}/proc || true; sudo rm -rf $tmp_dir" EXIT
+
   sudo tar -xf $BINARY_TARBALL -C $tmp_dir
 
   # XXX: Assume linaro-hwpack-install lives on the same directory as this
   # script. This is far from optimal but should do for now.
   LINARO_HWPACK_INSTALL=$(dirname $0)/linaro-hwpack-install
 
-  chroot=${tmp_dir}/binary
   sudo mv -f ${chroot}/etc/resolv.conf ${tmp_dir}/resolv.conf.orig
   sudo cp /etc/resolv.conf ${chroot}/etc/resolv.conf
 
@@ -316,10 +319,13 @@ install_hwpack_into_tarball() {
   sudo cp $LINARO_HWPACK_INSTALL ${chroot}/usr/bin
   sudo cp "$HWPACK_FILE" "$chroot"
 
+  # Actually install the hwpack.
   sudo mount proc ${chroot}/proc -t proc
   sudo chroot "$chroot" linaro-hwpack-install /$(basename "$HWPACK_FILE")
-  sudo umount ${chroot}/proc
 
+  # Revert some changes we did to the rootfs as we don't want them in the
+  # image.
+  sudo umount ${chroot}/proc
   sudo mv -f ${tmp_dir}/resolv.conf.orig ${chroot}/etc/resolv.conf
   sudo mv -f ${tmp_dir}/hosts.orig ${chroot}/etc/hosts
   sudo rm -f ${chroot}/usr/bin/qemu-arm-static
