@@ -350,7 +350,7 @@ prepare_sources() {
   fi
 
   # Remove the binary/ directory so that previous runs don't interfere here.
-  rm -rf binary/ || true
+  rm -rf binary/
 
   extras=
   if [ "$DEVIMAGE" = beagle ]; then
@@ -507,7 +507,7 @@ populate_rootfs() {
   echo "Populating rootfs Partition"
   echo "Be patient, this may take a few minutes"
   echo ""
-  mkdir -p ${ROOT_DISK} || true
+  mkdir -p ${ROOT_DISK}
   sudo mount ${MMC2} ${ROOT_DISK}
 
   sudo tar -xf $BINARY_TARBALL --strip-components=1 -C $ROOT_DISK
@@ -526,9 +526,9 @@ populate_rootfs() {
     let SIZE=$SWAP_SIZE*1024
 
     if [ $SPACE_LEFT -ge $SIZE ] ; then
-      sudo dd if=/dev/zero of=${ROOT_DIR}/SWAP.swap bs=1M count=$SWAP_SIZE
-      sudo mkswap ${ROOT_DIR}/SWAP.swap
-      echo "/SWAP.swap  none  swap  sw  0 0" | sudo tee -a ${ROOT_DIR}/etc/fstab
+      sudo dd if=/dev/zero of=${ROOT_DISK}/SWAP.swap bs=1M count=$SWAP_SIZE
+      sudo mkswap ${ROOT_DISK}/SWAP.swap
+      echo "/SWAP.swap  none  swap  sw  0 0" | sudo tee -a ${ROOT_DISK}/etc/fstab
     else
       echo "SWAP file bigger then whats left on partition"
     fi
@@ -538,14 +538,14 @@ populate_rootfs() {
   echo "Creating /etc/flash-kernel.conf"
   echo ""
 
-  echo "UBOOT_PART=/dev/mmcblk0p1" | sudo tee ${ROOT_DIR}/etc/flash-kernel.conf >/dev/null
+  echo "UBOOT_PART=/dev/mmcblk0p1" | sudo tee ${ROOT_DISK}/etc/flash-kernel.conf >/dev/null
 
-  cd ${ROOT_DIR}
+  cd ${ROOT_DISK}
   sync
   sync
   cd ${DIR}/
 
-  sudo umount ${ROOT_DIR} || true
+  sudo umount ${ROOT_DISK} || true
 }
 
 calculatesize() {
