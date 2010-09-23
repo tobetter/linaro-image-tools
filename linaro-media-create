@@ -35,6 +35,8 @@ FAT_SIZE=32
 IMAGE_SIZE=2G
 
 DIR=$PWD
+BOOT_DISK=${DIR}/boot-disc
+ROOT_DISK=${DIR}/root-disc
 
 ensure_command() {
   # ensure_command foo foo-package
@@ -297,6 +299,7 @@ get_mmcs_by_id() {
 install_hwpack_into_tarball() {
   ensure_command qemu-arm-static qemu-arm-static
 
+
   tmp_dir=$(mktemp -d)
   chroot=${tmp_dir}/binary
   # Make sure the tmp_dir where we unpack the tarball is removed when this
@@ -346,18 +349,14 @@ prepare_sources() {
     boot_snippet='root=UUID='${RFS_UUID}
   fi
 
-  rm -rf ${DIR}/binary/ || true
-  rm -rf binary/initrd.img-* || true
-  rm -rf binary/vmlinuz-* || true
+  # Remove the binary/ directory so that previous runs don't interfere here.
+  rm -rf binary/
 
   extras=
   if [ "$DEVIMAGE" = beagle ]; then
     extras="binary/${MLO_FILE} binary/${UBOOT_FILE}"
   fi
   tar -xf $BINARY_TARBALL binary/${parts_dir} $extras
-
-  ln -sf binary/${parts_dir}/initrd.img-* .
-  ln -sf binary/${parts_dir}/vmlinuz-* .
 
   if [ "${IMAGE_FILE}" ]; then
     cat > binary/boot.cmd << BOOTCMD
@@ -452,14 +451,14 @@ populate_boot() {
     parts_dir=boot
   fi
  
-  mkdir -p ${DIR}/disk || true
-  sudo mount ${MMC1} ${DIR}/disk
+  mkdir -p ${BOOT_DISK} || true
+  sudo mount ${MMC1} ${BOOT_DISK}
   case "$DEVIMAGE" in
     beagle|igep)
       if [ "$DEVIMAGE" = "beagle" ]; then
         if [ -e binary/${MLO_FILE} ] && [ -e binary/${UBOOT_FILE} ]; then
-          sudo cp -v binary/${MLO_FILE}   ${DIR}/disk/MLO
-          sudo cp -v binary/${UBOOT_FILE} ${DIR}/disk/u-boot.bin
+          sudo cp -v binary/${MLO_FILE}   ${BOOT_DISK}/MLO
+          sudo cp -v binary/${UBOOT_FILE} ${BOOT_DISK}/u-boot.bin
         fi
       fi
       sync
@@ -468,25 +467,25 @@ populate_boot() {
  
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x80008000 \
            -e 0x80008000 -n Linux -d "${DIR}/binary/${parts_dir}"/vmlinuz-*omap \
-           "${DIR}/disk/uImage"
+           "${BOOT_DISK}/uImage"
  
       sudo mkimage -A arm -O linux -T ramdisk -C none -a 0 \
            -e 0 -n initramfs -d "${DIR}/binary/${parts_dir}"/initrd.img-*-omap \
-           "${DIR}/disk/uInitrd"
+           "${BOOT_DISK}/uInitrd"
  
       sudo mkimage -A arm -O linux -T script -C none -a 0 \
            -e 0 -n "$CODENAME 10.05" -d "${DIR}/binary/boot.cmd" \
-           "${DIR}/disk/boot.scr"
-      sudo cp -v ${DIR}/disk/boot.scr ${DIR}/disk/boot.ini
+           "${BOOT_DISK}/boot.scr"
+      sudo cp -v ${BOOT_DISK}/boot.scr ${BOOT_DISK}/boot.ini
       ;;
     vexpress)
-      sudo tar --strip-components=5 -C ${DIR}/disk/ -xf $BINARY_TARBALL binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin
+      sudo tar --strip-components=5 -C ${BOOT_DISK}/ -xf $BINARY_TARBALL binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 -e 0x60008000 \
-           -n "Linux" -d ${DIR}/binary/${parts_dir}/vmlinuz*-vexpress ${DIR}/disk/uImage
+           -n "Linux" -d ${DIR}/binary/${parts_dir}/vmlinuz*-vexpress ${BOOT_DISK}/uImage
       sudo mkimage -A arm -O linux -T ramdisk -C none -a 0x81000000 \
            -e 0x81000000 -n "initramfs" -d \
            ${DIR}/binary/${parts_dir}/initrd.img-*-linaro-vexpress \
-           "${DIR}"/disk/uInitrd
+           "${BOOT_DISK}"/uInitrd
       ;;
     *)
       echo "Set --dev parameter: --dev <beagle|igep|vexpress>" 1>&2
@@ -495,12 +494,12 @@ populate_boot() {
       ;;
   esac
  
-  cd ${DIR}/disk/
+  cd ${BOOT_DISK}/
   sync
   sync
   cd ${DIR}/
  
-  sudo umount ${DIR}/disk || true
+  sudo umount ${BOOT_DISK} || true
 }
 
 populate_rootfs() {
@@ -508,12 +507,13 @@ populate_rootfs() {
   echo "Populating rootfs Partition"
   echo "Be patient, this may take a few minutes"
   echo ""
-  sudo mount ${MMC2} ${DIR}/disk
+  mkdir -p ${ROOT_DISK}
+  sudo mount ${MMC2} ${ROOT_DISK}
 
-  sudo tar -xf $BINARY_TARBALL --strip-components=1 -C disk/
+  sudo tar -xf $BINARY_TARBALL --strip-components=1 -C $ROOT_DISK
 
 ## add fstab entry for rootfs and boot
-  echo "UUID=${RFS_UUID} / ${RFS}  errors=remount-ro 0 1 " | sudo tee -a ${DIR}/disk/etc/fstab
+  echo "UUID=${RFS_UUID} / ${RFS}  errors=remount-ro 0 1 " | sudo tee -a ${ROOT_DISK}/etc/fstab
 
   if [ "$CREATE_SWAP" ] ; then
 
@@ -521,14 +521,14 @@ populate_rootfs() {
     echo "Creating SWAP File"
     echo ""
 
-    SPACE_LEFT=$(df ${DIR}/disk/ | grep ${MMC2} | awk '{print $4}')
+    SPACE_LEFT=$(df ${ROOT_DISK} | grep ${MMC2} | awk '{print $4}')
 
     let SIZE=$SWAP_SIZE*1024
 
     if [ $SPACE_LEFT -ge $SIZE ] ; then
-      sudo dd if=/dev/zero of=${DIR}/disk/SWAP.swap bs=1M count=$SWAP_SIZE
-      sudo mkswap ${DIR}/disk/SWAP.swap
-      echo "/SWAP.swap  none  swap  sw  0 0" | sudo tee -a ${DIR}/disk/etc/fstab
+      sudo dd if=/dev/zero of=${ROOT_DISK}/SWAP.swap bs=1M count=$SWAP_SIZE
+      sudo mkswap ${ROOT_DISK}/SWAP.swap
+      echo "/SWAP.swap  none  swap  sw  0 0" | sudo tee -a ${ROOT_DISK}/etc/fstab
     else
       echo "SWAP file bigger then whats left on partition"
     fi
@@ -538,14 +538,14 @@ populate_rootfs() {
   echo "Creating /etc/flash-kernel.conf"
   echo ""
 
-  echo "UBOOT_PART=/dev/mmcblk0p1" | sudo tee ${DIR}/disk/etc/flash-kernel.conf >/dev/null
+  echo "UBOOT_PART=/dev/mmcblk0p1" | sudo tee ${ROOT_DISK}/etc/flash-kernel.conf >/dev/null
 
-  cd ${DIR}/disk/
+  cd ${ROOT_DISK}
   sync
   sync
   cd ${DIR}/
 
-  sudo umount ${DIR}/disk || true
+  sudo umount ${ROOT_DISK} || true
 }
 
 calculatesize() {
