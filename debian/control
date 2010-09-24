@@ -1,10 +1,11 @@
 Source: linaro-image-tools
 Section: devel
 Priority: optional
-Build-Depends: debhelper (>= 7)
+Build-Depends: debhelper (>= 7.0.50~), python-all, python-apt, python-testtools
 Standards-Version: 3.9.1
 Maintainer: Linaro Developers <linaro-dev@lists.linaro.org>
 Vcs-Bzr: 
+XS-Python-Version: >=2.5
 
 Package: linaro-image-tools
 Architecture: all
@@ -13,10 +14,22 @@ Depends: ${misc:Depends},
          uuid-runtime,
          wget,
          uboot-mkimage,
-         realpath
+         realpath,
+         python,
+         python-hwpack
 Description: collection of tools to work with Linaro images
  This package offers a set of tools for use with Linaro images.
  .
  The provided linaro-media-create command allows writing Linaro images
  to a SD card, or generating an image file which you can boot in QEMU.
 
+Package: python-hwpack
+Architecture: all
+Section: python
+Depends: ${python:Depends}, python-apt, ${misc:Depends}
+Description: python library for the creation of hardware packs
+ Hardware packs allow for the distribution of packages to be combined with
+ an image to create a root filesystem at a later date.
+ .
+ This package provides a python library to aid with the creation of hardware
+ packs.
