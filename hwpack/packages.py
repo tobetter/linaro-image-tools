@@ -151,14 +151,14 @@ class FetchedPackage(object):
         provides as specified in debian/control. May be None if the
         package has none.
     :type provides: str or None
-    :ivar provides: the Replaces string that the package has, i.e. the
+    :ivar replaces: the Replaces string that the package has, i.e. the
         replaces as specified in debian/control. May be None if the
         package has none.
-    :type provides: str or None
-    :ivar provides: the Breaks string that the package has, i.e. the
+    :type replaces: str or None
+    :ivar breaks: the Breaks string that the package has, i.e. the
         breaks as specified in debian/control. May be None if the
         package has none.
-    :type provides: str or None
+    :type breaks: str or None
     """
 
     def __init__(self, name, version, filename, size, md5,
@@ -417,8 +417,8 @@ class PackageFetcher(object):
         if broken:
             # If this happens then there is a bug, as we should have
             # caught this problem earlier
-            raise DependencyNotSatisfied(
-                "Unable to satisfy dependencies of %s" %
+            raise AssertionError(
+                "Weirdly unable to satisfy dependencies of %s" %
                 ", ".join(broken))
 
     def _filter_ignored(self, package_dict):
