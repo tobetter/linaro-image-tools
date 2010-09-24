@@ -20,6 +20,7 @@ class Config(object):
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
+    ASSUME_INSTALLED_KEY = "assume-installed"
 
     def __init__(self, fp):
         """Create a Config.
@@ -41,6 +42,7 @@ class Config(object):
         self._validate_support()
         self._validate_packages()
         self._validate_architectures()
+        self._validate_assume_installed()
         self._validate_sections()
 
     @property
@@ -101,21 +103,24 @@ class Config(object):
         """
         return self._get_option_from_main_section(self.SUPPORT_KEY)
 
+    def _get_list_from_main_section(self, key):
+        raw_values = self._get_option_from_main_section(key)
+        if raw_values is None:
+            return []
+        values = re.split("\s+", raw_values)
+        filtered_values = []
+        for value in values:
+            if value not in filtered_values:
+                filtered_values.append(value)
+        return filtered_values
+
     @property
     def packages(self):
         """The packages that should be contained in the hwpack.
 
         A list of str.
         """
-        raw_packages = self._get_option_from_main_section(self.PACKAGES_KEY)
-        if raw_packages is None:
-            return []
-        packages = re.split("\s+", raw_packages)
-        filtered_packages = []
-        for package in packages:
-            if package not in filtered_packages:
-                filtered_packages.append(package)
-        return filtered_packages
+        return self._get_list_from_main_section(self.PACKAGES_KEY)
 
     @property
     def architectures(self):
@@ -123,16 +128,15 @@ class Config(object):
 
         A list of str.
         """
-        raw_architectures = self._get_option_from_main_section(
-            self.ARCHITECTURES_KEY)
-        if raw_architectures is None:
-            return []
-        architectures = re.split("\s+", raw_architectures)
-        filtered_architectures = []
-        for architecture in architectures:
-            if architecture not in filtered_architectures:
-                filtered_architectures.append(architecture)
-        return filtered_architectures
+        return self._get_list_from_main_section(self.ARCHITECTURES_KEY)
+
+    @property
+    def assume_installed(self):
+        """The packages that the hwpack should assume as already installed.
+
+        A list of str.
+        """
+        return self._get_list_from_main_section(self.ASSUME_INSTALLED_KEY)
 
     @property
     def sources(self):
@@ -193,6 +197,15 @@ class Config(object):
             raise HwpackConfigError(
                 "No %s in the [%s] section"
                 % (self.ARCHITECTURES_KEY, self.MAIN_SECTION))
+
+    def _validate_assume_installed(self):
+        assume_installed = self.assume_installed
+        for package in assume_installed:
+            if re.match(self.PACKAGE_REGEX, package) is None:
+                raise HwpackConfigError(
+                    "Invalid value in %s in the [%s] section: %s"
+                    % (self.ASSUME_INSTALLED_KEY, self.MAIN_SECTION,
+                        package))
 
     def _validate_section_sources_entry(self, section_name):
         try:

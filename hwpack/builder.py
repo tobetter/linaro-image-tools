@@ -36,6 +36,7 @@ class HardwarePackBuilder(object):
             fetcher = PackageFetcher(
                 sources.values(), architecture=architecture)
             with fetcher:
+                fetcher.ignore_packages(self.config.assume_installed)
                 packages = fetcher.fetch_packages(
                     self.config.packages,
                     download_content=self.config.include_debs)

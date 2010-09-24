@@ -1,16 +1,19 @@
 import os
+import tarfile
 
 from testtools import TestCase
 
 from hwpack.builder import ConfigFileMissing, HardwarePackBuilder
 from hwpack.config import HwpackConfigError
 from hwpack.hardwarepack import Metadata
+from hwpack.tarfile_matchers import TarfileHasFile
 from hwpack.testing import (
     AptSourceFixture,
     ChdirToTempdirFixture,
     ConfigFileFixture,
     DummyFetchedPackage,
     IsHardwarePack,
+    Not,
     TestCaseWithFixtures,
     )
 
@@ -97,3 +100,40 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
                 metadata, [available_package],
                 {source_id: source.sources_entry},
                 packages_without_content=[available_package]))
+
+    def test_obeys_assume_installed(self):
+        hwpack_name = "ahwpack"
+        hwpack_version = "1.0"
+        architecture = "armel"
+        package_name = "foo"
+        assume_installed = "bar"
+        source_id = "ubuntu"
+        available_package = DummyFetchedPackage(
+            package_name, "1.1", architecture=architecture,
+            depends=assume_installed)
+        dependency_package = DummyFetchedPackage(
+            assume_installed, "1.1", architecture=architecture)
+        source = self.useFixture(
+            AptSourceFixture([available_package, dependency_package]))
+        config = self.useFixture(ConfigFileFixture(
+            '[hwpack]\nname=%s\npackages=%s\narchitectures=%s\n'
+            'assume-installed=%s\n\n[%s]\nsources-entry=%s\n'
+            % (hwpack_name, package_name, architecture, assume_installed,
+                source_id, source.sources_entry)))
+        builder = HardwarePackBuilder(config.filename, hwpack_version)
+        builder.build()
+        metadata = Metadata(hwpack_name, hwpack_version, architecture)
+        filename = "hwpack_%s_%s_%s.tar.gz" % (hwpack_name, hwpack_version,
+                architecture)
+        self.assertThat(
+            filename,
+            IsHardwarePack(
+                metadata, [available_package],
+                {source_id: source.sources_entry}))
+        tf = tarfile.open(filename, mode="r:gz")
+        try:
+            self.assertThat(
+                tf,
+                Not(TarfileHasFile("pkgs/%s" % dependency_package.filename)))
+        finally:
+            tf.close()

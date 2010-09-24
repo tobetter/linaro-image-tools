@@ -5,9 +5,10 @@ import textwrap
 from testtools import TestCase
 
 from hwpack.packages import (
-    IsolatedAptCache,
+    DependencyNotSatisfied,
     FetchedPackage,
     get_packages_file,
+    IsolatedAptCache,
     PackageFetcher,
     stringify_relationship,
     )
@@ -79,6 +80,24 @@ class GetPackagesFileTests(TestCase):
         package = DummyFetchedPackage("foo", "1.1", recommends="bar | baz")
         self.assertEqual(
             self.get_stanza(package, "Recommends: bar | baz\n"),
+            get_packages_file([package]))
+
+    def test_with_provides(self):
+        package = DummyFetchedPackage("foo", "1.1", provides="bar")
+        self.assertEqual(
+            self.get_stanza(package, "Provides: bar\n"),
+            get_packages_file([package]))
+
+    def test_with_replaces(self):
+        package = DummyFetchedPackage("foo", "1.1", replaces="bar (<< 2.0)")
+        self.assertEqual(
+            self.get_stanza(package, "Replaces: bar (<< 2.0)\n"),
+            get_packages_file([package]))
+
+    def test_with_breaks(self):
+        package = DummyFetchedPackage("foo", "1.1", breaks="bar (<< 2.0)")
+        self.assertEqual(
+            self.get_stanza(package, "Breaks: bar (<< 2.0)\n"),
             get_packages_file([package]))
 
     def test_with_extra_text(self):
@@ -305,6 +324,87 @@ class FetchedPackageTests(TestCaseWithFixtures):
             recommends="bar")
         self.assertEqual(package1, package2)
 
+    def test_not_equal_different_provides(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            provides="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            provides="baz")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_provides_one_None(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            provides="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            provides=None)
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_same_provides(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            provides="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            provides="bar")
+        self.assertEqual(package1, package2)
+
+    def test_not_equal_different_replaces(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            replaces="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            replaces="baz")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_replaces_one_None(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            replaces="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            replaces=None)
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_same_replaces(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            replaces="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            replaces="bar")
+        self.assertEqual(package1, package2)
+
+    def test_not_equal_different_breaks(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            breaks="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            breaks="baz")
+        self.assertNotEqual(package1, package2)
+
+    def test_not_equal_different_breaks_one_None(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            breaks="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            breaks=None)
+        self.assertNotEqual(package1, package2)
+
+    def test_equal_same_breaks(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            breaks="bar")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel",
+            breaks="bar")
+        self.assertEqual(package1, package2)
+
     def test_not_equal_different_contents(self):
         package1 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
@@ -364,6 +464,22 @@ class FetchedPackageTests(TestCaseWithFixtures):
 
     def test_from_apt_with_recommends(self):
         self.assert_from_apt_translates_relationship('recommends')
+
+    def test_from_apt_with_replaces(self):
+        self.assert_from_apt_translates_relationship('replaces')
+
+    def test_from_apt_with_breaks(self):
+        self.assert_from_apt_translates_relationship('breaks')
+
+    def test_from_apt_with_provides(self):
+        target_package = DummyFetchedPackage("foo", "1.0", provides="bar")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            created_package = FetchedPackage.from_apt(
+                candidate, target_package.filename,
+                content=target_package.content)
+            self.assertEqual(target_package, created_package)
 
     def test_from_apt_without_content(self):
         target_package = DummyFetchedPackage("foo", "1.0")
@@ -598,13 +714,22 @@ class PackageFetcherTests(TestCaseWithFixtures):
         pre_depends = "bar (>= 1.0)"
         conflicts = "baz | zap"
         recommends = "zing, zang"
+        dependency_packages = [
+            DummyFetchedPackage("foo", "1.0"),
+            DummyFetchedPackage("bar", "1.0"),
+            DummyFetchedPackage("baz", "1.0"),
+            DummyFetchedPackage("zap", "1.0"),
+            DummyFetchedPackage("zing", "1.0"),
+            DummyFetchedPackage("zang", "1.0"),
+        ]
         wanted_package = DummyFetchedPackage(
-            "foo", "1.0", depends=depends, pre_depends=pre_depends,
+            "top", "1.0", depends=depends, pre_depends=pre_depends,
             conflicts=conflicts, recommends=recommends)
-        source = self.useFixture(AptSourceFixture([wanted_package]))
+        source = self.useFixture(
+            AptSourceFixture([wanted_package] + dependency_packages))
         fetcher = self.get_fetcher([source])
-        self.assertEqual(
-            wanted_package, fetcher.fetch_packages(["foo"])[0])
+        self.assertIn(
+            wanted_package, fetcher.fetch_packages(["top"]))
 
     def test_fetch_packages_download_content_False_doesnt_set_content(self):
         available_package = DummyFetchedPackage("foo", "1.0")
@@ -613,3 +738,125 @@ class PackageFetcherTests(TestCaseWithFixtures):
         fetched_package = fetcher.fetch_packages(
             ["foo"], download_content=False)[0]
         self.assertIs(None, fetched_package.content)
+
+    def test_fetches_dependencies(self):
+        wanted_package1 = DummyFetchedPackage("foo", "1.0", depends="bar")
+        wanted_package2 = DummyFetchedPackage("bar", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([wanted_package1, wanted_package2]))
+        fetcher = self.get_fetcher([source])
+        self.assertEqual(
+            [wanted_package1, wanted_package2],
+            fetcher.fetch_packages(["foo"]))
+
+    def test_broken_dependencies(self):
+        wanted_package = DummyFetchedPackage("foo", "1.0", depends="bar")
+        source = self.useFixture(AptSourceFixture([wanted_package]))
+        fetcher = self.get_fetcher([source])
+        e = self.assertRaises(
+            DependencyNotSatisfied, fetcher.fetch_packages, ["foo"])
+        self.assertEqual(
+            "Unable to satisfy dependencies of foo", str(e))
+
+    def test_fetch_packages_leaves_no_marked_changes(self):
+        wanted_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(AptSourceFixture([wanted_package]))
+        fetcher = self.get_fetcher([source])
+        fetcher.fetch_packages(["foo"])
+        self.assertEqual([], list(fetcher.cache.cache.get_changes()))
+
+    def test_ignore_with_provides(self):
+        ignored_package = DummyFetchedPackage(
+            "ubuntu-minimal", "1.0", depends="apt-utils")
+        middle_package = DummyFetchedPackage(
+            "apt-utils", "1.0", depends="libapt-pkg")
+        provides_package = DummyFetchedPackage(
+            "apt", "1.0", provides="libapt-pkg", replaces="someotherpackage")
+        source = self.useFixture(
+            AptSourceFixture(
+                [ignored_package, middle_package, provides_package]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["ubuntu-minimal"])
+
+    def test_download_content_False_fetches_no_dependencies(self):
+        wanted_package1 = DummyFetchedPackage("foo", "1.0", depends="bar")
+        wanted_package2 = DummyFetchedPackage("bar", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([wanted_package1, wanted_package2]))
+        fetcher = self.get_fetcher([source])
+        self.assertEqual(
+            1, len(fetcher.fetch_packages(["foo"], download_content=False)))
+
+    def test_ignore_packages(self):
+        wanted_package = DummyFetchedPackage("foo", "1.0", depends="bar")
+        ignored_package = DummyFetchedPackage("bar", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([wanted_package, ignored_package]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["bar"])
+        self.assertEqual(
+            [wanted_package], fetcher.fetch_packages(["foo"]))
+
+    def test_ignore_dependency_of_ignored(self):
+        wanted_package = DummyFetchedPackage("foo", "1.0", depends="baz")
+        ignored_package = DummyFetchedPackage("bar", "1.0", depends="baz")
+        dependency = DummyFetchedPackage("baz", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([wanted_package, ignored_package, dependency]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["bar"])
+        self.assertEqual(
+            [wanted_package], fetcher.fetch_packages(["foo"]))
+
+    def test_ignore_unknown_package(self):
+        source = self.useFixture(AptSourceFixture([]))
+        fetcher = self.get_fetcher([source])
+        self.assertRaises(KeyError, fetcher.ignore_packages, ["unknown"])
+
+    def test_ignore_cant_satisfy_depenencies(self):
+        wanted_package = DummyFetchedPackage("foo", "1.0", depends="bar")
+        source = self.useFixture(AptSourceFixture([wanted_package]))
+        fetcher = self.get_fetcher([source])
+        e = self.assertRaises(
+            DependencyNotSatisfied, fetcher.ignore_packages, ["foo"])
+        self.assertEqual(
+            "Unable to satisfy dependencies of foo", str(e))
+
+    def test_ignored_arent_fetched_even_if_explicitly_requested(self):
+        wanted_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([wanted_package]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["foo"])
+        self.assertEqual(
+            [], fetcher.fetch_packages(["foo"]))
+
+    def test_no_metadata_for_ignored_even_if_explicitly_requested(self):
+        wanted_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([wanted_package]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["foo"])
+        self.assertEqual(
+            [], fetcher.fetch_packages(["foo"], download_content=False))
+
+    def test_ignore_is_cumalative(self):
+        package1 = DummyFetchedPackage("foo", "1.0")
+        package2 = DummyFetchedPackage("bar", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([package1, package2]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["foo"])
+        fetcher.ignore_packages(["bar"])
+        self.assertEqual(
+            [],
+            fetcher.fetch_packages(["foo", "bar"], download_content=False))
+
+    def test_ignore_leaves_no_marked_changes(self):
+        package1 = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(AptSourceFixture([package1]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["foo"])
+        self.assertEqual(
+            [],
+            list(fetcher.cache.cache.get_changes()))

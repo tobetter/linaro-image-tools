@@ -36,6 +36,12 @@ def get_packages_file(packages, extra_text=None):
             parts.append('Conflicts: %s' % package.conflicts)
         if package.recommends:
             parts.append('Recommends: %s' % package.recommends)
+        if package.provides:
+            parts.append('Provides: %s' % package.provides)
+        if package.replaces:
+            parts.append('Replaces: %s' % package.replaces)
+        if package.breaks:
+            parts.append('Breaks: %s' % package.breaks)
         parts.append('MD5sum: %s' % package.md5)
         content += "\n".join(parts)
         content += "\n\n"
@@ -141,11 +147,24 @@ class FetchedPackage(object):
         recommends as specified in debian/control. May be None if the
         package has none.
     :type recommends: str or None
+    :ivar provides: the Provides string that the package has, i.e. the
+        provides as specified in debian/control. May be None if the
+        package has none.
+    :type provides: str or None
+    :ivar replaces: the Replaces string that the package has, i.e. the
+        replaces as specified in debian/control. May be None if the
+        package has none.
+    :type replaces: str or None
+    :ivar breaks: the Breaks string that the package has, i.e. the
+        breaks as specified in debian/control. May be None if the
+        package has none.
+    :type breaks: str or None
     """
 
     def __init__(self, name, version, filename, size, md5,
                  architecture, depends=None, pre_depends=None,
-                 conflicts=None, recommends=None):
+                 conflicts=None, recommends=None, provides=None,
+                 replaces=None, breaks=None):
         """Create a FetchedPackage.
 
         See the instance variables for the arguments.
@@ -160,6 +179,9 @@ class FetchedPackage(object):
         self.pre_depends = pre_depends
         self.conflicts = conflicts
         self.recommends = recommends
+        self.provides = provides
+        self.replaces = replaces
+        self.breaks = breaks
         self.content = None
 
     @classmethod
@@ -182,11 +204,15 @@ class FetchedPackage(object):
         pre_depends = stringify_relationship(pkg, "PreDepends")
         conflicts = stringify_relationship(pkg, "Conflicts")
         recommends = stringify_relationship(pkg, "Recommends")
+        replaces = stringify_relationship(pkg, "Replaces")
+        breaks = stringify_relationship(pkg, "Breaks")
+        provides = ", ".join([a[0] for a in pkg._cand.provides_list]) or None
         pkg = cls(
             pkg.package.name, pkg.version, filename, pkg.size,
             pkg.md5, pkg.architecture, depends=depends,
             pre_depends=pre_depends, conflicts=conflicts,
-            recommends=recommends)
+            recommends=recommends, provides=provides, replaces=replaces,
+            breaks=breaks)
         if content is not None:
             pkg.content = content
         return pkg
@@ -206,7 +232,11 @@ class FetchedPackage(object):
                 and self.depends == other.depends
                 and self.pre_depends == other.pre_depends
                 and self.conflicts == other.conflicts
-                and self.recommends == other.recommends)
+                and self.recommends == other.recommends
+                and self.provides == other.provides
+                and self.replaces == other.replaces
+                and self.breaks == other.breaks
+                )
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -216,10 +246,11 @@ class FetchedPackage(object):
         return (
             '<%s name=%s version=%s size=%s md5=%s architecture=%s '
             'depends="%s" pre_depends="%s" conflicts="%s" recommends="%s" '
-            'has_content=%s>'
+            'provides="%s" replaces="%s" breaks="%s" has_content=%s>'
             % (self.__class__.__name__, self.name, self.version, self.size,
                 self.md5, self.architecture, self.depends, self.pre_depends,
-                self.conflicts, self.recommends, has_content))
+                self.conflicts, self.recommends, self.provides,
+                self.replaces, self.breaks, has_content))
 
 
 class IsolatedAptCache(object):
@@ -310,6 +341,10 @@ class IsolatedAptCache(object):
         return False
 
 
+class DependencyNotSatisfied(Exception):
+    pass
+
+
 class PackageFetcher(object):
     """A class to fetch packages from a defined list of sources."""
 
@@ -349,8 +384,65 @@ class PackageFetcher(object):
         self.cleanup()
         return False
 
+    def ignore_packages(self, packages):
+        """Ignore packages such that they will not be fetched.
+
+        If a package is ignored then neither it or any of its recursive
+        dependencies will be fetched by fetch_packages.
+
+        :param packages: the list of package names to ignore.
+        :type packages: an iterable of str
+        """
+        for package in packages:
+            self.cache.cache[package].mark_install(auto_fix=False)
+            if self.cache.cache.broken_count:
+                raise DependencyNotSatisfied(
+                    "Unable to satisfy dependencies of %s" %
+                    ", ".join([p.name for p in self.cache.cache
+                        if p.is_inst_broken]))
+        installed = []
+        for package in self.cache.cache.get_changes():
+            candidate = package.candidate
+            base = os.path.basename(candidate.filename)
+            installed.append(FetchedPackage.from_apt(candidate, base))
+        for package in self.cache.cache:
+            if not package.isInstalled:
+                continue
+            candidate = package.installed
+            base = os.path.basename(candidate.filename)
+            installed.append(FetchedPackage.from_apt(candidate, base))
+        self.cache.set_installed_packages(installed)
+        broken = [p.name for p in self.cache.cache
+                if p.is_inst_broken or p.is_now_broken]
+        if broken:
+            # If this happens then there is a bug, as we should have
+            # caught this problem earlier
+            raise AssertionError(
+                "Weirdly unable to satisfy dependencies of %s" %
+                ", ".join(broken))
+
+    def _filter_ignored(self, package_dict):
+        seen_packages = set()
+        for package in self.cache.cache.get_changes():
+            if package.name in package_dict:
+                seen_packages.add(package.name)
+        all_packages = set(package_dict.keys())
+        for unseen_package in all_packages.difference(seen_packages):
+            del package_dict[unseen_package]
+
     def fetch_packages(self, packages, download_content=True):
         """Fetch the files for the given list of package names.
+
+        The files, and all their dependencies are download, and the metadata
+        and content returned as FetchedPackage objects.
+
+        If download_content is False then only the metadata is returned
+        (i.e. the FetchedPackages will have None for their content
+         attribute), and only information about the specified packages
+        will be returned, no dependencies.
+
+        No packages that have been ignored, or are recursive dependencies
+        of ignored packages will be returned.
 
         :param packages: a list of package names to install
         :type packages: an iterable of str
@@ -363,22 +455,42 @@ class PackageFetcher(object):
         :raises KeyError: if any of the package names in the list couldn't
             be found.
         """
-        results = []
+        fetched = {}
         for package in packages:
             candidate = self.cache.cache[package].candidate
             base = os.path.basename(candidate.filename)
             result_package = FetchedPackage.from_apt(candidate, base)
-            if download_content:
-                destfile = os.path.join(self.cache.tempdir, base)
-                acq = apt_pkg.Acquire(DummyProgress())
-                acqfile = apt_pkg.AcquireFile(
-                    acq, candidate.uri, candidate.md5, candidate.size,
-                    base, destfile=destfile)
-                acq.run()
-                if acqfile.status != acqfile.STAT_DONE:
-                    raise FetchError(
-                        "The item %r could not be fetched: %s" %
-                        (acqfile.destfile, acqfile.error_text))
-                result_package.set_content(open(destfile))
-            results.append(result_package)
-        return results
+            fetched[package] = result_package
+        for package in packages:
+            self.cache.cache[package].mark_install(auto_fix=False)
+            if self.cache.cache.broken_count:
+                raise DependencyNotSatisfied(
+                    "Unable to satisfy dependencies of %s" %
+                    ", ".join([p.name for p in self.cache.cache
+                        if p.is_inst_broken]))
+        self._filter_ignored(fetched)
+        if not download_content:
+            return fetched.values()
+        acq = apt_pkg.Acquire(DummyProgress())
+        acqfiles = []
+        for package in self.cache.cache.get_changes():
+            candidate = package.candidate
+            base = os.path.basename(candidate.filename)
+            if package.name not in fetched:
+                result_package = FetchedPackage.from_apt(candidate, base)
+                fetched[package.name] = result_package
+            result_package = fetched[package.name]
+            destfile = os.path.join(self.cache.tempdir, base)
+            acqfile = apt_pkg.AcquireFile(
+                acq, candidate.uri, candidate.md5, candidate.size,
+                base, destfile=destfile)
+            acqfiles.append((acqfile, result_package, destfile))
+        self.cache.cache.clear()
+        acq.run()
+        for acqfile, result_package, destfile in acqfiles:
+            if acqfile.status != acqfile.STAT_DONE:
+                raise FetchError(
+                    "The item %r could not be fetched: %s" %
+                    (acqfile.destfile, acqfile.error_text))
+            result_package.content = open(destfile)
+        return fetched.values()

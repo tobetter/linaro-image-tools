@@ -84,6 +84,14 @@ class ConfigTests(TestCase):
         self.assertValidationError(
             "No architectures in the [hwpack] section", config)
 
+    def test_validate_invalid_package_name_in_assume_installed(self):
+        config = self.get_config(
+                "[hwpack]\nname = ahwpack\npackages = foo\n"
+                "architectures = armel\nassume-installed = bar ~~\n")
+        self.assertValidationError(
+            "Invalid value in assume-installed in the [hwpack] section: ~~",
+            config)
+
     def test_validate_no_other_sections(self):
         config = self.get_config(self.valid_start + "\n")
         self.assertValidationError(
@@ -250,3 +258,21 @@ class ConfigTests(TestCase):
             "[hwpack]\nname=ahwpack\npackages=foo\n"
             "architectures=foo bar foo\n")
         self.assertEqual(["foo", "bar"], config.architectures)
+
+    def test_assume_installed(self):
+        config = self.get_config(
+            "[hwpack]\nname=ahwpack\npackages=foo\narchitectures=armel\n"
+            "assume-installed=foo  bar\n")
+        self.assertEqual(["foo", "bar"], config.assume_installed)
+
+    def test_assume_installed_with_newline(self):
+        config = self.get_config(
+            "[hwpack]\nname=ahwpack\npackages=foo\narchitectures=armel\n"
+            "assume-installed=foo\n bar\n")
+        self.assertEqual(["foo", "bar"], config.assume_installed)
+
+    def test_assume_installed_filters_duplicates(self):
+        config = self.get_config(
+            "[hwpack]\nname=ahwpack\npackages=foo\narchitectures=armel\n"
+            "assume-installed=foo bar foo\n")
+        self.assertEqual(["foo", "bar"], config.assume_installed)
