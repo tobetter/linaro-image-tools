@@ -35,6 +35,7 @@ FAT_SIZE=32
 IMAGE_SIZE=2G
 
 DIR=$PWD
+TMP_DIR=$(mktemp -d)
 BOOT_DISK=${DIR}/boot-disc
 ROOT_DISK=${DIR}/root-disc
 
@@ -296,26 +297,22 @@ get_mmcs_by_id() {
   fi
 }
 
-install_hwpack_into_tarball() {
+install_hwpack() {
   ensure_command qemu-arm-static qemu-arm-static
 
-
-  tmp_dir=$(mktemp -d)
-  chroot=${tmp_dir}/binary
-  # Make sure the tmp_dir where we unpack the tarball is removed when this
-  # script exits.
-  trap "sudo umount ${chroot}/proc || true; sudo rm -rf $tmp_dir" EXIT
-
-  sudo tar -xf $BINARY_TARBALL -C $tmp_dir
+  chroot=${DIR}/binary
+  # Make sure we unmount /proc in the chroot or else it can't be moved to the
+  # rootfs.
+  trap "sudo umount ${chroot}/proc || true" EXIT
 
   # XXX: Assume linaro-hwpack-install lives on the same directory as this
   # script. This is far from optimal but should do for now.
   LINARO_HWPACK_INSTALL=$(dirname $0)/linaro-hwpack-install
 
-  sudo mv -f ${chroot}/etc/resolv.conf ${tmp_dir}/resolv.conf.orig
+  sudo mv -f ${chroot}/etc/resolv.conf ${TMP_DIR}/resolv.conf.orig
   sudo cp /etc/resolv.conf ${chroot}/etc/resolv.conf
 
-  sudo mv -f ${chroot}/etc/hosts ${tmp_dir}/hosts.orig
+  sudo mv -f ${chroot}/etc/hosts ${TMP_DIR}/hosts.orig
   sudo cp /etc/hosts ${chroot}/etc/hosts
 
   sudo cp /usr/bin/qemu-arm-static ${chroot}/usr/bin
@@ -329,43 +326,36 @@ install_hwpack_into_tarball() {
   # Revert some changes we did to the rootfs as we don't want them in the
   # image.
   sudo umount ${chroot}/proc
-  sudo mv -f ${tmp_dir}/resolv.conf.orig ${chroot}/etc/resolv.conf
-  sudo mv -f ${tmp_dir}/hosts.orig ${chroot}/etc/hosts
+  sudo mv -f ${TMP_DIR}/resolv.conf.orig ${chroot}/etc/resolv.conf
+  sudo mv -f ${TMP_DIR}/hosts.orig ${chroot}/etc/hosts
   sudo rm -f ${chroot}/usr/bin/qemu-arm-static
   sudo rm -f ${chroot}/usr/bin/linaro-hwpack-install
   sudo rm -f ${chroot}/$(basename "$HWPACK_FILE")
-
-  sudo tar cf binary-with-hwpack.tar -C "$tmp_dir" binary
-  BINARY_TARBALL=${DIR}/binary-with-hwpack.tar
 }
 
-prepare_sources() {
+unpack_binary_tarball() {
+  # Remove the binary/ directory so that previous runs don't interfere here.
+  remove_binary_dir
+
+  sudo tar -xf $BINARY_TARBALL
+}
+
+create_boot_cmd() {
   if [ "$IS_LIVE" ]; then
-    parts_dir=casper
     boot_snippet='boot=casper'
     [ "$IS_LOWMEM" ] && lowmem_opt=only-ubiquity
   else
-    parts_dir=boot
     boot_snippet='root=UUID='${RFS_UUID}
   fi
 
-  # Remove the binary/ directory so that previous runs don't interfere here.
-  rm -rf binary/
-
-  extras=
-  if [ "$DEVIMAGE" = beagle ]; then
-    extras="binary/${MLO_FILE} binary/${UBOOT_FILE}"
-  fi
-  tar -xf $BINARY_TARBALL binary/${parts_dir} $extras
-
   if [ "${IMAGE_FILE}" ]; then
-    cat > binary/boot.cmd << BOOTCMD
+    cat > ${TMP_DIR}/boot.cmd << BOOTCMD
 setenv bootcmd 'mmc init; fatload mmc 0:1 0x80000000 uImage; bootm 0x80000000'
 setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} root=/dev/mmcblk0p2 rootwait rw vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
 BOOTCMD
   else
-    cat > binary/boot.cmd << BOOTCMD
+    cat > ${TMP_DIR}/boot.cmd << BOOTCMD
 setenv bootcmd 'mmc init; fatload mmc 0:1 0x80000000 uImage; fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 0x81600000'
 setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} ${boot_snippet} rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
@@ -474,12 +464,12 @@ populate_boot() {
            "${BOOT_DISK}/uInitrd"
  
       sudo mkimage -A arm -O linux -T script -C none -a 0 \
-           -e 0 -n "$CODENAME 10.05" -d "${DIR}/binary/boot.cmd" \
+           -e 0 -n "$CODENAME 10.05" -d "${TMP_DIR}/boot.cmd" \
            "${BOOT_DISK}/boot.scr"
       sudo cp -v ${BOOT_DISK}/boot.scr ${BOOT_DISK}/boot.ini
       ;;
     vexpress)
-      sudo tar --strip-components=5 -C ${BOOT_DISK}/ -xf $BINARY_TARBALL binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin
+      cp binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin ${BOOT_DISK}/
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 -e 0x60008000 \
            -n "Linux" -d ${DIR}/binary/${parts_dir}/vmlinuz*-vexpress ${BOOT_DISK}/uImage
       sudo mkimage -A arm -O linux -T ramdisk -C none -a 0x81000000 \
@@ -489,7 +479,6 @@ populate_boot() {
       ;;
     *)
       echo "Set --dev parameter: --dev <beagle|igep|vexpress>" 1>&2
-      cleanup_workdir
       exit
       ;;
   esac
@@ -510,9 +499,9 @@ populate_rootfs() {
   mkdir -p ${ROOT_DISK}
   sudo mount ${MMC2} ${ROOT_DISK}
 
-  sudo tar -xf $BINARY_TARBALL --strip-components=1 -C $ROOT_DISK
+  sudo mv ${DIR}/binary/* $ROOT_DISK
 
-## add fstab entry for rootfs and boot
+  # add fstab entry for rootfs and boot
   echo "UUID=${RFS_UUID} / ${RFS}  errors=remount-ro 0 1 " | sudo tee -a ${ROOT_DISK}/etc/fstab
 
   if [ "$CREATE_SWAP" ] ; then
@@ -574,7 +563,7 @@ setup_image() {
   sudo qemu-img create -f raw $IMAGE_FILE $IMAGE_SIZE
 }
 
-cleanup_workdir() {
+remove_binary_dir() {
   if [ -d binary/ ]; then
     sudo rm -rf binary/
   fi
@@ -627,12 +616,11 @@ if [ ! "${MMC}" -a ! "${IMAGE_FILE}" ]; then
   usage
 fi
 
+ unpack_binary_tarball
  if [ "$HWPACK_FILE" ]; then
-   # This will unpack the binary tarball, install the hwpack in it, tar it up
-   # again and make this script use that new tarball from now on.
-   install_hwpack_into_tarball
+   install_hwpack
  fi
- prepare_sources
+ create_boot_cmd
  get_mmcs_by_id
  cleanup_sd
  create_partitions
@@ -654,5 +642,5 @@ fi
   gzip -f ${IMAGE_FILE} > ${IMAGE_FILE}.gz
  fi
 
- cleanup_workdir
+ remove_binary_dir
 
