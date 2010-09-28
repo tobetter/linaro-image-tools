@@ -48,7 +48,7 @@ usage() {
   echo "usage: $(basename $0) --mmc /dev/sdd"
   echo "<or>"
   echo "usage: $(basename $0) --image_file mmc.img"
-cat <<EOF
+  cat <<EOF
 
 required options:
 --mmc </dev/sdX>
@@ -105,7 +105,7 @@ Additional/Optional options:
 --binary <filename>
     specify file used to create the bootable system. Default binary-tar.tar.gz
 EOF
-exit
+  exit
 }
 
 check_mmc() {
