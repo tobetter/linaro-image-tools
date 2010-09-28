@@ -163,7 +163,6 @@ while [ ! -z "$1" ]; do
   case $1 in
     -h|--help)
       usage
-      MMC=1
       ;;
     --hwpack)
       checkparm $2
