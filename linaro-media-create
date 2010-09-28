@@ -19,7 +19,7 @@
 
 set -e
 
-unset MMC MMC1 MMC2 MMC3 IMAGE_FILE HWPACK_FILE MLO_FILE UBOOT_FILE
+unset MMC MMC1 MMC2 MMC3 IMAGE_FILE HWPACK_FILE
 
 #Defaults
 RFS=ext3
@@ -443,11 +443,9 @@ populate_boot() {
   case "$DEVIMAGE" in
     beagle|igep)
       if [ "$DEVIMAGE" = "beagle" ]; then
-        MLO_FILE=usr/lib/x-loader-omap/MLO
-        UBOOT_FILE=usr/lib/u-boot/omap3_beagle/u-boot.bin
-
-        sudo cp -v binary/${MLO_FILE}   ${BOOT_DISK}/MLO
-        sudo cp -v binary/${UBOOT_FILE} ${BOOT_DISK}/u-boot.bin
+        sudo cp -v binary/usr/lib/x-loader-omap/MLO \
+                   binary/usr/lib/u-boot/omap3_beagle/u-boot.bin \
+                   ${BOOT_DISK}
       fi
       sync
       cd ${DIR}
