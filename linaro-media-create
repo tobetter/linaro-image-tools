@@ -466,7 +466,7 @@ populate_boot() {
       ;;
 
     vexpress)
-      cp -v binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin ${BOOT_DISK}
+      sudo cp -v binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin ${BOOT_DISK}
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 \
            -e 0x60008000 -n Linux \
            -d "${DIR}/binary/${parts_dir}"/vmlinuz*-vexpress \
