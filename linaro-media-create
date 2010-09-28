@@ -139,9 +139,9 @@ check_mmc() {
 }
 
 check_fs_type() {
-  case "$FS_TYPE" in
+  case "$RFS" in
     ext2|ext3|ext4|btrfs)
-      RFS="$FS_TYPE"
+      :
     ;;
     *)
       usage
@@ -184,7 +184,7 @@ while [ ! -z "$1" ]; do
       ;;
     --rootfs)
       checkparm $2
-      FS_TYPE="$2"
+      RFS="$2"
       check_fs_type
       ;;
     --boot_label)
