@@ -483,7 +483,6 @@ populate_boot() {
       ;;
   esac
  
-  cd ${BOOT_DISK}/
   sync
   sync
   cd ${DIR}/
@@ -529,7 +528,6 @@ populate_rootfs() {
 
   echo "UBOOT_PART=/dev/mmcblk0p1" | sudo tee ${ROOT_DISK}/etc/flash-kernel.conf >/dev/null
 
-  cd ${ROOT_DISK}
   sync
   sync
   cd ${DIR}/
