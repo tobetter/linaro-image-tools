@@ -19,7 +19,7 @@
 
 set -e
 
-unset MMC MMC1 MMC2 MMC3 IMAGE_FILE HWPACK_FILE
+unset MMC MMC1 MMC2 MMC3 IMAGE_FILE HWPACK_FILE UBOOT_FLAVOR
 
 #Defaults
 RFS=ext3
@@ -236,6 +236,15 @@ case "$RFS" in
     ;;
 esac
 
+case "$DEVNAME" in
+  beagle)
+    UBOOT_FLAVOR="omap3_beagle"
+  ;;
+  vexpress)
+    UBOOT_FLAVOR="ca9x4_ct_vxp"
+  ;;
+esac
+
 RFS_UUID=`uuidgen -r`
 
 get_mmcs_by_id() {
@@ -410,12 +419,16 @@ populate_boot() {
  
   mkdir -p "${BOOT_DISK}"
   sudo mount ${MMC1} "${BOOT_DISK}"
+
+  if [ -n "$UBOOT_FLAVOR" ]; then
+      sudo cp -v "binary/usr/lib/u-boot/${UBOOT_FLAVOR}/u-boot.bin" \
+               "${BOOT_DISK}"
+  fi
+
   case "$DEVIMAGE" in
     beagle|igep)
       if [ "$DEVIMAGE" = "beagle" ]; then
-        sudo cp -v binary/usr/lib/x-loader-omap/MLO \
-                   binary/usr/lib/u-boot/omap3_beagle/u-boot.bin \
-                   "${BOOT_DISK}"
+        sudo cp -v binary/usr/lib/x-loader-omap/MLO "${BOOT_DISK}"
       fi
       sync
       echo "done"
@@ -435,7 +448,6 @@ populate_boot() {
       ;;
 
     vexpress)
-      sudo cp -v binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin "${BOOT_DISK}"
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 \
            -e 0x60008000 -n Linux \
            -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-linaro-vexpress \

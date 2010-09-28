@@ -11,8 +11,7 @@ linaro-image-tools (0.3) UNRELEASED; urgency=low
     itself can run as non-root as intended.
 
   [ James Westby ]
-  * Add a linaro-hwpack-creation script for the creation of hardware packs.
-    Not yet installed in the binary packages.
+  * Add a linaro-hwpack-create script for the creation of hardware packs.
 
  -- Steve Langasek <steve.langasek@ubuntu.com>  Tue, 14 Sep 2010 17:01:49 -0700
 
