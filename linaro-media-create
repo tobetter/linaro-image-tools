@@ -452,11 +452,11 @@ populate_boot() {
       ;;
 
     *)
-      echo "Set --dev parameter: --dev <beagle|igep|vexpress>" 1>&2
-      exit
+      echo "Internal error; missing support for $DEVIMAGE" >&2
+      exit 1
       ;;
   esac
- 
+
   sync
   sync
   sudo umount ${BOOT_DISK} || true
@@ -553,6 +553,20 @@ if [ "$consoles" ]; then
   fi
 fi
 
+case "$DEVIMAGE" in
+  beagle|igep|vexpress)
+    :
+  ;;
+  "")
+    echo "Please set some target device with --dev" >&2
+    usage
+  ;;
+  *)
+    echo "Unknown target device $DEVIMAGE" >&2
+    usage
+  ;;
+esac
+
 if [ "$DEVIMAGE" ]; then
   case "$DEVIMAGE" in
     beagle|igep)
@@ -571,7 +585,8 @@ if [ "$DEVIMAGE" ]; then
       FAT_SIZE=16
       ;;
     *)
-      echo "unknown --dev parameter: $DEVIMAGE" 1>&2
+      echo "Internal error; missing support for $DEVIMAGE" >&2
+      exit 1
       ;;
   esac
 else
