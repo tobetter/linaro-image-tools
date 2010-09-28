@@ -438,7 +438,7 @@ populate_boot() {
     parts_dir=boot
   fi
  
-  mkdir -p ${BOOT_DISK} || true
+  mkdir -p ${BOOT_DISK}
   sudo mount ${MMC1} ${BOOT_DISK}
   case "$DEVIMAGE" in
     beagle|igep)
