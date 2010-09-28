@@ -139,35 +139,14 @@ check_mmc() {
 }
 
 check_fs_type() {
-  IN_VALID_FS=1
-
-  if test "-$FS_TYPE-" = "-ext2-"
-  then
-    RFS=ext2
-    unset IN_VALID_FS
-  fi
-
-  if test "-$FS_TYPE-" = "-ext3-"
-  then
-    RFS=ext3
-    unset IN_VALID_FS
-  fi
-
-  if test "-$FS_TYPE-" = "-ext4-"
-  then
-    RFS=ext4
-    unset IN_VALID_FS
-  fi
-
-  if test "-$FS_TYPE-" = "-btrfs-"
-  then
-    RFS=btrfs
-    unset IN_VALID_FS
-  fi
-
-  if [ "$IN_VALID_FS" ] ; then
-    usage
-  fi
+  case "$FS_TYPE" in
+    ext2|ext3|ext4|btrfs)
+      RFS="$FS_TYPE"
+    ;;
+    *)
+      usage
+    ;;
+  esac
 }
 
 checkparm() {
