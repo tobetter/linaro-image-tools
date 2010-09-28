@@ -572,7 +572,7 @@ if [ "$DEVIMAGE" ]; then
       FAT_SIZE=16
       ;;
     *)
-      echo "unknown --dev paramater: $DEVIMAGE" 1>&2
+      echo "unknown --dev parameter: $DEVIMAGE" 1>&2
       ;;
   esac
 else
