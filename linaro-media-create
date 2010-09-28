@@ -26,7 +26,7 @@ RFS=ext3
 BINARY_TARBALL='binary-tar.tar.gz'
 BOOT_LABEL=boot
 RFS_LABEL=rootfs
-CODENAME=Chessy
+CODENAME="Chessy 10.05"
 IS_LIVE=
 FAT_SIZE=32
 IMAGE_SIZE=2G
@@ -459,7 +459,7 @@ populate_boot() {
            -d "${DIR}/binary/${parts_dir}"/initrd.img-*-omap \
            "${BOOT_DISK}/uInitrd"
       sudo mkimage -A arm -O linux -T script -C none -a 0 \
-           -e 0 -n "$CODENAME 10.05" -d "${TMP_DIR}/boot.cmd" \
+           -e 0 -n "$CODENAME" -d "${TMP_DIR}/boot.cmd" \
            "${BOOT_DISK}/boot.scr"
       sudo cp -v ${BOOT_DISK}/boot.scr ${BOOT_DISK}/boot.ini
       ;;
