@@ -427,11 +427,11 @@ populate_boot() {
 
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x80008000 \
            -e 0x80008000 -n Linux \
-           -d "${DIR}/binary/${parts_dir}"/vmlinuz-*omap \
+           -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-linaro-omap \
            "${BOOT_DISK}/uImage"
       sudo mkimage -A arm -O linux -T ramdisk -C none -a 0 \
            -e 0 -n initramfs \
-           -d "${DIR}/binary/${parts_dir}"/initrd.img-*-omap \
+           -d "${DIR}/binary/${parts_dir}"/initrd.img-*-linaro-omap \
            "${BOOT_DISK}/uInitrd"
       sudo mkimage -A arm -O linux -T script -C none -a 0 \
            -e 0 -n "$CODENAME" -d "${TMP_DIR}/boot.cmd" \
@@ -443,7 +443,7 @@ populate_boot() {
       sudo cp -v binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin ${BOOT_DISK}
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 \
            -e 0x60008000 -n Linux \
-           -d "${DIR}/binary/${parts_dir}"/vmlinuz*-vexpress \
+           -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-linaro-vexpress \
            "${BOOT_DISK}/uImage"
       sudo mkimage -A arm -O linux -T ramdisk -C none -a 0x81000000 \
            -e 0x81000000 -n initramfs \
