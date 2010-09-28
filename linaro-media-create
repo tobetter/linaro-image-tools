@@ -338,19 +338,19 @@ BOOTCMD
 
 cleanup_sd() {
 
- echo ""
- echo "Umounting Partitions"
- echo ""
+  echo ""
+  echo "Umounting Partitions"
+  echo ""
 
- if test -n "$MMC1"; then
-   sudo umount ${MMC1} &> /dev/null || true
- fi
- if test -n "$MMC2"; then
-   sudo umount ${MMC2} &> /dev/null || true
- fi
- if [ "${MMC}" ]; then
-   sudo parted -s ${MMC} mklabel msdos
- fi
+  if test -n "$MMC1"; then
+    sudo umount ${MMC1} &> /dev/null || true
+  fi
+  if test -n "$MMC2"; then
+    sudo umount ${MMC2} &> /dev/null || true
+  fi
+  if [ "${MMC}" ]; then
+    sudo parted -s ${MMC} mklabel msdos
+  fi
 }
 
 create_partitions() {
@@ -585,31 +585,31 @@ if [ ! "${MMC}" -a ! "${IMAGE_FILE}" ]; then
   usage
 fi
 
- unpack_binary_tarball
- if [ "$HWPACK_FILE" ]; then
-   install_hwpack
- fi
- create_boot_cmd
- get_mmcs_by_id
- cleanup_sd
- create_partitions
- echo -n "waiting for partitioning to settle ..."
- sync
- sleep 3
- echo "done."
- get_mmcs_by_id
- if test -z "$MMC1" -o -z "$MMC2"; then
-   echo "MMC1: $MMC1 nor MMC2: $MMC2 must be empty"
-   exit 2
- fi
- prepare_partitions
- populate_boot
- populate_rootfs
+unpack_binary_tarball
+if [ "$HWPACK_FILE" ]; then
+  install_hwpack
+fi
+create_boot_cmd
+get_mmcs_by_id
+cleanup_sd
+create_partitions
+echo -n "waiting for partitioning to settle ..."
+sync
+sleep 3
+echo "done."
+get_mmcs_by_id
+if test -z "$MMC1" -o -z "$MMC2"; then
+  echo "MMC1: $MMC1 nor MMC2: $MMC2 must be empty"
+  exit 2
+fi
+prepare_partitions
+populate_boot
+populate_rootfs
 
- if [ "${IMAGE_FILE}" ]; then
+if [ "${IMAGE_FILE}" ]; then
   echo "Create ${IMAGE_FILE}.gz"
   gzip -f ${IMAGE_FILE} > ${IMAGE_FILE}.gz
- fi
+fi
 
- remove_binary_dir
+remove_binary_dir
 
