@@ -32,8 +32,8 @@ IMAGE_SIZE=2G
 
 DIR=$PWD
 TMP_DIR=$(mktemp -d)
-BOOT_DISK=${DIR}/boot-disc
-ROOT_DISK=${DIR}/root-disc
+BOOT_DISK="${DIR}/boot-disc"
+ROOT_DISK="${DIR}/root-disc"
 
 ensure_command() {
   # ensure_command foo foo-package
@@ -408,14 +408,14 @@ populate_boot() {
     parts_dir=boot
   fi
  
-  mkdir -p ${BOOT_DISK}
-  sudo mount ${MMC1} ${BOOT_DISK}
+  mkdir -p "${BOOT_DISK}"
+  sudo mount ${MMC1} "${BOOT_DISK}"
   case "$DEVIMAGE" in
     beagle|igep)
       if [ "$DEVIMAGE" = "beagle" ]; then
         sudo cp -v binary/usr/lib/x-loader-omap/MLO \
                    binary/usr/lib/u-boot/omap3_beagle/u-boot.bin \
-                   ${BOOT_DISK}
+                   "${BOOT_DISK}"
       fi
       sync
       echo "done"
@@ -431,11 +431,11 @@ populate_boot() {
       sudo mkimage -A arm -O linux -T script -C none -a 0 \
            -e 0 -n "boot script" -d "${TMP_DIR}/boot.cmd" \
            "${BOOT_DISK}/boot.scr"
-      sudo cp -v ${BOOT_DISK}/boot.scr ${BOOT_DISK}/boot.ini
+      sudo cp -v "${BOOT_DISK}/boot.scr" "${BOOT_DISK}/boot.ini"
       ;;
 
     vexpress)
-      sudo cp -v binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin ${BOOT_DISK}
+      sudo cp -v binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin "${BOOT_DISK}"
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 \
            -e 0x60008000 -n Linux \
            -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-linaro-vexpress \
@@ -454,7 +454,7 @@ populate_boot() {
 
   sync
   sync
-  sudo umount ${BOOT_DISK} || true
+  sudo umount "${BOOT_DISK}" || true
 }
 
 populate_rootfs() {
@@ -462,13 +462,13 @@ populate_rootfs() {
   echo "Populating rootfs Partition"
   echo "Be patient, this may take a few minutes"
   echo ""
-  mkdir -p ${ROOT_DISK}
-  sudo mount ${MMC2} ${ROOT_DISK}
+  mkdir -p "${ROOT_DISK}"
+  sudo mount ${MMC2} "${ROOT_DISK}"
 
-  sudo mv ${DIR}/binary/* $ROOT_DISK
+  sudo mv ${DIR}/binary/* "$ROOT_DISK"
 
   # add fstab entry for rootfs and boot
-  echo "UUID=${RFS_UUID} / ${RFS}  errors=remount-ro 0 1 " | sudo tee -a ${ROOT_DISK}/etc/fstab
+  echo "UUID=${RFS_UUID} / ${RFS}  errors=remount-ro 0 1 " | sudo tee -a "${ROOT_DISK}/etc/fstab"
 
   if [ "$CREATE_SWAP" ] ; then
 
@@ -476,14 +476,14 @@ populate_rootfs() {
     echo "Creating SWAP File"
     echo ""
 
-    SPACE_LEFT=$(df ${ROOT_DISK} | grep ${MMC2} | awk '{print $4}')
+    SPACE_LEFT=$(df "${ROOT_DISK}" | grep ${MMC2} | awk '{print $4}')
 
     let SIZE=$SWAP_SIZE*1024
 
     if [ $SPACE_LEFT -ge $SIZE ] ; then
-      sudo dd if=/dev/zero of=${ROOT_DISK}/SWAP.swap bs=1M count=$SWAP_SIZE
-      sudo mkswap ${ROOT_DISK}/SWAP.swap
-      echo "/SWAP.swap  none  swap  sw  0 0" | sudo tee -a ${ROOT_DISK}/etc/fstab
+      sudo dd if=/dev/zero "of=${ROOT_DISK}/SWAP.swap" bs=1M count=$SWAP_SIZE
+      sudo mkswap "${ROOT_DISK}/SWAP.swap"
+      echo "/SWAP.swap  none  swap  sw  0 0" | sudo tee -a "${ROOT_DISK}/etc/fstab"
     else
       echo "SWAP file bigger then whats left on partition"
     fi
@@ -493,11 +493,11 @@ populate_rootfs() {
   echo "Creating /etc/flash-kernel.conf"
   echo ""
 
-  echo "UBOOT_PART=/dev/mmcblk0p1" | sudo tee ${ROOT_DISK}/etc/flash-kernel.conf >/dev/null
+  echo "UBOOT_PART=/dev/mmcblk0p1" | sudo tee "${ROOT_DISK}/etc/flash-kernel.conf" >/dev/null
 
   sync
   sync
-  sudo umount ${ROOT_DISK} || true
+  sudo umount "${ROOT_DISK}" || true
 }
 
 calculatesize() {
