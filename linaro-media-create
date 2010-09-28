@@ -448,7 +448,6 @@ populate_boot() {
                    ${BOOT_DISK}
       fi
       sync
-      cd ${DIR}
       echo "done"
 
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x80008000 \
@@ -485,8 +484,6 @@ populate_boot() {
  
   sync
   sync
-  cd ${DIR}/
- 
   sudo umount ${BOOT_DISK} || true
 }
 
@@ -530,8 +527,6 @@ populate_rootfs() {
 
   sync
   sync
-  cd ${DIR}/
-
   sudo umount ${ROOT_DISK} || true
 }
 
