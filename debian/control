@@ -1,7 +1,7 @@
 Source: linaro-image-tools
 Section: devel
 Priority: optional
-Build-Depends: debhelper (>= 7.0.50~), python-all, python-apt, python-testtools
+Build-Depends: debhelper (>= 7.0.50~), python-all, python-apt, python-testtools, python-argparse
 Standards-Version: 3.9.1
 Maintainer: Linaro Developers <linaro-dev@lists.linaro.org>
 Vcs-Bzr: 
@@ -16,7 +16,8 @@ Depends: ${misc:Depends},
          uboot-mkimage,
          realpath,
          python,
-         python-hwpack
+         python-hwpack,
+         python-argparse
 Description: collection of tools to work with Linaro images
  This package offers a set of tools for use with Linaro images.
  .
