@@ -450,29 +450,33 @@ populate_boot() {
       sync
       cd ${DIR}
       echo "done"
- 
+
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x80008000 \
-           -e 0x80008000 -n Linux -d "${DIR}/binary/${parts_dir}"/vmlinuz-*omap \
+           -e 0x80008000 -n Linux \
+           -d "${DIR}/binary/${parts_dir}"/vmlinuz-*omap \
            "${BOOT_DISK}/uImage"
- 
       sudo mkimage -A arm -O linux -T ramdisk -C none -a 0 \
-           -e 0 -n initramfs -d "${DIR}/binary/${parts_dir}"/initrd.img-*-omap \
+           -e 0 -n initramfs \
+           -d "${DIR}/binary/${parts_dir}"/initrd.img-*-omap \
            "${BOOT_DISK}/uInitrd"
- 
       sudo mkimage -A arm -O linux -T script -C none -a 0 \
            -e 0 -n "$CODENAME 10.05" -d "${TMP_DIR}/boot.cmd" \
            "${BOOT_DISK}/boot.scr"
       sudo cp -v ${BOOT_DISK}/boot.scr ${BOOT_DISK}/boot.ini
       ;;
+
     vexpress)
-      cp binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin ${BOOT_DISK}/
-      sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 -e 0x60008000 \
-           -n "Linux" -d ${DIR}/binary/${parts_dir}/vmlinuz*-vexpress ${BOOT_DISK}/uImage
+      cp -v binary/usr/lib/u-boot/ca9x4_ct_vxp/u-boot.bin ${BOOT_DISK}
+      sudo mkimage -A arm -O linux -T kernel -C none -a 0x60008000 \
+           -e 0x60008000 -n Linux \
+           -d "${DIR}/binary/${parts_dir}"/vmlinuz*-vexpress \
+           "${BOOT_DISK}/uImage"
       sudo mkimage -A arm -O linux -T ramdisk -C none -a 0x81000000 \
-           -e 0x81000000 -n "initramfs" -d \
-           ${DIR}/binary/${parts_dir}/initrd.img-*-linaro-vexpress \
-           "${BOOT_DISK}"/uInitrd
+           -e 0x81000000 -n initramfs \
+           -d "${DIR}/binary/${parts_dir}"/initrd.img-*-linaro-vexpress \
+           "${BOOT_DISK}/uInitrd"
       ;;
+
     *)
       echo "Set --dev parameter: --dev <beagle|igep|vexpress>" 1>&2
       exit
