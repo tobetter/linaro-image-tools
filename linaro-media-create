@@ -236,7 +236,7 @@ case "$RFS" in
     ;;
 esac
 
-case "$DEVNAME" in
+case "$DEVIMAGE" in
   beagle)
     UBOOT_FLAVOR="omap3_beagle"
   ;;
