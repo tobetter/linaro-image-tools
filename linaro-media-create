@@ -61,8 +61,8 @@ required options:
     as enabling normal debug options for the target board. Current board values:
     * beagle
     * igep
-    * vexpress
     * mx51evk
+    * vexpress
 
 Additional/Optional options:
 -h --help
@@ -394,12 +394,12 @@ create_partitions() {
   # Create a VFAT or FAT16 partition of 9 cylinders which is about 64M
   # and a linux partition of the rest
   if [ "$DEVIMAGE" = mx51evk ]; then
-  sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev << THEEND
+    sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev << THEEND
 1,9,$PARTITION_TYPE,*
 10,,,-
 THEEND
   else
-  sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev << THEEND
+    sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev << THEEND
 ,9,$PARTITION_TYPE,*
 ,,,-
 THEEND
@@ -489,11 +489,11 @@ populate_boot() {
 
     mx51evk)
       sudo dd if=binary/usr/lib/u-boot/mx51evk/u-boot.imx of=/dev/mmcblk0 \
-	   bs=1024 seek=1
+           bs=1024 seek=1
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x90008000 \
-	   -e 0x90008000 -n Linux \
-	   -d "${DIR}/binary/${parts_dir}"/vmlinuz*-linaro-mx51 \
-	   "${BOOT_DISK}/uImage"
+           -e 0x90008000 -n Linux \
+           -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-linaro-mx51 \
+           "${BOOT_DISK}/uImage"
       sudo mkimage -A arm -O linux -T ramdisk -C none -a 0 \
            -e 0 -n initramfs \
            -d "${DIR}/binary/${parts_dir}"/initrd.img-*-linaro-mx51 \
@@ -605,7 +605,7 @@ if [ "$consoles" ]; then
 fi
 
 case "$DEVIMAGE" in
-  beagle|igep|vexpress|mx51evk)
+  beagle|igep|mx51evk|vexpress)
     :
   ;;
   "")
@@ -626,6 +626,12 @@ if [ "$DEVIMAGE" ]; then
         serial_opts="$serial_opts serialtty=ttyS2"
       fi
       ;;
+    mx51evk)
+      serial_opts="$serial_opts console=tty0 console=ttymxc0,115200n8"
+      if [ "$IS_LIVE" ]; then
+        serial_opts="$serial_opts serialtty=ttymxc0"
+      fi
+      ;;
     vexpress)
       serial_opts="$serial_opts console=tty0 console=ttyAMA0,38400n8"
       if [ "$IS_LIVE" ]; then
@@ -634,12 +640,6 @@ if [ "$DEVIMAGE" ]; then
       # ARM Boot Monitor is used to load u-boot, uImage etc. into flash and
       # only allows for FAT16
       FAT_SIZE=16
-      ;;
-    mx51evk)
-      serial_opts="$serial_opts console=tty0 console=ttymxc0,115200n8"
-      if [ "$IS_LIVE" ]; then
-        serial_opts="$serial_opts serialtty=ttymxc0"
-      fi
       ;;
     *)
       echo "Internal error; missing support for $DEVIMAGE" >&2
