@@ -150,10 +150,12 @@ check_fs_type() {
 }
 
 checkparm() {
-  if [ "$(echo $1|grep ^'\-')" ];then
-    echo "E: Need an argument"
-    usage
-  fi
+  case "$1" in
+    -*)
+      echo "E: Need an argument" >&2
+      usage
+    ;;
+  esac
 }
 
 consoles=""
@@ -252,10 +254,12 @@ get_mmcs_by_id() {
   if [ ! ${IMAGE_FILE} ]; then
     for device in /dev/disk/by-id/*; do
       if [ `realpath $device` = $MMC ]; then
-        if echo "$device" | grep -q -- "-part[0-9]*$"; then
-          echo "device $MMC must not be a partition part ($device)" 1>&2
-          exit 1
-        fi
+        case "$device" in
+          *-part[0-9]*)
+            echo "device $MMC must not be a partition part ($device)" >&2
+            exit 1
+          ;;
+        esac
         for part_id in `ls "$device-part"*`; do
           part=`realpath $part_id`
           part_no=`echo $part_id | sed -e 's/.*-part//g'`
