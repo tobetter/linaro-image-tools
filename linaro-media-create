@@ -119,7 +119,7 @@ check_mmc() {
     sudo LC_ALL=C sfdisk -l | grep "[Disk] /dev/" --color=never
     echo ""
     echo "mount:"
-    mount | grep -v none | grep "/dev/" --color=never
+    LC_ALL=C mount | grep -v none | grep "/dev/" --color=never
     echo ""
     read -p "Are you 100% sure, on selecting [${MMC}] (y/n)? "
     [ "$REPLY" == "y" ] || exit
@@ -132,7 +132,7 @@ check_mmc() {
     sudo LC_ALL=C sfdisk -l | grep "[Disk] /dev/" --color=never
     echo ""
     echo "mount:"
-    mount | grep -v none | grep "/dev/" --color=never
+    LC_ALL=C mount | grep -v none | grep "/dev/" --color=never
     echo ""
     exit
   fi
@@ -405,11 +405,11 @@ create_partitions() {
 THEEND
 
   if [ "${IMAGE_FILE}" ]; then
-  VFATOFFSET=$(($(fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $3}')*512))
-  VFATSIZE=$(($(fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $5}')*1024))
-  ROOTOFFSET=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')*512))
-  ROOTSIZE2=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $3}')))
-  ROOTSIZE1=$(($(fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')))
+  VFATOFFSET=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $3}')*512))
+  VFATSIZE=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $5}')*1024))
+  ROOTOFFSET=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')*512))
+  ROOTSIZE2=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $3}')))
+  ROOTSIZE1=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')))
   ROOTSIZE=$((((ROOTSIZE2-ROOTSIZE1)/2)*1024))
   MMC1=$(sudo losetup -f --show $IMAGE_FILE --offset $VFATOFFSET --sizelimit $VFATSIZE)
   MMC2=$(sudo losetup -f --show $IMAGE_FILE --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
@@ -531,7 +531,7 @@ populate_rootfs() {
     echo "Creating SWAP File"
     echo ""
 
-    SPACE_LEFT=$(df "${ROOT_DISK}" | grep ${MMC2} | awk '{print $4}')
+    SPACE_LEFT=$(LC_ALL=C df "${ROOT_DISK}" | grep ${MMC2} | awk '{print $4}')
 
     let SIZE=$SWAP_SIZE*1024
 
