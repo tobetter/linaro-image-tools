@@ -343,13 +343,13 @@ create_boot_cmd() {
     beagle|igep)
       if [ "${IMAGE_FILE}" ]; then
         cat > ${TMP_DIR}/boot.cmd << BOOTCMD
-setenv bootcmd 'fatload mmc 0:2 $KERNEL_ADDR uImage; bootm $KERNEL_ADDR'
+setenv bootcmd 'fatload mmc 0:1 $KERNEL_ADDR uImage; bootm $KERNEL_ADDR'
 setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} root=/dev/mmcblk0p2 rootwait rw vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
 BOOTCMD
       else
         cat > ${TMP_DIR}/boot.cmd << BOOTCMD
-setenv bootcmd 'fatload mmc 0:2 $KERNEL_ADDR uImage; fatload mmc 0:2 0x81600000 uInitrd; bootm $KERNEL_ADDR $INITRD_ADDR'
+setenv bootcmd 'fatload mmc 0:1 $KERNEL_ADDR uImage; fatload mmc 0:1 0x81600000 uInitrd; bootm $KERNEL_ADDR $INITRD_ADDR'
 setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} ${boot_snippet} rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
 BOOTCMD
@@ -397,17 +397,23 @@ create_partitions() {
   fi
 
   # Create:
-  # - a one cylinder partition for fixed-offset bootloader data at the
-  #   beginning of the image (size is one cylinder, so 8224768 bytes with the
-  #   first sector for MBR),
+  # - on mx51evk, a one cylinder partition for fixed-offset bootloader data at
+  #   the beginning of the image (size is one cylinder, so 8224768 bytes with
+  #   the first sector for MBR),
   # - a VFAT or FAT16 partition of 9 cylinders (74027520 bytes, ~70 MiB)
   #    and a linux partition of the rest
   # - a Linux type rootfs for the rest of the space
-  sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev << THEEND
+  (
+    if [ "$DEVIMAGE" = mx51evk ]; then
+      cat <<EOF
 ,1,0xDA
+EOF
+    fi
+    cat <<EOF
 ,9,$PARTITION_TYPE,*
 ,,,-
-THEEND
+EOF
+  ) | sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev
 
   if [ "${IMAGE_FILE}" ]; then
   VFATOFFSET=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $3}')*512))
