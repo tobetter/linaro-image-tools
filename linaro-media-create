@@ -310,7 +310,7 @@ install_hwpack() {
 
   # Actually install the hwpack.
   sudo mount proc ${chroot}/proc -t proc
-  sudo chroot "$chroot" linaro-hwpack-install /$(basename "$HWPACK_FILE")
+  sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /$(basename "$HWPACK_FILE")
 
   # Revert some changes we did to the rootfs as we don't want them in the
   # image.
