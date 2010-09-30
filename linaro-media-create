@@ -62,6 +62,7 @@ required options:
     * beagle
     * igep
     * vexpress
+    * mx51evk
 
 Additional/Optional options:
 -h --help
@@ -274,8 +275,6 @@ get_mmcs_by_id() {
 }
 
 install_hwpack() {
-  ensure_command qemu-arm-static qemu-arm-static
-
   chroot=${DIR}/binary
   # Make sure we unmount /proc in the chroot or else it can't be moved to the
   # rootfs.
@@ -291,7 +290,16 @@ install_hwpack() {
   sudo mv -f ${chroot}/etc/hosts ${TMP_DIR}/hosts.orig
   sudo cp /etc/hosts ${chroot}/etc/hosts
 
-  sudo cp /usr/bin/qemu-arm-static ${chroot}/usr/bin
+  local arch_is_arm=no
+  case `uname -m` in
+    arm*)
+      arch_is_arm=yes
+      ;;
+    *)
+      ensure_command qemu-arm-static qemu-arm-static
+      sudo cp /usr/bin/qemu-arm-static ${chroot}/usr/bin
+      ;;
+  esac
   sudo cp $LINARO_HWPACK_INSTALL ${chroot}/usr/bin
   sudo cp "$HWPACK_FILE" "$chroot"
 
@@ -304,7 +312,9 @@ install_hwpack() {
   sudo umount ${chroot}/proc
   sudo mv -f ${TMP_DIR}/resolv.conf.orig ${chroot}/etc/resolv.conf
   sudo mv -f ${TMP_DIR}/hosts.orig ${chroot}/etc/hosts
-  sudo rm -f ${chroot}/usr/bin/qemu-arm-static
+  if [ "arch_is_arm" = no ]; then
+    sudo rm -f ${chroot}/usr/bin/qemu-arm-static
+  fi
   sudo rm -f ${chroot}/usr/bin/linaro-hwpack-install
   sudo rm -f ${chroot}/$(basename "$HWPACK_FILE")
 }
@@ -324,19 +334,31 @@ create_boot_cmd() {
     boot_snippet='root=UUID='${RFS_UUID}
   fi
 
-  if [ "${IMAGE_FILE}" ]; then
-    cat > ${TMP_DIR}/boot.cmd << BOOTCMD
+  case "$DEVIMAGE" in
+    beagle|igep)
+      if [ "${IMAGE_FILE}" ]; then
+        cat > ${TMP_DIR}/boot.cmd << BOOTCMD
 setenv bootcmd 'mmc init; fatload mmc 0:1 0x80000000 uImage; bootm 0x80000000'
 setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} root=/dev/mmcblk0p2 rootwait rw vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
 BOOTCMD
-  else
-    cat > ${TMP_DIR}/boot.cmd << BOOTCMD
+      else
+        cat > ${TMP_DIR}/boot.cmd << BOOTCMD
 setenv bootcmd 'mmc init; fatload mmc 0:1 0x80000000 uImage; fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 0x81600000'
 setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} ${boot_snippet} rootwait ro vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
 BOOTCMD
-  fi
+      fi
+      ;;
+
+    mx51evk)
+      cat > ${TMP_DIR}/boot.cmd << BOOTCMD
+setenv bootcmd 'fatload mmc 0:1 0x90000000 uImage; fatload mmc 0:1 0x90800000 uInitrd; bootm 0x90000000 0x90800000'
+setenv bootargs '${serial_opts} ${splash_opts} ${lowmem_opt} ${boot_snippet} rootwait ro'
+boot
+BOOTCMD
+      ;;
+  esac
 }
 
 cleanup_sd() {
@@ -371,10 +393,17 @@ create_partitions() {
 
   # Create a VFAT or FAT16 partition of 9 cylinders which is about 64M
   # and a linux partition of the rest
+  if [ "$DEVIMAGE" = mx51evk ]; then
+  sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev << THEEND
+1,9,$PARTITION_TYPE,*
+10,,,-
+THEEND
+  else
   sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev << THEEND
 ,9,$PARTITION_TYPE,*
 ,,,-
 THEEND
+  fi
 
   if [ "${IMAGE_FILE}" ]; then
   VFATOFFSET=$(($(fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $3}')*512))
@@ -458,6 +487,21 @@ populate_boot() {
            "${BOOT_DISK}/uInitrd"
       ;;
 
+    mx51evk)
+      sudo dd if=binary/usr/lib/u-boot/mx51evk/u-boot.imx of=/dev/mmcblk0 \
+	   bs=1024 seek=1
+      sudo mkimage -A arm -O linux -T kernel -C none -a 0x90008000 \
+	   -e 0x90008000 -n Linux \
+	   -d "${DIR}/binary/${parts_dir}"/vmlinuz*-linaro-mx51 \
+	   "${BOOT_DISK}/uImage"
+      sudo mkimage -A arm -O linux -T ramdisk -C none -a 0 \
+           -e 0 -n initramfs \
+           -d "${DIR}/binary/${parts_dir}"/initrd.img-*-linaro-mx51 \
+           "${BOOT_DISK}/uInitrd"
+      sudo mkimage -A arm -O linux -T script -C none -a 0 \
+           -e 0 -n "boot script" -d "${TMP_DIR}/boot.cmd" \
+           "${BOOT_DISK}/boot.scr"
+      ;;
     *)
       echo "Internal error; missing support for $DEVIMAGE" >&2
       exit 1
@@ -561,7 +605,7 @@ if [ "$consoles" ]; then
 fi
 
 case "$DEVIMAGE" in
-  beagle|igep|vexpress)
+  beagle|igep|vexpress|mx51evk)
     :
   ;;
   "")
@@ -590,6 +634,12 @@ if [ "$DEVIMAGE" ]; then
       # ARM Boot Monitor is used to load u-boot, uImage etc. into flash and
       # only allows for FAT16
       FAT_SIZE=16
+      ;;
+    mx51evk)
+      serial_opts="$serial_opts console=tty0 console=ttymxc0,115200n8"
+      if [ "$IS_LIVE" ]; then
+        serial_opts="$serial_opts serialtty=ttymxc0"
+      fi
       ;;
     *)
       echo "Internal error; missing support for $DEVIMAGE" >&2
