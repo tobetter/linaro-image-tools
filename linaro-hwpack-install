@@ -28,6 +28,7 @@ HWPACK_DIR="${TEMP_DIR}/unpacked"
 INSTALL_LATEST="no"
 SOURCES_LIST_FILE="${TEMP_DIR}/sources.list"
 APT_GET_OPTIONS="Dir::Etc::SourceList=${SOURCES_LIST_FILE}"
+SUPPORTED_FORMATS="1.0"  # A space-separated list of hwpack formats.
 
 die() {
   echo -e "$@"
@@ -74,6 +75,17 @@ mkdir -p "$HWPACK_DIR"
 echo -n "Unpacking hardware pack ..."
 tar zxf "$HWPACK_TARBALL" -C "$HWPACK_DIR"
 echo "Done"
+
+# Check the format of the hwpack is supported.
+hwpack_format=$(cat ${HWPACK_DIR}/FORMAT)
+supported="false"
+for format in $SUPPORTED_FORMATS; do
+  if [ $hwpack_format == $format ]; then
+    supported="true"
+    break
+  fi
+done
+[ $supported == "true" ] || die "Unsupported hwpack format: $hwpack_format"
 
 # Check the architecture of the hwpack matches that of the host system.
 HWPACK_ARCH=`grep ARCHITECTURE "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
