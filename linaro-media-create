@@ -527,13 +527,13 @@ populate_boot() {
 
 populate_rootfs() {
   echo ""
-  echo "Populating rootfs Partition"
+  echo "final rsync of rootfs Partition"
   echo "Be patient, this may take a few minutes"
   echo ""
   mkdir -p "${ROOT_DISK}"
   sudo mount ${MMC2} "${ROOT_DISK}"
 
-  sudo mv ${DIR}/binary/* "$ROOT_DISK"
+  sudo rsync -a  ${DIR}/binary/* "$ROOT_DISK"
 
   # add fstab entry for rootfs and boot
   echo "UUID=${RFS_UUID} / ${RFS}  errors=remount-ro 0 1 " | sudo tee -a "${ROOT_DISK}/etc/fstab"
@@ -676,9 +676,6 @@ if [ ! "${MMC}" -a ! "${IMAGE_FILE}" ]; then
 fi
 
 unpack_binary_tarball
-if [ "$HWPACK_FILE" ]; then
-  install_hwpack
-fi
 create_boot_cmd
 get_mmcs_by_id
 cleanup_sd
@@ -693,7 +690,25 @@ if test -z "$MMC1" -o -z "$MMC2"; then
   exit 2
 fi
 prepare_partitions
+
+# rsync in the background
+$DIR/rsync-root-fs "$ROOT_DISK" "$DIR" "$MMC2" &
+RSYNC_WORK_PID=$!
+
+if [ "$HWPACK_FILE" ]; then
+  install_hwpack
+fi
 populate_boot
+
+while [ 1 ] 
+do
+  if [ -z "$RSYNC_WORK_PID" ]; then
+    break
+  elif [ ! -d /proc/$RSYNC_WORK_PID ]; then
+    break
+  fi
+done
+
 populate_rootfs
 
 if [ "${IMAGE_FILE}" ]; then
