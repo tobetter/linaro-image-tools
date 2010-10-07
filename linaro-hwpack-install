@@ -40,7 +40,7 @@ if [ $# -eq 0 ]; then
 elif [ $# -eq 1 ]; then
   HWPACK_TARBALL=$1
 elif [ $# -eq 2 ]; then
-  if [ $1 != "--install-latest" ]; then
+  if [ "$1" != "--install-latest" ]; then
     die "Unknown argument: $1 \n$usage_msg"
   fi
   INSTALL_LATEST="yes"

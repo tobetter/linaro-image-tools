@@ -164,42 +164,42 @@ consoles=""
 
 # parse commandline options
 while [ ! -z "$1" ]; do
-  case $1 in
+  case "$1" in
     -h|--help)
       usage
       ;;
     --hwpack)
-      checkparm $2
+      checkparm "$2"
       HWPACK_FILE="$2"
       ;;
     --mmc)
-      checkparm $2
+      checkparm "$2"
       MMC="$2"
       check_mmc
       ;;
     --image_file)
-      checkparm $2
+      checkparm "$2"
       IMAGE_FILE="$2"
       ;;
     --image_size)
-      checkparm $2
+      checkparm "$2"
       IMAGE_SIZE=$2
       ;;
     --rootfs)
-      checkparm $2
+      checkparm "$2"
       RFS="$2"
       check_fs_type
       ;;
     --boot_label)
-      checkparm $2
+      checkparm "$2"
       BOOT_LABEL="$2"
       ;;
     --rfs_label)
-      checkparm $2
+      checkparm "$2"
       RFS_LABEL="$2"
       ;;
     --swap_file)
-      checkparm $2
+      checkparm "$2"
       SWAP_SIZE="$2"
       CREATE_SWAP=1
       ;;
@@ -211,15 +211,15 @@ while [ ! -z "$1" ]; do
       IS_LOWMEM=1
       ;;
     --console)
-      checkparm $2
+      checkparm "$2"
       consoles="$consoles $2"
       ;;
     --dev)
-      checkparm $2
+      checkparm "$2"
       DEVIMAGE=$2
       ;;
     --binary)
-      checkparm $2
+      checkparm "$2"
       BINARY_TARBALL="$2"
       ;;
   esac
@@ -253,7 +253,7 @@ esac
 RFS_UUID=`uuidgen -r`
 
 get_mmcs_by_id() {
-  if [ ! ${IMAGE_FILE} ]; then
+  if [ ! "${IMAGE_FILE}" ]; then
     for device in /dev/disk/by-id/*; do
       if [ `realpath $device` = $MMC ]; then
         case "$device" in
@@ -307,12 +307,12 @@ install_hwpack() {
       sudo cp /usr/bin/qemu-arm-static ${chroot}/usr/bin
       ;;
   esac
-  sudo cp $LINARO_HWPACK_INSTALL ${chroot}/usr/bin
+  sudo cp "$LINARO_HWPACK_INSTALL" ${chroot}/usr/bin
   sudo cp "$HWPACK_FILE" "$chroot"
 
   # Actually install the hwpack.
   sudo mount proc ${chroot}/proc -t proc
-  sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /$(basename "$HWPACK_FILE")
+  sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /"$(basename "$HWPACK_FILE")"
 
   # Revert some changes we did to the rootfs as we don't want them in the
   # image.
@@ -323,14 +323,14 @@ install_hwpack() {
     sudo rm -f ${chroot}/usr/bin/qemu-arm-static
   fi
   sudo rm -f ${chroot}/usr/bin/linaro-hwpack-install
-  sudo rm -f ${chroot}/$(basename "$HWPACK_FILE")
+  sudo rm -f ${chroot}/"$(basename "$HWPACK_FILE")"
 }
 
 unpack_binary_tarball() {
   # Remove the binary/ directory so that previous runs don't interfere here.
   remove_binary_dir
 
-  sudo tar -xf $BINARY_TARBALL
+  sudo tar -xf "$BINARY_TARBALL"
 }
 
 create_boot_cmd() {
@@ -418,14 +418,14 @@ EOF
   ) | sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev
 
   if [ "${IMAGE_FILE}" ]; then
-  VFATOFFSET=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $3}')*512))
-  VFATSIZE=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $5}')*1024))
-  ROOTOFFSET=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')*512))
-  ROOTSIZE2=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $3}')))
-  ROOTSIZE1=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')))
+  VFATOFFSET=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep FAT | awk '{print $3}')*512))
+  VFATSIZE=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep FAT | awk '{print $5}')*1024))
+  ROOTOFFSET=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $2}')*512))
+  ROOTSIZE2=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $3}')))
+  ROOTSIZE1=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $2}')))
   ROOTSIZE=$((((ROOTSIZE2-ROOTSIZE1)/2)*1024))
-  MMC1=$(sudo losetup -f --show $IMAGE_FILE --offset $VFATOFFSET --sizelimit $VFATSIZE)
-  MMC2=$(sudo losetup -f --show $IMAGE_FILE --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
+  MMC1=$(sudo losetup -f --show "$IMAGE_FILE" --offset $VFATOFFSET --sizelimit $VFATSIZE)
+  MMC2=$(sudo losetup -f --show "$IMAGE_FILE" --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
   fi
 }
 
@@ -591,7 +591,7 @@ setup_sizes() {
 }
 
 setup_image() {
-  sudo qemu-img create -f raw $IMAGE_FILE $IMAGE_SIZE
+  sudo qemu-img create -f raw "$IMAGE_FILE" $IMAGE_SIZE
 }
 
 remove_binary_dir() {
@@ -713,7 +713,7 @@ populate_rootfs
 
 if [ "${IMAGE_FILE}" ]; then
   echo "Create ${IMAGE_FILE}.gz"
-  gzip -f ${IMAGE_FILE} > ${IMAGE_FILE}.gz
+  gzip -f "${IMAGE_FILE}" > "${IMAGE_FILE}".gz
 fi
 
 remove_binary_dir
