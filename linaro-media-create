@@ -421,11 +421,11 @@ EOF
   VFATOFFSET=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $3}')*512))
   VFATSIZE2=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $4}')))
   VFATSIZE1=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep FAT | awk '{print $3}')))
-  VFATSIZE=$((((VFATSIZE2-VFATSIZE1)/2)*1024))
+  VFATSIZE=$((((VFATSIZE2+1-VFATSIZE1)/2)*1024))
   ROOTOFFSET=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')*512))
   ROOTSIZE2=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $3}')))
   ROOTSIZE1=$(($(LC_ALL=C fdisk -l -u $IMAGE_FILE | grep Linux | awk '{print $2}')))
-  ROOTSIZE=$((((ROOTSIZE2-ROOTSIZE1)/2)*1024))
+  ROOTSIZE=$((((ROOTSIZE2+1-ROOTSIZE1)/2)*1024))
   MMC1=$(sudo losetup -f --show $IMAGE_FILE --offset $VFATOFFSET --sizelimit $VFATSIZE)
   MMC2=$(sudo losetup -f --show $IMAGE_FILE --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
   fi
