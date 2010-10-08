@@ -346,7 +346,7 @@ create_boot_cmd() {
       if [ "${IMAGE_FILE}" ]; then
         cat > ${TMP_DIR}/boot.cmd << BOOTCMD
 setenv bootcmd 'fatload mmc 0:1 $KERNEL_ADDR uImage; bootm $KERNEL_ADDR'
-setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} root=${MMC2} rootwait rw vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
+setenv bootargs '${serial_opts} ${splash_opts} earlyprintk fixrtc nocompcache ${lowmem_opt} root=${TARGET_ROOT_DEV} rootwait rw vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'
 boot
 BOOTCMD
       else
@@ -360,7 +360,7 @@ BOOTCMD
 
     mx51evk)
       cat > ${TMP_DIR}/boot.cmd << BOOTCMD
-setenv bootcmd 'fatload mmc 0:2 $KERNEL_ADDR uImage; fatload mmc 0:2 $INITRD_ADDR uInitrd; bootm $KERNEL_ADDR $INITRD_ADDR'
+setenv bootcmd 'mmcinfo; mmc init; fatload mmc 0:2 $KERNEL_ADDR uImage; fatload mmc 0:2 $INITRD_ADDR uInitrd; bootm $KERNEL_ADDR $INITRD_ADDR'
 setenv bootargs '${serial_opts} ${splash_opts} ${lowmem_opt} ${boot_snippet} rootwait ro'
 boot
 BOOTCMD
@@ -561,7 +561,7 @@ populate_rootfs() {
   echo "Creating /etc/flash-kernel.conf"
   echo ""
 
-  echo "UBOOT_PART=${MMC1}" | sudo tee "${ROOT_DISK}/etc/flash-kernel.conf" >/dev/null
+  echo "UBOOT_PART=${TARGET_BOOT_DEV}" | sudo tee "${ROOT_DISK}/etc/flash-kernel.conf" >/dev/null
 
   sync
   sync
@@ -670,6 +670,9 @@ else
     splash_opts="quiet splash"
   fi
 fi
+
+TARGET_BOOT_DEV=/dev/mmcblk0p$(( 1 + $MMC_PART_OFFSET ))
+TARGET_ROOT_DEV=/dev/mmcblk0p$(( 2 + $MMC_PART_OFFSET ))
 
 if [ ! "${MMC}" -a ! "${IMAGE_FILE}" ]; then
   usage
