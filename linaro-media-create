@@ -308,7 +308,7 @@ install_hwpack() {
       sudo cp /usr/bin/qemu-arm-static ${chroot}/usr/bin
       ;;
   esac
-  sudo cp "$LINARO_HWPACK_INSTALL" ${chroot}/usr/bin
+  sudo cp "$LINARO_HWPACK_INSTALL" "${chroot}/usr/bin"
   sudo cp "$HWPACK_FILE" "$chroot"
 
   # Actually install the hwpack.
@@ -324,7 +324,7 @@ install_hwpack() {
     sudo rm -f ${chroot}/usr/bin/qemu-arm-static
   fi
   sudo rm -f ${chroot}/usr/bin/linaro-hwpack-install
-  sudo rm -f ${chroot}/"$(basename "$HWPACK_FILE")"
+  sudo rm -f "${chroot}/$(basename "$HWPACK_FILE")"
 }
 
 unpack_binary_tarball() {
