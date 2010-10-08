@@ -304,6 +304,7 @@ install_hwpack() {
       ;;
     *)
       ensure_command qemu-arm-static qemu-arm-static
+      ensure_command qemu-img qemu-kvm
       sudo cp /usr/bin/qemu-arm-static ${chroot}/usr/bin
       ;;
   esac
