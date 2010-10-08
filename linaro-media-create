@@ -420,7 +420,9 @@ EOF
 
   if [ "${IMAGE_FILE}" ]; then
   VFATOFFSET=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep FAT | awk '{print $3}')*512))
-  VFATSIZE=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep FAT | awk '{print $5}')*1024))
+  VFATSIZE2=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep FAT | awk '{print $4}')))
+  VFATSIZE1=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep FAT | awk '{print $3}')))
+  VFATSIZE=$((((VFATSIZE2-VFATSIZE1)/2)*1024))
   ROOTOFFSET=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $2}')*512))
   ROOTSIZE2=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $3}')))
   ROOTSIZE1=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $2}')))
