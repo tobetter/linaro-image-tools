@@ -331,7 +331,7 @@ unpack_binary_tarball() {
   # Remove the binary/ directory so that previous runs don't interfere here.
   remove_binary_dir
 
-  sudo tar -xf "$BINARY_TARBALL"
+  sudo tar --numeric-owner -xf "$BINARY_TARBALL"
 }
 
 create_boot_cmd() {
