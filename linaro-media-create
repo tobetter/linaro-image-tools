@@ -37,7 +37,9 @@ TMP_DIR=$(mktemp -d)
 BOOT_DISK="${DIR}/boot-disc"
 ROOT_DISK="${DIR}/root-disc"
 
-which $(basename "$0") >/dev/null 2>&1 || PATH="$(dirname "$0"):$PATH"
+if [ "$(dirname "$0")" != . ] || [ "$0" = "./$(basename "$0")" ]; then
+  PATH="$(dirname "$0"):$PATH"
+fi
 
 ensure_command() {
   # ensure_command foo foo-package
