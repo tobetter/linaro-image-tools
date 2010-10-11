@@ -701,11 +701,5 @@ fi
 prepare_partitions
 populate_boot
 populate_rootfs
-
-if [ "${IMAGE_FILE}" ]; then
-  echo "Create ${IMAGE_FILE}.gz"
-  gzip -f "${IMAGE_FILE}" > "${IMAGE_FILE}".gz
-fi
-
 remove_binary_dir
 
