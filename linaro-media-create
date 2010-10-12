@@ -37,6 +37,8 @@ TMP_DIR=$(mktemp -d)
 BOOT_DISK="${DIR}/boot-disc"
 ROOT_DISK="${DIR}/root-disc"
 
+PATH="$(dirname "$(readlink -f "$0")"):$PATH"
+
 ensure_command() {
   # ensure_command foo foo-package
   which "$1" 2>/dev/null 1>/dev/null || ( echo "Installing required command $1 from package $2" && sudo apt-get install "$2" )
@@ -287,9 +289,7 @@ install_hwpack() {
   # rootfs.
   trap "sudo umount ${chroot}/proc || true" EXIT
 
-  # XXX: Assume linaro-hwpack-install lives on the same directory as this
-  # script. This is far from optimal but should do for now.
-  LINARO_HWPACK_INSTALL=$(dirname $0)/linaro-hwpack-install
+  LINARO_HWPACK_INSTALL=$(which linaro-hwpack-install)
 
   sudo mv -f ${chroot}/etc/resolv.conf ${TMP_DIR}/resolv.conf.orig
   sudo cp /etc/resolv.conf ${chroot}/etc/resolv.conf
