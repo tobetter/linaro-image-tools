@@ -37,9 +37,7 @@ TMP_DIR=$(mktemp -d)
 BOOT_DISK="${DIR}/boot-disc"
 ROOT_DISK="${DIR}/root-disc"
 
-if [ "$(dirname "$0")" != . ] || [ "$0" = "./$(basename "$0")" ]; then
-  PATH="$(dirname "$0"):$PATH"
-fi
+PATH="$(dirname "$(readlink -f "$0")"):$PATH"
 
 ensure_command() {
   # ensure_command foo foo-package
