@@ -85,7 +85,9 @@ for format in $SUPPORTED_FORMATS; do
     break
   fi
 done
-[ $supported == "true" ] || die "Unsupported hwpack format: $hwpack_format"
+[ $supported == "true" ] || \
+  die "Unsupported hwpack format: $hwpack_format. "\
+      "Try using a newer version of $(basename $0)."
 
 # Check the architecture of the hwpack matches that of the host system.
 HWPACK_ARCH=`grep ARCHITECTURE "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
