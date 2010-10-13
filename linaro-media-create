@@ -588,6 +588,12 @@ setup_sizes() {
     CYLINDERS=$(($IMAGE_SIZE/$CYLINDERSIZE))
     CYLINDER_ARG="-C $CYLINDERS"
     IMAGE_SIZE=$(($CYLINDERS*$CYLINDERSIZE))
+    # Round the size of the raw disk image up to a multiple of 256K
+    # so it is an exact number of SD card erase blocks in length.
+    # Otherwise Linux under qemu cannot access the last part of the
+    # card and is likely to complain that the last partition on the
+    # disk has been truncated.
+    IMAGE_SIZE=$(((($IMAGE_SIZE-1)/(1024*256)+1)*(1024*256)))
   else
     CYLINDER_ARG=""
   fi
