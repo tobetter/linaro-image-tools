@@ -496,7 +496,7 @@ populate_boot() {
 
     mx51evk)
       sudo dd if=binary/usr/lib/u-boot/mx51evk/u-boot.imx of="${MMC:-$IMAGE_FILE}" \
-           bs=1024 seek=1
+           bs=1024 seek=1 conv=notrunc
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x90008000 \
            -e 0x90008000 -n Linux \
            -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-linaro-mx51 \
