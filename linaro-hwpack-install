@@ -113,7 +113,7 @@ cat /etc/apt/sources.list >> "$SOURCES_LIST_FILE"
 sudo apt-get -o "$APT_GET_OPTIONS" update -qq
 
 echo -n "Installing packages ..."
-if [ "$INSTALL_LATEST" == "no" ]; then
+if [ "$INSTALL_LATEST" == "yes" ]; then
   packages=`sed 's/=.*//' "${HWPACK_DIR}"/manifest`
 else
   packages=`cat "${HWPACK_DIR}"/manifest`
