@@ -13,6 +13,10 @@ linaro-image-tools (0.3) UNRELEASED; urgency=low
   [ James Westby ]
   * Add a linaro-hwpack-create script for the creation of hardware packs.
 
+  [ Steve Langasek ]
+  * Fix lookup of linaro-hwpack-install to work correctly when l-m-c is on
+    the path.  Closes: #652669.
+
  -- Steve Langasek <steve.langasek@ubuntu.com>  Tue, 14 Sep 2010 17:01:49 -0700
 
 linaro-image-tools (0.2) maverick; urgency=low
