@@ -682,6 +682,8 @@ fi
 unpack_binary_tarball
 if [ "$HWPACK_FILE" ]; then
   install_hwpack
+else
+  echo "Warning, --hwpack <filename> was not specified, the result is unlikely to be functional without manual effort to setup uImage, MLO, u-boot.bin and so as as appropriate for your hardware."
 fi
 create_boot_cmd
 get_mmcs_by_id
