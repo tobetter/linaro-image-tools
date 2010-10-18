@@ -18,6 +18,10 @@ class MetadataTests(TestCase):
         metadata = Metadata("ahwpack", "3", "armel")
         self.assertEqual("3", metadata.version)
 
+    def test_version_with_whitespace(self):
+        self.assertRaises(
+            AssertionError, Metadata, "ahwpack", "3 (with extras)", "armel")
+
     def test_architecture(self):
         metadata = Metadata("ahwpack", "3", "armel")
         self.assertEqual("armel", metadata.architecture)
@@ -93,7 +97,7 @@ class HardwarePackTests(TestCase):
 
     def setUp(self):
         super(HardwarePackTests, self).setUp()
-        self.metadata = Metadata("ahwpack", 4, "armel")
+        self.metadata = Metadata("ahwpack", "4", "armel")
 
     def test_format_is_1_0(self):
         hwpack = HardwarePack(self.metadata)
