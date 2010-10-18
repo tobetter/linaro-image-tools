@@ -19,7 +19,7 @@
 
 set -e
 
-unset DEVICE MMC1 MMC2 MMC3 IMAGE_FILE HWPACK_FILE UBOOT_FLAVOR KERNEL_ADDR
+unset DEVICE MMC1 MMC2 IMAGE_FILE HWPACK_FILE UBOOT_FLAVOR KERNEL_ADDR
 unset INITRD_ADDR CREATE_SWAP SWAP_SIZE
 
 #Defaults
@@ -273,8 +273,6 @@ get_mmcs_by_id() {
             MMC1=$part
           elif test "$part_no" = $((2 + $MMC_PART_OFFSET)) ; then
             MMC2=$part
-          elif test "$part_no" = $((3 + $MMC_PART_OFFSET)); then
-            MMC3=$part
           fi
         done
         break
