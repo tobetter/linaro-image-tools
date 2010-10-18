@@ -33,6 +33,7 @@ IMAGE_SIZE=2G
 MMC_PART_OFFSET=0
 BOOTFS_STEP="populate_boot"
 ROOTFS_STEP="populate_rootfs"
+PARTITION_STEP="create_partitions"
 
 DIR=$PWD
 TMP_DIR=$(mktemp -d)
@@ -116,6 +117,9 @@ Additional/Optional options:
 
 --no-bootfs
     do not deploy the boot filesystem
+
+--no-part
+    reuse existing partitions on the deploy media
 EOF
   exit
 }
@@ -238,11 +242,14 @@ while [ ! -z "$1" ]; do
     --no-bootfs)
       BOOTFS_STEP=""
       ;;
+    --no-part)
+      PARTITION_STEP=""
+      ;;
   esac
   shift
 done
 
-DEPLOY_STEPS="create_partitions prepare_partitions $BOOTFS_STEP $ROOTFS_STEP"
+DEPLOY_STEPS="$PARTITION_STEP prepare_partitions $BOOTFS_STEP $ROOTFS_STEP"
 
 ensure_command mkimage uboot-mkimage
 ensure_command uuidgen uuid-runtime
