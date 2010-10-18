@@ -20,7 +20,7 @@
 set -e
 
 unset DEVICE MMC1 MMC2 IMAGE_FILE HWPACK_FILE UBOOT_FLAVOR KERNEL_ADDR
-unset INITRD_ADDR CREATE_SWAP SWAP_SIZE
+unset INITRD_ADDR CREATE_SWAP SWAP_SIZE DEPLOY_STEPS
 
 #Defaults
 RFS=ext3
@@ -31,6 +31,8 @@ IS_LIVE=
 FAT_SIZE=32
 IMAGE_SIZE=2G
 MMC_PART_OFFSET=0
+BOOTFS_STEP="populate_boot"
+ROOTFS_STEP="populate_rootfs"
 
 DIR=$PWD
 TMP_DIR=$(mktemp -d)
@@ -55,7 +57,7 @@ usage() {
 
 required options:
 --mmc </dev/sdX>
-    Unformatted Storge Device
+    Unformatted Storage Device
 <or>
 --image_file <xxx>
     specify name of image file
@@ -108,6 +110,12 @@ Additional/Optional options:
 
 --binary <filename>
     specify file used to create the bootable system. Default binary-tar.tar.gz
+
+--no-rootfs
+    do not deploy the root filesystem
+
+--no-bootfs
+    do not deploy the boot filesystem
 EOF
   exit
 }
@@ -224,9 +232,17 @@ while [ ! -z "$1" ]; do
       checkparm "$2"
       BINARY_TARBALL="$2"
       ;;
+    --no-rootfs)
+      ROOTFS_STEP=""
+      ;;
+    --no-bootfs)
+      BOOTFS_STEP=""
+      ;;
   esac
   shift
 done
+
+DEPLOY_STEPS="create_partitions prepare_partitions $BOOTFS_STEP $ROOTFS_STEP"
 
 ensure_command mkimage uboot-mkimage
 ensure_command uuidgen uuid-runtime
@@ -333,6 +349,10 @@ unpack_binary_tarball() {
 }
 
 create_boot_cmd() {
+  if [ ! "$BOOTFS_STEP" ]; then
+    return
+  fi
+
   if [ "$IS_LIVE" ]; then
     boot_snippet='boot=casper'
     [ "$IS_LOWMEM" ] && lowmem_opt=only-ubiquity
@@ -371,12 +391,13 @@ cleanup_sd() {
   if test -n "$MMC2"; then
     sudo umount ${MMC2} &> /dev/null || true
   fi
-  if [ "${DEVICE}" ]; then
-    sudo parted -s ${DEVICE} mklabel msdos
-  fi
 }
 
 create_partitions() {
+  if [ "${DEVICE}" ]; then
+    sudo parted -s ${DEVICE} mklabel msdos
+  fi
+
   if [ "${IMAGE_FILE}" ]; then
     partdev=${IMAGE_FILE}
   else
@@ -424,16 +445,36 @@ EOF
 
 
 prepare_partitions() {
+
+echo -n "waiting for partitioning to settle ..."
+sync
+sleep 3
+echo "done."
+get_mmcs_by_id
+
+if [ "$BOOTFS_STEP" ]; then
   echo ""
   echo "Formating Boot Partition"
   echo ""
+  if test -z "$MMC1"; then
+    echo "Partition $MMC1 does not exist"
+    exit 2
+  else
+    sudo mkfs.vfat -F ${FAT_SIZE} ${MMC1} -n ${BOOT_LABEL}
+  fi
+fi
 
-  sudo mkfs.vfat -F ${FAT_SIZE} ${MMC1} -n ${BOOT_LABEL}
-
+if [ "$ROOTFS_STEP" ]; then
   echo ""
   echo "Formating ${RFS} Partition"
   echo ""
-  sudo mkfs.${RFS} -U "$RFS_UUID" ${MMC2} -L ${RFS_LABEL}
+  if test -z "$MMC2"; then
+    echo "Partition $MMC2 does not exist"
+    exit 2
+  else
+    sudo mkfs.${RFS} -U "$RFS_UUID" ${MMC2} -L ${RFS_LABEL}
+  fi
+fi
 }
 
 populate_boot() {
@@ -677,6 +718,13 @@ if [ ! "${DEVICE}" -a ! "${IMAGE_FILE}" ]; then
   usage
 fi
 
+if [ "${IMAGE_FILE}" ]; then
+  if [ ! "${ROOTFS_STEP}" || ! "${BOOTFS_STEP}" ]; then
+    echo "Do not use --no-rootfs or --no-bootfs with --image_file option"
+    exit
+  fi
+fi
+
 unpack_binary_tarball
 if [ "$HWPACK_FILE" ]; then
   install_hwpack
@@ -686,18 +734,8 @@ fi
 create_boot_cmd
 get_mmcs_by_id
 cleanup_sd
-create_partitions
-echo -n "waiting for partitioning to settle ..."
-sync
-sleep 3
-echo "done."
-get_mmcs_by_id
-if test -z "$MMC1" -o -z "$MMC2"; then
-  echo "MMC1: $MMC1 nor MMC2: $MMC2 must be empty"
-  exit 2
-fi
-prepare_partitions
-populate_boot
-populate_rootfs
+for funcs in $DEPLOY_STEPS; do
+  $funcs
+done
 remove_binary_dir
 
