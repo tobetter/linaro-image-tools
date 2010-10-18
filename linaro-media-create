@@ -719,7 +719,7 @@ if [ ! "${DEVICE}" -a ! "${IMAGE_FILE}" ]; then
 fi
 
 if [ "${IMAGE_FILE}" ]; then
-  if [ ! "${ROOTFS_STEP}" || ! "${BOOTFS_STEP}" ]; then
+  if [ ! "${ROOTFS_STEP}" ] || [ ! "${BOOTFS_STEP}" ]; then
     echo "Do not use --no-rootfs or --no-bootfs with --image_file option"
     exit
   fi
