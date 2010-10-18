@@ -19,7 +19,7 @@
 
 set -e
 
-unset DEVICE MMC1 MMC2 IMAGE_FILE HWPACK_FILE UBOOT_FLAVOR KERNEL_ADDR
+unset DEVICE BOOTFS ROOTFS IMAGE_FILE HWPACK_FILE UBOOT_FLAVOR KERNEL_ADDR
 unset INITRD_ADDR CREATE_SWAP SWAP_SIZE DEPLOY_STEPS
 
 #Defaults
@@ -277,7 +277,7 @@ esac
 
 RFS_UUID=`uuidgen -r`
 
-get_mmcs_by_id() {
+get_device_by_id() {
   if [ ! "${IMAGE_FILE}" ]; then
     for device in /dev/disk/by-id/*; do
       if [ `realpath $device` = $DEVICE ]; then
@@ -293,9 +293,9 @@ get_mmcs_by_id() {
           # echo "part $part_no found: $part_id" 1>&2
           # if there is a non-fs-data part (e.g. mx51evk), MMC_PART_OFFSET=1
           if test "$part_no" = $((1 + $MMC_PART_OFFSET)); then
-            MMC1=$part
+            BOOTFS=$part
           elif test "$part_no" = $((2 + $MMC_PART_OFFSET)) ; then
-            MMC2=$part
+            ROOTFS=$part
           fi
         done
         break
@@ -392,11 +392,11 @@ cleanup_sd() {
   echo "Umounting Partitions"
   echo ""
 
-  if test -n "$MMC1"; then
-    sudo umount ${MMC1} &> /dev/null || true
+  if test -n "$BOOTFS"; then
+    sudo umount ${BOOTFS} &> /dev/null || true
   fi
-  if test -n "$MMC2"; then
-    sudo umount ${MMC2} &> /dev/null || true
+  if test -n "$ROOTFS"; then
+    sudo umount ${ROOTFS} &> /dev/null || true
   fi
 }
 
@@ -445,8 +445,8 @@ EOF
   ROOTSIZE2=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $3}')))
   ROOTSIZE1=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $2}')))
   ROOTSIZE=$((((ROOTSIZE2+1-ROOTSIZE1)/2)*1024))
-  MMC1=$(sudo losetup -f --show "$IMAGE_FILE" --offset $VFATOFFSET --sizelimit $VFATSIZE)
-  MMC2=$(sudo losetup -f --show "$IMAGE_FILE" --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
+  BOOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $VFATOFFSET --sizelimit $VFATSIZE)
+  ROOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
   fi
 }
 
@@ -457,17 +457,17 @@ echo -n "waiting for partitioning to settle ..."
 sync
 sleep 3
 echo "done."
-get_mmcs_by_id
+get_device_by_id
 
 if [ "$BOOTFS_STEP" ]; then
   echo ""
   echo "Formating Boot Partition"
   echo ""
-  if test -z "$MMC1"; then
-    echo "Partition $MMC1 does not exist"
+  if test -z "$BOOTFS"; then
+    echo "Partition $BOOTFS does not exist"
     exit 2
   else
-    sudo mkfs.vfat -F ${FAT_SIZE} ${MMC1} -n ${BOOT_LABEL}
+    sudo mkfs.vfat -F ${FAT_SIZE} ${BOOTFS} -n ${BOOT_LABEL}
   fi
 fi
 
@@ -475,11 +475,11 @@ if [ "$ROOTFS_STEP" ]; then
   echo ""
   echo "Formating ${RFS} Partition"
   echo ""
-  if test -z "$MMC2"; then
-    echo "Partition $MMC2 does not exist"
+  if test -z "$ROOTFS"; then
+    echo "Partition $ROOTFS does not exist"
     exit 2
   else
-    sudo mkfs.${RFS} -U "$RFS_UUID" ${MMC2} -L ${RFS_LABEL}
+    sudo mkfs.${RFS} -U "$RFS_UUID" ${ROOTFS} -L ${RFS_LABEL}
   fi
 fi
 }
@@ -500,7 +500,7 @@ populate_boot() {
   fi
  
   mkdir -p "${BOOT_DISK}"
-  sudo mount ${MMC1} "${BOOT_DISK}"
+  sudo mount ${BOOTFS} "${BOOT_DISK}"
 
   if [ -n "$UBOOT_FLAVOR" ]; then
       sudo cp -v "binary/usr/lib/u-boot/${UBOOT_FLAVOR}/u-boot.bin" \
@@ -572,7 +572,7 @@ populate_rootfs() {
   echo "Be patient, this may take a few minutes"
   echo ""
   mkdir -p "${ROOT_DISK}"
-  sudo mount ${MMC2} "${ROOT_DISK}"
+  sudo mount ${ROOTFS} "${ROOT_DISK}"
 
   sudo mv ${DIR}/binary/* "$ROOT_DISK"
 
@@ -585,7 +585,7 @@ populate_rootfs() {
     echo "Creating SWAP File"
     echo ""
 
-    SPACE_LEFT=$(LC_ALL=C df "${ROOT_DISK}" | grep ${MMC2} | awk '{print $4}')
+    SPACE_LEFT=$(LC_ALL=C df "${ROOT_DISK}" | grep ${ROOTFS} | awk '{print $4}')
 
     let SIZE=$SWAP_SIZE*1024
 
@@ -739,7 +739,7 @@ else
   echo "Warning, --hwpack <filename> was not specified, the result is unlikely to be functional without manual effort to setup uImage, MLO, u-boot.bin and so as as appropriate for your hardware."
 fi
 create_boot_cmd
-get_mmcs_by_id
+get_device_by_id
 cleanup_sd
 for funcs in $DEPLOY_STEPS; do
   $funcs
