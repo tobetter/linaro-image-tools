@@ -19,7 +19,7 @@
 
 set -e
 
-unset MMC MMC1 MMC2 MMC3 IMAGE_FILE HWPACK_FILE UBOOT_FLAVOR KERNEL_ADDR
+unset DEVICE MMC1 MMC2 MMC3 IMAGE_FILE HWPACK_FILE UBOOT_FLAVOR KERNEL_ADDR
 unset INITRD_ADDR CREATE_SWAP SWAP_SIZE
 
 #Defaults
@@ -55,7 +55,7 @@ usage() {
 
 required options:
 --mmc </dev/sdX>
-    Unformated MMC Card
+    Unformatted Storge Device
 <or>
 --image_file <xxx>
     specify name of image file
@@ -112,10 +112,10 @@ EOF
   exit
 }
 
-check_mmc() {
-  FDISK=$(sudo LC_ALL=C sfdisk -l | grep "[Disk] ${MMC}" | awk '{print $2}')
+check_device() {
+  FDISK=$(sudo LC_ALL=C sfdisk -l | grep "[Disk] ${DEVICE}" | awk '{print $2}')
 
-  if test "-$FDISK-" = "-$MMC:-"
+  if test "-$FDISK-" = "-$DEVICE:-"
   then
     echo ""
     echo "I see..."
@@ -125,12 +125,12 @@ check_mmc() {
     echo "mount:"
     LC_ALL=C mount | grep -v none | grep "/dev/" --color=never
     echo ""
-    read -p "Are you 100% sure, on selecting [${MMC}] (y/n)? "
+    read -p "Are you 100% sure, on selecting [${DEVICE}] (y/n)? "
     [ "$REPLY" == "y" ] || exit
     echo ""
   else
     echo ""
-    echo "Are you sure? I Don't see [${MMC}], here is what I do see..."
+    echo "Are you sure? I Don't see [${DEVICE}], here is what I do see..."
     echo ""
     echo "sudo sfdisk -l:"
     sudo LC_ALL=C sfdisk -l | grep "[Disk] /dev/" --color=never
@@ -176,8 +176,8 @@ while [ ! -z "$1" ]; do
       ;;
     --mmc)
       checkparm "$2"
-      MMC="$2"
-      check_mmc
+      DEVICE="$2"
+      check_device
       ;;
     --image_file)
       checkparm "$2"
@@ -257,10 +257,10 @@ RFS_UUID=`uuidgen -r`
 get_mmcs_by_id() {
   if [ ! "${IMAGE_FILE}" ]; then
     for device in /dev/disk/by-id/*; do
-      if [ `realpath $device` = $MMC ]; then
+      if [ `realpath $device` = $DEVICE ]; then
         case "$device" in
           *-part[0-9]*)
-            echo "device $MMC must not be a partition part ($device)" >&2
+            echo "device $DEVICE must not be a partition part ($device)" >&2
             exit 1
           ;;
         esac
@@ -373,8 +373,8 @@ cleanup_sd() {
   if test -n "$MMC2"; then
     sudo umount ${MMC2} &> /dev/null || true
   fi
-  if [ "${MMC}" ]; then
-    sudo parted -s ${MMC} mklabel msdos
+  if [ "${DEVICE}" ]; then
+    sudo parted -s ${DEVICE} mklabel msdos
   fi
 }
 
@@ -382,7 +382,7 @@ create_partitions() {
   if [ "${IMAGE_FILE}" ]; then
     partdev=${IMAGE_FILE}
   else
-    partdev=${MMC}
+    partdev=${DEVICE}
   fi
 
   if [ "$FAT_SIZE" = "32" ]; then
@@ -675,7 +675,7 @@ fi
 TARGET_BOOT_DEV=/dev/mmcblk0p$(( 1 + $MMC_PART_OFFSET ))
 TARGET_ROOT_DEV=/dev/mmcblk0p$(( 2 + $MMC_PART_OFFSET ))
 
-if [ ! "${MMC}" -a ! "${IMAGE_FILE}" ]; then
+if [ ! "${DEVICE}" -a ! "${IMAGE_FILE}" ]; then
   usage
 fi
 
