@@ -374,7 +374,7 @@ BOOTCMD
 
     mx51evk)
       cat > ${TMP_DIR}/boot.cmd << BOOTCMD
-setenv bootcmd 'mmcinfo; mmc init; fatload mmc 0:2 $KERNEL_ADDR uImage; fatload mmc 0:2 $INITRD_ADDR uInitrd; bootm $KERNEL_ADDR $INITRD_ADDR'
+setenv bootcmd 'fatload mmc 0:2 $KERNEL_ADDR uImage; fatload mmc 0:2 $INITRD_ADDR uInitrd; bootm $KERNEL_ADDR $INITRD_ADDR'
 setenv bootargs '${serial_opts} ${splash_opts} ${lowmem_opt} ${boot_snippet} rootwait ro'
 boot
 BOOTCMD
@@ -537,8 +537,8 @@ populate_boot() {
       ;;
 
     mx51evk)
-      sudo dd if=binary/usr/lib/u-boot/mx51evk/u-boot.imx of=/dev/mmcblk0 \
-           bs=1024 seek=1
+      sudo dd if=binary/usr/lib/u-boot/mx51evk/u-boot.imx of="${DEVICE:-$IMAGE_FILE}" \
+           bs=1024 seek=1 conv=notrunc
       sudo mkimage -A arm -O linux -T kernel -C none -a 0x90008000 \
            -e 0x90008000 -n Linux \
            -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-linaro-mx51 \
