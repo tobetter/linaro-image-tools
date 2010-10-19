@@ -722,7 +722,7 @@ if [ ! "${DEVICE}" -a ! "${IMAGE_FILE}" ]; then
 fi
 
 # The bootfs and rootfs deploy options are only available with physical 
-# devives.  These options are intended for deploying to different devices like
+# devices.  These options are intended for deploying to different devices like
 # a USB drive and an MMC device.  The options do not apply to qemu image_files.
 if [ "${IMAGE_FILE}" ]; then
   if [ -z "${ROOTFS_STEP}" ] || [ -z "${BOOTFS_STEP}" ]; then
