@@ -459,7 +459,7 @@ if [ "$BOOTFS_STEP" ]; then
   echo ""
   echo "Formating Boot Partition"
   echo ""
-  if test -z "$BOOTFS"; then
+  if [ -z "$BOOTFS" ]; then
     echo "Partition $BOOTFS does not exist"
     exit 2
   else
@@ -471,7 +471,7 @@ if [ "$ROOTFS_STEP" ]; then
   echo ""
   echo "Formating ${RFS} Partition"
   echo ""
-  if test -z "$ROOTFS"; then
+  if [ -z "$ROOTFS" ]; then
     echo "Partition $ROOTFS does not exist"
     exit 2
   else
@@ -721,9 +721,12 @@ if [ ! "${DEVICE}" -a ! "${IMAGE_FILE}" ]; then
   usage
 fi
 
+# The bootfs and rootfs deploy options are only available with physical 
+# devives.  These options are intended for deploying to different devices like
+# a USB drive and an MMC device.  The options do not apply to qemu image_files.
 if [ "${IMAGE_FILE}" ]; then
-  if [ ! "${ROOTFS_STEP}" ] || [ ! "${BOOTFS_STEP}" ]; then
-    echo "Do not use --no-rootfs or --no-bootfs with --image_file option"
+  if [ -z "${ROOTFS_STEP}" ] || [ -z "${BOOTFS_STEP}" ]; then
+    echo "Do not use --no-rootfs or --no-bootfs with the --image_file option"
     exit
   fi
 fi
@@ -736,8 +739,8 @@ else
 fi
 get_device_by_id
 cleanup_sd
-for funcs in $DEPLOY_STEPS; do
-  $funcs
+for func in $DEPLOY_STEPS; do
+  $func
 done
 remove_binary_dir
 
