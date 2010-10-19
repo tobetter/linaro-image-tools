@@ -31,7 +31,7 @@ IS_LIVE=
 FAT_SIZE=32
 IMAGE_SIZE=2G
 MMC_PART_OFFSET=0
-BOOTFS_STEP="populate_boot"
+BOOTFS_STEP="create_boot_cmd populate_boot"
 ROOTFS_STEP="populate_rootfs"
 PARTITION_STEP="create_partitions"
 
@@ -356,10 +356,6 @@ unpack_binary_tarball() {
 }
 
 create_boot_cmd() {
-  if [ ! "$BOOTFS_STEP" ]; then
-    return
-  fi
-
   if [ "$IS_LIVE" ]; then
     boot_snippet='boot=casper'
     [ "$IS_LOWMEM" ] && lowmem_opt=only-ubiquity
@@ -738,7 +734,6 @@ if [ "$HWPACK_FILE" ]; then
 else
   echo "Warning, --hwpack <filename> was not specified, the result is unlikely to be functional without manual effort to setup uImage, MLO, u-boot.bin and so as as appropriate for your hardware."
 fi
-create_boot_cmd
 get_device_by_id
 cleanup_sd
 for funcs in $DEPLOY_STEPS; do
