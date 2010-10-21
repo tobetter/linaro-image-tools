@@ -38,7 +38,7 @@ unset IMAGE_FILE
 
 DIR=$PWD
 TMP_DIR=$(mktemp -d)
-cleanup_tempfiles () {
+cleanup_tempfiles() {
   case "$TMP_DIR" in
     /tmp/tmp.*)
       echo >&2 "Removing $TMP_DIR"
@@ -49,13 +49,13 @@ cleanup_tempfiles () {
       ;;
   esac
 
-  cleanup_tempfiles () { :; }
+  cleanup_tempfiles() { :; }
 }
 
 BOOT_DISK="${DIR}/boot-disc"
 ROOT_DISK="${DIR}/root-disc"
 
-cleanup_mountpoints () {
+cleanup_mountpoints() {
 
   local dir
 
@@ -360,7 +360,7 @@ install_hwpack() {
 
   # Actually install the hwpack.
   sudo mount proc ${chroot}/proc -t proc
-  cleanup_chroot () {
+  cleanup_chroot() {
     sudo umount -v "$chroot/proc"
   }
 
@@ -369,7 +369,7 @@ install_hwpack() {
   # Revert some changes we did to the rootfs as we don't want them in the
   # image.
   sudo umount ${chroot}/proc
-  cleanup_chroot () { :; }
+  cleanup_chroot() { :; }
 
   sudo mv -f ${TMP_DIR}/resolv.conf.orig ${chroot}/etc/resolv.conf
   sudo mv -f ${TMP_DIR}/hosts.orig ${chroot}/etc/hosts
@@ -428,10 +428,10 @@ cleanup_sd() {
   fi
 
   # If called again, do nothing:
-  cleanup_sd () { :; }
+  cleanup_sd() { :; }
 }
 
-cleanup_loopbacks () {
+cleanup_loopbacks() {
 
   local d
 
@@ -693,7 +693,7 @@ remove_binary_dir() {
   fi
 }
 
-remove_image_file () {
+remove_image_file() {
   if [ -f "$IMAGE_FILE" ]; then
     rm -v $IMAGE_FILE
   fi
@@ -701,49 +701,45 @@ remove_image_file () {
 
 INTERRUPTED=no
 
-signal_handler () {
-
-INTERRUPTED=yes
-cleanup_handler
-
+signal_handler() {
+  INTERRUPTED=yes
+  cleanup_handler
 }
 
 # Initially, no action is needed to clean up mounts in the chroot.
 # install_hwpack will temporarily define this function when needed.
-cleanup_chroot () { :; }
+cleanup_chroot() { :; }
 
-cleanup_handler () {
+cleanup_handler() {
+  status=$?
 
-status=$?
+  trap - EXIT INT TERM
 
-trap - EXIT INT TERM
+  set +e
 
-set +e
+  if [ $status != 0 ]; then
+    echo >&2 "$0: FALIED"
+  elif [ "$INTERRUPTED" = yes ]; then
+    echo >&2 "$0: INTERRUPTED"
+    status=2
+  fi
 
-if [ $status != 0 ]; then
-  echo >&2 "$0: FALIED"
-elif [ "$INTERRUPTED" = yes ]; then
-  echo >&2 "$0: INTERRUPTED"
-  status=2
-fi
+  echo
+  echo "Performing cleanup..."
+  echo
 
-echo
-echo "Performing cleanup..."
-echo
+  cleanup_chroot
+  cleanup_sd
+  cleanup_mountpoints
+  cleanup_tempfiles
+  cleanup_loopbacks
+  remove_binary_dir
 
-cleanup_chroot
-cleanup_sd
-cleanup_mountpoints
-cleanup_tempfiles
-cleanup_loopbacks
-remove_binary_dir
+  if [ "$status" != 0 ]; then
+      remove_image_file
+  fi
 
-if [ "$status" != 0 ]; then
-  remove_image_file
-fi
-
-exit $status
-
+  exit $status
 }
 
 # Call cleanup_handler as appropriate.
