@@ -440,7 +440,7 @@ cleanup_loopbacks () {
 
   for d in "$BOOTFS" "$ROOTFS"; do
     if [ -n "$d" ]; then
-      losetup -d "$d"
+      sudo losetup -d "$d"
     fi
   done
 
