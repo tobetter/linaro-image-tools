@@ -34,11 +34,38 @@ MMC_PART_OFFSET=0
 BOOTFS_STEP="create_boot_cmd populate_boot"
 ROOTFS_STEP="populate_rootfs"
 PARTITION_STEP="create_partitions"
+unset IMAGE_FILE
 
 DIR=$PWD
 TMP_DIR=$(mktemp -d)
+cleanup_tempfiles () {
+  case "$TMP_DIR" in
+    /tmp/tmp.*)
+      echo >&2 "Removing $TMP_DIR"
+      rm -r "$TMP_DIR"
+      ;;
+    *)
+      echo >&2 "$0 BUG: won't attempt to remove bogus temp dir $TMP_DIR"
+      ;;
+  esac
+
+  cleanup_tempfiles () { :; }
+}
+
 BOOT_DISK="${DIR}/boot-disc"
 ROOT_DISK="${DIR}/root-disc"
+
+cleanup_mountpoints () {
+
+  local dir
+
+  for dir in "$BOOT_DISK" "$ROOT_DISK"; do
+    if [ -d "$dir" ]; then
+      rmdir -v "$dir"
+    fi
+  done
+
+}
 
 PATH="$(dirname "$(readlink -f "$0")"):$PATH"
 
@@ -308,7 +335,6 @@ install_hwpack() {
   chroot=${DIR}/binary
   # Make sure we unmount /proc in the chroot or else it can't be moved to the
   # rootfs.
-  trap "sudo umount ${chroot}/proc || true" EXIT
 
   LINARO_HWPACK_INSTALL=$(which linaro-hwpack-install)
 
@@ -334,11 +360,17 @@ install_hwpack() {
 
   # Actually install the hwpack.
   sudo mount proc ${chroot}/proc -t proc
+  cleanup_chroot () {
+    sudo umount -v "$chroot/proc"
+  }
+
   sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /"$(basename "$HWPACK_FILE")"
 
   # Revert some changes we did to the rootfs as we don't want them in the
   # image.
   sudo umount ${chroot}/proc
+  cleanup_chroot () { :; }
+
   sudo mv -f ${TMP_DIR}/resolv.conf.orig ${chroot}/etc/resolv.conf
   sudo mv -f ${TMP_DIR}/hosts.orig ${chroot}/etc/hosts
   if [ "arch_is_arm" = no ]; then
@@ -394,6 +426,24 @@ cleanup_sd() {
   if test -n "$ROOTFS"; then
     sudo umount ${ROOTFS} &> /dev/null || true
   fi
+
+  # If called again, do nothing:
+  cleanup_sd () { :; }
+}
+
+cleanup_loopbacks () {
+
+  local d
+
+  echo
+  echo "Releasing loop devices."
+
+  for d in "$BOOTFS" "$ROOTFS"; do
+    if [ -n "$d" ]; then
+      sudo losetup -d "$d"
+    fi
+  done
+
 }
 
 create_partitions() {
@@ -643,6 +693,63 @@ remove_binary_dir() {
   fi
 }
 
+remove_image_file () {
+  if [ -f "$IMAGE_FILE" ]; then
+    rm -v $IMAGE_FILE
+  fi
+}
+
+INTERRUPTED=no
+
+signal_handler () {
+
+INTERRUPTED=yes
+cleanup_handler
+
+}
+
+# Initially, no action is needed to clean up mounts in the chroot.
+# install_hwpack will temporarily define this function when needed.
+cleanup_chroot () { :; }
+
+cleanup_handler () {
+
+status=$?
+
+trap - EXIT INT TERM
+
+set +e
+
+if [ $status != 0 ]; then
+  echo >&2 "$0: FALIED"
+elif [ "$INTERRUPTED" = yes ]; then
+  echo >&2 "$0: INTERRUPTED"
+  status=2
+fi
+
+echo
+echo "Performing cleanup..."
+echo
+
+cleanup_chroot
+cleanup_sd
+cleanup_mountpoints
+cleanup_tempfiles
+cleanup_loopbacks
+remove_binary_dir
+
+if [ "$status" != 0 ]; then
+  remove_image_file
+fi
+
+exit $status
+
+}
+
+# Call cleanup_handler as appropriate.
+# The EXIT trap gets called both on normal exit or exit-on-error (set -e)
+# so we get called either way.
+trap cleanup_handler EXIT INT TERM
 
 setup_sizes
 if [ "${IMAGE_FILE}" ]; then
@@ -742,5 +849,4 @@ cleanup_sd
 for func in $DEPLOY_STEPS; do
   $func
 done
-remove_binary_dir
 
