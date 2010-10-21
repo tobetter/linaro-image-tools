@@ -745,7 +745,8 @@ cleanup_handler() {
 # Call cleanup_handler as appropriate.
 # The EXIT trap gets called both on normal exit or exit-on-error (set -e)
 # so we get called either way.
-trap cleanup_handler EXIT INT TERM
+trap cleanup_handler EXIT
+trap signal_handler INT TERM
 
 setup_sizes
 if [ "${IMAGE_FILE}" ]; then
