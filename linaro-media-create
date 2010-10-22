@@ -34,7 +34,6 @@ MMC_PART_OFFSET=0
 BOOTFS_STEP="create_boot_cmd populate_boot"
 ROOTFS_STEP="populate_rootfs"
 PARTITION_STEP="create_partitions"
-unset IMAGE_FILE
 
 DIR=$PWD
 TMP_DIR=$(mktemp -d)
