@@ -374,7 +374,7 @@ create_boot_cmd() {
   # set board specific options
   case "$DEVIMAGE" in
     beagle|igep)
-      boot_args_options="$boot_args_options earlyprintk fixrtc nocompcache vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'"
+      boot_args_options="$boot_args_options earlyprintk fixrtc nocompcache vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60"
     ;;
     
     panda)

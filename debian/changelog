@@ -17,6 +17,10 @@ linaro-image-tools (0.3) UNRELEASED; urgency=low
   * Fix lookup of linaro-hwpack-install to work correctly when l-m-c is on
     the path.  Closes: #652669.
 
+  [ Loïc Minier ]
+  * Drop spurious single quote character in boot_args_options for beagle|igep;
+    thanks Peter Maydell; LP: #667400.
+
  -- Steve Langasek <steve.langasek@ubuntu.com>  Tue, 14 Sep 2010 17:01:49 -0700
 
 linaro-image-tools (0.2) maverick; urgency=low
