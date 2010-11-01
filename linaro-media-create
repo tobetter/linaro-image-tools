@@ -38,15 +38,7 @@ PARTITION_STEP="create_partitions"
 DIR=$PWD
 TMP_DIR=$(mktemp -d)
 cleanup_tempfiles() {
-  case "$TMP_DIR" in
-    /tmp/tmp.*)
-      echo >&2 "Removing $TMP_DIR"
-      rm -r "$TMP_DIR"
-      ;;
-    *)
-      echo >&2 "$0 BUG: won't attempt to remove bogus temp dir $TMP_DIR"
-      ;;
-  esac
+  rm -r "$TMP_DIR"
 
   cleanup_tempfiles() { :; }
 }
