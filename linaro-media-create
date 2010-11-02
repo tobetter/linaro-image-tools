@@ -422,19 +422,28 @@ cleanup_sd() {
   cleanup_sd() { :; }
 }
 
+loop_devices=
+
 cleanup_loopbacks() {
 
   local d
 
-  echo
-  echo "Releasing loop devices."
+  if [ -n "$loop_devices" ]; then
 
-  for d in "$BOOTFS" "$ROOTFS"; do
-    if [ -n "$d" ]; then
-      sudo losetup -d "$d"
-    fi
-  done
+    echo
+    echo "Releasing loop devices."
 
+    for d in $loop_devices; do
+      if [ -n "$d" ]; then
+	sudo losetup -d "$d"
+      fi
+    done
+
+  fi
+}
+
+register_loopback() {
+  loop_devices="$loop_devices $1"
 }
 
 create_partitions() {
@@ -483,7 +492,9 @@ EOF
   ROOTSIZE1=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $2}')))
   ROOTSIZE=$((((ROOTSIZE2+1-ROOTSIZE1)/2)*1024))
   BOOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $VFATOFFSET --sizelimit $VFATSIZE)
+  register_loopback "$BOOTFS"
   ROOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
+  register_loopback "$ROOTFS"
   fi
 }
 
