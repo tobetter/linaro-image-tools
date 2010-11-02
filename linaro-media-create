@@ -709,7 +709,7 @@ cleanup_handler() {
   set +e
 
   if [ $status != 0 ]; then
-    echo >&2 "$0: FALIED"
+    echo >&2 "$0: FAILED"
   elif [ "$INTERRUPTED" = yes ]; then
     echo >&2 "$0: INTERRUPTED"
     status=2
