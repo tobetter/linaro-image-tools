@@ -690,11 +690,9 @@ remove_image_file() {
   fi
 }
 
-INTERRUPTED=no
-
 signal_handler() {
-  INTERRUPTED=yes
   cleanup_handler
+  exit 2
 }
 
 # Initially, no action is needed to clean up mounts in the chroot.
@@ -710,9 +708,6 @@ cleanup_handler() {
 
   if [ $status != 0 ]; then
     echo >&2 "$0: FAILED"
-  elif [ "$INTERRUPTED" = yes ]; then
-    echo >&2 "$0: INTERRUPTED"
-    status=2
   fi
 
   echo
@@ -730,7 +725,11 @@ cleanup_handler() {
       remove_image_file
   fi
 
-  exit $status
+  # According to POSIX, for the EXIT trap the shell will now exit with the
+  # exit status of the failing command which triggered the EXIT, or 0 if the
+  # script terminated successfully.
+
+  # For the INT/TERM trap, return to signal_handler.
 }
 
 # Call cleanup_handler as appropriate.
