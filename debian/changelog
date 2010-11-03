@@ -21,6 +21,10 @@ linaro-image-tools (0.3) UNRELEASED; urgency=low
   * Drop spurious single quote character in boot_args_options for beagle|igep;
     thanks Peter Maydell; LP: #667400.
 
+  [ Tom Gall ]
+  * Use --numeric-owner argument to tar when unpacking, so that files get
+    the right owner on boot of the image.  LP: #652121.
+
  -- Steve Langasek <steve.langasek@ubuntu.com>  Tue, 14 Sep 2010 17:01:49 -0700
 
 linaro-image-tools (0.2) maverick; urgency=low
