@@ -1,8 +1,12 @@
+import logging
 import errno
 
 from hwpack.config import Config
 from hwpack.hardwarepack import HardwarePack, Metadata
 from hwpack.packages import PackageFetcher
+
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigFileMissing(Exception):
@@ -28,11 +32,13 @@ class HardwarePackBuilder(object):
 
     def build(self):
         for architecture in self.config.architectures:
+            logger.debug("Building for %s" % architecture)
             metadata = Metadata.from_config(
                 self.config, self.version, architecture)
             hwpack = HardwarePack(metadata)
             sources = self.config.sources
             hwpack.add_apt_sources(sources)
+            logger.debug("Fetching packages")
             fetcher = PackageFetcher(
                 sources.values(), architecture=architecture)
             with fetcher:
@@ -40,6 +46,8 @@ class HardwarePackBuilder(object):
                 packages = fetcher.fetch_packages(
                     self.config.packages,
                     download_content=self.config.include_debs)
+                logger.debug("Adding packages to hwpack")
                 hwpack.add_packages(packages)
                 with open(hwpack.filename(), 'w') as f:
+                    logger.debug("Writing %s" % hwpack.filename())
                     hwpack.to_file(f)

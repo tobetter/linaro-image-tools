@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import tempfile
@@ -5,6 +6,9 @@ import tempfile
 from apt.cache import Cache
 from apt.package import FetchError
 import apt_pkg
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_packages_file(packages, extra_text=None):
@@ -393,6 +397,7 @@ class PackageFetcher(object):
         :param packages: the list of package names to ignore.
         :type packages: an iterable of str
         """
+        logger.debug("Ignoring %s" % packages)
         for package in packages:
             self.cache.cache[package].mark_install(auto_fix=False)
             if self.cache.cache.broken_count:
@@ -411,6 +416,7 @@ class PackageFetcher(object):
             candidate = package.installed
             base = os.path.basename(candidate.filename)
             installed.append(FetchedPackage.from_apt(candidate, base))
+            logger.debug("Ignored %s" % package.name)
         self.cache.set_installed_packages(installed)
         broken = [p.name for p in self.cache.cache
                 if p.is_inst_broken or p.is_now_broken]
@@ -428,6 +434,7 @@ class PackageFetcher(object):
                 seen_packages.add(package.name)
         all_packages = set(package_dict.keys())
         for unseen_package in all_packages.difference(seen_packages):
+            logger.debug("%s is ignored, skipping" % unseen_package)
             del package_dict[unseen_package]
 
     def fetch_packages(self, packages, download_content=True):
@@ -474,6 +481,7 @@ class PackageFetcher(object):
         acq = apt_pkg.Acquire(DummyProgress())
         acqfiles = []
         for package in self.cache.cache.get_changes():
+            logger.debug("Fetching %s" % package)
             candidate = package.candidate
             base = os.path.basename(candidate.filename)
             if package.name not in fetched:
