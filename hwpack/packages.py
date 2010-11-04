@@ -297,7 +297,9 @@ class IsolatedAptCache(object):
         if self.architecture is not None:
             apt_conf = os.path.join(self.tempdir, "etc", "apt", "apt.conf")
             with open(apt_conf, 'w') as f:
-                f.write('Apt {\nArchitecture "%s";\n}\n' % self.architecture)
+                f.write(
+                    'Apt {\nArchitecture "%s";\n'
+                    'Install-Recommends "true";\n}\n' % self.architecture)
         self.cache = Cache(rootdir=self.tempdir, memonly=True)
         self.cache.update()
         self.cache.open()
