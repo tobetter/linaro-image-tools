@@ -32,13 +32,13 @@ class HardwarePackBuilder(object):
 
     def build(self):
         for architecture in self.config.architectures:
-            logger.debug("Building for %s" % architecture)
+            logger.info("Building for %s" % architecture)
             metadata = Metadata.from_config(
                 self.config, self.version, architecture)
             hwpack = HardwarePack(metadata)
             sources = self.config.sources
             hwpack.add_apt_sources(sources)
-            logger.debug("Fetching packages")
+            logger.info("Fetching packages")
             fetcher = PackageFetcher(
                 sources.values(), architecture=architecture)
             with fetcher:
@@ -49,5 +49,5 @@ class HardwarePackBuilder(object):
                 logger.debug("Adding packages to hwpack")
                 hwpack.add_packages(packages)
                 with open(hwpack.filename(), 'w') as f:
-                    logger.debug("Writing %s" % hwpack.filename())
                     hwpack.to_file(f)
+                    logger.info("Wrote %s" % hwpack.filename())

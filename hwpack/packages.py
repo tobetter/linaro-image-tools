@@ -284,6 +284,7 @@ class IsolatedAptCache(object):
         of sources.
         """
         self.cleanup()
+        logger.debug("Writing apt configs")
         self.tempdir = tempfile.mkdtemp(prefix="hwpack-apt-cache-")
         dirs = ["var/lib/dpkg",
                 "etc/apt/",
@@ -303,6 +304,7 @@ class IsolatedAptCache(object):
             with open(apt_conf, 'w') as f:
                 f.write('Apt {\nArchitecture "%s";\n}\n' % self.architecture)
         self.cache = Cache(rootdir=self.tempdir, memonly=True)
+        logger.debug("Updating apt cache")
         self.cache.update()
         self.cache.open()
         return self
