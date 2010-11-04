@@ -563,7 +563,7 @@ class AptCacheTests(TestCaseWithFixtures):
         self.addCleanup(cache.cleanup)
         cache.prepare()
         self.assertEqual(
-            'Apt {\nArchitecture "arch";\n}\n',
+            'Apt {\nArchitecture "arch";\nInstall-Recommends "true";\n}\n',
             open(os.path.join(
                 cache.tempdir, "etc", "apt", "apt.conf")).read())
 
@@ -741,6 +741,16 @@ class PackageFetcherTests(TestCaseWithFixtures):
 
     def test_fetches_dependencies(self):
         wanted_package1 = DummyFetchedPackage("foo", "1.0", depends="bar")
+        wanted_package2 = DummyFetchedPackage("bar", "1.0")
+        source = self.useFixture(
+            AptSourceFixture([wanted_package1, wanted_package2]))
+        fetcher = self.get_fetcher([source])
+        self.assertEqual(
+            [wanted_package1, wanted_package2],
+            fetcher.fetch_packages(["foo"]))
+
+    def test_fetches_recommends(self):
+        wanted_package1 = DummyFetchedPackage("foo", "1.0", recommends="bar")
         wanted_package2 = DummyFetchedPackage("bar", "1.0")
         source = self.useFixture(
             AptSourceFixture([wanted_package1, wanted_package2]))
