@@ -1,4 +1,4 @@
-linaro-image-tools (0.3) UNRELEASED; urgency=low
+linaro-image-tools (0.3) maverick-proposed; urgency=low
 
   [ Steve Langasek ]
   * no longer using the 'omap' uboot flavor support in live-helper; instead,
@@ -32,7 +32,7 @@ linaro-image-tools (0.3) UNRELEASED; urgency=low
     a successful install about being unable to unmount proc.  LP: #616385,
     #660196, #667394, #643601, #627383.
 
- -- Steve Langasek <steve.langasek@ubuntu.com>  Tue, 14 Sep 2010 17:01:49 -0700
+ -- Steve Langasek <steve.langasek@ubuntu.com>  Tue, 09 Nov 2010 12:50:26 -0800
 
 linaro-image-tools (0.2) maverick; urgency=low
 
