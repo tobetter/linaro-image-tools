@@ -20,6 +20,7 @@ linaro-image-tools (0.3) UNRELEASED; urgency=low
   [ Loïc Minier ]
   * Drop spurious single quote character in boot_args_options for beagle|igep;
     thanks Peter Maydell; LP: #667400.
+  * Set LC_ALL=C when entering the chroot as it has no locales.  LP: #651905.
 
   [ Tom Gall ]
   * Use --numeric-owner argument to tar when unpacking, so that files get
