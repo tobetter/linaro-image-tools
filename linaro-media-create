@@ -37,8 +37,26 @@ PARTITION_STEP="create_partitions"
 
 DIR=$PWD
 TMP_DIR=$(mktemp -d)
+cleanup_tempfiles() {
+  rm -r "$TMP_DIR"
+
+  cleanup_tempfiles() { :; }
+}
+
 BOOT_DISK="${DIR}/boot-disc"
 ROOT_DISK="${DIR}/root-disc"
+
+cleanup_mountpoints() {
+
+  local dir
+
+  for dir in "$BOOT_DISK" "$ROOT_DISK"; do
+    if [ -d "$dir" ]; then
+      rmdir -v "$dir"
+    fi
+  done
+
+}
 
 PATH="$(dirname "$(readlink -f "$0")"):$PATH"
 
@@ -313,7 +331,6 @@ install_hwpack() {
   chroot=${DIR}/binary
   # Make sure we unmount /proc in the chroot or else it can't be moved to the
   # rootfs.
-  trap "sudo umount ${chroot}/proc || true" EXIT
 
   LINARO_HWPACK_INSTALL=$(which linaro-hwpack-install)
 
@@ -339,11 +356,17 @@ install_hwpack() {
 
   # Actually install the hwpack.
   sudo mount proc ${chroot}/proc -t proc
+  cleanup_chroot() {
+    sudo umount -v "$chroot/proc"
+  }
+
   sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /"$(basename "$HWPACK_FILE")"
 
   # Revert some changes we did to the rootfs as we don't want them in the
   # image.
   sudo umount ${chroot}/proc
+  cleanup_chroot() { :; }
+
   sudo mv -f ${TMP_DIR}/resolv.conf.orig ${chroot}/etc/resolv.conf
   sudo mv -f ${TMP_DIR}/hosts.orig ${chroot}/etc/hosts
   if [ "arch_is_arm" = no ]; then
@@ -415,6 +438,30 @@ cleanup_sd() {
   fi
 }
 
+loop_devices=
+
+cleanup_loopbacks() {
+
+  local d
+
+  if [ -n "$loop_devices" ]; then
+
+    echo
+    echo "Releasing loop devices."
+
+    for d in $loop_devices; do
+      if [ -n "$d" ]; then
+	sudo losetup -d "$d"
+      fi
+    done
+
+  fi
+}
+
+register_loopback() {
+  loop_devices="$loop_devices $1"
+}
+
 create_partitions() {
   if [ "${DEVICE}" ]; then
     sudo parted -s ${DEVICE} mklabel msdos
@@ -461,7 +508,9 @@ EOF
   ROOTSIZE1=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $2}')))
   ROOTSIZE=$((((ROOTSIZE2+1-ROOTSIZE1)/2)*1024))
   BOOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $VFATOFFSET --sizelimit $VFATSIZE)
+  register_loopback "$BOOTFS"
   ROOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
+  register_loopback "$ROOTFS"
   fi
 }
 
@@ -695,6 +744,59 @@ remove_binary_dir() {
   fi
 }
 
+remove_image_file() {
+  if [ -f "$IMAGE_FILE" ]; then
+    rm -v $IMAGE_FILE
+  fi
+}
+
+signal_handler() {
+  cleanup_handler
+  exit 2
+}
+
+# Initially, no action is needed to clean up mounts in the chroot.
+# install_hwpack will temporarily define this function when needed.
+cleanup_chroot() { :; }
+
+cleanup_handler() {
+  status=$?
+
+  trap - EXIT INT TERM
+
+  set +e
+
+  if [ $status != 0 ]; then
+    echo >&2 "$0: FAILED"
+  fi
+
+  echo
+  echo "Performing cleanup..."
+  echo
+
+  cleanup_chroot
+  cleanup_sd
+  cleanup_mountpoints
+  cleanup_tempfiles
+  cleanup_loopbacks
+  remove_binary_dir
+
+  if [ "$status" != 0 ]; then
+      remove_image_file
+  fi
+
+  # According to POSIX, for the EXIT trap the shell will now exit with the
+  # exit status of the failing command which triggered the EXIT, or 0 if the
+  # script terminated successfully.
+
+  # For the INT/TERM trap, return to signal_handler.
+}
+
+# Call cleanup_handler as appropriate.
+# The EXIT trap gets called both on normal exit or exit-on-error (set -e)
+# so we get called either way.
+trap cleanup_handler EXIT
+trap signal_handler INT TERM
 
 setup_sizes
 if [ "${IMAGE_FILE}" ]; then
@@ -806,9 +908,7 @@ else
   echo "Warning, --hwpack <filename> was not specified, the result is unlikely to be functional without manual effort to setup uImage, MLO, u-boot.bin and so as as appropriate for your hardware."
 fi
 get_device_by_id
-cleanup_sd
 for func in $DEPLOY_STEPS; do
   $func
 done
-remove_binary_dir
 
