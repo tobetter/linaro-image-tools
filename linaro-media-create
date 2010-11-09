@@ -417,9 +417,6 @@ cleanup_sd() {
   if test -n "$ROOTFS"; then
     sudo umount ${ROOTFS} &> /dev/null || true
   fi
-
-  # If called again, do nothing:
-  cleanup_sd() { :; }
 }
 
 loop_devices=
@@ -843,7 +840,6 @@ else
   echo "Warning, --hwpack <filename> was not specified, the result is unlikely to be functional without manual effort to setup uImage, MLO, u-boot.bin and so as as appropriate for your hardware."
 fi
 get_device_by_id
-cleanup_sd
 for func in $DEPLOY_STEPS; do
   $func
 done
