@@ -15,7 +15,8 @@ class Metadata(object):
 
     :ivar name: the name of the hardware pack.
     :type name: str
-    :ivar version: the version of the hardware pack.
+    :ivar version: the version of the hardware pack. It must not contain white
+        spaces.
     :type version: str
     :ivar origin: the origin of the hardware pack, or None if the origin
         is not known.
@@ -35,6 +36,10 @@ class Metadata(object):
         See the instance variables for a description of the arguments.
         """
         self.name = name
+        if ' ' in version:
+            raise AssertionError(
+                'Hardware pack version must not contain white '
+                'spaces: "%s"' % version)
         self.version = version
         self.origin = origin
         self.maintainer = maintainer
@@ -86,6 +91,7 @@ class HardwarePack(object):
     :type FORMAT: str
     """
 
+    # The format version cannot contain white spaces. 
     FORMAT = "1.0"
     FORMAT_FILENAME = "FORMAT"
     METADATA_FILENAME = "metadata"

@@ -1,4 +1,5 @@
 from StringIO import StringIO
+import re
 import tarfile
 
 from testtools import TestCase
@@ -17,6 +18,10 @@ class MetadataTests(TestCase):
     def test_version(self):
         metadata = Metadata("ahwpack", "3", "armel")
         self.assertEqual("3", metadata.version)
+
+    def test_version_with_whitespace(self):
+        self.assertRaises(
+            AssertionError, Metadata, "ahwpack", "3 (with extras)", "armel")
 
     def test_architecture(self):
         metadata = Metadata("ahwpack", "3", "armel")
@@ -93,11 +98,16 @@ class HardwarePackTests(TestCase):
 
     def setUp(self):
         super(HardwarePackTests, self).setUp()
-        self.metadata = Metadata("ahwpack", 4, "armel")
+        self.metadata = Metadata("ahwpack", "4", "armel")
 
     def test_format_is_1_0(self):
         hwpack = HardwarePack(self.metadata)
         self.assertEqual("1.0", hwpack.FORMAT)
+
+    def test_format_has_no_spaces(self):
+        hwpack = HardwarePack(self.metadata)
+        self.assertIs(None, re.search('\s', hwpack.FORMAT),
+                      "hwpack.FORMAT contains spaces.")
 
     def test_filename(self):
         hwpack = HardwarePack(self.metadata)
