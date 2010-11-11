@@ -1,4 +1,5 @@
 from StringIO import StringIO
+import re
 import tarfile
 
 from testtools import TestCase
@@ -102,6 +103,11 @@ class HardwarePackTests(TestCase):
     def test_format_is_1_0(self):
         hwpack = HardwarePack(self.metadata)
         self.assertEqual("1.0", hwpack.FORMAT)
+
+    def test_format_has_no_spaces(self):
+        hwpack = HardwarePack(self.metadata)
+        self.assertIs(None, re.search('\s', hwpack.FORMAT),
+                      "hwpack.FORMAT contains spaces.")
 
     def test_filename(self):
         hwpack = HardwarePack(self.metadata)

@@ -38,7 +38,7 @@ class Metadata(object):
         self.name = name
         if ' ' in version:
             raise AssertionError(
-                'Hardware pack format version must not contain white '
+                'Hardware pack version must not contain white '
                 'spaces: "%s"' % version)
         self.version = version
         self.origin = origin
