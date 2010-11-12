@@ -909,7 +909,6 @@ if [ "$HWPACK_FILE" ]; then
 else
   echo "Warning, --hwpack <filename> was not specified, the result is unlikely to be functional without manual effort to setup uImage, MLO, u-boot.bin and so as as appropriate for your hardware."
 fi
-get_device_by_id
 for func in $DEPLOY_STEPS; do
   $func
 done
