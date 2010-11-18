@@ -27,7 +27,8 @@ RFS=ext3
 BINARY_TARBALL='binary-tar.tar.gz'
 BOOT_LABEL=boot
 RFS_LABEL=rootfs
-IS_LIVE=
+IS_LIVE=0
+IS_LOWMEM=0
 FAT_SIZE=32
 IMAGE_SIZE=2G
 MMC_PART_OFFSET=0
@@ -60,7 +61,14 @@ cleanup_mountpoints() {
 
 }
 
-PATH="$(dirname "$(readlink -f "$0")"):$PATH"
+# Make sure other scripts are called from the correct place when running this
+# off of a l-m-c working tree.
+script_dir=$(dirname "$(readlink -f "$0")")
+PATH="${script_dir}:$PATH"
+
+# Also make sure the necessary python modules are available when running this
+# off of a l-m-c working tree.
+export PYTHONPATH="$script_dir"
 
 ensure_command() {
   # ensure_command foo foo-package
@@ -386,18 +394,9 @@ unpack_binary_tarball() {
 }
 
 create_boot_cmd() {
-  if [ "$IS_LIVE" ]; then
-    boot_snippet='boot=casper'
-    [ "$IS_LOWMEM" ] && lowmem_opt=only-ubiquity
-  else
-    boot_snippet='root=UUID='${RFS_UUID}
-  fi
-  
-  cat > ${TMP_DIR}/boot.cmd << BOOTCMD
-setenv bootcmd 'fatload mmc $mmc_option $KERNEL_ADDR uImage; fatload mmc $mmc_option $INITRD_ADDR uInitrd; bootm $KERNEL_ADDR $INITRD_ADDR'
-setenv bootargs '${serial_opts} ${splash_opts} ${lowmem_opt} ${boot_snippet} ${boot_args_options}'
-boot
-BOOTCMD
+  python -m media_create.boot_cmd $IS_LIVE $IS_LOWMEM "$mmc_option" \
+    "$RFS_UUID" "$KERNEL_ADDR" "$INITRD_ADDR" "$serial_opts" \
+    "$boot_args_options" "$splash_opts" > ${TMP_DIR}/boot.cmd
 }
 
 cleanup_sd() {
@@ -533,7 +532,7 @@ populate_boot() {
   echo "Installing Boot Loader"
   echo ""
  
-  if [ "$IS_LIVE" ]; then
+  if [ "$IS_LIVE" -eq 1 ]; then
     parts_dir=casper
   else
     parts_dir=boot
@@ -784,7 +783,7 @@ if [ "$consoles" ]; then
   for c in ${consoles}; do
     serial_opts="$serial_opts console=$c"
   done
-  if [ "$IS_LIVE" ]; then
+  if [ "$IS_LIVE" -eq 1 ]; then
     serial_opts="$serial_opts serialtty=ttyS2"
   fi
 fi
@@ -807,7 +806,7 @@ if [ "$DEVIMAGE" ]; then
   case "$DEVIMAGE" in
     beagle|igep)
       serial_opts="$serial_opts console=tty0 console=ttyS2,115200n8"
-      if [ "$IS_LIVE" ]; then
+      if [ "$IS_LIVE" -eq 1 ]; then
         serial_opts="$serial_opts serialtty=ttyS2"
       fi
       KERNEL_ADDR="0x80000000"
@@ -816,7 +815,7 @@ if [ "$DEVIMAGE" ]; then
       ;;
     panda)
       serial_opts="$serial_opts console=tty0 console=ttyO2,115200n8"
-      if [ "$IS_LIVE" ]; then
+      if [ "$IS_LIVE" -eq 1 ]; then
         serial_opts="$serial_opts serialtty=ttyO2"
       fi
       KERNEL_ADDR="0x80200000"
@@ -825,7 +824,7 @@ if [ "$DEVIMAGE" ]; then
       ;;
     ux500)
       serial_opts="$serial_opts console=tty0 console=ttyAMA2,115200n8"
-      if [ "$IS_LIVE" ]; then
+      if [ "$IS_LIVE" -eq 1 ]; then
         serial_opts="$serial_opts serialtty=ttyAMA2"
       fi
       KERNEL_ADDR="0x00100000"
@@ -836,7 +835,7 @@ if [ "$DEVIMAGE" ]; then
       ;;
     mx51evk)
       serial_opts="$serial_opts console=tty0 console=ttymxc0,115200n8"
-      if [ "$IS_LIVE" ]; then
+      if [ "$IS_LIVE" -eq 1 ]; then
         serial_opts="$serial_opts serialtty=ttymxc0"
       fi
       KERNEL_ADDR="0x90000000"
@@ -846,7 +845,7 @@ if [ "$DEVIMAGE" ]; then
       ;;
     vexpress)
       serial_opts="$serial_opts console=tty0 console=ttyAMA0,38400n8"
-      if [ "$IS_LIVE" ]; then
+      if [ "$IS_LIVE" -eq 1 ]; then
         serial_opts="$serial_opts serialtty=ttyAMA0"
       fi
       KERNEL_ADDR="0x60008000"
@@ -861,7 +860,7 @@ if [ "$DEVIMAGE" ]; then
       ;;
   esac
 else
-  if [ "$IS_LIVE" ]; then
+  if [ "$IS_LIVE" -eq 1 ]; then
     splash_opts="quiet splash"
   fi
 fi
