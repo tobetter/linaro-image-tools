@@ -361,8 +361,12 @@ install_hwpack() {
   }
 
   echo ""
-  echo "Installing (apt-get) hwpack $HWPACK_FILE in target roofs."
+  echo "---------------------------------------------------"
+  echo "Installing (apt-get) $HWPACK_FILE in target rootfs."
+  echo ""
   sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /"$(basename "$HWPACK_FILE")"
+  echo "---------------------------------------------------"
+  echo ""
 
   # Revert some changes we did to the rootfs as we don't want them in the
   # image.
