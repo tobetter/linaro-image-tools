@@ -451,7 +451,7 @@ cleanup_loopbacks() {
 
     for d in $loop_devices; do
       if [ -n "$d" ]; then
-	sudo losetup -d "$d"
+        sudo losetup -d "$d"
       fi
     done
 
@@ -517,35 +517,37 @@ EOF
 
 prepare_partitions() {
 
-echo -n "waiting for partitioning to settle ..."
-sync
-sleep 3
-echo "done."
-get_device_by_id
+  # sync and sleep a bit as the partitions may have been created in the
+  # previous step.
+  echo -n "waiting for partitioning to settle ..."
+  sync
+  sleep 3
+  echo "done."
+  get_device_by_id
 
-if [ "$BOOTFS_STEP" ]; then
-  echo ""
-  echo "Formating Boot Partition"
-  echo ""
-  if [ -z "$BOOTFS" ]; then
-    echo "Partition $BOOTFS does not exist"
-    exit 2
-  else
-    sudo mkfs.vfat -F ${FAT_SIZE} ${BOOTFS} -n ${BOOT_LABEL}
+  if [ "$BOOTFS_STEP" ]; then
+    echo ""
+    echo "Formating Boot Partition"
+    echo ""
+    if [ -z "$BOOTFS" ]; then
+      echo "Partition $BOOTFS does not exist"
+      exit 2
+    else
+      sudo mkfs.vfat -F ${FAT_SIZE} ${BOOTFS} -n ${BOOT_LABEL}
+    fi
   fi
-fi
 
-if [ "$ROOTFS_STEP" ]; then
-  echo ""
-  echo "Formating ${RFS} Partition"
-  echo ""
-  if [ -z "$ROOTFS" ]; then
-    echo "Partition $ROOTFS does not exist"
-    exit 2
-  else
-    sudo mkfs.${RFS} -U "$RFS_UUID" ${ROOTFS} -L ${RFS_LABEL}
+  if [ "$ROOTFS_STEP" ]; then
+    echo ""
+    echo "Formating ${RFS} Partition"
+    echo ""
+    if [ -z "$ROOTFS" ]; then
+      echo "Partition $ROOTFS does not exist"
+      exit 2
+    else
+      sudo mkfs.${RFS} -U "$RFS_UUID" ${ROOTFS} -L ${RFS_LABEL}
+    fi
   fi
-fi
 }
 
 populate_boot() {
@@ -907,7 +909,6 @@ if [ "$HWPACK_FILE" ]; then
 else
   echo "Warning, --hwpack <filename> was not specified, the result is unlikely to be functional without manual effort to setup uImage, MLO, u-boot.bin and so as as appropriate for your hardware."
 fi
-get_device_by_id
 for func in $DEPLOY_STEPS; do
   $func
 done
