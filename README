@@ -1,0 +1,21 @@
+This project contains a collection of tools to help creating Linaro bootable
+images to be used in development boards.
+
+= Running tests =
+
+Before running any tests you need to install the following packages:
+
+  - python-testrepository
+  - python-subunit
+
+And run the following command:
+
+  $ testr init
+
+After that you can run the whole test suite with:
+
+  $ testr run
+
+If you want to learn more about testrepository:
+
+  $ testr quickstart
