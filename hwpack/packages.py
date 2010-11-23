@@ -3,7 +3,6 @@ import shutil
 from string import Template
 import subprocess
 import tempfile
-import textwrap
 
 from apt.cache import Cache
 from apt.package import FetchError
@@ -125,15 +124,13 @@ class PackageMaker(object):
             raise AssertionError("__enter__ must not be called twice")
         self._temporary_directories = []
 
-    def __exit__(self):
+    def __exit__(self, exc_type=None, exc_value=None, traceback=None):
         if self._temporary_directories is None:
             return
         for tmpdir in self._temporary_directories:
             shutil.rmtree(tmpdir)
         self._temporary_directories = None
-
-    setUp = __enter__
-    tearDown = __exit__
+        return False
 
     def make_temporary_directory(self):
         """The path to a temporary directory that will be deleted on __exit__.

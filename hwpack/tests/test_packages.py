@@ -2,6 +2,7 @@ import os
 from StringIO import StringIO
 import textwrap
 
+from apt.debfile import DebPackage
 from testtools import TestCase
 
 from hwpack.packages import (
@@ -15,6 +16,7 @@ from hwpack.packages import (
     )
 from hwpack.testing import (
     AptSourceFixture,
+    ContextManagerFixture,
     DummyFetchedPackage,
     TestCaseWithFixtures,
     )
@@ -165,6 +167,12 @@ class StringifyRelationshipTests(TestCaseWithFixtures):
 
 class PackageMakerTests(TestCaseWithFixtures):
 
+    def setUp(self):
+        super(PackageMakerTests, self).setUp()
+        self._apt_cache = IsolatedAptCache([])
+        self.useFixture(ContextManagerFixture(self._apt_cache))
+        self.cache = self._apt_cache.cache
+
     def test_enter_twice_fails(self):
         maker = PackageMaker()
         maker.__enter__()
@@ -180,22 +188,29 @@ class PackageMakerTests(TestCaseWithFixtures):
 
     def test_make_temporary_directory_makes_directory(self):
         maker = PackageMaker()
-        self.useFixture(maker)
+        self.useFixture(ContextManagerFixture(maker))
         tmpdir = maker.make_temporary_directory()
         self.assertTrue(os.path.isdir(tmpdir))
 
     def test_exit_removes_temporary_directory(self):
         maker = PackageMaker()
-        self.useFixture(maker)
+        self.useFixture(ContextManagerFixture(maker))
         tmpdir = maker.make_temporary_directory()
         maker.__exit__()
         self.assertFalse(os.path.isdir(tmpdir))
 
     def test_make_package_creates_file(self):
         maker = PackageMaker()
-        self.useFixture(maker)
+        self.useFixture(ContextManagerFixture(maker))
         deb_path = maker.make_package('foo', 1.0, {})
         self.assertTrue(os.path.exists(deb_path))
+
+    def test_make_package_creates_deb_with_given_name(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package('foo', 1.0, {})
+        deb_pkg = DebPackage(deb_path, cache=self.cache)
+        self.assertEqual('foo', deb_pkg.pkgname)
 
 
 class FetchedPackageTests(TestCaseWithFixtures):
@@ -539,7 +554,6 @@ class AptCacheTests(TestCaseWithFixtures):
     def test_cleanup_ignores_missing_tempdir(self):
         cache = IsolatedAptCache([])
         cache.prepare()
-        tempdir = cache.tempdir
         cache.cleanup()
         # Check that there is no problem removing it again
         cache.cleanup()

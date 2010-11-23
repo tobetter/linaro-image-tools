@@ -172,6 +172,20 @@ class ConfigFileFixture(object):
             os.unlink(self.filename)
 
 
+class ContextManagerFixture(object):
+    """Adapt a context manager to be a usable with `useFixture`."""
+
+    def __init__(self, context_manager):
+        self.manager = context_manager
+
+    def setUp(self):
+        self.manager.__enter__()
+
+    def tearDown(self):
+        # This is a bit wrong in the failure case I guess.
+        self.manager.__exit__(None, None, None)
+
+
 class ChdirToTempdirFixture(object):
 
     def __init__(self):
