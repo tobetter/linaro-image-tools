@@ -10,6 +10,7 @@ from hwpack.packages import (
     get_packages_file,
     IsolatedAptCache,
     PackageFetcher,
+    PackageMaker,
     stringify_relationship,
     )
 from hwpack.testing import (
@@ -160,6 +161,35 @@ class StringifyRelationshipTests(TestCaseWithFixtures):
             candidate = cache.cache['foo'].candidate
             self.assertEqual(
                 "baz (<= 2.0)", stringify_relationship(candidate, "Depends"))
+
+
+class PackageMakerTests(TestCaseWithFixtures):
+
+    def test_enter_twice_fails(self):
+        maker = PackageMaker()
+        maker.__enter__()
+        self.assertRaises(AssertionError, maker.__enter__)
+
+    def test_exit_without_enter_silent(self):
+        maker = PackageMaker()
+        maker.__exit__()
+
+    def test_make_temporary_directory_without_enter_fails(self):
+        maker = PackageMaker()
+        self.assertRaises(AssertionError, maker.make_temporary_directory)
+
+    def test_make_temporary_directory_makes_directory(self):
+        maker = PackageMaker()
+        self.useFixture(maker)
+        tmpdir = maker.make_temporary_directory()
+        self.assertTrue(os.path.isdir(tmpdir))
+
+    def test_exit_removes_temporary_directory(self):
+        maker = PackageMaker()
+        self.useFixture(maker)
+        tmpdir = maker.make_temporary_directory()
+        maker.__exit__()
+        self.assertFalse(os.path.isdir(tmpdir))
 
 
 class FetchedPackageTests(TestCaseWithFixtures):

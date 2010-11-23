@@ -111,6 +111,37 @@ class DummyProgress(object):
         pass
 
 
+class PackageMaker(object):
+    """An object that can create binary debs on the fly."""
+
+    def __init__(self):
+        self._temporary_directories = None
+
+    def __enter__(self):
+        if self._temporary_directories is not None:
+            raise AssertionError("__enter__ must not be called twice")
+        self._temporary_directories = []
+
+    def __exit__(self):
+        if self._temporary_directories is None:
+            return
+        for tmpdir in self._temporary_directories:
+            shutil.rmtree(tmpdir)
+        self._temporary_directories = None
+
+    setUp = __enter__
+    tearDown = __exit__
+
+    def make_temporary_directory(self):
+        """The path to a temporary directory that will be deleted on __exit__.
+        """
+        if self._temporary_directories is None:
+            raise AssertionError("__enter__ must be called")
+        tmpdir = tempfile.mkdtemp()
+        self._temporary_directories.append(tmpdir)
+        return tmpdir
+
+
 class FetchedPackage(object):
     """The result of fetching packages.
 
