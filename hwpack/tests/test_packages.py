@@ -214,6 +214,28 @@ class PackageMakerTests(TestCaseWithFixtures):
         self.assertEqual(
             '1.0ubuntu1', deb_pkg.control.debcontrol()['Version'])
 
+    def assertControlFieldPreserved(self, field, value):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package(
+            'foo', '1.0', {field: value})
+        deb_pkg = DebFile(deb_path)
+        self.assertEqual(
+            value, deb_pkg.control.debcontrol()[field])
+
+    def test_make_package_creates_deb_with_given_depends(self):
+        self.assertControlFieldPreserved('Depends', 'bar, baz (>= 1.0)')
+
+    def test_make_package_creates_deb_with_given_predepends(self):
+        self.assertControlFieldPreserved('Pre-Depends', 'bar, baz (>= 1.0)')
+
+    def test_unknown_field_name_fails(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        self.assertRaises(
+            ValueError, maker.make_package,
+            'foo', '1.0', {'InvalidField': 'value'})
+
 
 class FetchedPackageTests(TestCaseWithFixtures):
 

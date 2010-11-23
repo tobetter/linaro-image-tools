@@ -158,12 +158,12 @@ Description: Dummy package to install a hwpack - created by linaro-media-create
         os.mkdir(packaging_dir)
         os.mkdir(os.path.join(packaging_dir, 'DEBIAN'))
         relationship_strs = []
-        for relationship_name, relationship_value in relationships:
+        for relationship_name, relationship_value in relationships.items():
             relationship_strs.append(
-                '%s: %s' % (relationship_name, relationship_value))
+                '%s: %s\n' % (relationship_name, relationship_value))
         subst_vars = dict(
             name=name,
-            relationships='\n'.join(relationship_strs),
+            relationships=''.join(relationship_strs),
             version=version,
             )
         control_file_text = self.control_file_template.safe_substitute(
@@ -171,9 +171,14 @@ Description: Dummy package to install a hwpack - created by linaro-media-create
         with open(os.path.join(
             packaging_dir, 'DEBIAN', 'control'), 'w') as control_file:
             control_file.write(control_file_text)
-        subprocess.check_call(
+        proc = subprocess.Popen(
             ['dpkg-deb', '-b', packaging_dir],
-            stdout=open('/dev/null', 'w'))
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (stdoutdata, stderrdata) = proc.communicate()
+        if proc.returncode:
+            raise ValueError("dpkg-deb failed!\n%s" % stderrdata)
+        if stderrdata:
+            raise ValueError("dpkg-deb had warnings:\n%s" % stderrdata)
         return os.path.join(tmp_dir, name + '.deb')
 
 
