@@ -214,20 +214,47 @@ class PackageMakerTests(TestCaseWithFixtures):
         self.assertEqual(
             '1.0ubuntu1', deb_pkg.control.debcontrol()['Version'])
 
-    def assertControlFieldPreserved(self, field, value):
+    def assertControlFieldsPreserved(self, fields):
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
         deb_path = maker.make_package(
-            'foo', '1.0', {field: value})
+            'foo', '1.0', fields)
         deb_pkg = DebFile(deb_path)
-        self.assertEqual(
-            value, deb_pkg.control.debcontrol()[field])
+        for key, value in fields.items():
+            self.assertEqual(
+                value, deb_pkg.control.debcontrol()[key])
 
     def test_make_package_creates_deb_with_given_depends(self):
-        self.assertControlFieldPreserved('Depends', 'bar, baz (>= 1.0)')
+        self.assertControlFieldsPreserved({'Depends': 'bar, baz (>= 1.0)'})
 
     def test_make_package_creates_deb_with_given_predepends(self):
-        self.assertControlFieldPreserved('Pre-Depends', 'bar, baz (>= 1.0)')
+        self.assertControlFieldsPreserved({'Pre-Depends': 'bar, baz (>= 1.0)'})
+
+    def test_make_package_creates_deb_with_given_conflicts(self):
+        self.assertControlFieldsPreserved({'Conflicts': 'bar, baz (>= 1.0)'})
+
+    def test_make_package_creates_deb_with_given_recommends(self):
+        self.assertControlFieldsPreserved({'Recommends': 'bar, baz (>= 1.0)'})
+
+    def test_make_package_creates_deb_with_given_provides(self):
+        self.assertControlFieldsPreserved({'Provides': 'bar, baz (= 1.0)'})
+
+    def test_make_package_creates_deb_with_given_replaces(self):
+        self.assertControlFieldsPreserved({'Replaces': 'bar, baz (>= 1.0)'})
+
+    def test_make_package_creates_deb_with_given_breaks(self):
+        self.assertControlFieldsPreserved({'Breaks': 'bar, baz (>= 1.0)'})
+
+    def test_make_package_creates_deb_with_all_given_fields(self):
+        self.assertControlFieldsPreserved({
+            'Depends': 'bar, baz (>= 1.0)',
+            'Pre-Depends': 'bar, baz (>= 1.0)',
+            'Conflicts': 'bar, baz (>= 1.0)',
+            'Recommends': 'bar, baz (>= 1.0)',
+            'Provides': 'bar, baz (= 1.0)',
+            'Replaces': 'bar, baz (>= 1.0)',
+            'Breaks': 'bar, baz (>= 1.0)',
+            })
 
     def test_unknown_field_name_fails(self):
         maker = PackageMaker()
