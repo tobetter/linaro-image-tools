@@ -2,7 +2,7 @@ import os
 from StringIO import StringIO
 import textwrap
 
-from apt.debfile import DebPackage
+from debian.debfile import DebFile
 from testtools import TestCase
 
 from hwpack.packages import (
@@ -167,12 +167,6 @@ class StringifyRelationshipTests(TestCaseWithFixtures):
 
 class PackageMakerTests(TestCaseWithFixtures):
 
-    def setUp(self):
-        super(PackageMakerTests, self).setUp()
-        self._apt_cache = IsolatedAptCache([])
-        self.useFixture(ContextManagerFixture(self._apt_cache))
-        self.cache = self._apt_cache.cache
-
     def test_enter_twice_fails(self):
         maker = PackageMaker()
         maker.__enter__()
@@ -209,16 +203,16 @@ class PackageMakerTests(TestCaseWithFixtures):
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
         deb_path = maker.make_package('foo', '1.0', {})
-        deb_pkg = DebPackage(deb_path, cache=self.cache)
-        self.assertEqual('foo', deb_pkg.pkgname)
+        deb_pkg = DebFile(deb_path)
+        self.assertEqual('foo', deb_pkg.control.debcontrol()['Package'])
 
     def test_make_package_creates_deb_with_given_version(self):
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
         deb_path = maker.make_package('foo', '1.0ubuntu1', {})
-        deb_pkg = DebPackage(deb_path, cache=self.cache)
-        # XXX This is fairly horrible:
-        self.assertEqual('1.0ubuntu1', deb_pkg._sections['Version'])
+        deb_pkg = DebFile(deb_path)
+        self.assertEqual(
+            '1.0ubuntu1', deb_pkg.control.debcontrol()['Version'])
 
 
 class FetchedPackageTests(TestCaseWithFixtures):

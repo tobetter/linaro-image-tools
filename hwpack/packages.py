@@ -143,7 +143,7 @@ class PackageMaker(object):
 
     control_file_template = Template('''\
 Package: ${name}
-Version: 1.0
+Version: ${version}
 Architecture: all
 Maintainer: Me
 ${relationships}\
