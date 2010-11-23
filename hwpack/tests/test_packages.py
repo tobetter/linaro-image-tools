@@ -191,6 +191,12 @@ class PackageMakerTests(TestCaseWithFixtures):
         maker.__exit__()
         self.assertFalse(os.path.isdir(tmpdir))
 
+    def test_make_package_creates_file(self):
+        maker = PackageMaker()
+        self.useFixture(maker)
+        deb_path = maker.make_package('foo', 1.0, {})
+        self.assertTrue(os.path.exists(deb_path))
+
 
 class FetchedPackageTests(TestCaseWithFixtures):
 

@@ -1,6 +1,9 @@
 import os
 import shutil
+from string import Template
+import subprocess
 import tempfile
+import textwrap
 
 from apt.cache import Cache
 from apt.package import FetchError
@@ -140,6 +143,41 @@ class PackageMaker(object):
         tmpdir = tempfile.mkdtemp()
         self._temporary_directories.append(tmpdir)
         return tmpdir
+
+    control_file_template = Template('''\
+Package: ${name}
+Version: 1.0
+Architecture: all
+Maintainer: Me
+${relationships}\
+Description: Dummy package to install a hwpack - created by linaro-media-create
+ This package was created automatically by pbuilder to satisfy the
+ build-dependencies of the package being currently built.
+''')
+
+    def make_package(self, name, version, relationships):
+        tmp_dir = self.make_temporary_directory()
+        packaging_dir = os.path.join(tmp_dir, name)
+        os.mkdir(packaging_dir)
+        os.mkdir(os.path.join(packaging_dir, 'DEBIAN'))
+        relationship_strs = []
+        for relationship_name, relationship_value in relationships:
+            relationship_strs.append(
+                '%s: %s' % (relationship_name, relationship_value))
+        subst_vars = dict(
+            name=name,
+            relationships='\n'.join(relationship_strs),
+            version=version,
+            )
+        control_file_text = self.control_file_template.safe_substitute(
+            subst_vars)
+        with open(os.path.join(
+            packaging_dir, 'DEBIAN', 'control'), 'w') as control_file:
+            control_file.write(control_file_text)
+        subprocess.check_call(
+            ['dpkg-deb', '-b', packaging_dir],
+            stdout=open('/dev/null', 'w'))
+        return os.path.join(tmp_dir, name + '.deb')
 
 
 class FetchedPackage(object):
