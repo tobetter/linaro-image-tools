@@ -202,15 +202,23 @@ class PackageMakerTests(TestCaseWithFixtures):
     def test_make_package_creates_file(self):
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
-        deb_path = maker.make_package('foo', 1.0, {})
+        deb_path = maker.make_package('foo', '1.0', {})
         self.assertTrue(os.path.exists(deb_path))
 
     def test_make_package_creates_deb_with_given_name(self):
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
-        deb_path = maker.make_package('foo', 1.0, {})
+        deb_path = maker.make_package('foo', '1.0', {})
         deb_pkg = DebPackage(deb_path, cache=self.cache)
         self.assertEqual('foo', deb_pkg.pkgname)
+
+    def test_make_package_creates_deb_with_given_version(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package('foo', '1.0ubuntu1', {})
+        deb_pkg = DebPackage(deb_path, cache=self.cache)
+        # XXX This is fairly horrible:
+        self.assertEqual('1.0ubuntu1', deb_pkg._sections['Version'])
 
 
 class FetchedPackageTests(TestCaseWithFixtures):
