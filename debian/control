@@ -34,3 +34,12 @@ Description: python library for the creation of hardware packs
  .
  This package provides a python library to aid with the creation of hardware
  packs.
+
+Package: python-linaro-media-create
+Architecture: all
+Section: python
+Depends: ${python:Depends}, python-apt, ${misc:Depends}
+Description: TODO
+ XXX
+ .
+ TODO

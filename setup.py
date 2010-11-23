@@ -20,5 +20,8 @@ def get_version():
 setup(
         name="hwpack",
         version=get_version(),
-        packages=["hwpack"],
+        # XXX: Probably makes sense to rename media_create to
+        # linaro_media_create.  Even though it's longer, it's way more
+        # meaningful than just media_create.
+        packages=["hwpack", "media_create"],
      )
