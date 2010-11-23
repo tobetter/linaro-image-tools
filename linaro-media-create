@@ -70,13 +70,8 @@ PATH="${script_dir}:$PATH"
 # off of a l-m-c working tree.
 export PYTHONPATH="$script_dir"
 
-ensure_command() {
-  # ensure_command foo foo-package
-  which "$1" 2>/dev/null 1>/dev/null || ( echo "Installing required command $1 from package $2" && sudo apt-get install "$2" )
-}
-
-ensure_command sfdisk util-linux
-ensure_command fdisk util-linux
+python -m media_create.ensure_command sfdisk util-linux
+python -m media_create.ensure_command fdisk util-linux
 
 usage() {
   echo "usage: $(basename $0) --mmc /dev/sdd"
@@ -281,18 +276,18 @@ done
 
 DEPLOY_STEPS="$PARTITION_STEP prepare_partitions $BOOTFS_STEP $ROOTFS_STEP"
 
-ensure_command mkimage uboot-mkimage
-ensure_command uuidgen uuid-runtime
-ensure_command parted parted
-ensure_command wget wget
-ensure_command md5sum coreutils
-ensure_command realpath realpath
+python -m media_create.ensure_command mkimage uboot-mkimage
+python -m media_create.ensure_command uuidgen uuid-runtime
+python -m media_create.ensure_command parted parted
+python -m media_create.ensure_command wget wget
+python -m media_create.ensure_command md5sum coreutils
+python -m media_create.ensure_command realpath realpath
 case "$RFS" in
   ext2|ext3|ext4)
-    ensure_command "mkfs.$RFS" e2fsprogs
+    python -m media_create.ensure_command "mkfs.$RFS" e2fsprogs
     ;;
   btrfs)
-    ensure_command mkfs.btrfs btrfs-tools
+    python -m media_create.ensure_command mkfs.btrfs btrfs-tools
     ;;
 esac
 
@@ -356,8 +351,8 @@ install_hwpack() {
       arch_is_arm=yes
       ;;
     *)
-      ensure_command qemu-arm-static qemu-arm-static
-      ensure_command qemu-img qemu-kvm
+      python -m media_create.ensure_command qemu-arm-static qemu-arm-static
+      python -m media_create.ensure_command qemu-img qemu-kvm
       sudo cp /usr/bin/qemu-arm-static ${chroot}/usr/bin
       ;;
   esac

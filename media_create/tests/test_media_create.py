@@ -1,9 +1,35 @@
+from contextlib import contextmanager
 import subprocess
 import sys
 
 from testtools import TestCase
 
 from media_create.boot_cmd import create_boot_cmd
+from media_create import ensure_command
+
+
+class TestEnsureCommand(TestCase):
+
+    apt_get_called = False
+
+    def test_command_already_present(self):
+        with self.mock_apt_get_install():
+            ensure_command.ensure_command('apt-get', 'apt')
+        self.assertFalse(self.apt_get_called)
+
+    def test_command_not_present(self):
+        with self.mock_apt_get_install():
+            ensure_command.ensure_command('apt-get-two-o', 'apt-2')
+        self.assertTrue(self.apt_get_called)
+
+    @contextmanager
+    def mock_apt_get_install(self):
+        def mock_apt_get_install(cmd, pkg):
+            self.apt_get_called = True
+        orig_func = ensure_command.apt_get_install
+        ensure_command.apt_get_install = mock_apt_get_install
+        yield
+        ensure_command.apt_get_install = orig_func
 
 
 class TestCreateBootCMD(TestCase):
