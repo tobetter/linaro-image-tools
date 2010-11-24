@@ -57,7 +57,8 @@ class DummyFetchedPackage(FetchedPackage):
 
     def __init__(self, name, version, architecture="all", depends=None,
                  pre_depends=None, conflicts=None, recommends=None,
-                 provides=None, replaces=None, breaks=None, no_content=False):
+                 provides=None, replaces=None, breaks=None, no_content=False,
+                 content=None):
         self.name = name
         self.version = version
         self.architecture = architecture
@@ -69,6 +70,7 @@ class DummyFetchedPackage(FetchedPackage):
         self.replaces = replaces
         self.breaks = breaks
         self._no_content = no_content
+        self._content = content
 
     @property
     def filename(self):
@@ -81,16 +83,18 @@ class DummyFetchedPackage(FetchedPackage):
     def content(self):
         if self._no_content:
             return None
+        elif self._content is not None:
+            return StringIO(self._content)
         return StringIO(self._content_str())
 
     @property
     def size(self):
-        return len(self._content_str())
+        return len(self.content.read())
 
     @property
     def md5(self):
         md5sum = hashlib.md5()
-        md5sum.update(self._content_str())
+        md5sum.update(self.content.read())
         return md5sum.hexdigest()
 
 

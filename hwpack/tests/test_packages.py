@@ -605,6 +605,15 @@ class FetchedPackageTests(TestCaseWithFixtures):
                 candidate, target_package.filename)
             self.assertEqual(None, created_package.content)
 
+    def test_from_deb(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_file_path = maker.make_package('foo', '1.0', {})
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", content=open(deb_file_path).read())
+        created_package = FetchedPackage.from_deb(deb_file_path)
+        self.assertEqual(target_package, created_package)
+
 
 class AptCacheTests(TestCaseWithFixtures):
 

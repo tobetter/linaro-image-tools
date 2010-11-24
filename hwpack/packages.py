@@ -1,3 +1,4 @@
+import hashlib
 import os
 import re
 import shutil
@@ -8,6 +9,8 @@ import tempfile
 from apt.cache import Cache
 from apt.package import FetchError
 import apt_pkg
+
+from debian.debfile import DebFile
 
 
 def get_packages_file(packages, extra_text=None):
@@ -294,6 +297,20 @@ class FetchedPackage(object):
             breaks=breaks)
         if content is not None:
             pkg.content = content
+        return pkg
+
+    @classmethod
+    def from_deb(cls, deb_file_path):
+        """Create a FetchedPackage from a binary package on disk."""
+        deb_file = DebFile(deb_file_path)
+        name = deb_file.control.debcontrol()['Package']
+        version = deb_file.control.debcontrol()['Version']
+        filename = os.path.basename(deb_file_path)
+        size = os.path.getsize(deb_file_path)
+        md5sum = hashlib.md5(open(deb_file_path).read()).hexdigest()
+        architecture = deb_file.control.debcontrol()['Architecture']
+        pkg = cls(name, version, filename, size, md5sum, architecture)
+        pkg.content = open(deb_file_path)
         return pkg
 
     def __eq__(self, other):
