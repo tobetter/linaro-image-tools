@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 from string import Template
 import subprocess
@@ -154,7 +155,8 @@ Description: Dummy package to install a hwpack - created by linaro-media-create
 
     def make_package(self, name, version, relationships):
         tmp_dir = self.make_temporary_directory()
-        packaging_dir = os.path.join(tmp_dir, name)
+        filename = '%s_%s_all' % (name, version)
+        packaging_dir = os.path.join(tmp_dir, filename)
         os.mkdir(packaging_dir)
         os.mkdir(os.path.join(packaging_dir, 'DEBIAN'))
         relationship_strs = []
@@ -179,7 +181,13 @@ Description: Dummy package to install a hwpack - created by linaro-media-create
             raise ValueError("dpkg-deb failed!\n%s" % stderrdata)
         if stderrdata:
             raise ValueError("dpkg-deb had warnings:\n%s" % stderrdata)
-        return os.path.join(tmp_dir, name + '.deb')
+        deb_file_path_match = re.match(
+            "dpkg-deb: building package `.*' in `(.*)'", stdoutdata)
+        if not deb_file_path_match:
+            raise ValueError(
+                "failed to find filename in dpkg-deb output:\n%s"
+                % stdoutdata)
+        return deb_file_path_match.group(1)
 
 
 class FetchedPackage(object):

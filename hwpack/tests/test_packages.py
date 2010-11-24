@@ -1,5 +1,6 @@
 import os
 from StringIO import StringIO
+import subprocess
 import textwrap
 
 from debian.debfile import DebFile
@@ -199,12 +200,24 @@ class PackageMakerTests(TestCaseWithFixtures):
         deb_path = maker.make_package('foo', '1.0', {})
         self.assertTrue(os.path.exists(deb_path))
 
-    def test_make_package_creates_deb_with_given_name(self):
+    def test_make_package_creates_deb_with_given_package_name(self):
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
         deb_path = maker.make_package('foo', '1.0', {})
         deb_pkg = DebFile(deb_path)
         self.assertEqual('foo', deb_pkg.control.debcontrol()['Package'])
+
+    def test_make_package_creates_deb_with_correct_file_name(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package('foo', '1.0', {})
+        proc = subprocess.Popen(
+            ['dpkg-name', deb_path], stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+        output = proc.communicate()[0]
+        self.assertTrue(
+            'skipping' in output,
+            "'skipping' was not found in dpkg-name output:\n%s" % output)
 
     def test_make_package_creates_deb_with_given_version(self):
         maker = PackageMaker()
