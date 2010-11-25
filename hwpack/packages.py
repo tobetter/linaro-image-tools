@@ -309,7 +309,16 @@ class FetchedPackage(object):
         size = os.path.getsize(deb_file_path)
         md5sum = hashlib.md5(open(deb_file_path).read()).hexdigest()
         architecture = deb_file.control.debcontrol()['Architecture']
-        pkg = cls(name, version, filename, size, md5sum, architecture)
+        depends = deb_file.control.debcontrol().get('Depends')
+        pre_depends = deb_file.control.debcontrol().get('Pre-Depends')
+        conflicts = deb_file.control.debcontrol().get('Conflicts')
+        recommends = deb_file.control.debcontrol().get('Recommends')
+        provides = deb_file.control.debcontrol().get('Provides')
+        replaces = deb_file.control.debcontrol().get('Replaces')
+        breaks = deb_file.control.debcontrol().get('Breaks')
+        pkg = cls(
+            name, version, filename, size, md5sum, architecture, depends,
+            pre_depends, conflicts, recommends, provides, replaces, breaks)
         pkg.content = open(deb_file_path)
         return pkg
 

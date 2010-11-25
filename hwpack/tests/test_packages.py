@@ -614,6 +614,42 @@ class FetchedPackageTests(TestCaseWithFixtures):
         created_package = FetchedPackage.from_deb(deb_file_path)
         self.assertEqual(target_package, created_package)
 
+    def assert_from_deb_translates_relationships(self, relationships):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_file_path = maker.make_package('foo', '1.0', relationships)
+        dummy_relationships = {}
+        for relationship, value in relationships.items():
+            dummy_relationships[relationship.lower().replace('-', '_')] = value
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", content=open(deb_file_path).read(), **dummy_relationships)
+        created_package = FetchedPackage.from_deb(deb_file_path)
+        self.assertEqual(target_package, created_package)
+
+    def test_from_deb_with_depends(self):
+        self.assert_from_deb_translates_relationships(
+            {'Depends': 'bar, baz (>= 1.0)'})
+
+    def test_from_deb_with_pre_depends(self):
+        self.assert_from_deb_translates_relationships(
+            {'Pre-Depends': 'bar, baz (>= 1.0)'})
+
+    def test_from_deb_with_conflicts(self):
+        self.assert_from_deb_translates_relationships(
+            {'Conflicts': 'bar, baz (>= 1.0)'})
+
+    def test_from_deb_with_recommends(self):
+        self.assert_from_deb_translates_relationships(
+            {'Recommends': 'bar, baz (>= 1.0)'})
+
+    def test_from_deb_with_replaces(self):
+        self.assert_from_deb_translates_relationships(
+            {'Replaces': 'bar, baz (>= 1.0)'})
+
+    def test_from_deb_with_breaks(self):
+        self.assert_from_deb_translates_relationships(
+            {'breaks': 'bar, baz (>= 1.0)'})
+
 
 class AptCacheTests(TestCaseWithFixtures):
 
