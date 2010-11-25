@@ -1,9 +1,12 @@
 import subprocess
 import sys
+import os
+import os.path
 
 from testtools import TestCase
 
 from media_create.boot_cmd import create_boot_cmd
+from media_create.remove_binary_dir import remove_binary_dir
 
 
 class TestCreateBootCMD(TestCase):
@@ -30,3 +33,18 @@ class TestCreateBootCMD(TestCase):
             args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         self.assertEqual(self.expected_boot_cmd, stdout)
+
+class TestRemoveBinaryDir(TestCase):
+
+    TEST_DIR = 'binary_test_dir/'
+
+    def test_remove_binary_dir(self):
+        try:
+            os.mkdir(TEST_DIR)
+        except OSError:
+            pass
+            
+        rc = remove_binary_dir(binary_dir=TEST_DIR, as_root=False)
+        self.assertEqual(rc, 0)
+        self.assertFalse(os.path.exists(TEST_DIR))
+        
