@@ -276,6 +276,14 @@ class PackageMakerTests(TestCaseWithFixtures):
             ValueError, maker.make_package,
             'foo', '1.0', {'InvalidField': 'value'})
 
+    def test_arch_all_by_default(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package('foo', '1.0', {})
+        deb_pkg = DebFile(deb_path)
+        self.assertEqual("all", deb_pkg.control.debcontrol()['Architecture'])
+        
+
 
 class FetchedPackageTests(TestCaseWithFixtures):
 
