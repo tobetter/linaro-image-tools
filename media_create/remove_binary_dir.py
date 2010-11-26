@@ -10,7 +10,7 @@ def remove_binary_dir(binary_dir='binary/', as_root=True):
             cmd = 'sudo '
         else:
             cmd = ''
-        cmd += 'sudo rm -rf %s' % binary_dir
+        cmd += 'rm -rf %s' % binary_dir
         proc = subprocess.Popen(cmd, shell=True)
         proc.wait()
         return proc.returncode

@@ -2,11 +2,13 @@ import subprocess
 import sys
 import os
 import os.path
+import shutil
 
 from testtools import TestCase
 
 from media_create.boot_cmd import create_boot_cmd
 from media_create.remove_binary_dir import remove_binary_dir
+from media_create.unpack_binary_tarball import unpack_binary_tarball
 
 
 class TestCreateBootCMD(TestCase):
@@ -34,17 +36,42 @@ class TestCreateBootCMD(TestCase):
         stdout, stderr = process.communicate()
         self.assertEqual(self.expected_boot_cmd, stdout)
 
+
 class TestRemoveBinaryDir(TestCase):
 
-    TEST_DIR = 'binary_test_dir/'
-
     def test_remove_binary_dir(self):
+        TEST_DIR = 'binary_test_dir/'
         try:
             os.mkdir(TEST_DIR)
         except OSError:
             pass
-            
+
         rc = remove_binary_dir(binary_dir=TEST_DIR, as_root=False)
         self.assertEqual(rc, 0)
         self.assertFalse(os.path.exists(TEST_DIR))
-        
+
+        if os.path.exists(TEST_DIR):
+            os.rmdir(TEST_DIR)
+
+
+class TestUnpackBinaryTarball(TestCase):
+
+    def test_unpack_binary_tarball(self):
+        TEST_DIR = 'binary_test_dir/'
+        TARBALL = TEST_DIR + '.tar.gz'
+        try:
+            os.mkdir(TEST_DIR)
+        except OSError:
+            pass
+
+        cmd = 'tar -czf %s %s' % (TARBALL, TEST_DIR)
+        proc = subprocess.Popen(cmd, shell=True)
+        proc.wait()
+        rc = unpack_binary_tarball(TARBALL, as_root=False)
+        self.assertEqual(rc, 0)
+
+        if os.path.exists(TEST_DIR):            
+            shutil.rmtree(TEST_DIR)
+        if os.path.exists(TARBALL):
+            os.remove(TARBALL)
+
