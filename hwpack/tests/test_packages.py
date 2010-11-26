@@ -282,7 +282,13 @@ class PackageMakerTests(TestCaseWithFixtures):
         deb_path = maker.make_package('foo', '1.0', {})
         deb_pkg = DebFile(deb_path)
         self.assertEqual("all", deb_pkg.control.debcontrol()['Architecture'])
-        
+
+    def test_custom_architecture(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package('foo', '1.0', {}, 'armel')
+        deb_pkg = DebFile(deb_path)
+        self.assertEqual('armel', deb_pkg.control.debcontrol()['Architecture'])
 
 
 class FetchedPackageTests(TestCaseWithFixtures):

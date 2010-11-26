@@ -148,7 +148,7 @@ class PackageMaker(object):
     control_file_template = Template('''\
 Package: ${name}
 Version: ${version}
-Architecture: all
+Architecture: ${architecture}
 Maintainer: Me
 ${relationships}\
 Description: Dummy package to install a hwpack - created by linaro-media-create
@@ -156,7 +156,7 @@ Description: Dummy package to install a hwpack - created by linaro-media-create
  build-dependencies of the package being currently built.
 ''')
 
-    def make_package(self, name, version, relationships):
+    def make_package(self, name, version, relationships, architecture='all'):
         tmp_dir = self.make_temporary_directory()
         filename = '%s_%s_all' % (name, version)
         packaging_dir = os.path.join(tmp_dir, filename)
@@ -167,6 +167,7 @@ Description: Dummy package to install a hwpack - created by linaro-media-create
             relationship_strs.append(
                 '%s: %s\n' % (relationship_name, relationship_value))
         subst_vars = dict(
+            architecture=architecture,
             name=name,
             relationships=''.join(relationship_strs),
             version=version,
