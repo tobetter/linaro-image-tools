@@ -6,12 +6,11 @@ import subprocess
 
 def remove_binary_dir(binary_dir='binary/', as_root=True):
     if os.path.exists(binary_dir):
+        args = []
         if as_root:
-            cmd = 'sudo '
-        else:
-            cmd = ''
-        cmd += 'rm -rf %s' % binary_dir
-        proc = subprocess.Popen(cmd, shell=True)
+            args.extend('sudo')
+        args.extend(['rm', '-rf', binary_dir])
+        proc = subprocess.Popen(args)
         proc.wait()
         return proc.returncode
     return 0

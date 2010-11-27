@@ -4,12 +4,11 @@ import sys
 import subprocess
 
 def unpack_binary_tarball(tarball, as_root=True):
+    args = []
     if as_root:
-        cmd = 'sudo '
-    else:
-        cmd = ''
-    cmd += 'tar --numeric-owner -xf %s' % tarball
-    proc = subprocess.Popen(cmd, shell=True)
+        args.extend(['sudo'])
+    args.extend(['tar', '--numeric-owner', '-xf', tarball])    
+    proc = subprocess.Popen(args)
     proc.wait()
     return proc.returncode
 
