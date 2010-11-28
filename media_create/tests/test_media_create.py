@@ -6,6 +6,8 @@ import shutil
 
 from testtools import TestCase
 
+from hwpack.testing import TestCaseWithFixtures
+
 from media_create.boot_cmd import create_boot_cmd
 from media_create.remove_binary_dir import remove_binary_dir
 from media_create.unpack_binary_tarball import unpack_binary_tarball
@@ -37,41 +39,72 @@ class TestCreateBootCMD(TestCase):
         self.assertEqual(self.expected_boot_cmd, stdout)
 
 
-class TestRemoveBinaryDir(TestCase):
+class TempDirFixture(object):
 
+    def __init__(self):
+        self.tempdir = None
+
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        if os.path.exists(self.tempdir):
+            shutil.rmtree(self.tempdir)
+            
+    def get_temp_dir(self):
+        return self.tempdir
+            
+
+class TestRemoveBinaryDir(TestCaseWithFixtures):
+
+    def setUp(self):
+        super(TestRemoveBinaryDir, self).setUp()
+        self.temp_dir_fixture = TempDirFixture()
+        self.useFixture(self.temp_dir_fixture)
+    
     def test_remove_binary_dir(self):
-        TEST_DIR = 'binary_test_dir/'
-        try:
-            os.mkdir(TEST_DIR)
-        except OSError:
-            pass
-
-        rc = remove_binary_dir(binary_dir=TEST_DIR, as_root=False)
+        rc = remove_binary_dir(
+            binary_dir=self.temp_dir_fixture.get_temp_dir(),
+            as_root=False)
         self.assertEqual(rc, 0)
-        self.assertFalse(os.path.exists(TEST_DIR))
-
-        if os.path.exists(TEST_DIR):
-            os.rmdir(TEST_DIR)
+        self.assertFalse(os.path.exists(
+            self.temp_dir_fixture.get_temp_dir()))
 
 
-class TestUnpackBinaryTarball(TestCase):
+class TarballFixture(object):
 
-    def test_unpack_binary_tarball(self):
-        TEST_DIR = 'binary_test_dir/'
-        TARBALL = TEST_DIR + '.tar.gz'
-        try:
-            os.mkdir(TEST_DIR)
-        except OSError:
-            pass
-
-        cmd = 'tar -czf %s %s' % (TARBALL, TEST_DIR)
-        proc = subprocess.Popen(cmd, shell=True)
+    def __init__(self, dir):
+        self.dir = dir
+        self.tarball = dir + '.tar.gz'
+        
+    def setUp(self):
+        # Create gzipped tar archive.
+        args = ['tar', '-czf', self.tarball, self.dir]
+        proc = subprocess.Popen(args)
         proc.wait()
-        rc = unpack_binary_tarball(TARBALL, as_root=False)
-        self.assertEqual(rc, 0)
+        
+    def tearDown(self):
+        if os.path.exists(self.tarball):
+            os.remove(self.tarball)
+            
+    def get_tarball(self):
+        return self.tarball
 
-        if os.path.exists(TEST_DIR):            
-            shutil.rmtree(TEST_DIR)
-        if os.path.exists(TARBALL):
-            os.remove(TARBALL)
+
+class TestUnpackBinaryTarball(TestCaseWithFixtures):
+
+    def setUp(self):
+        super(TestUnpackBinaryTarball, self).setUp()
+        
+        self.temp_dir_fixture = TempDirFixture()
+        self.useFixture(self.temp_dir_fixture)
+        
+        self.tarball_fixture = TarballFixture(
+            self.temp_dir_fixture.get_temp_dir())
+        self.useFixture(self.tarball_fixture)
+    
+    def test_unpack_binary_tarball(self):
+        rc = unpack_binary_tarball(self.tarball_fixture.get_tarball(),
+            as_root=False)
+        self.assertEqual(rc, 0)
 
