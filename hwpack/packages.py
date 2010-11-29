@@ -118,7 +118,11 @@ class DummyProgress(object):
 
 
 class PackageMaker(object):
-    """An object that can create binary debs on the fly."""
+    """An object that can create binary debs on the fly.
+
+    PackageMakers implement the context manager protocol to manage the
+    temporary directories the debs are created in.
+    """
 
     def __init__(self):
         self._temporary_directories = None
@@ -137,7 +141,9 @@ class PackageMaker(object):
         return False
 
     def make_temporary_directory(self):
-        """The path to a temporary directory that will be deleted on __exit__.
+        """Create a temporary directory and return its path.
+
+        The created directory will be deleted on __exit__.
         """
         if self._temporary_directories is None:
             raise AssertionError("__enter__ must be called")
@@ -149,11 +155,10 @@ class PackageMaker(object):
 Package: ${name}
 Version: ${version}
 Architecture: ${architecture}
-Maintainer: Me
+Maintainer: Nobody
 ${relationships}\
-Description: Dummy package to install a hwpack - created by linaro-media-create
- This package was created automatically by pbuilder to satisfy the
- build-dependencies of the package being currently built.
+Description: Dummy package to install a hwpack
+ This package was created automatically by linaro-media-create
 ''')
 
     def make_package(self, name, version, relationships, architecture='all'):
@@ -303,20 +308,20 @@ class FetchedPackage(object):
     @classmethod
     def from_deb(cls, deb_file_path):
         """Create a FetchedPackage from a binary package on disk."""
-        deb_file = DebFile(deb_file_path)
-        name = deb_file.control.debcontrol()['Package']
-        version = deb_file.control.debcontrol()['Version']
+        debcontrol = DebFile(deb_file_path).control.debcontrol()
+        name = debcontrol['Package']
+        version = debcontrol['Version']
         filename = os.path.basename(deb_file_path)
         size = os.path.getsize(deb_file_path)
         md5sum = hashlib.md5(open(deb_file_path).read()).hexdigest()
-        architecture = deb_file.control.debcontrol()['Architecture']
-        depends = deb_file.control.debcontrol().get('Depends')
-        pre_depends = deb_file.control.debcontrol().get('Pre-Depends')
-        conflicts = deb_file.control.debcontrol().get('Conflicts')
-        recommends = deb_file.control.debcontrol().get('Recommends')
-        provides = deb_file.control.debcontrol().get('Provides')
-        replaces = deb_file.control.debcontrol().get('Replaces')
-        breaks = deb_file.control.debcontrol().get('Breaks')
+        architecture = debcontrol['Architecture']
+        depends = debcontrol.get('Depends')
+        pre_depends = debcontrol.get('Pre-Depends')
+        conflicts = debcontrol.get('Conflicts')
+        recommends = debcontrol.get('Recommends')
+        provides = debcontrol.get('Provides')
+        replaces = debcontrol.get('Replaces')
+        breaks = debcontrol.get('Breaks')
         pkg = cls(
             name, version, filename, size, md5sum, architecture, depends,
             pre_depends, conflicts, recommends, provides, replaces, breaks)

@@ -227,7 +227,7 @@ class PackageMakerTests(TestCaseWithFixtures):
         self.assertEqual(
             '1.0ubuntu1', deb_pkg.control.debcontrol()['Version'])
 
-    def assertControlFieldsPreserved(self, fields):
+    def create_package_and_assert_control_fields_preserved(self, fields):
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
         deb_path = maker.make_package(
@@ -238,28 +238,35 @@ class PackageMakerTests(TestCaseWithFixtures):
                 value, deb_pkg.control.debcontrol()[key])
 
     def test_make_package_creates_deb_with_given_depends(self):
-        self.assertControlFieldsPreserved({'Depends': 'bar, baz (>= 1.0)'})
+        self.create_package_and_assert_control_fields_preserved(
+            {'Depends': 'bar, baz (>= 1.0)'})
 
     def test_make_package_creates_deb_with_given_predepends(self):
-        self.assertControlFieldsPreserved({'Pre-Depends': 'bar, baz (>= 1.0)'})
+        self.create_package_and_assert_control_fields_preserved(
+            {'Pre-Depends': 'bar, baz (>= 1.0)'})
 
     def test_make_package_creates_deb_with_given_conflicts(self):
-        self.assertControlFieldsPreserved({'Conflicts': 'bar, baz (>= 1.0)'})
+        self.create_package_and_assert_control_fields_preserved(
+            {'Conflicts': 'bar, baz (>= 1.0)'})
 
     def test_make_package_creates_deb_with_given_recommends(self):
-        self.assertControlFieldsPreserved({'Recommends': 'bar, baz (>= 1.0)'})
+        self.create_package_and_assert_control_fields_preserved(
+            {'Recommends': 'bar, baz (>= 1.0)'})
 
     def test_make_package_creates_deb_with_given_provides(self):
-        self.assertControlFieldsPreserved({'Provides': 'bar, baz (= 1.0)'})
+        self.create_package_and_assert_control_fields_preserved(
+            {'Provides': 'bar, baz (= 1.0)'})
 
     def test_make_package_creates_deb_with_given_replaces(self):
-        self.assertControlFieldsPreserved({'Replaces': 'bar, baz (>= 1.0)'})
+        self.create_package_and_assert_control_fields_preserved(
+            {'Replaces': 'bar, baz (>= 1.0)'})
 
     def test_make_package_creates_deb_with_given_breaks(self):
-        self.assertControlFieldsPreserved({'Breaks': 'bar, baz (>= 1.0)'})
+        self.create_package_and_assert_control_fields_preserved(
+            {'Breaks': 'bar, baz (>= 1.0)'})
 
     def test_make_package_creates_deb_with_all_given_fields(self):
-        self.assertControlFieldsPreserved({
+        self.create_package_and_assert_control_fields_preserved({
             'Depends': 'bar, baz (>= 1.0)',
             'Pre-Depends': 'bar, baz (>= 1.0)',
             'Conflicts': 'bar, baz (>= 1.0)',
@@ -570,7 +577,8 @@ class FetchedPackageTests(TestCaseWithFixtures):
                 content=target_package.content)
             self.assertEqual(target_package, created_package)
 
-    def assert_from_apt_translates_relationship(self, relationship):
+    def create_package_and_assert_from_apt_translates_relationship(
+        self, relationship):
         kwargs = {}
         kwargs[relationship] = "bar | baz (>= 1.0), zap"
         target_package = DummyFetchedPackage("foo", "1.0", **kwargs)
@@ -583,22 +591,28 @@ class FetchedPackageTests(TestCaseWithFixtures):
             self.assertEqual(target_package, created_package)
 
     def test_from_apt_with_depends(self):
-        self.assert_from_apt_translates_relationship('depends')
+        self.create_package_and_assert_from_apt_translates_relationship(
+            'depends')
 
     def test_from_apt_with_pre_depends(self):
-        self.assert_from_apt_translates_relationship('pre_depends')
+        self.create_package_and_assert_from_apt_translates_relationship(
+            'pre_depends')
 
     def test_from_apt_with_conflicts(self):
-        self.assert_from_apt_translates_relationship('conflicts')
+        self.create_package_and_assert_from_apt_translates_relationship(
+            'conflicts')
 
     def test_from_apt_with_recommends(self):
-        self.assert_from_apt_translates_relationship('recommends')
+        self.create_package_and_assert_from_apt_translates_relationship(
+            'recommends')
 
     def test_from_apt_with_replaces(self):
-        self.assert_from_apt_translates_relationship('replaces')
+        self.create_package_and_assert_from_apt_translates_relationship(
+            'replaces')
 
     def test_from_apt_with_breaks(self):
-        self.assert_from_apt_translates_relationship('breaks')
+        self.create_package_and_assert_from_apt_translates_relationship(
+            'breaks')
 
     def test_from_apt_with_provides(self):
         target_package = DummyFetchedPackage("foo", "1.0", provides="bar")
@@ -628,7 +642,8 @@ class FetchedPackageTests(TestCaseWithFixtures):
         created_package = FetchedPackage.from_deb(deb_file_path)
         self.assertEqual(target_package, created_package)
 
-    def assert_from_deb_translates_relationships(self, relationships):
+    def create_package_and_assert_from_deb_translates_relationships(
+        self, relationships):
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
         deb_file_path = maker.make_package('foo', '1.0', relationships)
@@ -641,27 +656,27 @@ class FetchedPackageTests(TestCaseWithFixtures):
         self.assertEqual(target_package, created_package)
 
     def test_from_deb_with_depends(self):
-        self.assert_from_deb_translates_relationships(
+        self.create_package_and_assert_control_fields_preserved(
             {'Depends': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_pre_depends(self):
-        self.assert_from_deb_translates_relationships(
+        self.create_package_and_assert_control_fields_preserved(
             {'Pre-Depends': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_conflicts(self):
-        self.assert_from_deb_translates_relationships(
+        self.create_package_and_assert_control_fields_preserved(
             {'Conflicts': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_recommends(self):
-        self.assert_from_deb_translates_relationships(
+        self.create_package_and_assert_control_fields_preserved(
             {'Recommends': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_replaces(self):
-        self.assert_from_deb_translates_relationships(
+        self.create_package_and_assert_control_fields_preserved(
             {'Replaces': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_breaks(self):
-        self.assert_from_deb_translates_relationships(
+        self.create_package_and_assert_control_fields_preserved(
             {'breaks': 'bar, baz (>= 1.0)'})
 
 
