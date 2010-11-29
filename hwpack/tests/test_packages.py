@@ -1,7 +1,9 @@
 import os
 from StringIO import StringIO
+import subprocess
 import textwrap
 
+from debian.debfile import DebFile
 from testtools import TestCase
 
 from hwpack.packages import (
@@ -10,10 +12,12 @@ from hwpack.packages import (
     get_packages_file,
     IsolatedAptCache,
     PackageFetcher,
+    PackageMaker,
     stringify_relationship,
     )
 from hwpack.testing import (
     AptSourceFixture,
+    ContextManagerFixture,
     DummyFetchedPackage,
     TestCaseWithFixtures,
     )
@@ -160,6 +164,138 @@ class StringifyRelationshipTests(TestCaseWithFixtures):
             candidate = cache.cache['foo'].candidate
             self.assertEqual(
                 "baz (<= 2.0)", stringify_relationship(candidate, "Depends"))
+
+
+class PackageMakerTests(TestCaseWithFixtures):
+
+    def test_enter_twice_fails(self):
+        maker = PackageMaker()
+        maker.__enter__()
+        self.assertRaises(AssertionError, maker.__enter__)
+
+    def test_exit_without_enter_silent(self):
+        maker = PackageMaker()
+        maker.__exit__()
+
+    def test_make_temporary_directory_without_enter_fails(self):
+        maker = PackageMaker()
+        self.assertRaises(AssertionError, maker.make_temporary_directory)
+
+    def test_make_temporary_directory_makes_directory(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        tmpdir = maker.make_temporary_directory()
+        self.assertTrue(os.path.isdir(tmpdir))
+
+    def test_exit_removes_temporary_directory(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        tmpdir = maker.make_temporary_directory()
+        maker.__exit__()
+        self.assertFalse(os.path.isdir(tmpdir))
+
+    def test_make_package_creates_file(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package('foo', '1.0', {})
+        self.assertTrue(os.path.exists(deb_path))
+
+    def test_make_package_creates_deb_with_given_package_name(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package('foo', '1.0', {})
+        deb_pkg = DebFile(deb_path)
+        self.assertEqual('foo', deb_pkg.control.debcontrol()['Package'])
+
+    def test_make_package_creates_deb_with_correct_file_name(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package('foo', '1.0', {})
+        proc = subprocess.Popen(
+            ['dpkg-name', deb_path], stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+        output = proc.communicate()[0]
+        self.assertTrue(
+            'skipping' in output,
+            "'skipping' was not found in dpkg-name output:\n%s" % output)
+
+    def test_make_package_creates_deb_with_given_version(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package('foo', '1.0ubuntu1', {})
+        deb_pkg = DebFile(deb_path)
+        self.assertEqual(
+            '1.0ubuntu1', deb_pkg.control.debcontrol()['Version'])
+
+    def create_package_and_assert_control_fields_preserved(self, fields):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package(
+            'foo', '1.0', fields)
+        deb_pkg = DebFile(deb_path)
+        for key, value in fields.items():
+            self.assertEqual(
+                value, deb_pkg.control.debcontrol()[key])
+
+    def test_make_package_creates_deb_with_given_depends(self):
+        self.create_package_and_assert_control_fields_preserved(
+            {'Depends': 'bar, baz (>= 1.0)'})
+
+    def test_make_package_creates_deb_with_given_predepends(self):
+        self.create_package_and_assert_control_fields_preserved(
+            {'Pre-Depends': 'bar, baz (>= 1.0)'})
+
+    def test_make_package_creates_deb_with_given_conflicts(self):
+        self.create_package_and_assert_control_fields_preserved(
+            {'Conflicts': 'bar, baz (>= 1.0)'})
+
+    def test_make_package_creates_deb_with_given_recommends(self):
+        self.create_package_and_assert_control_fields_preserved(
+            {'Recommends': 'bar, baz (>= 1.0)'})
+
+    def test_make_package_creates_deb_with_given_provides(self):
+        self.create_package_and_assert_control_fields_preserved(
+            {'Provides': 'bar, baz (= 1.0)'})
+
+    def test_make_package_creates_deb_with_given_replaces(self):
+        self.create_package_and_assert_control_fields_preserved(
+            {'Replaces': 'bar, baz (>= 1.0)'})
+
+    def test_make_package_creates_deb_with_given_breaks(self):
+        self.create_package_and_assert_control_fields_preserved(
+            {'Breaks': 'bar, baz (>= 1.0)'})
+
+    def test_make_package_creates_deb_with_all_given_fields(self):
+        self.create_package_and_assert_control_fields_preserved({
+            'Depends': 'bar, baz (>= 1.0)',
+            'Pre-Depends': 'bar, baz (>= 1.0)',
+            'Conflicts': 'bar, baz (>= 1.0)',
+            'Recommends': 'bar, baz (>= 1.0)',
+            'Provides': 'bar, baz (= 1.0)',
+            'Replaces': 'bar, baz (>= 1.0)',
+            'Breaks': 'bar, baz (>= 1.0)',
+            })
+
+    def test_unknown_field_name_fails(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        self.assertRaises(
+            ValueError, maker.make_package,
+            'foo', '1.0', {'InvalidField': 'value'})
+
+    def test_arch_all_by_default(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package('foo', '1.0', {})
+        deb_pkg = DebFile(deb_path)
+        self.assertEqual("all", deb_pkg.control.debcontrol()['Architecture'])
+
+    def test_custom_architecture(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package('foo', '1.0', {}, 'armel')
+        deb_pkg = DebFile(deb_path)
+        self.assertEqual('armel', deb_pkg.control.debcontrol()['Architecture'])
 
 
 class FetchedPackageTests(TestCaseWithFixtures):
@@ -441,7 +577,8 @@ class FetchedPackageTests(TestCaseWithFixtures):
                 content=target_package.content)
             self.assertEqual(target_package, created_package)
 
-    def assert_from_apt_translates_relationship(self, relationship):
+    def create_package_and_assert_from_apt_translates_relationship(
+        self, relationship):
         kwargs = {}
         kwargs[relationship] = "bar | baz (>= 1.0), zap"
         target_package = DummyFetchedPackage("foo", "1.0", **kwargs)
@@ -454,22 +591,28 @@ class FetchedPackageTests(TestCaseWithFixtures):
             self.assertEqual(target_package, created_package)
 
     def test_from_apt_with_depends(self):
-        self.assert_from_apt_translates_relationship('depends')
+        self.create_package_and_assert_from_apt_translates_relationship(
+            'depends')
 
     def test_from_apt_with_pre_depends(self):
-        self.assert_from_apt_translates_relationship('pre_depends')
+        self.create_package_and_assert_from_apt_translates_relationship(
+            'pre_depends')
 
     def test_from_apt_with_conflicts(self):
-        self.assert_from_apt_translates_relationship('conflicts')
+        self.create_package_and_assert_from_apt_translates_relationship(
+            'conflicts')
 
     def test_from_apt_with_recommends(self):
-        self.assert_from_apt_translates_relationship('recommends')
+        self.create_package_and_assert_from_apt_translates_relationship(
+            'recommends')
 
     def test_from_apt_with_replaces(self):
-        self.assert_from_apt_translates_relationship('replaces')
+        self.create_package_and_assert_from_apt_translates_relationship(
+            'replaces')
 
     def test_from_apt_with_breaks(self):
-        self.assert_from_apt_translates_relationship('breaks')
+        self.create_package_and_assert_from_apt_translates_relationship(
+            'breaks')
 
     def test_from_apt_with_provides(self):
         target_package = DummyFetchedPackage("foo", "1.0", provides="bar")
@@ -490,6 +633,52 @@ class FetchedPackageTests(TestCaseWithFixtures):
                 candidate, target_package.filename)
             self.assertEqual(None, created_package.content)
 
+    def test_from_deb(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_file_path = maker.make_package('foo', '1.0', {})
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", content=open(deb_file_path).read())
+        created_package = FetchedPackage.from_deb(deb_file_path)
+        self.assertEqual(target_package, created_package)
+
+    def create_package_and_assert_from_deb_translates_relationships(
+        self, relationships):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_file_path = maker.make_package('foo', '1.0', relationships)
+        dummy_relationships = {}
+        for relationship, value in relationships.items():
+            dummy_relationships[relationship.lower().replace('-', '_')] = value
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", content=open(deb_file_path).read(), **dummy_relationships)
+        created_package = FetchedPackage.from_deb(deb_file_path)
+        self.assertEqual(target_package, created_package)
+
+    def test_from_deb_with_depends(self):
+        self.create_package_and_assert_control_fields_preserved(
+            {'Depends': 'bar, baz (>= 1.0)'})
+
+    def test_from_deb_with_pre_depends(self):
+        self.create_package_and_assert_control_fields_preserved(
+            {'Pre-Depends': 'bar, baz (>= 1.0)'})
+
+    def test_from_deb_with_conflicts(self):
+        self.create_package_and_assert_control_fields_preserved(
+            {'Conflicts': 'bar, baz (>= 1.0)'})
+
+    def test_from_deb_with_recommends(self):
+        self.create_package_and_assert_control_fields_preserved(
+            {'Recommends': 'bar, baz (>= 1.0)'})
+
+    def test_from_deb_with_replaces(self):
+        self.create_package_and_assert_control_fields_preserved(
+            {'Replaces': 'bar, baz (>= 1.0)'})
+
+    def test_from_deb_with_breaks(self):
+        self.create_package_and_assert_control_fields_preserved(
+            {'breaks': 'bar, baz (>= 1.0)'})
+
 
 class AptCacheTests(TestCaseWithFixtures):
 
@@ -503,7 +692,6 @@ class AptCacheTests(TestCaseWithFixtures):
     def test_cleanup_ignores_missing_tempdir(self):
         cache = IsolatedAptCache([])
         cache.prepare()
-        tempdir = cache.tempdir
         cache.cleanup()
         # Check that there is no problem removing it again
         cache.cleanup()
