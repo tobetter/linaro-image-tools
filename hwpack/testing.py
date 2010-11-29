@@ -186,7 +186,8 @@ class ContextManagerFixture(object):
         self.manager.__enter__()
 
     def tearDown(self):
-        # This is a bit wrong in the failure case I guess.
+        # It might be nice to pass exc_type, exc_value, traceback in here in
+        # the failure case, if that's possible.
         self.manager.__exit__(None, None, None)
 
 
