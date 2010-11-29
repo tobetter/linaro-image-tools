@@ -151,6 +151,10 @@ class PackageMaker(object):
         self._temporary_directories.append(tmpdir)
         return tmpdir
 
+    # This template (and the code that uses it) is made more awkward by the
+    # fact that blank lines are invalid in control files -- so in particular
+    # when there are no relationships, there must be no blank line between the
+    # Maintainer and the Description.
     control_file_template = Template('''\
 Package: ${name}
 Version: ${version}
