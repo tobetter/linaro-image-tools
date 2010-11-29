@@ -2,7 +2,6 @@ import subprocess
 import sys
 import os
 import os.path
-import shutil
 
 from testtools import TestCase
 
@@ -11,6 +10,9 @@ from hwpack.testing import TestCaseWithFixtures
 from media_create.boot_cmd import create_boot_cmd
 from media_create.remove_binary_dir import remove_binary_dir
 from media_create.unpack_binary_tarball import unpack_binary_tarball
+
+from media_create.tests.fixtures import TempDirFixture
+from media_create.tests.fixtures import TarballFixture
 
 
 class TestCreateBootCMD(TestCase):
@@ -39,22 +41,6 @@ class TestCreateBootCMD(TestCase):
         self.assertEqual(self.expected_boot_cmd, stdout)
 
 
-class TempDirFixture(object):
-
-    def __init__(self):
-        self.tempdir = None
-
-    def setUp(self):
-        self.tempdir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        if os.path.exists(self.tempdir):
-            shutil.rmtree(self.tempdir)
-            
-    def get_temp_dir(self):
-        return self.tempdir
-            
-
 class TestRemoveBinaryDir(TestCaseWithFixtures):
 
     def setUp(self):
@@ -69,26 +55,6 @@ class TestRemoveBinaryDir(TestCaseWithFixtures):
         self.assertEqual(rc, 0)
         self.assertFalse(os.path.exists(
             self.temp_dir_fixture.get_temp_dir()))
-
-
-class TarballFixture(object):
-
-    def __init__(self, dir):
-        self.dir = dir
-        self.tarball = dir + '.tar.gz'
-        
-    def setUp(self):
-        # Create gzipped tar archive.
-        args = ['tar', '-czf', self.tarball, self.dir]
-        proc = subprocess.Popen(args)
-        proc.wait()
-        
-    def tearDown(self):
-        if os.path.exists(self.tarball):
-            os.remove(self.tarball)
-            
-    def get_tarball(self):
-        return self.tarball
 
 
 class TestUnpackBinaryTarball(TestCaseWithFixtures):
