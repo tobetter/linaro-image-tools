@@ -525,6 +525,27 @@ prepare_partitions() {
   fi
 }
 
+make_uImage() {
+  sudo mkimage -A arm -O linux -T kernel -C none -a $LOAD_ADDR \
+       -e $LOAD_ADDR -n Linux \
+       -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-"${SUB_ARCH}" \
+       "${BOOT_DISK}/uImage"
+}
+
+make_uInitrd() {
+  sudo mkimage -A arm -O linux -T ramdisk -C none -a 0 \
+       -e 0 -n initramfs \
+       -d "${DIR}/binary/${parts_dir}"/initrd.img-*-"${SUB_ARCH}" \
+       "${BOOT_DISK}/uInitrd"
+
+}
+
+make_boot_script() {
+  sudo mkimage -A arm -O linux -T script -C none -a 0 \
+       -e 0 -n "boot script" -d "${TMP_DIR}/boot.cmd" \
+       "${BOOT_DISK}/${BOOT_SCRIPT}"
+}
+
 populate_boot() {
   echo ""
   echo "Populating Boot Partition"
@@ -556,17 +577,10 @@ populate_boot() {
       sync
       echo "done"
 
-      sudo mkimage -A arm -O linux -T kernel -C none -a 0x80008000 \
-           -e 0x80008000 -n Linux \
-           -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-linaro-omap \
-           "${BOOT_DISK}/uImage"
-      sudo mkimage -A arm -O linux -T ramdisk -C none -a 0 \
-           -e 0 -n initramfs \
-           -d "${DIR}/binary/${parts_dir}"/initrd.img-*-linaro-omap \
-           "${BOOT_DISK}/uInitrd"
-      sudo mkimage -A arm -O linux -T script -C none -a 0 \
-           -e 0 -n "boot script" -d "${TMP_DIR}/boot.cmd" \
-           "${BOOT_DISK}/boot.scr"
+      make_uImage
+      make_uInitrd
+      make_boot_script
+
       sudo cp -v "${BOOT_DISK}/boot.scr" "${BOOT_DISK}/boot.ini"
       ;;
 
@@ -575,59 +589,30 @@ populate_boot() {
       sync
       echo "done"
   
-      sudo mkimage -A arm -O linux -T kernel -C none -a 0x80008000 \
-           -e 0x80008000 -n Linux \
-           -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-omap4 \
-           "${BOOT_DISK}/uImage"
-      sudo mkimage -A arm -O linux -T ramdisk -C none -a 0 \
-           -e 0 -n initramfs \
-           -d "${DIR}/binary/${parts_dir}"/initrd.img-*-omap4 \
-           "${BOOT_DISK}/uInitrd"
-      sudo mkimage -A arm -O linux -T script -C none -a 0 \
-           -e 0 -n "boot script" -d "${TMP_DIR}/boot.cmd" \
-           "${BOOT_DISK}/boot.scr"
+      make_uImage
+      make_uInitrd
+      make_boot_script
+
       sudo cp -v "${BOOT_DISK}/boot.scr" "${BOOT_DISK}/boot.ini"
       ;;
 
     ux500)
-      sudo mkimage -A arm -O linux -T kernel -C none -a 0x00008000 \
-           -e 0x00008000 -n Linux \
-           -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-ux500 \
-           "${BOOT_DISK}/uImage"
-      sudo mkimage -A arm -O linux -T ramdisk -C none -a 0 \
-           -e 0 -n initramfs \
-           -d "${DIR}/binary/${parts_dir}"/initrd.img-*-ux500 \
-           "${BOOT_DISK}/uInitrd"
-      sudo mkimage -A arm -O linux -T script -C none -a 0 \
-           -e 0 -n "boot script" -d "${TMP_DIR}/boot.cmd" \
-           "${BOOT_DISK}/flash.scr"
+      make_uImage
+      make_uInitrd
+      make_boot_script
       ;;
 
     vexpress)
-      sudo mkimage -A arm -O linux -T kernel -C none -a "$KERNEL_ADDR" \
-           -e "$KERNEL_ADDR" -n Linux \
-           -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-linaro-vexpress \
-           "${BOOT_DISK}/uImage"
-      sudo mkimage -A arm -O linux -T ramdisk -C none -a "$INITRD_ADDR" \
-           -e "$INITRD_ADDR" -n initramfs \
-           -d "${DIR}/binary/${parts_dir}"/initrd.img-*-linaro-vexpress \
-           "${BOOT_DISK}/uInitrd"
+      make_uImage
+      make_uInitrd
       ;;
 
     mx51evk)
       sudo dd if=binary/usr/lib/u-boot/mx51evk/u-boot.imx of="${DEVICE:-$IMAGE_FILE}" \
            bs=1024 seek=1 conv=notrunc
-      sudo mkimage -A arm -O linux -T kernel -C none -a 0x90008000 \
-           -e 0x90008000 -n Linux \
-           -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-linaro-mx51 \
-           "${BOOT_DISK}/uImage"
-      sudo mkimage -A arm -O linux -T ramdisk -C none -a 0 \
-           -e 0 -n initramfs \
-           -d "${DIR}/binary/${parts_dir}"/initrd.img-*-linaro-mx51 \
-           "${BOOT_DISK}/uInitrd"
-      sudo mkimage -A arm -O linux -T script -C none -a 0 \
-           -e 0 -n "boot script" -d "${TMP_DIR}/boot.cmd" \
-           "${BOOT_DISK}/boot.scr"
+      make_uImage
+      make_uInitrd
+      make_boot_script
       ;;
     *)
       echo "Internal error; missing support for $DEVIMAGE" >&2
@@ -807,6 +792,9 @@ if [ "$DEVIMAGE" ]; then
       fi
       KERNEL_ADDR="0x80000000"
       INITRD_ADDR="0x81600000"
+      LOAD_ADDR="0x80008000"
+      SUB_ARCH="linaro-omap"
+      BOOT_SCRIPT="boot.scr"
       boot_args_options="$boot_args_options earlyprintk fixrtc nocompcache vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60"
       ;;
     panda)
@@ -816,6 +804,9 @@ if [ "$DEVIMAGE" ]; then
       fi
       KERNEL_ADDR="0x80200000"
       INITRD_ADDR="0x81600000"
+      LOAD_ADDR="0x80008000"
+      SUB_ARCH="omap4"
+      BOOT_SCRIPT="boot.scr"
       boot_args_options="$boot_args_options earlyprintk fixrtc nocompcache vram=32M omapfb.debug=y omapfb.vram=0:8M mem=463M ip=none"
       ;;
     ux500)
@@ -825,6 +816,9 @@ if [ "$DEVIMAGE" ]; then
       fi
       KERNEL_ADDR="0x00100000"
       INITRD_ADDR="0x08000000"
+      LOAD_ADDR="0x00008000"
+      SUB_ARCH="ux500"
+      BOOT_SCRIPT="flash.scr"
       boot_args_options="$boot_args_options earlyprintk rootdelay=1 fixrtc nocompcache"
       boot_args_options="$boot_args_options mem=96M@0 mem_modem=32M@96M mem=44M@128M pmem=22M@172M mem=30M@194M mem_mali=32M@224M pmem_hwb=54M@256M hwmem=48M@302M mem=152M@360M"
       mmc_option="1:1"
@@ -836,6 +830,9 @@ if [ "$DEVIMAGE" ]; then
       fi
       KERNEL_ADDR="0x90000000"
       INITRD_ADDR="0x90800000"
+      LOAD_ADDR="0x90008000"
+      SUB_ARCH="linaro-mx51"
+      BOOT_SCRIPT="boot.scr"
       MMC_PART_OFFSET=1
       mmc_option="0:2"
       ;;
@@ -846,6 +843,8 @@ if [ "$DEVIMAGE" ]; then
       fi
       KERNEL_ADDR="0x60008000"
       INITRD_ADDR="0x81000000"
+      LOAD_ADDR=$KERNEL_ADDR
+      SUB_ARCH="linaro-vexpress"
       # ARM Boot Monitor is used to load u-boot, uImage etc. into flash and
       # only allows for FAT16
       FAT_SIZE=16
