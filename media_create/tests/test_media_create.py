@@ -1,11 +1,22 @@
 from contextlib import contextmanager
+import os
 import subprocess
 import sys
 
 from testtools import TestCase
 
+from hwpack.testing import TestCaseWithFixtures
+
 from media_create.boot_cmd import create_boot_cmd
 from media_create import ensure_command
+
+from media_create.remove_binary_dir import remove_binary_dir
+from media_create.unpack_binary_tarball import unpack_binary_tarball
+
+from media_create.tests.fixtures import (
+    CreateTempDirFixture,
+    CreateTarballFixture,
+    )
 
 
 class TestEnsureCommand(TestCase):
@@ -56,3 +67,37 @@ class TestCreateBootCMD(TestCase):
             args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         self.assertEqual(self.expected_boot_cmd, stdout)
+
+
+class TestRemoveBinaryDir(TestCaseWithFixtures):
+
+    def setUp(self):
+        super(TestRemoveBinaryDir, self).setUp()
+        self.temp_dir_fixture = CreateTempDirFixture()
+        self.useFixture(self.temp_dir_fixture)
+    
+    def test_remove_binary_dir(self):
+        rc = remove_binary_dir(
+            binary_dir=self.temp_dir_fixture.get_temp_dir(),
+            as_root=False)
+        self.assertEqual(rc, 0)
+        self.assertFalse(os.path.exists(
+            self.temp_dir_fixture.get_temp_dir()))
+
+
+class TestUnpackBinaryTarball(TestCaseWithFixtures):
+
+    def setUp(self):
+        super(TestUnpackBinaryTarball, self).setUp()
+        
+        self.temp_dir_fixture = CreateTempDirFixture()
+        self.useFixture(self.temp_dir_fixture)
+        
+        self.tarball_fixture = CreateTarballFixture(
+            self.temp_dir_fixture.get_temp_dir())
+        self.useFixture(self.tarball_fixture)
+    
+    def test_unpack_binary_tarball(self):
+        rc = unpack_binary_tarball(self.tarball_fixture.get_tarball(),
+            as_root=False)
+        self.assertEqual(rc, 0)
