@@ -1,7 +1,6 @@
+import os
 import subprocess
 import sys
-import os
-import os.path
 
 from testtools import TestCase
 
@@ -11,8 +10,10 @@ from media_create.boot_cmd import create_boot_cmd
 from media_create.remove_binary_dir import remove_binary_dir
 from media_create.unpack_binary_tarball import unpack_binary_tarball
 
-from media_create.tests.fixtures import TempDirFixture
-from media_create.tests.fixtures import TarballFixture
+from media_create.tests.fixtures import (
+    CreateTempDirFixture,
+    CreateTarballFixture,
+    )
 
 
 class TestCreateBootCMD(TestCase):
@@ -45,7 +46,7 @@ class TestRemoveBinaryDir(TestCaseWithFixtures):
 
     def setUp(self):
         super(TestRemoveBinaryDir, self).setUp()
-        self.temp_dir_fixture = TempDirFixture()
+        self.temp_dir_fixture = CreateTempDirFixture()
         self.useFixture(self.temp_dir_fixture)
     
     def test_remove_binary_dir(self):
@@ -62,10 +63,10 @@ class TestUnpackBinaryTarball(TestCaseWithFixtures):
     def setUp(self):
         super(TestUnpackBinaryTarball, self).setUp()
         
-        self.temp_dir_fixture = TempDirFixture()
+        self.temp_dir_fixture = CreateTempDirFixture()
         self.useFixture(self.temp_dir_fixture)
         
-        self.tarball_fixture = TarballFixture(
+        self.tarball_fixture = CreateTarballFixture(
             self.temp_dir_fixture.get_temp_dir())
         self.useFixture(self.tarball_fixture)
     

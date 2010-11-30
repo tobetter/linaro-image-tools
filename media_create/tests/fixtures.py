@@ -1,12 +1,11 @@
 #!/usr/bin/python
 
 import os
-import os.path
 import shutil
-import tempfile
 import subprocess
+import tempfile
 
-class TempDirFixture(object):
+class CreateTempDirFixture(object):
 
     def __init__(self):
         self.tempdir = None
@@ -22,11 +21,11 @@ class TempDirFixture(object):
         return self.tempdir
 
 
-class TarballFixture(object):
+class CreateTarballFixture(object):
 
     def __init__(self, dir):
         self.dir = dir
-        self.tarball = dir + '.tar.gz'
+        self.tarball = os.path.join(self.dir + 'tarball.tar.gz')
         
     def setUp(self):
         # Create gzipped tar archive.
