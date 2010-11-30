@@ -567,6 +567,13 @@ class FetchedPackageTests(TestCaseWithFixtures):
         package2.content = StringIO("xxxx")
         self.assertEqual(package1, package2)
 
+    def test_equal_packages_hash_the_same(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
+        self.assertEqual(hash(package1), hash(package2))
+
     def test_from_apt(self):
         target_package = DummyFetchedPackage("foo", "1.0")
         source = self.useFixture(AptSourceFixture([target_package]))

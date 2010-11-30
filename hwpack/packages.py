@@ -353,6 +353,23 @@ class FetchedPackage(object):
                 and self.breaks == other.breaks
                 )
 
+    def __hash__(self):
+        return hash((
+            self.name,
+            self.version,
+            self.filename,
+            self.content and self.content.read(),
+            self.size,
+            self.md5,
+            self.architecture,
+            self.depends,
+            self.pre_depends,
+            self.conflicts,
+            self.recommends,
+            self.provides,
+            self.replaces,
+            self.breaks))
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
