@@ -122,7 +122,7 @@ class TarfileHasFile(Matcher):
                         attr, tarball, self.path, expected, actual)
         if self.mtime is not None:
             mtime_skew = self.mtime_skew or 0
-            if abs(self.mtime - info.mtime) > self.mtime_skew:
+            if abs(self.mtime - info.mtime) > mtime_skew:
                 return TarfileWrongValueMismatch(
                     "mtime", tarball, self.path, self.mtime, info.mtime)
         if self.content is not None:
