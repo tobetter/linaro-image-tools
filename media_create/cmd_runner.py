@@ -17,6 +17,8 @@ def run(command, shell=False, as_root=False):
     # https://launchpad.net/bugs/673570
     if as_root:
         command = "sudo %s" % command
+    # XXX: Should we raise an error when the return code is not 0, so that it
+    # behaves like the original shell script which was run with 'set -e'?
     return do_run(command, shell=shell)
 
 
