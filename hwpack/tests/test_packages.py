@@ -656,27 +656,27 @@ class FetchedPackageTests(TestCaseWithFixtures):
         self.assertEqual(target_package, created_package)
 
     def test_from_deb_with_depends(self):
-        self.create_package_and_assert_control_fields_preserved(
+        self.create_package_and_assert_from_deb_translates_relationships(
             {'Depends': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_pre_depends(self):
-        self.create_package_and_assert_control_fields_preserved(
+        self.create_package_and_assert_from_deb_translates_relationships(
             {'Pre-Depends': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_conflicts(self):
-        self.create_package_and_assert_control_fields_preserved(
+        self.create_package_and_assert_from_deb_translates_relationships(
             {'Conflicts': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_recommends(self):
-        self.create_package_and_assert_control_fields_preserved(
+        self.create_package_and_assert_from_deb_translates_relationships(
             {'Recommends': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_replaces(self):
-        self.create_package_and_assert_control_fields_preserved(
+        self.create_package_and_assert_from_deb_translates_relationships(
             {'Replaces': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_breaks(self):
-        self.create_package_and_assert_control_fields_preserved(
+        self.create_package_and_assert_from_deb_translates_relationships(
             {'breaks': 'bar, baz (>= 1.0)'})
 
 
