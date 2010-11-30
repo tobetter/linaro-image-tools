@@ -8,6 +8,7 @@ from testtools import TestCase
 from hwpack.testing import TestCaseWithFixtures
 
 from media_create.boot_cmd import create_boot_cmd
+from media_create import cmd_runner
 from media_create import ensure_command
 
 from media_create.remove_binary_dir import remove_binary_dir
@@ -101,3 +102,43 @@ class TestUnpackBinaryTarball(TestCaseWithFixtures):
         rc = unpack_binary_tarball(self.tarball_fixture.get_tarball(),
             as_root=False)
         self.assertEqual(rc, 0)
+
+
+@contextmanager
+def do_run_mocked(mock):
+    orig_func = cmd_runner.do_run
+    cmd_runner.do_run = mock
+    yield
+    cmd_runner.do_run = orig_func
+
+
+class MockDoRun(object):
+    """A mock for do_run() which just stored the args given to it."""
+    args = None
+    def __call__(self, cmd, shell):
+        self.args = vars()
+        return 0
+
+
+class TestCmdRunner(TestCase):
+
+    def test_run(self):
+        mock = MockDoRun()
+        with do_run_mocked(mock):
+            return_code = cmd_runner.run('foobar')
+        self.assertEqual(0, return_code)
+        self.assertEqual('foobar', mock.args['cmd'])
+
+    def test_run_as_root(self):
+        mock = MockDoRun()
+        with do_run_mocked(mock):
+            cmd_runner.run('foobar', as_root=True)
+        self.assertEqual('sudo foobar', mock.args['cmd'])
+
+    def test_do_run(self):
+        return_code = cmd_runner.do_run('true', shell=False)
+        self.assertEqual(0, return_code)
+
+    def test_do_run_using_shell(self):
+        return_code = cmd_runner.do_run('true', shell=True)
+        self.assertEqual(0, return_code)
