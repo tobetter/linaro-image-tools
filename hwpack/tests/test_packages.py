@@ -541,30 +541,21 @@ class FetchedPackageTests(TestCaseWithFixtures):
             breaks="bar")
         self.assertEqual(package1, package2)
 
-    def test_not_equal_different_contents(self):
+    def test_equal_different_contents(self):
         package1 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         package1.content = StringIO("xxxx")
         package2 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         package2.content = StringIO("yyyy")
-        self.assertNotEqual(package1, package2)
+        self.assertEqual(package1, package2)
 
-    def test_not_equal_different_contents_one_unknown(self):
+    def test_equal_one_with_contents_one_not(self):
         package1 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         package1.content = StringIO("xxxx")
         package2 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
-        self.assertNotEqual(package1, package2)
-
-    def test_equal_same_contents(self):
-        package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
-        package1.content = StringIO("xxxx")
-        package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
-        package2.content = StringIO("xxxx")
         self.assertEqual(package1, package2)
 
     def test_equal_packages_hash_the_same(self):
