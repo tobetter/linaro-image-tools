@@ -1,28 +1,37 @@
 import subprocess
 
 
-def run(command, shell=False, as_root=False):
+def run(args, as_root=False):
     """Run the given command as a sub process.
 
-    :param command: A list, tuple or string with the command to run.
-    :param shell: Should the given command be run in a shell?
+    :param command: A list or tuple containing the command to run and the
+                    arguments that should be passed to it.
     :param as_root: Should the given command be run as root (with sudo)?
     """
-    if isinstance(command, (list, tuple)):
-        command = " ".join(command)
-    assert isinstance(command, basestring), (
-        "The command to run must be a list, tuple or string, found: %s"
-        % type(command))
+    assert isinstance(args, (list, tuple)), (
+        "The command to run must be a list or tuple, found: %s" % type(args))
     # TODO: We might want to always use 'sudo -E' here to avoid problems like
     # https://launchpad.net/bugs/673570
     if as_root:
-        command = "sudo %s" % command
-    # XXX: Should we raise an error when the return code is not 0, so that it
-    # behaves like the original shell script which was run with 'set -e'?
-    return do_run(command, shell=shell)
+        args = args[:]
+        args.insert(0, 'sudo')
+    return_value = do_run(args)
+    if return_value != 0:
+        raise SubcommandNonZeroReturnValue(args, return_value)
+    return return_value
 
 
-def do_run(command, shell):
-    proc = subprocess.Popen(command, shell=shell)
-    proc.wait()
-    return proc.returncode
+def do_run(args):
+    """A wrapper around subprocess.call() to make testing easier."""
+    return subprocess.call(args)
+
+
+class SubcommandNonZeroReturnValue(Exception):
+
+    def __init__(self, command, return_value):
+        self.command = command
+        self.retval = return_value
+
+    def __str__(self):
+        return 'Sub process "%s" returned a non-zero value: %d' % (
+            self.command, self.retval)

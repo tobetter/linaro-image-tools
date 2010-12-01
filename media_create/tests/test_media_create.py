@@ -76,7 +76,7 @@ class TestRemoveBinaryDir(TestCaseWithFixtures):
         super(TestRemoveBinaryDir, self).setUp()
         self.temp_dir_fixture = CreateTempDirFixture()
         self.useFixture(self.temp_dir_fixture)
-    
+
     def test_remove_binary_dir(self):
         rc = remove_binary_dir(
             binary_dir=self.temp_dir_fixture.get_temp_dir(),
@@ -90,14 +90,14 @@ class TestUnpackBinaryTarball(TestCaseWithFixtures):
 
     def setUp(self):
         super(TestUnpackBinaryTarball, self).setUp()
-        
+
         self.temp_dir_fixture = CreateTempDirFixture()
         self.useFixture(self.temp_dir_fixture)
-        
+
         self.tarball_fixture = CreateTarballFixture(
             self.temp_dir_fixture.get_temp_dir())
         self.useFixture(self.tarball_fixture)
-    
+
     def test_unpack_binary_tarball(self):
         rc = unpack_binary_tarball(self.tarball_fixture.get_tarball(),
             as_root=False)
@@ -113,10 +113,10 @@ def do_run_mocked(mock):
 
 
 class MockDoRun(object):
-    """A mock for do_run() which just stored the args given to it."""
+    """A mock for do_run() which just stores the args given to it."""
     args = None
-    def __call__(self, cmd, shell):
-        self.args = vars()
+    def __call__(self, args):
+        self.args = args
         return 0
 
 
@@ -125,20 +125,28 @@ class TestCmdRunner(TestCase):
     def test_run(self):
         mock = MockDoRun()
         with do_run_mocked(mock):
-            return_code = cmd_runner.run('foobar')
+            return_code = cmd_runner.run(['foo', 'bar', 'baz'])
         self.assertEqual(0, return_code)
-        self.assertEqual('foobar', mock.args['cmd'])
+        self.assertEqual(['foo', 'bar', 'baz'], mock.args)
 
     def test_run_as_root(self):
         mock = MockDoRun()
         with do_run_mocked(mock):
-            cmd_runner.run('foobar', as_root=True)
-        self.assertEqual('sudo foobar', mock.args['cmd'])
+            cmd_runner.run(['foo', 'bar'], as_root=True)
+        self.assertEqual(['sudo', 'foo', 'bar'], mock.args)
 
-    def test_do_run(self):
-        return_code = cmd_runner.do_run('true', shell=False)
+    def test_run_succeeds_on_zero_return_code(self):
+        return_code = cmd_runner.run(['true'])
         self.assertEqual(0, return_code)
 
-    def test_do_run_using_shell(self):
-        return_code = cmd_runner.do_run('true', shell=True)
+    def test_run_raises_exception_on_non_zero_return_code(self):
+        self.assertRaises(
+            cmd_runner.SubcommandNonZeroReturnValue,
+            cmd_runner.run, ['false'])
+
+    def test_run_must_be_given_list_as_args(self):
+        self.assertRaises(AssertionError, cmd_runner.run, 'true')
+
+    def test_do_run(self):
+        return_code = cmd_runner.do_run('true')
         self.assertEqual(0, return_code)
