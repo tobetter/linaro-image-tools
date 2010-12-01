@@ -333,14 +333,13 @@ class FetchedPackage(object):
         return pkg
 
     def __eq__(self, other):
-        def get_content(pkg):
-            return pkg.content and pkg.content.read()
-        content = get_content(self)
-        other_content = get_content(other)
+        # Note that we don't compare the contents here -- we assume that
+        # comparing the md5 checksum is enough (more philosophically,
+        # FetchedPackages are equal if they represent the same underlying
+        # package, even if they represent it in slightly different ways)
         return (self.name == other.name
                 and self.version == other.version
                 and self.filename == other.filename
-                and content == other_content
                 and self.size == other.size
                 and self.md5 == other.md5
                 and self.architecture == other.architecture
@@ -352,6 +351,22 @@ class FetchedPackage(object):
                 and self.replaces == other.replaces
                 and self.breaks == other.breaks
                 )
+
+    def __hash__(self):
+        return hash((
+            self.name,
+            self.version,
+            self.filename,
+            self.size,
+            self.md5,
+            self.architecture,
+            self.depends,
+            self.pre_depends,
+            self.conflicts,
+            self.recommends,
+            self.provides,
+            self.replaces,
+            self.breaks))
 
     def __ne__(self, other):
         return not self.__eq__(other)

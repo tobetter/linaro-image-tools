@@ -1,4 +1,3 @@
-from StringIO import StringIO
 import tarfile
 
 from testtools import TestCase
@@ -81,13 +80,11 @@ class TarfileHasFileTests(TestCase):
         self.assertEqual('tarfile has file "foo"', str(matcher))
 
     def test_matches(self):
-        backing_file = StringIO()
         with test_tarfile(contents=[("foo", "")]) as tf:
             matcher = TarfileHasFile("foo")
             self.assertIs(None, matcher.match(tf))
 
     def test_mismatches_missing_path(self):
-        backing_file = StringIO()
         with test_tarfile() as tf:
             matcher = TarfileHasFile("foo")
             mismatch = matcher.match(tf)
@@ -102,7 +99,6 @@ class TarfileHasFileTests(TestCase):
         self.assertEqual(expected_mismatch, mismatch)
 
     def test_mismatches_wrong_type(self):
-        backing_file = StringIO()
         with test_tarfile(contents=[("foo", "")]) as tf:
             matcher = TarfileHasFile("foo", type=tarfile.DIRTYPE)
             mismatch = matcher.match(tf)
@@ -111,7 +107,6 @@ class TarfileHasFileTests(TestCase):
                 tarfile.REGTYPE)
 
     def test_mismatches_wrong_size(self):
-        backing_file = StringIO()
         with test_tarfile(contents=[("foo", "")]) as tf:
             matcher = TarfileHasFile("foo", size=1235)
             mismatch = matcher.match(tf)
@@ -119,7 +114,6 @@ class TarfileHasFileTests(TestCase):
                 mismatch, tf, "foo", "size", 1235, 0)
 
     def test_mismatches_wrong_mtime(self):
-        backing_file = StringIO()
         with test_tarfile(contents=[("foo", "")], default_mtime=12345) as tf:
             matcher = TarfileHasFile("foo", mtime=54321)
             mismatch = matcher.match(tf)
@@ -127,7 +121,6 @@ class TarfileHasFileTests(TestCase):
                 mismatch, tf, "foo", "mtime", 54321, 12345)
 
     def test_mismatches_wrong_mode(self):
-        backing_file = StringIO()
         with test_tarfile(contents=[("foo", "")]) as tf:
             matcher = TarfileHasFile("foo", mode=0000)
             mismatch = matcher.match(tf)
@@ -135,7 +128,6 @@ class TarfileHasFileTests(TestCase):
                 mismatch, tf, "foo", "mode", 0000, 0644)
 
     def test_mismatches_wrong_linkname(self):
-        backing_file = StringIO()
         with test_tarfile(contents=[("foo", "")]) as tf:
             matcher = TarfileHasFile("foo", linkname="somelink")
             mismatch = matcher.match(tf)
@@ -143,7 +135,6 @@ class TarfileHasFileTests(TestCase):
                 mismatch, tf, "foo", "linkname", "somelink", "")
 
     def test_mismatches_wrong_uid(self):
-        backing_file = StringIO()
         with test_tarfile(contents=[("foo", "")], default_uid=100) as tf:
             matcher = TarfileHasFile("foo", uid=99)
             mismatch = matcher.match(tf)
@@ -151,7 +142,6 @@ class TarfileHasFileTests(TestCase):
                 mismatch, tf, "foo", "uid", 99, 100)
 
     def test_mismatches_wrong_gid(self):
-        backing_file = StringIO()
         with test_tarfile(contents=[("foo", "")], default_gid=100) as tf:
             matcher = TarfileHasFile("foo", gid=99)
             mismatch = matcher.match(tf)
@@ -159,7 +149,6 @@ class TarfileHasFileTests(TestCase):
                 mismatch, tf, "foo", "gid", 99, 100)
 
     def test_mismatches_wrong_uname(self):
-        backing_file = StringIO()
         with test_tarfile(
             contents=[("foo", "")], default_uname="someuser") as tf:
             matcher = TarfileHasFile("foo", uname="otheruser")
@@ -168,7 +157,6 @@ class TarfileHasFileTests(TestCase):
                 mismatch, tf, "foo", "uname", "otheruser", "someuser")
 
     def test_mismatches_wrong_gname(self):
-        backing_file = StringIO()
         with test_tarfile(
             contents=[("foo", "")], default_gname="somegroup") as tf:
             matcher = TarfileHasFile("foo", gname="othergroup")
@@ -177,7 +165,6 @@ class TarfileHasFileTests(TestCase):
                 mismatch, tf, "foo", "gname", "othergroup", "somegroup")
 
     def test_mismatches_wrong_content(self):
-        backing_file = StringIO()
         with test_tarfile(contents=[("foo", "somecontent")]) as tf:
             matcher = TarfileHasFile("foo", content="othercontent")
             mismatch = matcher.match(tf)
@@ -185,8 +172,13 @@ class TarfileHasFileTests(TestCase):
                 mismatch, tf, "foo", "content", "othercontent", "somecontent")
 
     def test_matches_mtime_with_skew(self):
-        backing_file = StringIO()
         with test_tarfile(contents=[("foo", "")], default_mtime=12345) as tf:
             matcher = TarfileHasFile("foo", mtime=12346, mtime_skew=1)
+            mismatch = matcher.match(tf)
+            self.assertIs(None, mismatch)
+
+    def test_matches_mtime_without_skew(self):
+        with test_tarfile(contents=[("foo", "")], default_mtime=12345) as tf:
+            matcher = TarfileHasFile("foo", mtime=12345)
             mismatch = matcher.match(tf)
             self.assertIs(None, mismatch)
