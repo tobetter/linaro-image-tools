@@ -5,8 +5,12 @@ images to be used in development boards.
 
 Before running any tests you need to install the following packages:
 
-  - python-testrepository
-  - python-subunit
+  - testrepository
+  - python-testtools >= 0.9.6
+     (available at https://launchpad.net/~bzr/+archive/ppa)
+  - python-debian
+  - python-argparse
+  - dpkg-dev
 
 And run the following command:
 

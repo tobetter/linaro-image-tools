@@ -541,31 +541,29 @@ class FetchedPackageTests(TestCaseWithFixtures):
             breaks="bar")
         self.assertEqual(package1, package2)
 
-    def test_not_equal_different_contents(self):
+    def test_equal_different_contents(self):
         package1 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         package1.content = StringIO("xxxx")
         package2 = FetchedPackage(
             "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
         package2.content = StringIO("yyyy")
-        self.assertNotEqual(package1, package2)
-
-    def test_not_equal_different_contents_one_unknown(self):
-        package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
-        package1.content = StringIO("xxxx")
-        package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
-        self.assertNotEqual(package1, package2)
-
-    def test_equal_same_contents(self):
-        package1 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
-        package1.content = StringIO("xxxx")
-        package2 = FetchedPackage(
-            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
-        package2.content = StringIO("xxxx")
         self.assertEqual(package1, package2)
+
+    def test_equal_one_with_contents_one_not(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
+        package1.content = StringIO("xxxx")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
+        self.assertEqual(package1, package2)
+
+    def test_equal_packages_hash_the_same(self):
+        package1 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
+        package2 = FetchedPackage(
+            "foo", "1.1", "foo_1.1.deb", 4, "aaaa", "armel")
+        self.assertEqual(hash(package1), hash(package2))
 
     def test_from_apt(self):
         target_package = DummyFetchedPackage("foo", "1.0")
@@ -656,27 +654,27 @@ class FetchedPackageTests(TestCaseWithFixtures):
         self.assertEqual(target_package, created_package)
 
     def test_from_deb_with_depends(self):
-        self.create_package_and_assert_control_fields_preserved(
+        self.create_package_and_assert_from_deb_translates_relationships(
             {'Depends': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_pre_depends(self):
-        self.create_package_and_assert_control_fields_preserved(
+        self.create_package_and_assert_from_deb_translates_relationships(
             {'Pre-Depends': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_conflicts(self):
-        self.create_package_and_assert_control_fields_preserved(
+        self.create_package_and_assert_from_deb_translates_relationships(
             {'Conflicts': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_recommends(self):
-        self.create_package_and_assert_control_fields_preserved(
+        self.create_package_and_assert_from_deb_translates_relationships(
             {'Recommends': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_replaces(self):
-        self.create_package_and_assert_control_fields_preserved(
+        self.create_package_and_assert_from_deb_translates_relationships(
             {'Replaces': 'bar, baz (>= 1.0)'})
 
     def test_from_deb_with_breaks(self):
-        self.create_package_and_assert_control_fields_preserved(
+        self.create_package_and_assert_from_deb_translates_relationships(
             {'breaks': 'bar, baz (>= 1.0)'})
 
 
