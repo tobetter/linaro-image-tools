@@ -17,7 +17,7 @@ from media_create.unpack_binary_tarball import unpack_binary_tarball
 from media_create.tests.fixtures import (
     CreateTempDirFixture,
     CreateTarballFixture,
-    MockSomethingFixture,
+    MockDoRunFixture,
     )
 
 
@@ -105,25 +105,17 @@ class TestUnpackBinaryTarball(TestCaseWithFixtures):
         self.assertEqual(rc, 0)
 
 
-class MockDoRun(object):
-    """A mock for do_run() which just stores the args given to it."""
-    args = None
-    def __call__(self, args):
-        self.args = args
-        return 0
-
-
 class TestCmdRunner(TestCaseWithFixtures):
 
     def test_run(self):
-        fixture = MockSomethingFixture(cmd_runner, 'do_run', MockDoRun())
+        fixture = MockDoRunFixture()
         self.useFixture(fixture)
         return_code = cmd_runner.run(['foo', 'bar', 'baz'])
         self.assertEqual(0, return_code)
         self.assertEqual(['foo', 'bar', 'baz'], fixture.mock.args)
 
     def test_run_as_root(self):
-        fixture = MockSomethingFixture(cmd_runner, 'do_run', MockDoRun())
+        fixture = MockDoRunFixture()
         self.useFixture(fixture)
         cmd_runner.run(['foo', 'bar'], as_root=True)
         self.assertEqual(['sudo', 'foo', 'bar'], fixture.mock.args)

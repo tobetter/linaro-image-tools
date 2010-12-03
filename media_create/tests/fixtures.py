@@ -3,6 +3,8 @@ import shutil
 import subprocess
 import tempfile
 
+from media_create import cmd_runner
+
 
 class CreateTempDirFixture(object):
 
@@ -58,3 +60,23 @@ class MockSomethingFixture(object):
 
     def tearDown(self):
         setattr(self.obj, self.attr_name, self.orig_attr)
+
+
+class MockDoRun(object):
+    """A mock for do_run() which just stores the args given to it."""
+    args = None
+    def __call__(self, args, **kwargs):
+        self.args = args
+        return 0
+
+
+class MockDoRunFixture(MockSomethingFixture):
+    """A test fixture which mocks cmd_runner.do_run with the given mock.
+
+    If no mock is given, MockDoRun is used.
+    """
+
+    def __init__(self, mock=None):
+        if mock is None:
+            mock = MockDoRun()
+        super(MockDoRunFixture, self).__init__(cmd_runner, 'do_run', mock)
