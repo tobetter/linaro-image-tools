@@ -17,6 +17,7 @@ from media_create.unpack_binary_tarball import unpack_binary_tarball
 from media_create.tests.fixtures import (
     CreateTempDirFixture,
     CreateTarballFixture,
+    MockDoRunFixture,
     )
 
 
@@ -104,36 +105,20 @@ class TestUnpackBinaryTarball(TestCaseWithFixtures):
         self.assertEqual(rc, 0)
 
 
-@contextmanager
-def do_run_mocked(mock):
-    orig_func = cmd_runner.do_run
-    cmd_runner.do_run = mock
-    yield
-    cmd_runner.do_run = orig_func
-
-
-class MockDoRun(object):
-    """A mock for do_run() which just stores the args given to it."""
-    args = None
-    def __call__(self, args):
-        self.args = args
-        return 0
-
-
-class TestCmdRunner(TestCase):
+class TestCmdRunner(TestCaseWithFixtures):
 
     def test_run(self):
-        mock = MockDoRun()
-        with do_run_mocked(mock):
-            return_code = cmd_runner.run(['foo', 'bar', 'baz'])
+        fixture = MockDoRunFixture()
+        self.useFixture(fixture)
+        return_code = cmd_runner.run(['foo', 'bar', 'baz'])
         self.assertEqual(0, return_code)
-        self.assertEqual(['foo', 'bar', 'baz'], mock.args)
+        self.assertEqual(['foo', 'bar', 'baz'], fixture.mock.args)
 
     def test_run_as_root(self):
-        mock = MockDoRun()
-        with do_run_mocked(mock):
-            cmd_runner.run(['foo', 'bar'], as_root=True)
-        self.assertEqual(['sudo', 'foo', 'bar'], mock.args)
+        fixture = MockDoRunFixture()
+        self.useFixture(fixture)
+        cmd_runner.run(['foo', 'bar'], as_root=True)
+        self.assertEqual(['sudo', 'foo', 'bar'], fixture.mock.args)
 
     def test_run_succeeds_on_zero_return_code(self):
         return_code = cmd_runner.run(['true'])
