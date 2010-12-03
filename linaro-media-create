@@ -525,27 +525,6 @@ prepare_partitions() {
   fi
 }
 
-make_uImage() {
-  sudo mkimage -A arm -O linux -T kernel -C none -a $LOAD_ADDR \
-       -e $LOAD_ADDR -n Linux \
-       -d "${DIR}/binary/${parts_dir}"/vmlinuz-*-"${SUB_ARCH}" \
-       "${BOOT_DISK}/uImage"
-}
-
-make_uInitrd() {
-  sudo mkimage -A arm -O linux -T ramdisk -C none -a 0 \
-       -e 0 -n initramfs \
-       -d "${DIR}/binary/${parts_dir}"/initrd.img-*-"${SUB_ARCH}" \
-       "${BOOT_DISK}/uInitrd"
-
-}
-
-make_boot_script() {
-  sudo mkimage -A arm -O linux -T script -C none -a 0 \
-       -e 0 -n "boot script" -d "${TMP_DIR}/boot.cmd" \
-       "${BOOT_DISK}/${BOOT_SCRIPT}"
-}
-
 populate_boot() {
   echo ""
   echo "Populating Boot Partition"
@@ -556,9 +535,9 @@ populate_boot() {
   echo ""
  
   if [ "$IS_LIVE" -eq 1 ]; then
-    parts_dir=casper
+    parts_dir="${DIR}/binary/casper"
   else
-    parts_dir=boot
+    parts_dir="${DIR}/binary/boot"
   fi
  
   mkdir -p "${BOOT_DISK}"
@@ -569,56 +548,9 @@ populate_boot() {
                "${BOOT_DISK}"
   fi
 
-  case "$DEVIMAGE" in
-    beagle|igep)
-      if [ "$DEVIMAGE" = "beagle" ]; then
-        sudo cp -v binary/usr/lib/x-loader-omap/MLO "${BOOT_DISK}"
-      fi
-      sync
-      echo "done"
-
-      make_uImage
-      make_uInitrd
-      make_boot_script
-
-      sudo cp -v "${BOOT_DISK}/boot.scr" "${BOOT_DISK}/boot.ini"
-      ;;
-
-    panda)
-      sudo cp -v binary/usr/lib/x-loader-omap4/MLO "${BOOT_DISK}"
-      sync
-      echo "done"
-  
-      make_uImage
-      make_uInitrd
-      make_boot_script
-
-      sudo cp -v "${BOOT_DISK}/boot.scr" "${BOOT_DISK}/boot.ini"
-      ;;
-
-    ux500)
-      make_uImage
-      make_uInitrd
-      make_boot_script
-      ;;
-
-    vexpress)
-      make_uImage
-      make_uInitrd
-      ;;
-
-    mx51evk)
-      sudo dd if=binary/usr/lib/u-boot/mx51evk/u-boot.imx of="${DEVICE:-$IMAGE_FILE}" \
-           bs=1024 seek=1 conv=notrunc
-      make_uImage
-      make_uInitrd
-      make_boot_script
-      ;;
-    *)
-      echo "Internal error; missing support for $DEVIMAGE" >&2
-      exit 1
-      ;;
-  esac
+  python -m media_create.populate_boot "$DEVIMAGE" "$SUB_ARCH" "$LOAD_ADDR" \
+    "$parts_dir" "$BOOT_DISK" "$TMP_DIR" "$BOOT_SCRIPT" \
+    "${DEVICE:-$IMAGE_FILE}"
 
   sync
   sync
@@ -783,6 +715,8 @@ case "$DEVIMAGE" in
   ;;
 esac
 
+# This whole thing will be moved into config files that will be specific for
+# each board.
 if [ "$DEVIMAGE" ]; then
   case "$DEVIMAGE" in
     beagle|igep)
