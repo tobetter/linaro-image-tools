@@ -8,7 +8,7 @@ import tarfile
 import time
 
 from testtools import TestCase
-from testtools.matchers import Equals, Matcher, Mismatch
+from testtools.matchers import Annotate, Equals, Matcher, Mismatch
 
 from hwpack.better_tarfile import writeable_tarfile
 from hwpack.tarfile_matchers import TarfileHasFile
@@ -372,6 +372,10 @@ class ZipMatchers(object):
 
     def match(self, values):
         mismatches = []
+        length_mismatch = Annotate(
+            "Length mismatch", Equals(len(self.matchers))).match(len(values))
+        if length_mismatch:
+            mismatches.append(length_mismatch)
         for matcher, value in zip(self.matchers, values):
             mismatch = matcher.match(value)
             if mismatch:
@@ -418,3 +422,32 @@ class MatchesPackage(MatchesStructure):
     @classmethod
     def fromPackage(cls, example):
         return cls.fromExample(example, *example._equality_attributes)
+
+
+class MatchesSetwise(object):
+
+    def __init__(self, *matchers):
+        self.matchers = matchers
+
+    def match(self, observed):
+        remaining_matchers = set(*self.matchers)
+        not_matched = set()
+        observed = list(observed)
+        length_mismatch = Annotate(
+            "Differing number of matchers %s and %s values" % (
+                len(remaining_matchers), len(observed)),
+            Equals(len(remaining_matchers))).match(len(observed))
+        if length_mismatch:
+            return length_mismatch
+        for value in observed:
+            for matcher in remaining_matchers:
+                if matcher.match(value) is None:
+                    remaining_matchers.remove(matcher)
+                    break
+            else:
+                not_matched.add(value)
+        if not_matched or remaining_matchers:
+            return Annotate(
+                'Not all matchers found values (or vice versa)',
+                ZipMatchers(list(remaining_matchers))).match(list(not_matched))
+

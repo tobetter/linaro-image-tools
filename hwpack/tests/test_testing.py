@@ -6,6 +6,7 @@ from hwpack.testing import (
     DummyFetchedPackage,
     MatchesPackage,
     MatchesStructure,
+    MatchesSetwise,
     )
 
 class TestMatchesStructure(TestCase):
@@ -60,3 +61,14 @@ class TestMatchesPackage(TestCase):
         self.assertThat(
             observed,
             MatchesPackage.fromPackage(expected).update(depends=None))
+
+
+class TestMatchesSetwise(TestCase):
+
+    def test_matches(self):
+        self.assertThat(
+            [2, 1], MatchesSetwise([Equals(1), Equals(2)]))
+
+    def test_mismatches(self):
+        self.assertRaises(AssertionError, self.assertThat,
+            [2, 3], MatchesSetwise([Equals(1), Equals(2)]))
