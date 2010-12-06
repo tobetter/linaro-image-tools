@@ -70,13 +70,8 @@ PATH="${script_dir}:$PATH"
 # off of a l-m-c working tree.
 export PYTHONPATH="$script_dir"
 
-ensure_command() {
-  # ensure_command foo foo-package
-  which "$1" 2>/dev/null 1>/dev/null || ( echo "Installing required command $1 from package $2" && sudo apt-get install "$2" )
-}
-
-ensure_command sfdisk util-linux
-ensure_command fdisk util-linux
+python -m media_create.ensure_command sfdisk util-linux
+python -m media_create.ensure_command fdisk util-linux
 
 usage() {
   echo "usage: $(basename $0) --mmc /dev/sdd"
@@ -155,14 +150,14 @@ EOF
 }
 
 check_device() {
-  FDISK=$(sudo LC_ALL=C sfdisk -l 2>/dev/null | grep "Disk ${DEVICE}" | awk '{print $2}')
+  FDISK=$(sudo LC_ALL=C fdisk -l 2>/dev/null | grep "Disk ${DEVICE}" | awk '{print $2}')
 
   if test "-$FDISK-" = "-$DEVICE:-"
   then
     echo ""
     echo "I see..."
-    echo "sudo sfdisk -l:"
-    sudo LC_ALL=C sfdisk -l 2>/dev/null | grep "Disk /dev/" --color=never
+    echo "sudo fdisk -l:"
+    sudo LC_ALL=C fdisk -l 2>/dev/null | grep "Disk /dev/" --color=never
     echo ""
     echo "mount:"
     LC_ALL=C mount | grep -v none | grep "/dev/" --color=never
@@ -174,8 +169,8 @@ check_device() {
     echo ""
     echo "Are you sure? I Don't see [${DEVICE}], here is what I do see..."
     echo ""
-    echo "sudo sfdisk -l:"
-    sudo LC_ALL=C sfdisk -l 2>/dev/null| grep "Disk /dev/" --color=never
+    echo "sudo fdisk -l:"
+    sudo LC_ALL=C fdisk -l 2>/dev/null| grep "Disk /dev/" --color=never
     echo ""
     echo "mount:"
     LC_ALL=C mount | grep -v none | grep "/dev/" --color=never
@@ -281,18 +276,18 @@ done
 
 DEPLOY_STEPS="$PARTITION_STEP prepare_partitions $BOOTFS_STEP $ROOTFS_STEP"
 
-ensure_command mkimage uboot-mkimage
-ensure_command uuidgen uuid-runtime
-ensure_command parted parted
-ensure_command wget wget
-ensure_command md5sum coreutils
-ensure_command realpath realpath
+python -m media_create.ensure_command mkimage uboot-mkimage
+python -m media_create.ensure_command uuidgen uuid-runtime
+python -m media_create.ensure_command parted parted
+python -m media_create.ensure_command wget wget
+python -m media_create.ensure_command md5sum coreutils
+python -m media_create.ensure_command realpath realpath
 case "$RFS" in
   ext2|ext3|ext4)
-    ensure_command "mkfs.$RFS" e2fsprogs
+    python -m media_create.ensure_command "mkfs.$RFS" e2fsprogs
     ;;
   btrfs)
-    ensure_command mkfs.btrfs btrfs-tools
+    python -m media_create.ensure_command mkfs.btrfs btrfs-tools
     ;;
 esac
 
@@ -356,8 +351,8 @@ install_hwpack() {
       arch_is_arm=yes
       ;;
     *)
-      ensure_command qemu-arm-static qemu-arm-static
-      ensure_command qemu-img qemu-kvm
+      python -m media_create.ensure_command qemu-arm-static qemu-arm-static
+      python -m media_create.ensure_command qemu-img qemu-kvm
       sudo cp /usr/bin/qemu-arm-static ${chroot}/usr/bin
       ;;
   esac
@@ -370,7 +365,13 @@ install_hwpack() {
     sudo umount -v "$chroot/proc"
   }
 
+  echo ""
+  echo "---------------------------------------------------"
+  echo "Installing (apt-get) $HWPACK_FILE in target rootfs."
+  echo ""
   sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /"$(basename "$HWPACK_FILE")"
+  echo "---------------------------------------------------"
+  echo ""
 
   # Revert some changes we did to the rootfs as we don't want them in the
   # image.
@@ -388,9 +389,8 @@ install_hwpack() {
 
 unpack_binary_tarball() {
   # Remove the binary/ directory so that previous runs don't interfere here.
-  remove_binary_dir
-
-  sudo tar --numeric-owner -xf "$BINARY_TARBALL"
+  python -m media_create.remove_binary_dir
+  python -m media_create.unpack_binary_tarball "$BINARY_TARBALL"
 }
 
 create_boot_cmd() {
@@ -426,7 +426,7 @@ cleanup_loopbacks() {
 
     for d in $loop_devices; do
       if [ -n "$d" ]; then
-	sudo losetup -d "$d"
+        sudo losetup -d "$d"
       fi
     done
 
@@ -492,35 +492,37 @@ EOF
 
 prepare_partitions() {
 
-echo -n "waiting for partitioning to settle ..."
-sync
-sleep 3
-echo "done."
-get_device_by_id
+  # sync and sleep a bit as the partitions may have been created in the
+  # previous step.
+  echo -n "waiting for partitioning to settle ..."
+  sync
+  sleep 3
+  echo "done."
+  get_device_by_id
 
-if [ "$BOOTFS_STEP" ]; then
-  echo ""
-  echo "Formating Boot Partition"
-  echo ""
-  if [ -z "$BOOTFS" ]; then
-    echo "Partition $BOOTFS does not exist"
-    exit 2
-  else
-    sudo mkfs.vfat -F ${FAT_SIZE} ${BOOTFS} -n ${BOOT_LABEL}
+  if [ "$BOOTFS_STEP" ]; then
+    echo ""
+    echo "Formating Boot Partition"
+    echo ""
+    if [ -z "$BOOTFS" ]; then
+      echo "Partition $BOOTFS does not exist"
+      exit 2
+    else
+      sudo mkfs.vfat -F ${FAT_SIZE} ${BOOTFS} -n ${BOOT_LABEL}
+    fi
   fi
-fi
 
-if [ "$ROOTFS_STEP" ]; then
-  echo ""
-  echo "Formating ${RFS} Partition"
-  echo ""
-  if [ -z "$ROOTFS" ]; then
-    echo "Partition $ROOTFS does not exist"
-    exit 2
-  else
-    sudo mkfs.${RFS} -U "$RFS_UUID" ${ROOTFS} -L ${RFS_LABEL}
+  if [ "$ROOTFS_STEP" ]; then
+    echo ""
+    echo "Formating ${RFS} Partition"
+    echo ""
+    if [ -z "$ROOTFS" ]; then
+      echo "Partition $ROOTFS does not exist"
+      exit 2
+    else
+      sudo mkfs.${RFS} -U "$RFS_UUID" ${ROOTFS} -L ${RFS_LABEL}
+    fi
   fi
-fi
 }
 
 populate_boot() {
@@ -713,12 +715,6 @@ setup_image() {
   sudo qemu-img create -f raw "$IMAGE_FILE" $IMAGE_SIZE
 }
 
-remove_binary_dir() {
-  if [ -d binary/ ]; then
-    sudo rm -rf binary/
-  fi
-}
-
 remove_image_file() {
   if [ -f "$IMAGE_FILE" ]; then
     rm -v $IMAGE_FILE
@@ -754,7 +750,7 @@ cleanup_handler() {
   cleanup_mountpoints
   cleanup_tempfiles
   cleanup_loopbacks
-  remove_binary_dir
+  python -m media_create.remove_binary_dir
 
   if [ "$status" != 0 ]; then
       remove_image_file
@@ -888,7 +884,6 @@ if [ "$HWPACK_FILE" ]; then
 else
   echo "Warning, --hwpack <filename> was not specified, the result is unlikely to be functional without manual effort to setup uImage, MLO, u-boot.bin and so as as appropriate for your hardware."
 fi
-get_device_by_id
 for func in $DEPLOY_STEPS; do
   $func
 done

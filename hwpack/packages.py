@@ -1,10 +1,16 @@
+import hashlib
 import os
+import re
 import shutil
+from string import Template
+import subprocess
 import tempfile
 
 from apt.cache import Cache
 from apt.package import FetchError
 import apt_pkg
+
+from debian.debfile import DebFile
 
 
 def get_packages_file(packages, extra_text=None):
@@ -109,6 +115,92 @@ class DummyProgress(object):
 
     def stop(self):
         pass
+
+
+class PackageMaker(object):
+    """An object that can create binary debs on the fly.
+
+    PackageMakers implement the context manager protocol to manage the
+    temporary directories the debs are created in.
+    """
+
+    def __init__(self):
+        self._temporary_directories = None
+
+    def __enter__(self):
+        if self._temporary_directories is not None:
+            raise AssertionError("__enter__ must not be called twice")
+        self._temporary_directories = []
+
+    def __exit__(self, exc_type=None, exc_value=None, traceback=None):
+        if self._temporary_directories is None:
+            return
+        for tmpdir in self._temporary_directories:
+            shutil.rmtree(tmpdir)
+        self._temporary_directories = None
+        return False
+
+    def make_temporary_directory(self):
+        """Create a temporary directory and return its path.
+
+        The created directory will be deleted on __exit__.
+        """
+        if self._temporary_directories is None:
+            raise AssertionError("__enter__ must be called")
+        tmpdir = tempfile.mkdtemp()
+        self._temporary_directories.append(tmpdir)
+        return tmpdir
+
+    # This template (and the code that uses it) is made more awkward by the
+    # fact that blank lines are invalid in control files -- so in particular
+    # when there are no relationships, there must be no blank line between the
+    # Maintainer and the Description.
+    control_file_template = Template('''\
+Package: ${name}
+Version: ${version}
+Architecture: ${architecture}
+Maintainer: Nobody
+${relationships}\
+Description: Dummy package to install a hwpack
+ This package was created automatically by linaro-media-create
+''')
+
+    def make_package(self, name, version, relationships, architecture='all'):
+        tmp_dir = self.make_temporary_directory()
+        filename = '%s_%s_all' % (name, version)
+        packaging_dir = os.path.join(tmp_dir, filename)
+        os.mkdir(packaging_dir)
+        os.mkdir(os.path.join(packaging_dir, 'DEBIAN'))
+        relationship_strs = []
+        for relationship_name, relationship_value in relationships.items():
+            relationship_strs.append(
+                '%s: %s\n' % (relationship_name, relationship_value))
+        subst_vars = dict(
+            architecture=architecture,
+            name=name,
+            relationships=''.join(relationship_strs),
+            version=version,
+            )
+        control_file_text = self.control_file_template.safe_substitute(
+            subst_vars)
+        with open(os.path.join(
+            packaging_dir, 'DEBIAN', 'control'), 'w') as control_file:
+            control_file.write(control_file_text)
+        proc = subprocess.Popen(
+            ['dpkg-deb', '-b', packaging_dir],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (stdoutdata, stderrdata) = proc.communicate()
+        if proc.returncode:
+            raise ValueError("dpkg-deb failed!\n%s" % stderrdata)
+        if stderrdata:
+            raise ValueError("dpkg-deb had warnings:\n%s" % stderrdata)
+        deb_file_path_match = re.match(
+            "dpkg-deb: building package `.*' in `(.*)'", stdoutdata)
+        if not deb_file_path_match:
+            raise ValueError(
+                "failed to find filename in dpkg-deb output:\n%s"
+                % stdoutdata)
+        return deb_file_path_match.group(1)
 
 
 class FetchedPackage(object):
@@ -217,15 +309,37 @@ class FetchedPackage(object):
             pkg.content = content
         return pkg
 
+    @classmethod
+    def from_deb(cls, deb_file_path):
+        """Create a FetchedPackage from a binary package on disk."""
+        debcontrol = DebFile(deb_file_path).control.debcontrol()
+        name = debcontrol['Package']
+        version = debcontrol['Version']
+        filename = os.path.basename(deb_file_path)
+        size = os.path.getsize(deb_file_path)
+        md5sum = hashlib.md5(open(deb_file_path).read()).hexdigest()
+        architecture = debcontrol['Architecture']
+        depends = debcontrol.get('Depends')
+        pre_depends = debcontrol.get('Pre-Depends')
+        conflicts = debcontrol.get('Conflicts')
+        recommends = debcontrol.get('Recommends')
+        provides = debcontrol.get('Provides')
+        replaces = debcontrol.get('Replaces')
+        breaks = debcontrol.get('Breaks')
+        pkg = cls(
+            name, version, filename, size, md5sum, architecture, depends,
+            pre_depends, conflicts, recommends, provides, replaces, breaks)
+        pkg.content = open(deb_file_path)
+        return pkg
+
     def __eq__(self, other):
-        def get_content(pkg):
-            return pkg.content and pkg.content.read()
-        content = get_content(self)
-        other_content = get_content(other)
+        # Note that we don't compare the contents here -- we assume that
+        # comparing the md5 checksum is enough (more philosophically,
+        # FetchedPackages are equal if they represent the same underlying
+        # package, even if they represent it in slightly different ways)
         return (self.name == other.name
                 and self.version == other.version
                 and self.filename == other.filename
-                and content == other_content
                 and self.size == other.size
                 and self.md5 == other.md5
                 and self.architecture == other.architecture
@@ -237,6 +351,22 @@ class FetchedPackage(object):
                 and self.replaces == other.replaces
                 and self.breaks == other.breaks
                 )
+
+    def __hash__(self):
+        return hash((
+            self.name,
+            self.version,
+            self.filename,
+            self.size,
+            self.md5,
+            self.architecture,
+            self.depends,
+            self.pre_depends,
+            self.conflicts,
+            self.recommends,
+            self.provides,
+            self.replaces,
+            self.breaks))
 
     def __ne__(self, other):
         return not self.__eq__(other)
