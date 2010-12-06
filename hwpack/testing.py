@@ -8,7 +8,7 @@ import tarfile
 import time
 
 from testtools import TestCase
-from testtools.matchers import Matcher, Mismatch
+from testtools.matchers import Equals, Matcher, Mismatch
 
 from hwpack.better_tarfile import writeable_tarfile
 from hwpack.tarfile_matchers import TarfileHasFile
@@ -364,3 +364,57 @@ class IsHardwarePack(Matcher):
 
     def __str__(self):
         return "Is a valid hardware pack."
+
+class ZipMatchers(object):
+
+    def __init__(self, matchers):
+        self.matchers = matchers
+
+    def match(self, values):
+        mismatches = []
+        for matcher, value in zip(self.matchers, values):
+            mismatch = matcher.match(value)
+            if mismatch:
+                mismatches.append(mismatch)
+        if mismatches:
+            return MismatchesAll(mismatches)
+
+
+class MatchesStructure(object):
+    """Matcher that matches an object structurally.
+
+    """
+
+    def __init__(self, **kwargs):
+        self.kws = kwargs
+
+    @classmethod
+    def fromExample(cls, example, *attributes):
+        kwargs = {}
+        for attr in attributes:
+            kwargs[attr] = Equals(getattr(example, attr))
+        return cls(**kwargs)
+
+    def update(self, **kws):
+        new_kws = self.kws.copy()
+        for attr, matcher in kws.iteritems():
+            if matcher is None:
+                new_kws.pop(attr, None)
+            else:
+                new_kws[attr] = matcher
+        return type(self)(**new_kws)
+
+    def match(self, value):
+        matchers = []
+        values = []
+        for attr, matcher in self.kws.iteritems():
+            matchers.append(matcher)
+            values.append(getattr(value, attr))
+        return ZipMatchers(matchers).match(values)
+
+
+class MatchesPackage(MatchesStructure):
+
+    @classmethod
+    def fromPackage(cls, example):
+        return cls.fromExample(example, *example._equality_attributes)

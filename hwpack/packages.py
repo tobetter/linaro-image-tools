@@ -332,44 +332,39 @@ class FetchedPackage(object):
         pkg.content = open(deb_file_path)
         return pkg
 
-    def __eq__(self, other):
-        # Note that we don't compare the contents here -- we assume that
-        # comparing the md5 checksum is enough (more philosophically,
-        # FetchedPackages are equal if they represent the same underlying
-        # package, even if they represent it in slightly different ways)
-        return (self.name == other.name
-                and self.version == other.version
-                and self.filename == other.filename
-                and self.size == other.size
-                and self.md5 == other.md5
-                and self.architecture == other.architecture
-                and self.depends == other.depends
-                and self.pre_depends == other.pre_depends
-                and self.conflicts == other.conflicts
-                and self.recommends == other.recommends
-                and self.provides == other.provides
-                and self.replaces == other.replaces
-                and self.breaks == other.breaks
-                )
+    # A list of attributes that are compared to determine equality.  Note that
+    # we don't include the contents here -- we assume that comparing the md5
+    # checksum is enough (more philosophically, FetchedPackages are equal if
+    # they represent the same underlying package, even if they represent it in
+    # slightly different ways)
+    _equality_attributes = (
+        'name',
+        'version',
+        'filename',
+        'size',
+        'md5',
+        'architecture',
+        'depends',
+        'pre_depends',
+        'conflicts',
+        'recommends',
+        'provides',
+        'replaces',
+        'breaks')
 
-    def __hash__(self):
-        return hash((
-            self.name,
-            self.version,
-            self.filename,
-            self.size,
-            self.md5,
-            self.architecture,
-            self.depends,
-            self.pre_depends,
-            self.conflicts,
-            self.recommends,
-            self.provides,
-            self.replaces,
-            self.breaks))
+    @property
+    def _equality_data(self):
+        return tuple(
+            getattr(self, attr) for attr in self._equality_attributes)
+
+    def __eq__(self, other):
+        return self._equality_data == other._equality_data
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self._equality_data)
 
     def __repr__(self):
         has_content = self.content and "yes" or "no"
