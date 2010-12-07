@@ -1,4 +1,4 @@
-from testtools.matchers import Matcher, Mismatch
+from testtools.matchers import Annotate, Equals, Matcher, Mismatch
 
 
 class TarfileMissingPathMismatch(Mismatch):
@@ -65,7 +65,8 @@ class TarfileHasFile(Matcher):
 
     def __init__(self, path, type=None, size=None, mtime=None,
                  mtime_skew=None, mode=None, linkname=None, uid=None,
-                 gid=None, uname=None, gname=None, content=None):
+                 gid=None, uname=None, gname=None, content=None,
+                 content_matcher=None):
         """Create a TarfileHasFile Matcher.
 
         :param path: the path that must be present.
@@ -104,7 +105,17 @@ class TarfileHasFile(Matcher):
         self.gid = gid
         self.uname = uname
         self.gname = gname
-        self.content = content
+        if content is not None and content_matcher is not None:
+            raise ValueError(
+                "doesn't make sense to specify content and content_matcher")
+        if content is not None:
+            content_matcher = Equals(content)
+        if content_matcher is not None:
+            self.content_matcher = Annotate(
+                'The content of path "%s" did not match' % path,
+                content_matcher)
+        else:
+            self.content_matcher = None
 
     def match(self, tarball):
         """Match a tarfile.TarFile against the expected values."""
@@ -125,11 +136,11 @@ class TarfileHasFile(Matcher):
             if abs(self.mtime - info.mtime) > mtime_skew:
                 return TarfileWrongValueMismatch(
                     "mtime", tarball, self.path, self.mtime, info.mtime)
-        if self.content is not None:
+        if self.content_matcher is not None:
             actual = tarball.extractfile(self.path).read()
-            if actual != self.content:
-                return TarfileWrongValueMismatch(
-                    "content", tarball, self.path, self.content, actual)
+            content_mismatch = self.content_matcher.match(actual)
+            if content_mismatch:
+                return content_mismatch
         return None
 
     def __str__(self):

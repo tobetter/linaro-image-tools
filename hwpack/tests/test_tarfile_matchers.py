@@ -168,8 +168,10 @@ class TarfileHasFileTests(TestCase):
         with test_tarfile(contents=[("foo", "somecontent")]) as tf:
             matcher = TarfileHasFile("foo", content="othercontent")
             mismatch = matcher.match(tf)
-            self.assertValueMismatch(
-                mismatch, tf, "foo", "content", "othercontent", "somecontent")
+            self.assertEquals(
+                "'othercontent' != 'somecontent': The content of "
+                "path \"foo\" did not match",
+                mismatch.describe())
 
     def test_matches_mtime_with_skew(self):
         with test_tarfile(contents=[("foo", "")], default_mtime=12345) as tf:
