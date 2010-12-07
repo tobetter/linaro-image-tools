@@ -52,20 +52,20 @@ class TestMatchesPackage(TestCase):
         observed = DummyFetchedPackage("foo", "1.1", architecture="armel")
         expected = DummyFetchedPackage("foo", "1.1", architecture="armel")
         self.assertThat(
-            observed, MatchesPackage.fromPackage(expected))
+            observed, MatchesPackage(expected))
 
     def test_mismatch(self):
         observed = DummyFetchedPackage("foo", "1.1", depends="bar")
         expected = DummyFetchedPackage("foo", "1.1", depends="baz")
         self.assertRaises(AssertionError, self.assertThat, observed,
-            MatchesPackage.fromPackage(expected))
+            MatchesPackage(expected))
 
     def test_skip_one_attribute(self):
         observed = DummyFetchedPackage("foo", "1.1", depends="bar")
         expected = DummyFetchedPackage("foo", "1.1", depends="baz")
         self.assertThat(
             observed,
-            MatchesPackage.fromPackage(expected).update(depends=None))
+            MatchesPackage(expected).update(depends=None))
 
 
 class TestMatchesSetwise(TestCase):
@@ -85,7 +85,7 @@ class TestParsePackagesFileContent(TestCase):
         packages_content = get_packages_file([observed])
         parsed = parse_packages_file_content(packages_content)
         self.assertThat(len(parsed), Equals(1))
-        self.assertThat(parsed[0], MatchesPackage.fromPackage(observed))
+        self.assertThat(parsed[0], MatchesPackage(observed))
 
     def test_several(self):
         observed1 = DummyFetchedPackage("foo", "1.1")
@@ -95,9 +95,9 @@ class TestParsePackagesFileContent(TestCase):
             [observed1, observed2, observed3])
         parsed = parse_packages_file_content(packages_content)
         self.assertThat(parsed, MatchesSetwise(
-            MatchesPackage.fromPackage(observed3),
-            MatchesPackage.fromPackage(observed2),
-            MatchesPackage.fromPackage(observed1)))
+            MatchesPackage(observed3),
+            MatchesPackage(observed2),
+            MatchesPackage(observed1)))
 
 
 class TestMatchesAsPackagesFile(TestCase):
@@ -108,12 +108,12 @@ class TestMatchesAsPackagesFile(TestCase):
         self.assertThat(
             packages_content,
             MatchesAsPackagesFile(
-                MatchesPackage.fromPackage(observed)))
+                MatchesPackage(observed)))
 
     def test_ignore_one_md5(self):
         # This is what I actually care about: being able to specify that a
         # packages file matches a set of packages, ignoring just a few
-        # details.
+        # details on just one package.
         observed1 = DummyFetchedPackage("foo", "1.1")
         observed2 = DummyFetchedPackage("bar", "1.2")
         observed3 = DummyFetchedPackage("baz", "1.5")
@@ -123,6 +123,6 @@ class TestMatchesAsPackagesFile(TestCase):
         observed3._content = ''.join(reversed(observed3._content_str()))
         self.assertNotEqual(oldmd5, observed3.md5)
         self.assertThat(packages_content, MatchesAsPackagesFile(
-            MatchesPackage.fromPackage(observed1),
-            MatchesPackage.fromPackage(observed2),
-            MatchesPackage.fromPackage(observed3).update(md5=None)))
+            MatchesPackage(observed1),
+            MatchesPackage(observed2),
+            MatchesPackage(observed3).update(md5=None)))

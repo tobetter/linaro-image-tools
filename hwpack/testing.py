@@ -392,12 +392,16 @@ class MatchesStructure(object):
     def __init__(self, **kwargs):
         self.kws = kwargs
 
-    @classmethod
-    def fromExample(cls, example, *attributes):
+    @staticmethod
+    def _kwargsFromExample(example, attributes):
         kwargs = {}
         for attr in attributes:
             kwargs[attr] = Equals(getattr(example, attr))
-        return cls(**kwargs)
+        return kwargs
+
+    @classmethod
+    def fromExample(cls, example, *attributes):
+        return cls(**cls._kwargsFromExample(example, attributes))
 
     def update(self, **kws):
         new_kws = self.kws.copy()
@@ -420,8 +424,9 @@ class MatchesStructure(object):
 class MatchesPackage(MatchesStructure):
 
     @classmethod
-    def fromPackage(cls, example):
-        return cls.fromExample(example, *example._equality_attributes)
+    def __init__(self, example):
+        MatchesStructure.__init__(
+            **self._kwargsFromExample(example, example._equality_attributes))
 
 
 class MatchesSetwise(object):
