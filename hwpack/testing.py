@@ -349,7 +349,8 @@ class IsHardwarePack(Matcher):
                     content=package.content.read()))
             matchers.append(HardwarePackHasFile(
                 "pkgs/Packages",
-                content=get_packages_file(packages_with_content)))
+                content_matcher=MatchesAsPackagesFile(
+                    *[MatchesPackage(p) for p in  packages_with_content])))
             matchers.append(HardwarePackHasFile(
                 "sources.list.d", type=tarfile.DIRTYPE))
             for source_id, sources_entry in self.sources.items():
