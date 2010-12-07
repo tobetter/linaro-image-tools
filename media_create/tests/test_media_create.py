@@ -106,8 +106,13 @@ class TestUnpackBinaryTarball(TestCaseWithFixtures):
 
     def tearDown(self):
         super(TestUnpackBinaryTarball, self).tearDown()
-        unpacked_location = os.path.join(tempfile.gettempdir(), 
-            self.temp_dir_fixture.get_temp_dir()[1:])
+
+        if os.path.isabs(self.temp_dir_fixture.get_temp_dir()):
+            reldir = self.temp_dir_fixture.get_temp_dir()[1:]
+        else:
+            reldir =  self.temp_dir_fixture.get_temp_dir()
+
+        unpacked_location = os.path.join(tempfile.gettempdir(), reldir)
         if os.path.exists(unpacked_location):
             shutil.rmtree(unpacked_location)
 
