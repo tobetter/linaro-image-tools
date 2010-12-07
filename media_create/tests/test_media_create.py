@@ -95,26 +95,18 @@ class TestUnpackBinaryTarball(TestCaseWithFixtures):
     def setUp(self):
         super(TestUnpackBinaryTarball, self).setUp()
 
-        self.temp_dir_fixture = CreateTempDirFixture()
-        self.useFixture(self.temp_dir_fixture)
+        self.tar_dir_fixture = CreateTempDirFixture()
+        self.useFixture(self.tar_dir_fixture)
 
         self.tarball_fixture = CreateTarballFixture(
-            self.temp_dir_fixture.get_temp_dir())
+            self.tar_dir_fixture.get_temp_dir())
         self.useFixture(self.tarball_fixture)
 
-        self.useFixture(ChangeCurrentWorkingDirFixture(tempfile.gettempdir()))
+        self.unpack_dir_fixture = CreateTempDirFixture()
+        self.useFixture(self.unpack_dir_fixture)
 
-    def tearDown(self):
-        super(TestUnpackBinaryTarball, self).tearDown()
-
-        if os.path.isabs(self.temp_dir_fixture.get_temp_dir()):
-            reldir = self.temp_dir_fixture.get_temp_dir()[1:]
-        else:
-            reldir =  self.temp_dir_fixture.get_temp_dir()
-
-        unpacked_location = os.path.join(tempfile.gettempdir(), reldir)
-        if os.path.exists(unpacked_location):
-            shutil.rmtree(unpacked_location)
+        self.useFixture(ChangeCurrentWorkingDirFixture(
+            self.unpack_dir_fixture.get_temp_dir()))
 
     def test_unpack_binary_tarball(self):
         rc = unpack_binary_tarball(self.tarball_fixture.get_tarball(),
