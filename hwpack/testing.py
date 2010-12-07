@@ -7,6 +7,8 @@ from StringIO import StringIO
 import tarfile
 import time
 
+from debian.deb822 import Packages
+
 from testtools import TestCase
 from testtools.matchers import Annotate, Equals, Matcher, Mismatch
 
@@ -500,23 +502,19 @@ class MatchesSetwise(object):
                     ).match(not_matched[:common_length])
 
 def parse_packages_file_content(file_content):
-    stanzas = file_content.split('\n\n')
     packages = []
-    for stanza in stanzas:
-        if not stanza:
-            continue
+    for para in Packages.iter_paragraphs(StringIO(file_content)):
         args = {}
-        for line in stanza.split('\n'):
-            k, v = line.split(':', 1)
-            k = k.lower().replace('-', '_')
-            v = v.strip()
-            if k == 'md5sum':
-                k = 'md5'
-            elif k == 'package':
-                k = 'name'
-            elif k == 'size':
-                v = int(v)
-            args[k] = v
+        for key, value in para.iteritems():
+            key = key.lower()
+            if key == 'md5sum':
+                key = 'md5'
+            elif key == 'package':
+                key = 'name'
+            elif key == 'size':
+                value = int(value)
+            if key in FetchedPackage._equality_attributes:
+                args[key] = value
         packages.append(FetchedPackage(**args))
     return packages
 
