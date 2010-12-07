@@ -336,10 +336,16 @@ class IsHardwarePack(Matcher):
             matchers.append(HardwarePackHasFile("FORMAT", content="1.0\n"))
             matchers.append(HardwarePackHasFile(
                 "metadata", content=str(self.metadata)))
-            manifest = ""
+            manifest_lines = []
             for package in self.packages:
-                manifest += "%s=%s\n" % (package.name, package.version)
-            matchers.append(HardwarePackHasFile("manifest", content=manifest))
+                manifest_lines.append(
+                    "%s=%s" % (package.name, package.version))
+            matchers.append(
+                HardwarePackHasFile(
+                    "manifest",
+                    content_matcher=AfterPreproccessing(
+                        str.splitlines,
+                        MatchesSetwise(*map(Equals, manifest_lines)))))
             matchers.append(HardwarePackHasFile("pkgs", type=tarfile.DIRTYPE))
             packages_with_content = [p for p in self.packages
                 if p not in self.packages_without_content]
@@ -481,3 +487,11 @@ class MatchesAsPackagesFile(object):
         return self.package_matcher.match(
             parse_packages_file_content(packages_file_content))
 
+
+class AfterPreproccessing(object):
+    def __init__(self, preprocessor, matcher):
+        self.preprocessor = preprocessor
+        self.matcher = matcher
+    def match(self, value):
+        value = self.preprocessor(value)
+        return self.matcher.match(value)
