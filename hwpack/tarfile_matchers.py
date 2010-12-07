@@ -105,10 +105,11 @@ class TarfileHasFile(Matcher):
         self.gid = gid
         self.uname = uname
         self.gname = gname
-        if content is not None and content_matcher is not None:
-            raise ValueError(
-                "doesn't make sense to specify content and content_matcher")
         if content is not None:
+            if content_matcher is not None:
+                raise ValueError(
+                    "doesn't make sense to specify content and "
+                    "content_matcher")
             content_matcher = Equals(content)
         if content_matcher is not None:
             self.content_matcher = Annotate(
