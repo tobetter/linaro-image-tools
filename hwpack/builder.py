@@ -41,5 +41,8 @@ class HardwarePackBuilder(object):
                     self.config.packages,
                     download_content=self.config.include_debs)
                 hwpack.add_packages(packages)
+                hwpack.add_dependency_package(
+                    self.config.name, self.version,
+                    self.config.packages, architecture)
                 with open(hwpack.filename(), 'w') as f:
                     hwpack.to_file(f)

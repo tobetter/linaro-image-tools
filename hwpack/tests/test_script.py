@@ -81,4 +81,5 @@ class ScriptTests(TestCaseWithFixtures):
             "hwpack_ahwpack_1.0_armel.tar.gz",
             IsHardwarePack(
                 metadata, [available_package],
-                {"ubuntu": source.sources_entry}))
+                {"ubuntu": source.sources_entry},
+                package_spec='foo'))

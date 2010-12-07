@@ -74,7 +74,8 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
                 architecture),
             IsHardwarePack(
                 metadata, [available_package],
-                {source_id: source.sources_entry}))
+                {source_id: source.sources_entry},
+                package_spec=package_name))
 
     def test_builds_correct_contents_multiple_packages(self):
         hwpack_name = "ahwpack"
@@ -103,12 +104,14 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             hwpack_filename,
             IsHardwarePack(
                 metadata, [available_package1, available_package2],
-                {source_id: source.sources_entry}))
+                {source_id: source.sources_entry},
+                package_spec='%s, %s' % (package_name1, package_name2)))
         self.assertThat(
             hwpack_filename,
             IsHardwarePack(
                 metadata, [available_package2, available_package1],
-                {source_id: source.sources_entry}))
+                {source_id: source.sources_entry},
+                package_spec='%s, %s' % (package_name1, package_name2)))
 
     def test_obeys_include_debs(self):
         hwpack_name = "ahwpack"
@@ -133,7 +136,8 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             IsHardwarePack(
                 metadata, [available_package],
                 {source_id: source.sources_entry},
-                packages_without_content=[available_package]))
+                packages_without_content=[available_package],
+                package_spec=package_name))
 
     def test_obeys_assume_installed(self):
         hwpack_name = "ahwpack"
@@ -163,7 +167,8 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             filename,
             IsHardwarePack(
                 metadata, [available_package],
-                {source_id: source.sources_entry}))
+                {source_id: source.sources_entry},
+                package_spec=package_name))
         tf = tarfile.open(filename, mode="r:gz")
         try:
             self.assertThat(

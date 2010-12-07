@@ -131,6 +131,7 @@ class PackageMaker(object):
         if self._temporary_directories is not None:
             raise AssertionError("__enter__ must not be called twice")
         self._temporary_directories = []
+        return self
 
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):
         if self._temporary_directories is None:

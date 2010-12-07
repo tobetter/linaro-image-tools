@@ -1,7 +1,11 @@
 import time
 
 from hwpack.better_tarfile import writeable_tarfile
-from hwpack.packages import get_packages_file
+from hwpack.packages import (
+    FetchedPackage,
+    get_packages_file,
+    PackageMaker,
+    )
 
 
 class Metadata(object):
@@ -158,6 +162,15 @@ class HardwarePack(object):
         :type packages: FetchedPackage
         """
         self.packages += packages
+
+    def add_dependency_package(self, name, version, packages_spec,
+                               architecture):
+        with PackageMaker() as maker:
+            deb_file_path = maker.make_package(
+                name, version, {'Depends': ', '.join(packages_spec)},
+                architecture)
+            pkg = FetchedPackage.from_deb(deb_file_path)
+            self.packages.append(pkg)
 
     def to_file(self, fileobj):
         """Write the hwpack to a file object.

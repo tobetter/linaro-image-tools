@@ -323,11 +323,13 @@ class HardwarePackHasFile(TarfileHasFile):
 class IsHardwarePack(Matcher):
 
     def __init__(self, metadata, packages, sources,
-                 packages_without_content=None):
+                 packages_without_content=None,
+                 package_spec=None):
         self.metadata = metadata
         self.packages = packages
         self.sources = sources
         self.packages_without_content = packages_without_content or []
+        self.package_spec = package_spec
 
     def match(self, path):
         tf = tarfile.open(name=path, mode="r:gz")
@@ -340,6 +342,8 @@ class IsHardwarePack(Matcher):
             for package in self.packages:
                 manifest_lines.append(
                     "%s=%s" % (package.name, package.version))
+            manifest_lines.append(
+                "%s=%s" % (self.metadata.name, self.metadata.version))
             matchers.append(
                 HardwarePackHasFile(
                     "manifest",
@@ -353,10 +357,19 @@ class IsHardwarePack(Matcher):
                 matchers.append(HardwarePackHasFile(
                     "pkgs/%s" % package.filename,
                     content=package.content.read()))
+            package_matchers = [
+                MatchesPackage(p) for p in  packages_with_content]
+            dep_package_matcher = MatchesStructure(
+                    name=Equals(self.metadata.name),
+                    version=Equals(self.metadata.version),
+                    architecture=Equals(self.metadata.architecture))
+            if self.package_spec:
+                dep_package_matcher.update(depends=self.package_spec)
+            package_matchers.append(dep_package_matcher)
             matchers.append(HardwarePackHasFile(
                 "pkgs/Packages",
                 content_matcher=MatchesAsPackagesFile(
-                    *[MatchesPackage(p) for p in  packages_with_content])))
+                    *package_matchers)))
             matchers.append(HardwarePackHasFile(
                 "sources.list.d", type=tarfile.DIRTYPE))
             for source_id, sources_entry in self.sources.items():
