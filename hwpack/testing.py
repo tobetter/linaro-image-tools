@@ -436,26 +436,68 @@ class MatchesSetwise(object):
 
     def match(self, observed):
         remaining_matchers = set(self.matchers)
-        not_matched = set()
-        observed = list(observed)
-        length_mismatch = Annotate(
-            "Differing number of matchers %s and %s values" % (
-                len(remaining_matchers), len(observed)),
-            Equals(len(remaining_matchers))).match(len(observed))
-        if length_mismatch:
-            return length_mismatch
+        not_matched = []
         for value in observed:
             for matcher in remaining_matchers:
                 if matcher.match(value) is None:
                     remaining_matchers.remove(matcher)
                     break
             else:
-                not_matched.add(value)
+                not_matched.append(value)
         if not_matched or remaining_matchers:
-            return Annotate(
-                'Not all matchers found values (or vice versa)',
-                ZipMatchers(list(remaining_matchers))).match(list(not_matched))
+            remaining_matchers = list(remaining_matchers)
+            # There are various cases that all should be reported somewhat
+            # differently.
 
+            # There are two trivial cases:
+            # 1) There are just some matchers left over.
+            # 2) There are just some values left over.
+
+            # Then there are three more interesting cases:
+            # 3) There are the same number of matchers and values left over.
+            # 4) There are more matchers left over than values.
+            # 5) There are more values left over than matchers.
+
+            if len(not_matched) == 0:
+                if len(remaining_matchers) > 1:
+                    msg = "There were %s matchers left over: " % (
+                        len(remaining_matchers),)
+                else:
+                    msg = "There was 1 matcher left over: "
+                msg += ', '.join(map(str, remaining_matchers))
+                return Mismatch(msg)
+            elif len(remaining_matchers) == 0:
+                if len(not_matched) > 1:
+                    return Mismatch(
+                        "There were %s values left over: %s" % (
+                            len(not_matched), not_matched))
+                else:
+                    return Mismatch(
+                        "There was 1 value left over: %s" % (
+                            not_matched, ))
+            else:
+                common_length = min(len(remaining_matchers), len(not_matched))
+                if common_length == 0:
+                    raise AssertionError("common_length can't be 0 here")
+                if common_length > 1:
+                    msg = "There were %s mismatches" % (common_length,)
+                else:
+                    msg = "There was 1 mismatch"
+                if len(remaining_matchers) > len(not_matched):
+                    extra_matchers = remaining_matchers[common_length:]
+                    msg += " and %s extra matcher" % (len(extra_matchers), )
+                    if len(extra_matchers) > 1:
+                        msg += "s"
+                    msg += ': ' + ', '.join(map(str, extra_matchers))
+                elif len(not_matched) > len(remaining_matchers):
+                    extra_values = not_matched[common_length:]
+                    msg += " and %s extra value" % (len(extra_values), )
+                    if len(extra_values) > 1:
+                        msg += "s"
+                    msg += ': ' + str(extra_values)
+                return Annotate(
+                    msg, ZipMatchers(remaining_matchers[:common_length])
+                    ).match(not_matched[:common_length])
 
 def parse_packages_file_content(file_content):
     stanzas = file_content.split('\n\n')
