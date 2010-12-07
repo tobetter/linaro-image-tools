@@ -1,7 +1,9 @@
 from contextlib import contextmanager
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 
 from testtools import TestCase
 
@@ -15,6 +17,7 @@ from media_create.remove_binary_dir import remove_binary_dir
 from media_create.unpack_binary_tarball import unpack_binary_tarball
 
 from media_create.tests.fixtures import (
+    ChangeCurrentWorkingDirFixture,
     CreateTempDirFixture,
     CreateTarballFixture,
     MockDoRunFixture,
@@ -98,6 +101,15 @@ class TestUnpackBinaryTarball(TestCaseWithFixtures):
         self.tarball_fixture = CreateTarballFixture(
             self.temp_dir_fixture.get_temp_dir())
         self.useFixture(self.tarball_fixture)
+
+        self.useFixture(ChangeCurrentWorkingDirFixture(tempfile.gettempdir()))
+
+    def tearDown(self):
+        super(TestUnpackBinaryTarball, self).tearDown()
+        unpacked_location = os.path.join(tempfile.gettempdir(), 
+            self.temp_dir_fixture.get_temp_dir()[1:])
+        if os.path.exists(unpacked_location):
+            shutil.rmtree(unpacked_location)
 
     def test_unpack_binary_tarball(self):
         rc = unpack_binary_tarball(self.tarball_fixture.get_tarball(),
