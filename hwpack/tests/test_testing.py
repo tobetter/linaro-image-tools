@@ -4,9 +4,14 @@ from testtools.matchers import (
     NotEquals,)
 from hwpack.testing import (
     DummyFetchedPackage,
+    MatchesAsPackagesFile,
     MatchesPackage,
     MatchesStructure,
     MatchesSetwise,
+    parse_packages_file_content,
+    )
+from hwpack.packages import (
+    get_packages_file,
     )
 
 class TestMatchesStructure(TestCase):
@@ -67,8 +72,57 @@ class TestMatchesSetwise(TestCase):
 
     def test_matches(self):
         self.assertThat(
-            [2, 1], MatchesSetwise([Equals(1), Equals(2)]))
+            [2, 1], MatchesSetwise(Equals(1), Equals(2)))
 
     def test_mismatches(self):
         self.assertRaises(AssertionError, self.assertThat,
-            [2, 3], MatchesSetwise([Equals(1), Equals(2)]))
+            [2, 3], MatchesSetwise(Equals(1), Equals(2)))
+
+class TestParsePackagesFileContent(TestCase):
+
+    def test_one(self):
+        observed = DummyFetchedPackage("foo", "1.1")
+        packages_content = get_packages_file([observed])
+        parsed = parse_packages_file_content(packages_content)
+        self.assertThat(len(parsed), Equals(1))
+        self.assertThat(parsed[0], MatchesPackage.fromPackage(observed))
+
+    def test_several(self):
+        observed1 = DummyFetchedPackage("foo", "1.1")
+        observed2 = DummyFetchedPackage("bar", "1.2")
+        observed3 = DummyFetchedPackage("baz", "1.5")
+        packages_content = get_packages_file(
+            [observed1, observed2, observed3])
+        parsed = parse_packages_file_content(packages_content)
+        self.assertThat(parsed, MatchesSetwise(
+            MatchesPackage.fromPackage(observed3),
+            MatchesPackage.fromPackage(observed2),
+            MatchesPackage.fromPackage(observed1)))
+
+
+class TestMatchesAsPackagesFile(TestCase):
+
+    def test_one(self):
+        observed = DummyFetchedPackage("foo", "1.1")
+        packages_content = get_packages_file([observed])
+        self.assertThat(
+            packages_content,
+            MatchesAsPackagesFile(
+                MatchesPackage.fromPackage(observed)))
+
+    def test_ignore_one_md5(self):
+        # This is what I actually care about: being able to specify that a
+        # packages file matches a set of packages, ignoring just a few
+        # details.
+        observed1 = DummyFetchedPackage("foo", "1.1")
+        observed2 = DummyFetchedPackage("bar", "1.2")
+        observed3 = DummyFetchedPackage("baz", "1.5")
+        packages_content = get_packages_file(
+            [observed1, observed2, observed3])
+        oldmd5 = observed3.md5
+        observed3._content = ''.join(reversed(observed3._content_str()))
+        self.assertNotEqual(oldmd5, observed3.md5)
+        self.assertThat(packages_content, MatchesAsPackagesFile(
+            MatchesPackage.fromPackage(observed1),
+            MatchesPackage.fromPackage(observed2),
+            MatchesPackage.fromPackage(observed3).update(md5=None)))

@@ -412,7 +412,7 @@ class MatchesStructure(object):
         matchers = []
         values = []
         for attr, matcher in self.kws.iteritems():
-            matchers.append(matcher)
+            matchers.append(Annotate(attr, matcher))
             values.append(getattr(value, attr))
         return ZipMatchers(matchers).match(values)
 
@@ -430,7 +430,7 @@ class MatchesSetwise(object):
         self.matchers = matchers
 
     def match(self, observed):
-        remaining_matchers = set(*self.matchers)
+        remaining_matchers = set(self.matchers)
         not_matched = set()
         observed = list(observed)
         length_mismatch = Annotate(
@@ -450,4 +450,35 @@ class MatchesSetwise(object):
             return Annotate(
                 'Not all matchers found values (or vice versa)',
                 ZipMatchers(list(remaining_matchers))).match(list(not_matched))
+
+
+def parse_packages_file_content(file_content):
+    stanzas = file_content.split('\n\n')
+    packages = []
+    for stanza in stanzas:
+        if not stanza:
+            continue
+        args = {}
+        for line in stanza.split('\n'):
+            k, v = line.split(':', 1)
+            k = k.lower().replace('-', '_')
+            v = v.strip()
+            if k == 'md5sum':
+                k = 'md5'
+            elif k == 'package':
+                k = 'name'
+            elif k == 'size':
+                v = int(v)
+            args[k] = v
+        packages.append(FetchedPackage(**args))
+    return packages
+
+
+class MatchesAsPackagesFile(object):
+    def __init__(self, *package_matchers):
+        self.package_matcher = MatchesSetwise(*package_matchers)
+
+    def match(self, packages_file_content):
+        return self.package_matcher.match(
+            parse_packages_file_content(packages_file_content))
 
