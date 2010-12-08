@@ -374,7 +374,17 @@ class IsHardwarePack(Matcher):
     def __str__(self):
         return "Is a valid hardware pack."
 
-class ZipMatchers(object):
+
+class EachOf(object):
+    """Matches if each matcher matches the corresponding value.
+
+    More easily explained by example than in words:
+
+    >>> EachOf([Equals(1)]).match([1])
+    >>> EachOf([Equals(1), Equals(2)]).match([1, 2])
+    >>> EachOf([Equals(1), Equals(2)]).match([2, 1]) #doctest: +ELLIPSIS
+    <...MismatchesAll...>
+    """
 
     def __init__(self, matchers):
         self.matchers = matchers
@@ -423,7 +433,7 @@ class MatchesStructure(object):
         for attr, matcher in self.kws.iteritems():
             matchers.append(Annotate(attr, matcher))
             values.append(getattr(value, attr))
-        return ZipMatchers(matchers).match(values)
+        return EachOf(matchers).match(values)
 
 
 def MatchesPackage(example):
@@ -498,7 +508,7 @@ class MatchesSetwise(object):
                         msg += "s"
                     msg += ': ' + str(extra_values)
                 return Annotate(
-                    msg, ZipMatchers(remaining_matchers[:common_length])
+                    msg, EachOf(remaining_matchers[:common_length])
                     ).match(not_matched[:common_length])
 
 def parse_packages_file_content(file_content):

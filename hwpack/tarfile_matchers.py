@@ -93,6 +93,9 @@ class TarfileHasFile(Matcher):
             None to not check.
         :param content: the content that `path` must have when extracted,
             or None to not check.
+        :param content_matcher: a matcher to match the content that `path` has
+            when extracted, or None to not check.  You can't specify both
+            content_matcher and content.
         """
         self.path = path
         self.type = type

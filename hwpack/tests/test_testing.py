@@ -1,4 +1,7 @@
+import doctest
 import re
+from StringIO import StringIO
+import sys
 
 from testtools import TestCase
 from testtools.matchers import (
@@ -9,6 +12,7 @@ from testtools.matchers import (
     )
 from hwpack.testing import (
     DummyFetchedPackage,
+    EachOf,
     MatchesAsPackagesFile,
     MatchesPackage,
     MatchesStructure,
@@ -18,6 +22,23 @@ from hwpack.testing import (
 from hwpack.packages import (
     get_packages_file,
     )
+
+
+def run_doctest(obj, name):
+    p = doctest.DocTestParser()
+    t = p.get_doctest(
+        obj.__doc__, sys.modules[obj.__module__].__dict__, name, '', 0)
+    r = doctest.DocTestRunner()
+    output = StringIO()
+    r.run(t, out=output.write)
+    return r.failures, output.getvalue()
+
+class TestEachOf(TestCase):
+
+    def test_docstring(self):
+        failure_count, output = run_doctest(EachOf, "EachOf")
+        if failure_count:
+            self.fail("Doctest failed with %s" % output)
 
 class TestMatchesStructure(TestCase):
 
