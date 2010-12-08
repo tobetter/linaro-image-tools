@@ -442,18 +442,14 @@ create_partitions() {
       "${DEVICE-$IMAGE_FILE}" "$FAT_SIZE" "$HEADS" "$SECTORS" "$CYLINDER_ARG"
 
   if [ "${IMAGE_FILE}" ]; then
-  VFATOFFSET=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep FAT | awk '{print $3}')*512))
-  VFATSIZE2=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep FAT | awk '{print $4}')))
-  VFATSIZE1=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep FAT | awk '{print $3}')))
-  VFATSIZE=$((((VFATSIZE2+1-VFATSIZE1)/2)*1024))
-  ROOTOFFSET=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $2}')*512))
-  ROOTSIZE2=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $3}')))
-  ROOTSIZE1=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $2}')))
-  ROOTSIZE=$((((ROOTSIZE2+1-ROOTSIZE1)/2)*1024))
-  BOOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $VFATOFFSET --sizelimit $VFATSIZE)
-  register_loopback "$BOOTFS"
-  ROOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
-  register_loopback "$ROOTFS"
+    sizes_and_offsets=$(python -m media_create.partition_size "${IMAGE_FILE}")
+    eval $sizes_and_offsets
+    BOOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $VFATOFFSET \
+             --sizelimit $VFATSIZE)
+    register_loopback "$BOOTFS"
+    ROOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $ROOTOFFSET \
+             --sizelimit $ROOTSIZE)
+    register_loopback "$ROOTFS"
   fi
 }
 
