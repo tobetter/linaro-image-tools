@@ -1,7 +1,10 @@
 from contextlib import contextmanager
 import os
+import random
+import string
 import subprocess
 import sys
+import tempfile
 
 from testtools import TestCase
 
@@ -11,13 +14,23 @@ from media_create.boot_cmd import create_boot_cmd
 from media_create import cmd_runner
 from media_create import ensure_command
 
+from media_create import populate_boot
+from media_create.populate_boot import (
+    make_boot_script,
+    make_uImage,
+    make_uInitrd,
+    _get_file_matching,
+    _run_mkimage,
+    )
 from media_create.remove_binary_dir import remove_binary_dir
 from media_create.unpack_binary_tarball import unpack_binary_tarball
 
 from media_create.tests.fixtures import (
+    ChangeCurrentWorkingDirFixture,
     CreateTempDirFixture,
     CreateTarballFixture,
     MockDoRunFixture,
+    MockSomethingFixture,
     )
 
 
@@ -92,12 +105,18 @@ class TestUnpackBinaryTarball(TestCaseWithFixtures):
     def setUp(self):
         super(TestUnpackBinaryTarball, self).setUp()
 
-        self.temp_dir_fixture = CreateTempDirFixture()
-        self.useFixture(self.temp_dir_fixture)
+        self.tar_dir_fixture = CreateTempDirFixture()
+        self.useFixture(self.tar_dir_fixture)
 
         self.tarball_fixture = CreateTarballFixture(
-            self.temp_dir_fixture.get_temp_dir())
+            self.tar_dir_fixture.get_temp_dir())
         self.useFixture(self.tarball_fixture)
+
+        self.unpack_dir_fixture = CreateTempDirFixture()
+        self.useFixture(self.unpack_dir_fixture)
+
+        self.useFixture(ChangeCurrentWorkingDirFixture(
+            self.unpack_dir_fixture.get_temp_dir()))
 
     def test_unpack_binary_tarball(self):
         rc = unpack_binary_tarball(self.tarball_fixture.get_tarball(),
@@ -135,3 +154,89 @@ class TestCmdRunner(TestCaseWithFixtures):
     def test_do_run(self):
         return_code = cmd_runner.do_run('true')
         self.assertEqual(0, return_code)
+
+
+class TestPopulateBoot(TestCaseWithFixtures):
+
+    def _mock_get_file_matching(self):
+        self.useFixture(MockSomethingFixture(
+            populate_boot, '_get_file_matching',
+            lambda regex: regex))
+
+    def _mock_do_run(self):
+        fixture = MockDoRunFixture()
+        self.useFixture(fixture)
+        return fixture
+
+    def test_make_uImage(self):
+        self._mock_get_file_matching()
+        fixture = self._mock_do_run()
+        make_uImage('load_addr', 'parts_dir', 'sub_arch', 'boot_disk')
+        expected = [
+            'sudo', 'mkimage', '-A', 'arm', '-O', 'linux', '-T', 'kernel',
+            '-C', 'none', '-a', 'load_addr', '-e', 'load_addr', '-n', 'Linux',
+            '-d', 'parts_dir/vmlinuz-*-sub_arch', 'boot_disk/uImage']
+        self.assertEqual(expected, fixture.mock.args)
+
+    def test_make_uInitrd(self):
+        self._mock_get_file_matching()
+        fixture = self._mock_do_run()
+        make_uInitrd('parts_dir', 'sub_arch', 'boot_disk')
+        expected = [
+            'sudo', 'mkimage', '-A', 'arm', '-O', 'linux', '-T', 'ramdisk',
+            '-C', 'none', '-a', '0', '-e', '0', '-n', 'initramfs',
+            '-d', 'parts_dir/initrd.img-*-sub_arch', 'boot_disk/uInitrd']
+        self.assertEqual(expected, fixture.mock.args)
+
+    def test_make_boot_script(self):
+        self._mock_get_file_matching()
+        fixture = self._mock_do_run()
+        make_boot_script('boot_script', 'tmp_dir')
+        expected = [
+            'sudo', 'mkimage', '-A', 'arm', '-O', 'linux', '-T', 'script',
+            '-C', 'none', '-a', '0', '-e', '0', '-n', 'boot script',
+            '-d', 'tmp_dir/boot.cmd', 'boot_script']
+        self.assertEqual(expected, fixture.mock.args)
+
+    def test_get_file_matching(self):
+        prefix = ''.join(
+            random.choice(string.ascii_lowercase) for x in range(5))
+        file1 = self._create_temp_file_as_fixture(prefix)
+        directory = os.path.dirname(file1)
+        self.assertEqual(
+            file1, _get_file_matching('%s/%s*' % (directory, prefix)))
+
+    def test_get_file_matching_too_many_files_found(self):
+        prefix = ''.join(
+            random.choice(string.ascii_lowercase) for x in range(5))
+        file1 = self._create_temp_file_as_fixture(prefix)
+        file2 = self._create_temp_file_as_fixture(prefix)
+        directory = os.path.dirname(file1)
+        self.assertRaises(
+            ValueError, _get_file_matching, '%s/%s*' % (directory, prefix))
+
+    def test_get_file_matching_no_files_found(self):
+        self.assertRaises(
+            ValueError, _get_file_matching, '/foo/bar/baz/*non-existent')
+
+    def DISABLED_test_run_mkimage(self):
+        # Create a fake boot script.
+        filename = self._create_temp_file_as_fixture()
+        f = open(filename, 'w')
+        f.write("setenv bootcmd 'fatload mmc 0:1 0x80000000 uImage;\nboot")
+        f.close()
+
+        img = self._create_temp_file_as_fixture()
+        # Use that fake boot script to create a boot loader using mkimage.
+        # Send stdout to file as mkimage will print to stdout and we don't
+        # want that.
+        retval = _run_mkimage(
+            'script', '0', '0', 'boot script', filename, img,
+            stdout=open(self._create_temp_file_as_fixture(), 'w'))
+
+        self.assertEqual(0, retval)
+
+    def _create_temp_file_as_fixture(self, prefix='tmp'):
+        _, filename = tempfile.mkstemp(prefix=prefix)
+        self.addCleanup(os.unlink, filename)
+        return filename

@@ -1,12 +1,13 @@
 import subprocess
 
 
-def run(args, as_root=False):
+def run(args, as_root=False, stdout=None):
     """Run the given command as a sub process.
 
     :param command: A list or tuple containing the command to run and the
                     arguments that should be passed to it.
     :param as_root: Should the given command be run as root (with sudo)?
+    :param stdout: Same as subprocess.Popen().
     """
     assert isinstance(args, (list, tuple)), (
         "The command to run must be a list or tuple, found: %s" % type(args))
@@ -15,15 +16,15 @@ def run(args, as_root=False):
     if as_root:
         args = args[:]
         args.insert(0, 'sudo')
-    return_value = do_run(args)
+    return_value = do_run(args, stdout=stdout)
     if return_value != 0:
         raise SubcommandNonZeroReturnValue(args, return_value)
     return return_value
 
 
-def do_run(args):
+def do_run(args, stdout=None):
     """A wrapper around subprocess.call() to make testing easier."""
-    return subprocess.call(args)
+    return subprocess.call(args, stdout=stdout)
 
 
 class SubcommandNonZeroReturnValue(Exception):
