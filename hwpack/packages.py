@@ -168,7 +168,7 @@ Description: Dummy package to install a hwpack
 
     def make_package(self, name, version, relationships, architecture='all'):
         tmp_dir = self.make_temporary_directory()
-        filename = '%s_%s_all' % (name, version)
+        filename = '%s_%s_%s' % (name, version, architecture)
         packaging_dir = os.path.join(tmp_dir, filename)
         os.mkdir(packaging_dir)
         os.mkdir(os.path.join(packaging_dir, 'DEBIAN'))
