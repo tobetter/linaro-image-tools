@@ -1,9 +1,18 @@
+import doctest
+import re
+from StringIO import StringIO
+import sys
+
 from testtools import TestCase
 from testtools.matchers import (
+    Annotate,
     Equals,
-    NotEquals,)
+    Mismatch,
+    NotEquals,
+    )
 from hwpack.testing import (
     DummyFetchedPackage,
+    EachOf,
     MatchesAsPackagesFile,
     MatchesPackage,
     MatchesStructure,
@@ -13,6 +22,23 @@ from hwpack.testing import (
 from hwpack.packages import (
     get_packages_file,
     )
+
+
+def run_doctest(obj, name):
+    p = doctest.DocTestParser()
+    t = p.get_doctest(
+        obj.__doc__, sys.modules[obj.__module__].__dict__, name, '', 0)
+    r = doctest.DocTestRunner()
+    output = StringIO()
+    r.run(t, out=output.write)
+    return r.failures, output.getvalue()
+
+class TestEachOf(TestCase):
+
+    def test_docstring(self):
+        failure_count, output = run_doctest(EachOf, "EachOf")
+        if failure_count:
+            self.fail("Doctest failed with %s" % output)
 
 class TestMatchesStructure(TestCase):
 
@@ -68,15 +94,90 @@ class TestMatchesPackage(TestCase):
             MatchesPackage(expected).update(depends=None))
 
 
+class MatchesRegex(object):
+
+    def __init__(self, pattern, flags=0):
+        self.pattern = pattern
+        self.flags = flags
+    def match(self, value):
+        if not re.match(self.pattern, value, self.flags):
+            return Mismatch("%r did not match %r" % (self.pattern, value))
+
 class TestMatchesSetwise(TestCase):
 
-    def test_matches(self):
+    def assertMismatchWithDescriptionMatching(self, value, matcher,
+                                              description_matcher):
+        mismatch = matcher.match(value)
+        if mismatch is None:
+            self.fail("%s matched %s" % (matcher, value))
+        actual_description = mismatch.describe()
         self.assertThat(
-            [2, 1], MatchesSetwise(Equals(1), Equals(2)))
+            actual_description,
+            Annotate(
+                "%s matching %s" % (matcher, value),
+                description_matcher))
+
+    def test_matches(self):
+        self.assertIs(
+            None, MatchesSetwise(Equals(1), Equals(2)).match([2, 1]))
 
     def test_mismatches(self):
-        self.assertRaises(AssertionError, self.assertThat,
-            [2, 3], MatchesSetwise(Equals(1), Equals(2)))
+        self.assertMismatchWithDescriptionMatching(
+            [2, 3], MatchesSetwise(Equals(1), Equals(2)),
+            MatchesRegex('.*There was 1 mismatch$', re.S))
+
+    def test_too_many_matchers(self):
+        self.assertMismatchWithDescriptionMatching(
+            [2, 3], MatchesSetwise(Equals(1), Equals(2), Equals(3)),
+            Equals('There was 1 matcher left over: Equals(1)'))
+
+    def test_too_many_values(self):
+        self.assertMismatchWithDescriptionMatching(
+            [1, 2, 3], MatchesSetwise(Equals(1), Equals(2)),
+            Equals('There was 1 value left over: [3]'))
+
+    def test_two_too_many_matchers(self):
+        self.assertMismatchWithDescriptionMatching(
+            [3], MatchesSetwise(Equals(1), Equals(2), Equals(3)),
+            MatchesRegex(
+                'There were 2 matchers left over: Equals\([12]\), '
+                'Equals\([12]\)'))
+
+    def test_two_too_many_values(self):
+        self.assertMismatchWithDescriptionMatching(
+            [1, 2, 3, 4], MatchesSetwise(Equals(1), Equals(2)),
+            MatchesRegex(
+                'There were 2 values left over: \[[34], [34]\]'))
+
+    def test_mismatch_and_too_many_matchers(self):
+        self.assertMismatchWithDescriptionMatching(
+            [2, 3], MatchesSetwise(Equals(0), Equals(1), Equals(2)),
+            MatchesRegex(
+                '.*There was 1 mismatch and 1 extra matcher: Equals\([01]\)',
+                re.S))
+
+    def test_mismatch_and_too_many_values(self):
+        self.assertMismatchWithDescriptionMatching(
+            [2, 3, 4], MatchesSetwise(Equals(1), Equals(2)),
+            MatchesRegex(
+                '.*There was 1 mismatch and 1 extra value: \[[34]\]',
+                re.S))
+
+    def test_mismatch_and_two_too_many_matchers(self):
+        self.assertMismatchWithDescriptionMatching(
+            [3, 4], MatchesSetwise(
+                Equals(0), Equals(1), Equals(2), Equals(3)),
+            MatchesRegex(
+                '.*There was 1 mismatch and 2 extra matchers: '
+                'Equals\([012]\), Equals\([012]\)', re.S))
+
+    def test_mismatch_and_two_too_many_values(self):
+        self.assertMismatchWithDescriptionMatching(
+            [2, 3, 4, 5], MatchesSetwise(Equals(1), Equals(2)),
+            MatchesRegex(
+                '.*There was 1 mismatch and 2 extra values: \[[145], [145]\]',
+                re.S))
+
 
 class TestParsePackagesFileContent(TestCase):
 

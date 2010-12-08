@@ -93,6 +93,9 @@ class TarfileHasFile(Matcher):
             None to not check.
         :param content: the content that `path` must have when extracted,
             or None to not check.
+        :param content_matcher: a matcher to match the content that `path` has
+            when extracted, or None to not check.  You can't specify both
+            content_matcher and content.
         """
         self.path = path
         self.type = type
@@ -105,10 +108,11 @@ class TarfileHasFile(Matcher):
         self.gid = gid
         self.uname = uname
         self.gname = gname
-        if content is not None and content_matcher is not None:
-            raise ValueError(
-                "doesn't make sense to specify content and content_matcher")
         if content is not None:
+            if content_matcher is not None:
+                raise ValueError(
+                    "doesn't make sense to specify content and "
+                    "content_matcher")
             content_matcher = Equals(content)
         if content_matcher is not None:
             self.content_matcher = Annotate(
