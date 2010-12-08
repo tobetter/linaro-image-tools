@@ -163,14 +163,13 @@ class HardwarePack(object):
         """
         self.packages += packages
 
-    def add_dependency_package(self, name, version, packages_spec,
-                               architecture):
+    def add_dependency_package(self, packages_spec):
         with PackageMaker() as maker:
             deb_file_path = maker.make_package(
-                name, version, {'Depends': ', '.join(packages_spec)},
-                architecture)
-            pkg = FetchedPackage.from_deb(deb_file_path)
-            self.packages.append(pkg)
+                self.metadata.name, self.metadata.version,
+                {'Depends': ', '.join(packages_spec)},
+                self.metadata.architecture)
+            self.packages.append(FetchedPackage.from_deb(deb_file_path))
 
     def to_file(self, fileobj):
         """Write the hwpack to a file object.
