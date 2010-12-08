@@ -27,7 +27,7 @@ class CreateTarballFixture(object):
 
     def __init__(self, dir):
         self.dir = dir
-        self.tarball = os.path.join(self.dir + 'tarball.tar.gz')
+        self.tarball = os.path.join(self.dir, 'tarball.tar.gz')
 
     def setUp(self):
         # Create gzipped tar archive.
@@ -83,11 +83,24 @@ class MockDoRunFixture(MockSomethingFixture):
         super(MockDoRunFixture, self).__init__(cmd_runner, 'do_run', mock)
 
 
+class ChangeCurrentWorkingDirFixture(object):
+
+    def __init__(self, dir):
+        self.dir = dir
+        self.orig_cwd = os.getcwd()
+
+    def setUp(self):
+        os.chdir(self.dir)
+
+    def tearDown(self):
+        os.chdir(self.orig_cwd)
+
+
 class MockCallableWithPositionalArgs(object):
     """A callable mock which just stores the positional args given to it.
 
     Every time an instance of this is "called", it will append a tuple
-    containing the positional arguments given to it to self.calls. 
+    containing the positional arguments given to it to self.calls.
     """
     calls = None
     return_value = None

@@ -7,8 +7,10 @@ from StringIO import StringIO
 import tarfile
 import time
 
+from debian.deb822 import Packages
+
 from testtools import TestCase
-from testtools.matchers import Matcher, Mismatch
+from testtools.matchers import Annotate, Equals, Matcher, Mismatch
 
 from hwpack.better_tarfile import writeable_tarfile
 from hwpack.tarfile_matchers import TarfileHasFile
@@ -345,10 +347,16 @@ class IsHardwarePack(Matcher):
             matchers.append(HardwarePackHasFile("FORMAT", content="1.0\n"))
             matchers.append(HardwarePackHasFile(
                 "metadata", content=str(self.metadata)))
-            manifest = ""
+            manifest_lines = []
             for package in self.packages:
-                manifest += "%s=%s\n" % (package.name, package.version)
-            matchers.append(HardwarePackHasFile("manifest", content=manifest))
+                manifest_lines.append(
+                    "%s=%s" % (package.name, package.version))
+            matchers.append(
+                HardwarePackHasFile(
+                    "manifest",
+                    content_matcher=AfterPreproccessing(
+                        str.splitlines,
+                        MatchesSetwise(*map(Equals, manifest_lines)))))
             matchers.append(HardwarePackHasFile("pkgs", type=tarfile.DIRTYPE))
             packages_with_content = [p for p in self.packages
                 if p not in self.packages_without_content]
@@ -358,7 +366,8 @@ class IsHardwarePack(Matcher):
                     content=package.content.read()))
             matchers.append(HardwarePackHasFile(
                 "pkgs/Packages",
-                content=get_packages_file(packages_with_content)))
+                content_matcher=MatchesAsPackagesFile(
+                    *[MatchesPackage(p) for p in  packages_with_content])))
             matchers.append(HardwarePackHasFile(
                 "sources.list.d", type=tarfile.DIRTYPE))
             for source_id, sources_entry in self.sources.items():
@@ -373,3 +382,196 @@ class IsHardwarePack(Matcher):
 
     def __str__(self):
         return "Is a valid hardware pack."
+
+
+class EachOf(object):
+    """Matches if each matcher matches the corresponding value.
+
+    More easily explained by example than in words:
+
+    >>> EachOf([Equals(1)]).match([1])
+    >>> EachOf([Equals(1), Equals(2)]).match([1, 2])
+    >>> EachOf([Equals(1), Equals(2)]).match([2, 1]) #doctest: +ELLIPSIS
+    <...MismatchesAll...>
+    """
+
+    def __init__(self, matchers):
+        self.matchers = matchers
+
+    def match(self, values):
+        mismatches = []
+        length_mismatch = Annotate(
+            "Length mismatch", Equals(len(self.matchers))).match(len(values))
+        if length_mismatch:
+            mismatches.append(length_mismatch)
+        for matcher, value in zip(self.matchers, values):
+            mismatch = matcher.match(value)
+            if mismatch:
+                mismatches.append(mismatch)
+        if mismatches:
+            return MismatchesAll(mismatches)
+
+
+class MatchesStructure(object):
+    """Matcher that matches an object structurally.
+
+    'Structurally' here means that attributes of the object being matched are
+    compared against given matchers.
+
+    `fromExample` allows the creation of a matcher from a prototype object and
+    then modified versions can be created with `update`.
+    """
+
+    def __init__(self, **kwargs):
+        self.kws = kwargs
+
+    @classmethod
+    def fromExample(cls, example, *attributes):
+        kwargs = {}
+        for attr in attributes:
+            kwargs[attr] = Equals(getattr(example, attr))
+        return cls(**kwargs)
+
+    def update(self, **kws):
+        new_kws = self.kws.copy()
+        for attr, matcher in kws.iteritems():
+            if matcher is None:
+                new_kws.pop(attr, None)
+            else:
+                new_kws[attr] = matcher
+        return type(self)(**new_kws)
+
+    def match(self, value):
+        matchers = []
+        values = []
+        for attr, matcher in self.kws.iteritems():
+            matchers.append(Annotate(attr, matcher))
+            values.append(getattr(value, attr))
+        return EachOf(matchers).match(values)
+
+
+def MatchesPackage(example):
+    """Create a `MatchesStructure` object from a `FetchedPackage`."""
+    return MatchesStructure.fromExample(
+        example, *example._equality_attributes)
+
+
+class MatchesSetwise(object):
+    """Matches if all the matchers match elements of the value being matched.
+
+    The difference compared to `EachOf` is that the order of the matchings
+    does not matter.
+    """
+
+    def __init__(self, *matchers):
+        self.matchers = matchers
+
+    def match(self, observed):
+        remaining_matchers = set(self.matchers)
+        not_matched = []
+        for value in observed:
+            for matcher in remaining_matchers:
+                if matcher.match(value) is None:
+                    remaining_matchers.remove(matcher)
+                    break
+            else:
+                not_matched.append(value)
+        if not_matched or remaining_matchers:
+            remaining_matchers = list(remaining_matchers)
+            # There are various cases that all should be reported somewhat
+            # differently.
+
+            # There are two trivial cases:
+            # 1) There are just some matchers left over.
+            # 2) There are just some values left over.
+
+            # Then there are three more interesting cases:
+            # 3) There are the same number of matchers and values left over.
+            # 4) There are more matchers left over than values.
+            # 5) There are more values left over than matchers.
+
+            if len(not_matched) == 0:
+                if len(remaining_matchers) > 1:
+                    msg = "There were %s matchers left over: " % (
+                        len(remaining_matchers),)
+                else:
+                    msg = "There was 1 matcher left over: "
+                msg += ', '.join(map(str, remaining_matchers))
+                return Mismatch(msg)
+            elif len(remaining_matchers) == 0:
+                if len(not_matched) > 1:
+                    return Mismatch(
+                        "There were %s values left over: %s" % (
+                            len(not_matched), not_matched))
+                else:
+                    return Mismatch(
+                        "There was 1 value left over: %s" % (
+                            not_matched, ))
+            else:
+                common_length = min(len(remaining_matchers), len(not_matched))
+                if common_length == 0:
+                    raise AssertionError("common_length can't be 0 here")
+                if common_length > 1:
+                    msg = "There were %s mismatches" % (common_length,)
+                else:
+                    msg = "There was 1 mismatch"
+                if len(remaining_matchers) > len(not_matched):
+                    extra_matchers = remaining_matchers[common_length:]
+                    msg += " and %s extra matcher" % (len(extra_matchers), )
+                    if len(extra_matchers) > 1:
+                        msg += "s"
+                    msg += ': ' + ', '.join(map(str, extra_matchers))
+                elif len(not_matched) > len(remaining_matchers):
+                    extra_values = not_matched[common_length:]
+                    msg += " and %s extra value" % (len(extra_values), )
+                    if len(extra_values) > 1:
+                        msg += "s"
+                    msg += ': ' + str(extra_values)
+                return Annotate(
+                    msg, EachOf(remaining_matchers[:common_length])
+                    ).match(not_matched[:common_length])
+
+
+def parse_packages_file_content(file_content):
+    packages = []
+    for para in Packages.iter_paragraphs(StringIO(file_content)):
+        args = {}
+        for key, value in para.iteritems():
+            key = key.lower()
+            if key == 'md5sum':
+                key = 'md5'
+            elif key == 'package':
+                key = 'name'
+            elif key == 'size':
+                value = int(value)
+            if key in FetchedPackage._equality_attributes:
+                args[key] = value
+        packages.append(FetchedPackage(**args))
+    return packages
+
+
+class AfterPreproccessing(object):
+    """Matches if the value matches after passing through a function."""
+
+    def __init__(self, preprocessor, matcher):
+        self.preprocessor = preprocessor
+        self.matcher = matcher
+
+    def __str__(self):
+        return "AfterPreproccessing(%s, %s)" % (
+            self.preprocessor, self.matcher)
+
+    def match(self, value):
+        value = self.preprocessor(value)
+        return self.matcher.match(value)
+
+
+def MatchesAsPackagesFile(*package_matchers):
+    """Matches the contents of a Packages file against the given matchers.
+
+    The contents of the Packages file is turned into a list of FetchedPackages
+    using `parse_packages_file_content` above.
+    """
+
+    return AfterPreproccessing(
+        parse_packages_file_content, MatchesSetwise(*package_matchers))

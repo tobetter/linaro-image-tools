@@ -28,6 +28,7 @@ from media_create.remove_binary_dir import remove_binary_dir
 from media_create.unpack_binary_tarball import unpack_binary_tarball
 
 from media_create.tests.fixtures import (
+    ChangeCurrentWorkingDirFixture,
     CreateTempDirFixture,
     CreateTarballFixture,
     MockDoRunFixture,
@@ -107,12 +108,18 @@ class TestUnpackBinaryTarball(TestCaseWithFixtures):
     def setUp(self):
         super(TestUnpackBinaryTarball, self).setUp()
 
-        self.temp_dir_fixture = CreateTempDirFixture()
-        self.useFixture(self.temp_dir_fixture)
+        self.tar_dir_fixture = CreateTempDirFixture()
+        self.useFixture(self.tar_dir_fixture)
 
         self.tarball_fixture = CreateTarballFixture(
-            self.temp_dir_fixture.get_temp_dir())
+            self.tar_dir_fixture.get_temp_dir())
         self.useFixture(self.tarball_fixture)
+
+        self.unpack_dir_fixture = CreateTempDirFixture()
+        self.useFixture(self.unpack_dir_fixture)
+
+        self.useFixture(ChangeCurrentWorkingDirFixture(
+            self.unpack_dir_fixture.get_temp_dir()))
 
     def test_unpack_binary_tarball(self):
         rc = unpack_binary_tarball(self.tarball_fixture.get_tarball(),
@@ -228,7 +235,8 @@ class TestPopulateBoot(TestCaseWithFixtures):
         # want that.
         retval = _run_mkimage(
             'script', '0', '0', 'boot script', filename, img,
-            stdout=open(self.createTempFileAsFixture(), 'w'))
+            stdout=open(self.createTempFileAsFixture(), 'w'),
+            as_root=False)
 
         self.assertEqual(0, retval)
 
