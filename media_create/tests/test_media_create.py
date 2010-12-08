@@ -219,7 +219,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.assertRaises(
             ValueError, _get_file_matching, '/foo/bar/baz/*non-existent')
 
-    def DISABLED_test_run_mkimage(self):
+    def test_run_mkimage(self):
         # Create a fake boot script.
         filename = self._create_temp_file_as_fixture()
         f = open(filename, 'w')
@@ -232,7 +232,8 @@ class TestPopulateBoot(TestCaseWithFixtures):
         # want that.
         retval = _run_mkimage(
             'script', '0', '0', 'boot script', filename, img,
-            stdout=open(self._create_temp_file_as_fixture(), 'w'))
+            stdout=open(self._create_temp_file_as_fixture(), 'w'),
+            as_root=False)
 
         self.assertEqual(0, retval)
 

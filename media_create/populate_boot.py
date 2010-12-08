@@ -5,7 +5,7 @@ from media_create import cmd_runner
 
 
 def _run_mkimage(img_type, load_addr, entry_point, name, img_data, img,
-                 stdout=None):
+                 stdout=None, as_root=True):
     cmd = ['mkimage',
            '-A', 'arm',
            '-O', 'linux',
@@ -16,7 +16,7 @@ def _run_mkimage(img_type, load_addr, entry_point, name, img_data, img,
            '-n', name,
            '-d', img_data,
            img]
-    return cmd_runner.run(cmd, as_root=True, stdout=stdout)
+    return cmd_runner.run(cmd, as_root=as_root, stdout=stdout)
 
 
 def _get_file_matching(regex):
