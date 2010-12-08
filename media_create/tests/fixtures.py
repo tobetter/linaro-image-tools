@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import tempfile
 
+from media_create import create_partitions
 from media_create import cmd_runner
 
 
@@ -80,3 +81,27 @@ class MockDoRunFixture(MockSomethingFixture):
         if mock is None:
             mock = MockDoRun()
         super(MockDoRunFixture, self).__init__(cmd_runner, 'do_run', mock)
+
+
+class MockCallableWithPositionalArgs(object):
+    """A callable mock which just stores the positional args given to it.
+
+    Every time an instance of this is "called", it will append a tuple
+    containing the positional arguments given to it to self.calls. 
+    """
+    calls = None
+    return_value = None
+    def __call__(self, *args):
+        if self.calls is None:
+            self.calls = []
+        self.calls.append(args)
+        return self.return_value
+
+
+class MockRunSfdiskCommandsFixture(MockSomethingFixture):
+
+    def __init__(self):
+        mock = MockCallableWithPositionalArgs()
+        mock.return_value = ('', '')
+        super(MockRunSfdiskCommandsFixture, self).__init__(
+            create_partitions, 'run_sfdisk_commands', mock)
