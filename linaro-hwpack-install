@@ -28,7 +28,7 @@ HWPACK_DIR="${TEMP_DIR}/unpacked"
 INSTALL_LATEST="no"
 SOURCES_LIST_FILE="${TEMP_DIR}/sources.list"
 APT_GET_OPTIONS="Dir::Etc::SourceList=${SOURCES_LIST_FILE}"
-SUPPORTED_FORMATS="1.0"  # A space-separated list of hwpack formats.
+SUPPORTED_FORMATS="1.0 2.0"  # A space-separated list of hwpack formats.
 
 die() {
   echo -e "$@"
@@ -127,10 +127,17 @@ cat /etc/apt/sources.list >> "$SOURCES_LIST_FILE"
 sudo apt-get -o "$APT_GET_OPTIONS" update -qq
 
 echo -n "Installing packages ..."
-if [ "$INSTALL_LATEST" == "yes" ]; then
-  packages=`sed 's/=.*//' "${HWPACK_DIR}"/manifest`
-else
-  packages=`cat "${HWPACK_DIR}"/manifest`
+if [ "$format" == "1.0" ]; then
+  HWPACK_NAME=`grep NAME "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
+  HWPACK_VERSION=`grep VERSION "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
+  sudo apt-get -o "$APT_GET_OPTIONS" install "$HWPACK_NAME=$HWPACK_VERSION"
+elif [ "$format" == "1.0" ]; then
+  if [ "$INSTALL_LATEST" == "yes" ]; then
+    packages=`sed 's/=.*//' "${HWPACK_DIR}"/manifest`
+  else
+    packages=`cat "${HWPACK_DIR}"/manifest`
+  fi
+  sudo apt-get -o "$APT_GET_OPTIONS" install $packages
 fi
-sudo apt-get -o "$APT_GET_OPTIONS" install $packages
+
 echo "Done"
