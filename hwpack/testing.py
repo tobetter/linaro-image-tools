@@ -548,6 +548,10 @@ class AfterPreproccessing(object):
         self.preprocessor = preprocessor
         self.matcher = matcher
 
+    def __str__(self):
+        return "AfterPreproccessing(%s, %s)" % (
+            self.preprocessor, self.matcher)
+
     def match(self, value):
         value = self.preprocessor(value)
         return self.matcher.match(value)
