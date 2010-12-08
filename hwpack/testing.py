@@ -406,6 +406,11 @@ class EachOf(object):
 class MatchesStructure(object):
     """Matcher that matches an object structurally.
 
+    'Structurally' here means that attributes of the object being matched are
+    compared against given matchers.
+
+    `fromExample` allows the creation of a matcher from a prototype object and
+    then modified versions can be created with `update`.
     """
 
     def __init__(self, **kwargs):
@@ -437,11 +442,17 @@ class MatchesStructure(object):
 
 
 def MatchesPackage(example):
+    """Create a `MatchesStructure` object from a `FetchedPackage`."""
     return MatchesStructure.fromExample(
         example, *example._equality_attributes)
 
 
 class MatchesSetwise(object):
+    """Matches if all the matchers match elements of the value being matched.
+
+    The difference compared to `EachOf` is that the order of the matchings
+    does not matter.
+    """
 
     def __init__(self, *matchers):
         self.matchers = matchers
@@ -511,6 +522,7 @@ class MatchesSetwise(object):
                     msg, EachOf(remaining_matchers[:common_length])
                     ).match(not_matched[:common_length])
 
+
 def parse_packages_file_content(file_content):
     packages = []
     for para in Packages.iter_paragraphs(StringIO(file_content)):
@@ -529,19 +541,24 @@ def parse_packages_file_content(file_content):
     return packages
 
 
-class MatchesAsPackagesFile(object):
-    def __init__(self, *package_matchers):
-        self.package_matcher = MatchesSetwise(*package_matchers)
-
-    def match(self, packages_file_content):
-        return self.package_matcher.match(
-            parse_packages_file_content(packages_file_content))
-
-
 class AfterPreproccessing(object):
+    """Matches if the value matches after passing through a function."""
+
     def __init__(self, preprocessor, matcher):
         self.preprocessor = preprocessor
         self.matcher = matcher
+
     def match(self, value):
         value = self.preprocessor(value)
         return self.matcher.match(value)
+
+
+def MatchesAsPackagesFile(*package_matchers):
+    """Matches the contents of a Packages file against the given matchers.
+
+    The contents of the Packages file is turned into a list of FetchedPackages
+    using `parse_packages_file_content` above.
+    """
+
+    return AfterPreproccessing(
+        parse_packages_file_content, MatchesSetwise(*package_matchers))
