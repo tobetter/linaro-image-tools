@@ -337,7 +337,7 @@ class IsHardwarePack(Matcher):
         tf = tarfile.open(name=path, mode="r:gz")
         try:
             matchers = []
-            matchers.append(HardwarePackHasFile("FORMAT", content="1.0\n"))
+            matchers.append(HardwarePackHasFile("FORMAT", content="2.0\n"))
             matchers.append(HardwarePackHasFile(
                 "metadata", content=str(self.metadata)))
             manifest_lines = []
