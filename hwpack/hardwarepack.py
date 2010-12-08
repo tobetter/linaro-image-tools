@@ -164,6 +164,14 @@ class HardwarePack(object):
         self.packages += packages
 
     def add_dependency_package(self, packages_spec):
+        """Add a packge that depends on packages_spec to the hardware pack.
+
+        The added package will share the name, version and architecture of the
+        hardware pack itself.
+
+        :param packages_spec: A list of apt package specifications,
+            e.g. ``['foo', 'bar (>= 1.2)']``.
+        """
         with PackageMaker() as maker:
             if packages_spec:
                 relationships = {'Depends': ', '.join(packages_spec)}
