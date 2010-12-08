@@ -165,10 +165,13 @@ class HardwarePack(object):
 
     def add_dependency_package(self, packages_spec):
         with PackageMaker() as maker:
+            if packages_spec:
+                relationships = {'Depends': ', '.join(packages_spec)}
+            else:
+                relationships = {}
             deb_file_path = maker.make_package(
                 self.metadata.name, self.metadata.version,
-                {'Depends': ', '.join(packages_spec)},
-                self.metadata.architecture)
+                relationships, self.metadata.architecture)
             self.packages.append(FetchedPackage.from_deb(deb_file_path))
 
     def to_file(self, fileobj):

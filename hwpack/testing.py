@@ -576,6 +576,19 @@ def MatchesAsPackagesFile(*package_matchers):
     The contents of the Packages file is turned into a list of FetchedPackages
     using `parse_packages_file_content` above.
     """
-
     return AfterPreproccessing(
         parse_packages_file_content, MatchesSetwise(*package_matchers))
+
+
+def MatchesAsPackageContent(package_matcher):
+    """Match a package on disk against `package_matcher`."""
+
+    def load_from_disk(content):
+        fd, path = tempfile.mkstemp()
+        try:
+            os.write(fd, content)
+            os.close(fd)
+            return FetchedPackage.from_deb(path)
+        finally:
+            os.remove(path)
+    return AfterPreproccessing(load_from_disk, package_matcher)
