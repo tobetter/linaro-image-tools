@@ -33,12 +33,14 @@ def run_doctest(obj, name):
     r.run(t, out=output.write)
     return r.failures, output.getvalue()
 
+
 class TestEachOf(TestCase):
 
     def test_docstring(self):
         failure_count, output = run_doctest(EachOf, "EachOf")
         if failure_count:
             self.fail("Doctest failed with %s" % output)
+
 
 class TestMatchesStructure(TestCase):
 
@@ -102,6 +104,7 @@ class MatchesRegex(object):
     def match(self, value):
         if not re.match(self.pattern, value, self.flags):
             return Mismatch("%r did not match %r" % (self.pattern, value))
+
 
 class TestMatchesSetwise(TestCase):
 
