@@ -54,7 +54,7 @@ while [ $# -gt 0 ]; do
     --*)
       die $usage_msg "\nUnrecognized option: \"$1\"";;
     *)
-      [ "$HWPACK_TARBALL_FOUND" = "yes" ] && die $usage_msgs
+      [ "$HWPACK_TARBALL_FOUND" = "yes" ] && die $usage_msg
       HWPACK_TARBALL="$1"
       HWPACK_TARBALL_FOUND="yes"
       shift;;
