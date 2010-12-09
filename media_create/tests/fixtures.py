@@ -70,7 +70,17 @@ class MockDoRun(object):
         return 0
 
 
-class MockDoRunFixture(MockSomethingFixture):
+class MockCmdRunnerPopen(object):
+    def __call__(self, args, **kwargs):
+        self.args = args
+        self.returncode = 0
+        return self
+
+    def wait(self):
+        return self.returncode
+
+
+class MockCmdRunnerPopenFixture(MockSomethingFixture):
     """A test fixture which mocks cmd_runner.do_run with the given mock.
 
     If no mock is given, MockDoRun is used.
@@ -78,8 +88,9 @@ class MockDoRunFixture(MockSomethingFixture):
 
     def __init__(self, mock=None):
         if mock is None:
-            mock = MockDoRun()
-        super(MockDoRunFixture, self).__init__(cmd_runner, 'do_run', mock)
+            mock = MockCmdRunnerPopen()
+        super(MockCmdRunnerPopenFixture, self).__init__(
+            cmd_runner, 'Popen', mock)
 
 
 class ChangeCurrentWorkingDirFixture(object):
