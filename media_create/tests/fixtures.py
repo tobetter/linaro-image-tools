@@ -63,24 +63,29 @@ class MockSomethingFixture(object):
         setattr(self.obj, self.attr_name, self.orig_attr)
 
 
-class MockDoRun(object):
-    """A mock for do_run() which just stores the args given to it."""
+class MockCmdRunnerPopen(object):
+    """A mock for cmd_runner.Popen() which stores the args given to it."""
     args = None
     def __call__(self, args, **kwargs):
         self.args = args
-        return 0
+        self.returncode = 0
+        return self
+
+    def wait(self):
+        return self.returncode
 
 
-class MockDoRunFixture(MockSomethingFixture):
+class MockCmdRunnerPopenFixture(MockSomethingFixture):
     """A test fixture which mocks cmd_runner.do_run with the given mock.
 
-    If no mock is given, MockDoRun is used.
+    If no mock is given, a MockCmdRunnerPopen instance is used.
     """
 
     def __init__(self, mock=None):
         if mock is None:
-            mock = MockDoRun()
-        super(MockDoRunFixture, self).__init__(cmd_runner, 'do_run', mock)
+            mock = MockCmdRunnerPopen()
+        super(MockCmdRunnerPopenFixture, self).__init__(
+            cmd_runner, 'Popen', mock)
 
 
 class ChangeCurrentWorkingDirFixture(object):

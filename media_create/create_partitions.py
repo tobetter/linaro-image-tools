@@ -24,13 +24,10 @@ def run_sfdisk_commands(commands, heads, sectors, cylinders_arg, device,
     if as_root:
         args = args[:]
         args.insert(0, 'sudo')
-    proc = subprocess.Popen(
+    proc = cmd_runner.Popen(
         args, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.PIPE)
-    stdout, stderr = proc.communicate("%s\n" % commands)
-    if proc.returncode != 0:
-        raise cmd_runner.SubcommandNonZeroReturnValue(args, proc.returncode)
-    return stdout, stderr
+    return proc.communicate("%s\n" % commands)
 
 
 def create_partitions(board, device, fat_size, heads, sectors, cylinders_arg):
