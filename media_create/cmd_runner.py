@@ -16,15 +16,27 @@ def run(args, as_root=False, stdout=None):
     if as_root:
         args = args[:]
         args.insert(0, 'sudo')
-    return_value = do_run(args, stdout=stdout)
-    if return_value != 0:
-        raise SubcommandNonZeroReturnValue(args, return_value)
-    return return_value
+    proc = Popen(args, stdout=stdout)
+    proc.wait()
+    return proc.returncode
 
 
-def do_run(args, stdout=None):
-    """A wrapper around subprocess.call() to make testing easier."""
-    return subprocess.call(args, stdout=stdout)
+class Popen(subprocess.Popen):
+    """A version of Popen which raises an error on non-zero returncode.
+
+    Once the subprocess completes we check its returncode and raise
+    SubcommandNonZeroReturnValue if it's non-zero.
+    """
+
+    def __init__(self, args, **kwargs):
+        self._my_args = args
+        super(Popen, self).__init__(args, **kwargs)
+
+    def wait(self):
+        returncode = super(Popen, self).wait()
+        if returncode != 0:
+            raise SubcommandNonZeroReturnValue(self._my_args, returncode)
+        return returncode
 
 
 class SubcommandNonZeroReturnValue(Exception):
