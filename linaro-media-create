@@ -373,10 +373,10 @@ install_hwpack() {
   echo "---------------------------------------------------"
   echo "Installing (apt-get) $HWPACK_FILE in target rootfs."
   echo ""
-  if [ $HWPACK_FORCE_YES = 'yes' ]; then
-    sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /"$(basename "$HWPACK_FILE")"
-  else
+  if [ "$HWPACK_FORCE_YES" = "yes" ]; then
     sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install --force-yes /"$(basename "$HWPACK_FILE")"
+  else
+    sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /"$(basename "$HWPACK_FILE")"
   fi
   echo "---------------------------------------------------"
   echo ""
