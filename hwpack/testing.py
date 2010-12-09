@@ -345,7 +345,8 @@ class IsHardwarePack(Matcher):
                 manifest_lines.append(
                     "%s=%s" % (package.name, package.version))
             manifest_lines.append(
-                "%s=%s" % (self.metadata.name, self.metadata.version))
+                "%s=%s" % (
+                    'hwpack-' + self.metadata.name, self.metadata.version))
             matchers.append(
                 HardwarePackHasFile(
                     "manifest",
@@ -362,7 +363,7 @@ class IsHardwarePack(Matcher):
             package_matchers = [
                 MatchesPackage(p) for p in  packages_with_content]
             dep_package_matcher = MatchesStructure(
-                    name=Equals(self.metadata.name),
+                    name=Equals('hwpack-' + self.metadata.name),
                     version=Equals(self.metadata.version),
                     architecture=Equals(self.metadata.architecture))
             if self.package_spec:

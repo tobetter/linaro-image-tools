@@ -234,11 +234,11 @@ class HardwarePackTests(TestCase):
             tf,
             HardwarePackHasFile(
                 "pkgs/%s_%s_%s.deb" % (
-                    self.metadata.name, self.metadata.version,
+                    'hwpack-' + self.metadata.name, self.metadata.version,
                     self.metadata.architecture),
                 content_matcher=MatchesAsPackageContent(
                     MatchesStructure(
-                        name=Equals(self.metadata.name),
+                        name=Equals('hwpack-' + self.metadata.name),
                         architecture=Equals(self.metadata.architecture),
                         depends=Equals(None),
                         version=Equals(self.metadata.version)))))
@@ -251,11 +251,11 @@ class HardwarePackTests(TestCase):
             tf,
             HardwarePackHasFile(
                 "pkgs/%s_%s_%s.deb" % (
-                    self.metadata.name, self.metadata.version,
+                    'hwpack-' + self.metadata.name, self.metadata.version,
                     self.metadata.architecture),
                 content_matcher=MatchesAsPackageContent(
                     MatchesStructure(
-                        name=Equals(self.metadata.name),
+                        name=Equals('hwpack-' + self.metadata.name),
                         architecture=Equals(self.metadata.architecture),
                         depends=Equals("foo, bar (= 1.0)"),
                         version=Equals(self.metadata.version)))))
@@ -270,7 +270,7 @@ class HardwarePackTests(TestCase):
                 "pkgs/Packages",
                 content_matcher=MatchesAsPackagesFile(
                     MatchesStructure(
-                        name=Equals(self.metadata.name),
+                        name=Equals('hwpack-' + self.metadata.name),
                         architecture=Equals(self.metadata.architecture),
                         depends=Equals("foo, bar (= 1.0)"),
                         version=Equals(self.metadata.version)))))

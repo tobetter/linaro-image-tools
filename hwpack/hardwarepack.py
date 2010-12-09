@@ -178,7 +178,7 @@ class HardwarePack(object):
             else:
                 relationships = {}
             deb_file_path = maker.make_package(
-                self.metadata.name, self.metadata.version,
+                'hwpack-' + self.metadata.name, self.metadata.version,
                 relationships, self.metadata.architecture)
             self.packages.append(FetchedPackage.from_deb(deb_file_path))
 
