@@ -17,6 +17,7 @@ from media_create.create_partitions import (
     create_partitions,
     run_sfdisk_commands,
     )
+from media_create.partition_size import calculate_partition_size_and_offset
 from media_create.populate_boot import (
     make_boot_script,
     make_uImage,
@@ -301,3 +302,20 @@ class TestCreatePartitions(TestCaseWithFixtures):
             cmd_runner.SubcommandNonZeroReturnValue,
             run_sfdisk_commands,
             ',1,0xDA', 5, 63, '', tempfile, as_root=False)
+
+
+class TestCalculatePartitionSizeAndOffset(TestCaseWithFixtures):
+
+    def test_foo(self):
+        tempfile = self.createTempFileAsFixture()
+        cmd_runner.run(['qemu-img', 'create', '-f', 'raw', tempfile, '10M'],
+                       stdout=subprocess.PIPE)
+        stdout, stderr = run_sfdisk_commands(
+            ',1,0x0C,*\n,,,-', 5, 63, '', tempfile, as_root=False)
+        self.assertIn('Successfully wrote the new partition table', stdout)
+
+        vfat_size, vfat_offset, linux_size, linux_offset = (
+            calculate_partition_size_and_offset(tempfile))
+        self.assertEqual(
+            [129024L, 32256L, 10321920L, 161280L],
+            [vfat_size, vfat_offset, linux_size, linux_offset])
