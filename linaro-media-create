@@ -37,6 +37,7 @@ ROOTFS_STEP="populate_rootfs"
 PARTITION_STEP="create_partitions"
 mmc_option="0:1"
 boot_args_options="rootwait ro"
+HWPACK_FORCE_YES="no"
 
 DIR=$PWD
 TMP_DIR=$(mktemp -d)
@@ -211,6 +212,9 @@ while [ ! -z "$1" ]; do
       checkparm "$2"
       HWPACK_FILE="$2"
       ;;
+    --hwpack-force-yes)
+      HWPACK_FORCE_YES="yes"
+      ;;
     --mmc)
       checkparm "$2"
       DEVICE="$2"
@@ -369,7 +373,11 @@ install_hwpack() {
   echo "---------------------------------------------------"
   echo "Installing (apt-get) $HWPACK_FILE in target rootfs."
   echo ""
-  sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /"$(basename "$HWPACK_FILE")"
+  if [ $HWPACK_FORCE_YES = 'yes' ]; then
+    sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install $HWPACK_ARGS
+  else
+    sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install --force-yes $HWPACK_ARGS
+  fi
   echo "---------------------------------------------------"
   echo ""
 
