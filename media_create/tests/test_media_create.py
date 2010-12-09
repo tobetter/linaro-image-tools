@@ -246,42 +246,42 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
     def test_create_partitions_for_mx51evk(self):
         # For this board we create a one cylinder partition at the beginning.
-        do_run_fixture = self.useFixture(MockDoRunFixture())
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
         create_partitions('mx51evk', '/dev/sdz', 32, 255, 63, '')
 
         self.assertEqual(
             ['sudo', 'parted', '-s', '/dev/sdz', 'mklabel', 'msdos'],
-            do_run_fixture.mock.args)
+            popen_fixture.mock.args)
         self.assertEqual(
             [(',1,0xDA', 255, 63, '', '/dev/sdz'),
              (',9,0x0C,*\n,,,-', 255, 63, '', '/dev/sdz')],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):
-        do_run_fixture = self.useFixture(MockDoRunFixture())
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
         create_partitions('beagle', '/dev/sdz', 32, 255, 63, '')
 
         self.assertEqual(
             ['sudo', 'parted', '-s', '/dev/sdz', 'mklabel', 'msdos'],
-            do_run_fixture.mock.args)
+            popen_fixture.mock.args)
         self.assertEqual(
             [(',9,0x0C,*\n,,,-', 255, 63, '', '/dev/sdz')],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_with_img_file(self):
-        do_run_fixture = self.useFixture(MockDoRunFixture())
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
         tempfile = self.createTempFileAsFixture()
         create_partitions('beagle', tempfile, 32, 255, 63, '')
 
-        # do_run() was not called as there's no existing partition table for
+        # popen() was not called as there's no existing partition table for
         # us to overwrite on the image file.
-        self.assertEqual(None, do_run_fixture.mock.args)
+        self.assertEqual(None, popen_fixture.mock.args)
 
         self.assertEqual(
             [(',9,0x0C,*\n,,,-', 255, 63, '', tempfile)],
