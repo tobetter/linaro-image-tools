@@ -16,7 +16,9 @@ def _run_mkimage(img_type, load_addr, entry_point, name, img_data, img,
            '-n', name,
            '-d', img_data,
            img]
-    return cmd_runner.run(cmd, as_root=as_root, stdout=stdout)
+    proc = cmd_runner.run(cmd, as_root=as_root, stdout=stdout)
+    proc.wait()
+    return proc.returncode
 
 
 def _get_file_matching(regex):

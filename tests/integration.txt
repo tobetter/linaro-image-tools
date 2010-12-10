@@ -1,0 +1,7 @@
+A few integration tests we can run while the migration to python is not
+complete.  They probably require root or access to specific block devices so
+they are not meant to be automated.
+
+    >>> python -m media_create.setup_partitions beagle /dev/sdb 32 2G yes
+
+    >>> python -m media_create.setup_partitions beagle /tmp/beagle.img 32 2G yes

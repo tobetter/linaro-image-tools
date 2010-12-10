@@ -12,12 +12,18 @@ from hwpack.testing import TestCaseWithFixtures
 from media_create import cmd_runner
 from media_create import ensure_command
 from media_create import populate_boot
+from media_create import setup_partitions
 from media_create.boot_cmd import create_boot_cmd
 from media_create.create_partitions import (
     create_partitions,
     run_sfdisk_commands,
     )
-from media_create.partition_size import calculate_partition_size_and_offset
+from media_create.setup_partitions import (
+    calculate_partition_size_and_offset,
+    convert_size_to_bytes,
+    get_boot_and_root_partitions_for_media,
+    Media,
+    )
 from media_create.populate_boot import (
     make_boot_script,
     make_uImage,
@@ -133,8 +139,8 @@ class TestCmdRunner(TestCaseWithFixtures):
     def test_run(self):
         fixture = MockCmdRunnerPopenFixture()
         self.useFixture(fixture)
-        return_code = cmd_runner.run(['foo', 'bar', 'baz'])
-        self.assertEqual(0, return_code)
+        proc = cmd_runner.run(['foo', 'bar', 'baz'])
+        self.assertEqual(0, proc.returncode)
         self.assertEqual(['foo', 'bar', 'baz'], fixture.mock.args)
 
     def test_run_as_root(self):
@@ -144,13 +150,17 @@ class TestCmdRunner(TestCaseWithFixtures):
         self.assertEqual(['sudo', 'foo', 'bar'], fixture.mock.args)
 
     def test_run_succeeds_on_zero_return_code(self):
-        return_code = cmd_runner.run(['true'])
-        self.assertEqual(0, return_code)
+        proc = cmd_runner.run(['true'])
+        # Need to wait() here as we're using the real Popen.
+        proc.wait()
+        self.assertEqual(0, proc.returncode)
 
     def test_run_raises_exception_on_non_zero_return_code(self):
+        def run_and_wait():
+            proc = cmd_runner.run(['false'])
+            proc.wait()
         self.assertRaises(
-            cmd_runner.SubcommandNonZeroReturnValue,
-            cmd_runner.run, ['false'])
+            cmd_runner.SubcommandNonZeroReturnValue, run_and_wait)
 
     def test_run_must_be_given_list_as_args(self):
         self.assertRaises(AssertionError, cmd_runner.run, 'true')
@@ -245,32 +255,34 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
 class TestCreatePartitions(TestCaseWithFixtures):
 
+    media = Media('/dev/sdz')
+
     def test_create_partitions_for_mx51evk(self):
         # For this board we create a one cylinder partition at the beginning.
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
-        create_partitions('mx51evk', '/dev/sdz', 32, 255, 63, '')
+        create_partitions('mx51evk', self.media, 32, 255, 63, '')
 
         self.assertEqual(
-            ['sudo', 'parted', '-s', '/dev/sdz', 'mklabel', 'msdos'],
+            ['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
             popen_fixture.mock.args)
         self.assertEqual(
-            [(',1,0xDA', 255, 63, '', '/dev/sdz'),
-             (',9,0x0C,*\n,,,-', 255, 63, '', '/dev/sdz')],
+            [(',1,0xDA', 255, 63, '', self.media.path),
+             (',9,0x0C,*\n,,,-', 255, 63, '', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
-        create_partitions('beagle', '/dev/sdz', 32, 255, 63, '')
+        create_partitions('beagle', self.media, 32, 255, 63, '')
 
         self.assertEqual(
-            ['sudo', 'parted', '-s', '/dev/sdz', 'mklabel', 'msdos'],
+            ['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
             popen_fixture.mock.args)
         self.assertEqual(
-            [(',9,0x0C,*\n,,,-', 255, 63, '', '/dev/sdz')],
+            [(',9,0x0C,*\n,,,-', 255, 63, '', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_with_img_file(self):
@@ -278,7 +290,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
         tempfile = self.createTempFileAsFixture()
-        create_partitions('beagle', tempfile, 32, 255, 63, '')
+        create_partitions('beagle', Media(tempfile), 32, 255, 63, '')
 
         # popen() was not called as there's no existing partition table for
         # us to overwrite on the image file.
@@ -290,10 +302,13 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
     def test_run_sfdisk_commands(self):
         tempfile = self.createTempFileAsFixture()
-        cmd_runner.run(['qemu-img', 'create', '-f', 'raw', tempfile, '10M'],
-                       stdout=subprocess.PIPE)
+        proc = cmd_runner.run(
+            ['qemu-img', 'create', '-f', 'raw', tempfile, '10M'],
+            stdout=subprocess.PIPE)
+        proc.communicate()
         stdout, stderr = run_sfdisk_commands(
-            ',1,0xDA', 5, 63, '', tempfile, as_root=False)
+            ',1,0xDA', 5, 63, '', tempfile, as_root=False,
+            stderr=subprocess.PIPE)
         self.assertIn('Successfully wrote the new partition table', stdout)
 
     def test_run_sfdisk_commands_raises_on_non_zero_returncode(self):
@@ -301,21 +316,66 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertRaises(
             cmd_runner.SubcommandNonZeroReturnValue,
             run_sfdisk_commands,
-            ',1,0xDA', 5, 63, '', tempfile, as_root=False)
+            ',1,0xDA', 5, 63, '', tempfile, as_root=False,
+            stderr=subprocess.PIPE)
 
 
-class TestCalculatePartitionSizeAndOffset(TestCaseWithFixtures):
+class TestPartitionSetup(TestCaseWithFixtures):
 
-    def test_foo(self):
-        tempfile = self.createTempFileAsFixture()
-        cmd_runner.run(['qemu-img', 'create', '-f', 'raw', tempfile, '10M'],
-                       stdout=subprocess.PIPE)
-        stdout, stderr = run_sfdisk_commands(
-            ',1,0x0C,*\n,,,-', 5, 63, '', tempfile, as_root=False)
-        self.assertIn('Successfully wrote the new partition table', stdout)
+    def test_convert_size_in_kbytes_to_bytes(self):
+        self.assertEqual(10 * 1024, convert_size_to_bytes('10K'))
 
+    def test_convert_size_in_mbytes_to_bytes(self):
+        self.assertEqual(11 * 1024 * 1024, convert_size_to_bytes('11M'))
+
+    def test_convert_size_in_gbytes_to_bytes(self):
+        self.assertEqual(
+            12 * 1024 * 1024 * 1024, convert_size_to_bytes('12G'))
+
+    # There's a race somewhere on the path executed by this test.
+    def test_calculate_partition_size_and_offset(self):
+        tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
         vfat_size, vfat_offset, linux_size, linux_offset = (
             calculate_partition_size_and_offset(tempfile))
         self.assertEqual(
             [129024L, 32256L, 10321920L, 161280L],
             [vfat_size, vfat_offset, linux_size, linux_offset])
+
+    def test_get_boot_and_root_partitions_for_media_with_2_partitions(self):
+        self.useFixture(MockSomethingFixture(
+            setup_partitions, '_get_partition_count', lambda media: 2))
+        tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
+        media = Media(tempfile)
+        # Pretend the image file is a block device, or else
+        # get_boot_and_root_partitions_for_media will choke.
+        media.is_block_device = True
+        self.assertEqual(
+            ("%s%d" % (tempfile, 1), "%s%d" % (tempfile, 2)),
+            get_boot_and_root_partitions_for_media(media))
+
+    def test_get_boot_and_root_partitions_for_media_with_3_partitions(self):
+        self.useFixture(MockSomethingFixture(
+            setup_partitions, '_get_partition_count', lambda media: 3))
+        tempfile = self._create_qemu_img_with_partitions(
+            ',1,0xDA\n,1,0x0C,*\n,,,-')
+        media = Media(tempfile)
+        # Pretend the image file is a block device, or else
+        # get_boot_and_root_partitions_for_media will choke.
+        media.is_block_device = True
+        self.assertEqual(
+            ("%s%d" % (tempfile, 2), "%s%d" % (tempfile, 3)),
+            get_boot_and_root_partitions_for_media(media))
+
+    def _create_qemu_img_with_partitions(self, sfdisk_commands):
+        tempfile = self.createTempFileAsFixture()
+        proc = cmd_runner.run(
+            ['qemu-img', 'create', '-f', 'raw', tempfile, '10M'],
+            stdout=subprocess.PIPE)
+        proc.communicate()
+        stdout, stderr = run_sfdisk_commands(
+            sfdisk_commands, 5, 63, '', tempfile, as_root=False,
+            # Throw away stderr as sfdisk complains a lot when operating on a
+            # qemu image.
+            stderr=subprocess.PIPE)
+        self.assertIn('Successfully wrote the new partition table', stdout)
+        return tempfile
