@@ -149,8 +149,8 @@ fi
 
 HWPACK_NAME=`grep NAME "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
 HWPACK_VERSION=`grep VERSION "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
-dependency_package="hwpack-${HWPACK_NAME}=${HWPACK_VERSION}"
-if grep -q "^${dependency_package}\$" "${HWPACK_DIR}"/manifest; then
+dependency_package="hwpack-${HWPACK_NAME}"
+if grep -q "^${dependency_package}=${HWPACK_VERSION}\$" "${HWPACK_DIR}"/manifest; then
   DEP_PACKAGE_PRESENT="yes"
 else
   DEP_PACKAGE_PRESENT="no"
@@ -160,7 +160,7 @@ if [ "$DEP_PACKAGE_PRESENT" == "yes" ]; then
   if [ "$INSTALL_LATEST" == "yes" ]; then
     dependency_package="${dependency_package}-latest"
   fi
-  sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" install "${dependency_package}"
+  sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" install "${dependency_package}=${HWPACK_VERSION}"
 else
   if [ "$INSTALL_LATEST" == "yes" ]; then
     packages=`sed 's/=.*//' "${HWPACK_DIR}"/manifest`
