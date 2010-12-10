@@ -111,9 +111,9 @@ class HardwarePackTests(TestCase):
         super(HardwarePackTests, self).setUp()
         self.metadata = Metadata("ahwpack", "4", "armel")
 
-    def test_format_is_2_0(self):
+    def test_format_is_1_0(self):
         hwpack = HardwarePack(self.metadata)
-        self.assertEqual("2.0", hwpack.FORMAT)
+        self.assertEqual("1.0", hwpack.FORMAT)
 
     def test_format_has_no_spaces(self):
         hwpack = HardwarePack(self.metadata)

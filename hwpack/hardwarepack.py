@@ -96,7 +96,7 @@ class HardwarePack(object):
     """
 
     # The format version cannot contain white spaces. 
-    FORMAT = "2.0"
+    FORMAT = "1.0"
     FORMAT_FILENAME = "FORMAT"
     METADATA_FILENAME = "metadata"
     MANIFEST_FILENAME = "manifest"
