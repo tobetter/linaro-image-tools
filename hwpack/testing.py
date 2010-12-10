@@ -347,6 +347,10 @@ class IsHardwarePack(Matcher):
             manifest_lines.append(
                 "%s=%s" % (
                     'hwpack-' + self.metadata.name, self.metadata.version))
+            manifest_lines.append(
+                "%s=%s" % (
+                    'hwpack-' + self.metadata.name + '-latest',
+                    self.metadata.version))
             matchers.append(
                 HardwarePackHasFile(
                     "manifest",
@@ -362,13 +366,22 @@ class IsHardwarePack(Matcher):
                     content=package.content.read()))
             package_matchers = [
                 MatchesPackage(p) for p in  packages_with_content]
+            dep_package_depedencies_matchers = [
+                Equals('%s (= %s)' % (p.name, p.version)) for p in self.packages]
             dep_package_matcher = MatchesStructure(
-                    name=Equals('hwpack-' + self.metadata.name),
-                    version=Equals(self.metadata.version),
-                    architecture=Equals(self.metadata.architecture))
-            if self.package_spec:
-                dep_package_matcher.update(depends=self.package_spec)
+                name=Equals('hwpack-' + self.metadata.name),
+                version=Equals(self.metadata.version),
+                architecture=Equals(self.metadata.architecture),
+                depends=MatchesPackageRelationshipList(
+                    dep_package_depedencies_matchers))
             package_matchers.append(dep_package_matcher)
+            latest_dep_package_matcher = MatchesStructure(
+                name=Equals('hwpack-' + self.metadata.name + '-latest'),
+                version=Equals(self.metadata.version),
+                architecture=Equals(self.metadata.architecture))
+            if self.package_spec:
+                latest_dep_package_matcher.update(depends=self.package_spec)
+            package_matchers.append(latest_dep_package_matcher)
             matchers.append(HardwarePackHasFile(
                 "pkgs/Packages",
                 content_matcher=MatchesAsPackagesFile(
@@ -593,3 +606,13 @@ def MatchesAsPackageContent(package_matcher):
         finally:
             os.remove(path)
     return AfterPreproccessing(load_from_disk, package_matcher)
+
+
+def MatchesPackageRelationshipList(relationship_matchers):
+    """XXX"""
+    def process(relationships):
+        if relationships is None:
+            return []
+        return [rel.strip() for rel in relationships.split(',')]
+    return AfterPreproccessing(
+        process, MatchesSetwise(*relationship_matchers))

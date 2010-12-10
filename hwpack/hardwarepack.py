@@ -163,8 +163,8 @@ class HardwarePack(object):
         """
         self.packages += packages
 
-    def add_dependency_package(self, packages_spec):
-        """Add a packge that depends on packages_spec to the hardware pack.
+    def add_dependency_packages(self, packages_spec):
+        """XXX Add a package that depends on packages_spec to the hardware pack.
 
         The added package will share the name, version and architecture of the
         hardware pack itself.
@@ -173,13 +173,24 @@ class HardwarePack(object):
             e.g. ``['foo', 'bar (>= 1.2)']``.
         """
         with PackageMaker() as maker:
-            if packages_spec:
-                relationships = {'Depends': ', '.join(packages_spec)}
+            deps = ['%s (= %s)'%(p.name, p.version) for p in self.packages]
+            if deps:
+                relationships = {'Depends': ', '.join(deps)}
             else:
                 relationships = {}
             deb_file_path = maker.make_package(
                 'hwpack-' + self.metadata.name, self.metadata.version,
                 relationships, self.metadata.architecture)
+            self.packages.append(FetchedPackage.from_deb(deb_file_path))
+
+            if packages_spec:
+                relationships = {'Depends': ', '.join(packages_spec)}
+            else:
+                relationships = {}
+            deb_file_path = maker.make_package(
+                'hwpack-' + self.metadata.name + '-latest',
+                self.metadata.version, relationships,
+                self.metadata.architecture)
             self.packages.append(FetchedPackage.from_deb(deb_file_path))
 
     def to_file(self, fileobj):
