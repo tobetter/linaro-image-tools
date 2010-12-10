@@ -230,27 +230,35 @@ class HardwarePackTests(TestCase):
             Not(HardwarePackHasFile("pkgs/%s" % package1.filename)))
 
     def matcher_for_dependency_package(self, metadata, packages):
+        dep_package_name = 'hwpack-%s' % metadata.name
+        latest_dep_package_name = 'hwpack-%s-latest' % metadata.name
         if packages == []:
             dep_matcher = Equals(None)
         else:
             dep_matcher = MatchesPackageRelationshipList(
                 [Equals('%s (= %s)' % (p.name, p.version)) for p in packages])
         return MatchesStructure(
-            name=Equals('hwpack-' + self.metadata.name),
+            name=Equals(dep_package_name),
             architecture=Equals(self.metadata.architecture),
+            breaks=Equals(latest_dep_package_name),
+            replaces=Equals(latest_dep_package_name),
             depends=dep_matcher,
             version=Equals(self.metadata.version))
 
     def matcher_for_latest_dependency_package(self, metadata, package_spec):
+        dep_package_name = 'hwpack-%s' % metadata.name
+        latest_dep_package_name = 'hwpack-%s-latest' % metadata.name
         if package_spec == []:
             dep_matcher = Equals(None)
         else:
             dep_matcher = MatchesPackageRelationshipList(
                 [Equals(p) for p in package_spec])
         return MatchesStructure(
-            name=Equals('hwpack-' + metadata.name + '-latest'),
+            name=Equals(latest_dep_package_name),
             architecture=Equals(metadata.architecture),
             depends=dep_matcher,
+            breaks=Equals(dep_package_name),
+            replaces=Equals(dep_package_name),
             version=Equals(metadata.version))
 
     def test_add_dependency_package_adds_packages(self):
