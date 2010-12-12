@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import tempfile
 
+from media_create import create_partitions
 from media_create import cmd_runner
 
 
@@ -62,24 +63,29 @@ class MockSomethingFixture(object):
         setattr(self.obj, self.attr_name, self.orig_attr)
 
 
-class MockDoRun(object):
-    """A mock for do_run() which just stores the args given to it."""
+class MockCmdRunnerPopen(object):
+    """A mock for cmd_runner.Popen() which stores the args given to it."""
     args = None
     def __call__(self, args, **kwargs):
         self.args = args
-        return 0
+        self.returncode = 0
+        return self
+
+    def wait(self):
+        return self.returncode
 
 
-class MockDoRunFixture(MockSomethingFixture):
+class MockCmdRunnerPopenFixture(MockSomethingFixture):
     """A test fixture which mocks cmd_runner.do_run with the given mock.
 
-    If no mock is given, MockDoRun is used.
+    If no mock is given, a MockCmdRunnerPopen instance is used.
     """
 
     def __init__(self, mock=None):
         if mock is None:
-            mock = MockDoRun()
-        super(MockDoRunFixture, self).__init__(cmd_runner, 'do_run', mock)
+            mock = MockCmdRunnerPopen()
+        super(MockCmdRunnerPopenFixture, self).__init__(
+            cmd_runner, 'Popen', mock)
 
 
 class ChangeCurrentWorkingDirFixture(object):
@@ -93,3 +99,27 @@ class ChangeCurrentWorkingDirFixture(object):
 
     def tearDown(self):
         os.chdir(self.orig_cwd)
+
+
+class MockCallableWithPositionalArgs(object):
+    """A callable mock which just stores the positional args given to it.
+
+    Every time an instance of this is "called", it will append a tuple
+    containing the positional arguments given to it to self.calls.
+    """
+    calls = None
+    return_value = None
+    def __call__(self, *args):
+        if self.calls is None:
+            self.calls = []
+        self.calls.append(args)
+        return self.return_value
+
+
+class MockRunSfdiskCommandsFixture(MockSomethingFixture):
+
+    def __init__(self):
+        mock = MockCallableWithPositionalArgs()
+        mock.return_value = ('', '')
+        super(MockRunSfdiskCommandsFixture, self).__init__(
+            create_partitions, 'run_sfdisk_commands', mock)

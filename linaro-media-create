@@ -446,54 +446,18 @@ register_loopback() {
 }
 
 create_partitions() {
-  if [ "${DEVICE}" ]; then
-    sudo parted -s ${DEVICE} mklabel msdos
-  fi
+  python -m media_create.create_partitions "${DEVIMAGE}" \
+      "${DEVICE-$IMAGE_FILE}" "$FAT_SIZE" "$HEADS" "$SECTORS" "$CYLINDER_ARG"
 
   if [ "${IMAGE_FILE}" ]; then
-    partdev=${IMAGE_FILE}
-  else
-    partdev=${DEVICE}
-  fi
-
-  if [ "$FAT_SIZE" = "32" ]; then
-    PARTITION_TYPE="0x0C"
-  else
-    PARTITION_TYPE="0x0E"
-  fi
-
-  # Create:
-  # - on mx51evk, a one cylinder partition for fixed-offset bootloader data at
-  #   the beginning of the image (size is one cylinder, so 8224768 bytes with
-  #   the first sector for MBR),
-  # - a VFAT or FAT16 partition of 9 cylinders (74027520 bytes, ~70 MiB)
-  #    and a linux partition of the rest
-  # - a Linux type rootfs for the rest of the space
-  (
-    if [ "$DEVIMAGE" = mx51evk ]; then
-      cat <<EOF
-,1,0xDA
-EOF
-    fi
-    cat <<EOF
-,9,$PARTITION_TYPE,*
-,,,-
-EOF
-  ) | sudo sfdisk -D -H $HEADS -S $SECTORS $CYLINDER_ARG $partdev
-
-  if [ "${IMAGE_FILE}" ]; then
-  VFATOFFSET=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep FAT | awk '{print $3}')*512))
-  VFATSIZE2=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep FAT | awk '{print $4}')))
-  VFATSIZE1=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep FAT | awk '{print $3}')))
-  VFATSIZE=$((((VFATSIZE2+1-VFATSIZE1)/2)*1024))
-  ROOTOFFSET=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $2}')*512))
-  ROOTSIZE2=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $3}')))
-  ROOTSIZE1=$(($(LC_ALL=C fdisk -l -u "$IMAGE_FILE" | grep Linux | awk '{print $2}')))
-  ROOTSIZE=$((((ROOTSIZE2+1-ROOTSIZE1)/2)*1024))
-  BOOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $VFATOFFSET --sizelimit $VFATSIZE)
-  register_loopback "$BOOTFS"
-  ROOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $ROOTOFFSET --sizelimit $ROOTSIZE)
-  register_loopback "$ROOTFS"
+    sizes_and_offsets=$(python -m media_create.partition_size "${IMAGE_FILE}")
+    eval $sizes_and_offsets
+    BOOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $VFATOFFSET \
+             --sizelimit $VFATSIZE)
+    register_loopback "$BOOTFS"
+    ROOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $ROOTOFFSET \
+             --sizelimit $ROOTSIZE)
+    register_loopback "$ROOTFS"
   fi
 }
 
@@ -636,6 +600,7 @@ setup_sizes() {
   fi
 }
 
+# XXX: Apparently there's no need to run qemu-img as root.
 setup_image() {
   sudo qemu-img create -f raw "$IMAGE_FILE" $IMAGE_SIZE
 }
