@@ -26,6 +26,7 @@ LOCKFILE="/var/lock/hwpack"
 TEMP_DIR=$(mktemp -d)
 HWPACK_DIR="${TEMP_DIR}/unpacked"
 INSTALL_LATEST="no"
+FORCE_YES="no"
 SOURCES_LIST_FILE="${TEMP_DIR}/sources.list"
 APT_GET_OPTIONS="Dir::Etc::SourceList=${SOURCES_LIST_FILE}"
 SUPPORTED_FORMATS="1.0"  # A space-separated list of hwpack formats.
@@ -35,20 +36,32 @@ die() {
   exit 1
 }
 
-usage_msg="Usage: $(basename $0) [--install-latest] HWPACK_TARBALL"
+usage_msg="Usage: $(basename $0) [--install-latest] [--force-yes] HWPACK_TARBALL"
 if [ $# -eq 0 ]; then
   die $usage_msg
-elif [ $# -eq 1 ]; then
-  HWPACK_TARBALL=$1
-elif [ $# -eq 2 ]; then
-  if [ "$1" != "--install-latest" ]; then
-    die "Unknown argument: $1 \n$usage_msg"
-  fi
-  INSTALL_LATEST="yes"
-  HWPACK_TARBALL=$2
-else
-  die $usage_msg
 fi
+
+HWPACK_TARBALL_FOUND="no"
+
+while [ $# -gt 0 ]; do
+  case "$1" in 
+    --install-latest)
+      INSTALL_LATEST="yes"
+      shift;;
+    --force-yes)
+      FORCE_YES="yes"
+      shift;;
+    --*)
+      die $usage_msg "\nUnrecognized option: \"$1\"";;
+    *)
+      [ "$HWPACK_TARBALL_FOUND" = "yes" ] && die $usage_msg
+      HWPACK_TARBALL="$1"
+      HWPACK_TARBALL_FOUND="yes"
+      shift;;
+  esac
+done
+
+[ "$HWPACK_TARBALL_FOUND" = "no" ] && die $usage_msg
 
 # Try to acquire fd #9 (i.e. /var/lock/hwpack) for 2 seconds.
 # Using 9 as the file descriptor because of https://launchpad.net/bugs/249620
@@ -132,5 +145,10 @@ if [ "$INSTALL_LATEST" == "yes" ]; then
 else
   packages=`cat "${HWPACK_DIR}"/manifest`
 fi
-sudo apt-get -o "$APT_GET_OPTIONS" install $packages
+if [ "$FORCE_YES" == "yes" ]; then
+  FORCE_OPTIONS="--yes --force-yes"
+else
+  FORCE_OPTIONS=""
+fi
+sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" install $packages
 echo "Done"
