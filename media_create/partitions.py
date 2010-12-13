@@ -1,6 +1,5 @@
 import subprocess
 import sys
-import time
 
 import dbus
 from parted import (
@@ -18,14 +17,16 @@ SECTOR_SIZE = 512 # bytes
 CYLINDER_SIZE = HEADS * SECTORS * SECTOR_SIZE
 
 
-# XXX: Untested!  May delegate to separate functions depending on the device
-# type?  Not sure there's much benefit to it...
-def setup_partitions(board, device, fat_size, image_size,
+# I wonder if it'd make sense to convert this into a small shim which calls
+# the appropriate function for the given type of device?  I think it's still
+# small enough that there's not much benefit in doing that, but if it grows we
+# might want to do it.
+def setup_partitions(board, media, fat_size, image_size,
                      should_create_partitions):
     """Make sure the given device is partitioned to boot the given board.
 
     :param board: The board's name, as a string.
-    :param device: The path to the device we should set up.
+    :param media: The Media we should partition.
     :param fat_size: The FAT size (16 or 32) for the boot partition.
     :param image_size: The size of the image file, in case we're setting up a
         QEMU image.
@@ -34,7 +35,6 @@ def setup_partitions(board, device, fat_size, image_size,
         create new ones. 
     """
     cylinders = None
-    media = Media(device)
     if not media.is_block_device:
         image_size_in_bytes = convert_size_to_bytes(image_size)
         cylinders = image_size_in_bytes / CYLINDER_SIZE
@@ -51,7 +51,6 @@ def setup_partitions(board, device, fat_size, image_size,
         return get_boot_and_root_loopback_devices(media.path)
 
 
-# XXX: Untested!
 def get_boot_and_root_loopback_devices(image_file):
     """Return the boot and root loopback devices for the given image file.
 
@@ -176,5 +175,5 @@ if __name__ == "__main__":
         sys.argv[1:])
     fat_size = int(fat_size)
     boot, root = setup_partitions(
-        board, device, fat_size, image_size, should_create_partitions)
+        board, Media(device), fat_size, image_size, should_create_partitions)
     print "BOOTFS=%s ROOTFS=%s" % (boot, root)

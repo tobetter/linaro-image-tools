@@ -411,7 +411,7 @@ register_loopback() {
 }
 
 setup_partitions() {
-  boot_and_root_devices=$(python -m media_create.setup_partitions \
+  boot_and_root_devices=$(python -m media_create.partitions \
       "$DEVIMAGE" "${DEVICE-$IMAGE_FILE}" "$FAT_SIZE" "$IMAGE_SIZE" \
       "$SHOULD_CREATE_PARTITIONS")
   eval $boot_and_root_devices

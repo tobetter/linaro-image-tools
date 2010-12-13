@@ -42,6 +42,10 @@ def create_partitions(board, media, fat_size, heads, sectors, cylinders=None):
         # Overwrite any existing partition tables with a fresh one.
         cmd_runner.run(
             ['parted', '-s', media.path, 'mklabel', 'msdos'], as_root=True)
+        # It sems to be necessary to sleep a bit here to avoid a race
+        # condition with the sfdisk commands executed below.  Try removing it
+        # and running the integration tests to see how it fails.
+        time.sleep(0.5)
 
     if fat_size == 32:
         partition_type = '0x0C'
@@ -61,10 +65,7 @@ def create_partitions(board, media, fat_size, heads, sectors, cylinders=None):
     run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
 
     # Sync and sleep to wait for the partition to settle.
-    proc = cmd_runner.run(['sync'])
-    proc.wait()
-    # TODO: Instead of this we could sleep for 1 second and then check to
-    # see if the partition has settled; repeating if not.
-    # XXX: This can't be committed without at least changing the tests that
-    # call this to stub out time.sleep()
-    #time.sleep(3)
+    cmd_runner.run(['sync']).wait()
+    # Sleeping just 1 second seems to be enough here, but if we start getting
+    # errors because the disk is not partitioned then we should revisit this.
+    time.sleep(1)
