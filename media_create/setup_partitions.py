@@ -48,14 +48,14 @@ def setup_partitions(board, device, fat_size, image_size,
     if media.is_block_device:
         return get_boot_and_root_partitions_for_media(media)
     else:
-        return register_loopback_devices(media.path)
+        return get_boot_and_root_loopback_devices(media.path)
 
 
 # XXX: Untested!
-def register_loopback_devices(image_file):
-    """Register loopback devices for the boot/root partitions of image_file.
+def get_boot_and_root_loopback_devices(image_file):
+    """Return the boot and root loopback devices for the given image file.
 
-    Return the path to both registered loopback devices (boot, root).
+    Register the loopback devices as well.
     """
     vfat_size, vfat_offset, linux_size, linux_offset = (
         calculate_partition_size_and_offset(image_file))

@@ -65,11 +65,22 @@ class MockSomethingFixture(object):
 
 class MockCmdRunnerPopen(object):
     """A mock for cmd_runner.Popen() which stores the args given to it."""
-    args = None
-    def __call__(self, args, **kwargs):
-        self.args = args
+    calls = None
+    def __call__(self, cmd, *args, **kwargs):
+        if self.calls is None:
+            self.calls = []
+        if isinstance(cmd, basestring):
+            all_args = [cmd]
+        else:
+            all_args = cmd
+        all_args.extend(args)
+        self.calls.append(all_args)
         self.returncode = 0
         return self
+
+    def communicate(self, input=None):
+        self.wait()
+        return '', ''
 
     def wait(self):
         return self.returncode

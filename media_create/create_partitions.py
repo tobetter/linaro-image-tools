@@ -65,4 +65,6 @@ def create_partitions(board, media, fat_size, heads, sectors, cylinders=None):
     proc.wait()
     # TODO: Instead of this we could sleep for 1 second and then check to
     # see if the partition has settled; repeating if not.
-    time.sleep(3)
+    # XXX: This can't be committed without at least changing the tests that
+    # call this to stub out time.sleep()
+    #time.sleep(3)

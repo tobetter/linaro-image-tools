@@ -141,13 +141,13 @@ class TestCmdRunner(TestCaseWithFixtures):
         self.useFixture(fixture)
         proc = cmd_runner.run(['foo', 'bar', 'baz'])
         self.assertEqual(0, proc.returncode)
-        self.assertEqual(['foo', 'bar', 'baz'], fixture.mock.args)
+        self.assertEqual([['foo', 'bar', 'baz']], fixture.mock.calls)
 
     def test_run_as_root(self):
         fixture = MockCmdRunnerPopenFixture()
         self.useFixture(fixture)
         cmd_runner.run(['foo', 'bar'], as_root=True)
-        self.assertEqual(['sudo', 'foo', 'bar'], fixture.mock.args)
+        self.assertEqual([['sudo', 'foo', 'bar']], fixture.mock.calls)
 
     def test_run_succeeds_on_zero_return_code(self):
         proc = cmd_runner.run(['true'])
@@ -191,7 +191,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
             'sudo', 'mkimage', '-A', 'arm', '-O', 'linux', '-T', 'kernel',
             '-C', 'none', '-a', 'load_addr', '-e', 'load_addr', '-n', 'Linux',
             '-d', 'parts_dir/vmlinuz-*-sub_arch', 'boot_disk/uImage']
-        self.assertEqual(expected, fixture.mock.args)
+        self.assertEqual([expected], fixture.mock.calls)
 
     def test_make_uInitrd(self):
         self._mock_get_file_matching()
@@ -201,7 +201,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
             'sudo', 'mkimage', '-A', 'arm', '-O', 'linux', '-T', 'ramdisk',
             '-C', 'none', '-a', '0', '-e', '0', '-n', 'initramfs',
             '-d', 'parts_dir/initrd.img-*-sub_arch', 'boot_disk/uInitrd']
-        self.assertEqual(expected, fixture.mock.args)
+        self.assertEqual([expected], fixture.mock.calls)
 
     def test_make_boot_script(self):
         self._mock_get_file_matching()
@@ -211,7 +211,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
             'sudo', 'mkimage', '-A', 'arm', '-O', 'linux', '-T', 'script',
             '-C', 'none', '-a', '0', '-e', '0', '-n', 'boot script',
             '-d', 'tmp_dir/boot.cmd', 'boot_script']
-        self.assertEqual(expected, fixture.mock.args)
+        self.assertEqual([expected], fixture.mock.calls)
 
     def test_get_file_matching(self):
         prefix = ''.join(
@@ -255,7 +255,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
 class TestCreatePartitions(TestCaseWithFixtures):
 
-    media = Media('/dev/sdz')
+    media = Media('/dev/xdz')
 
     def test_create_partitions_for_mx51evk(self):
         # For this board we create a one cylinder partition at the beginning.
@@ -265,8 +265,9 @@ class TestCreatePartitions(TestCaseWithFixtures):
         create_partitions('mx51evk', self.media, 32, 255, 63, '')
 
         self.assertEqual(
-            ['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
-            popen_fixture.mock.args)
+            [['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
+             ['sync']],
+            popen_fixture.mock.calls)
         self.assertEqual(
             [(',1,0xDA', 255, 63, '', self.media.path),
              (',9,0x0C,*\n,,,-', 255, 63, '', self.media.path)],
@@ -279,8 +280,9 @@ class TestCreatePartitions(TestCaseWithFixtures):
         create_partitions('beagle', self.media, 32, 255, 63, '')
 
         self.assertEqual(
-            ['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
-            popen_fixture.mock.args)
+            [['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
+             ['sync']],
+            popen_fixture.mock.calls)
         self.assertEqual(
             [(',9,0x0C,*\n,,,-', 255, 63, '', self.media.path)],
             sfdisk_fixture.mock.calls)
@@ -292,9 +294,10 @@ class TestCreatePartitions(TestCaseWithFixtures):
         tempfile = self.createTempFileAsFixture()
         create_partitions('beagle', Media(tempfile), 32, 255, 63, '')
 
-        # popen() was not called as there's no existing partition table for
-        # us to overwrite on the image file.
-        self.assertEqual(None, popen_fixture.mock.args)
+        # Unlike the test for partitioning of a regular block device, in this
+        # case parted was not called as there's no existing partition table
+        # for us to overwrite on the image file.
+        self.assertEqual([['sync']], popen_fixture.mock.calls)
 
         self.assertEqual(
             [(',9,0x0C,*\n,,,-', 255, 63, '', tempfile)],
@@ -332,7 +335,6 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.assertEqual(
             12 * 1024 * 1024 * 1024, convert_size_to_bytes('12G'))
 
-    # There's a race somewhere on the path executed by this test.
     def test_calculate_partition_size_and_offset(self):
         tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
         vfat_size, vfat_offset, linux_size, linux_offset = (
