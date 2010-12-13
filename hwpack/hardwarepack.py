@@ -163,46 +163,20 @@ class HardwarePack(object):
         """
         self.packages += packages
 
-    def add_dependency_packages(self, packages_spec):
-        """Add package that depends on those already present to the pack.
-
-        This method will add two packages.  One will be called 'hwpack-' + the
-        name of the pack and will depend on the exact versions of every
-        package in the hwpack.  The other will have -latest appended to the
-        name and will depend on `package_spec`, which is assumed to be the
-        package specification the hardware pack was built with.
-
-        The added packages will share version and architecture of the hardware
-        pack itself and will Replace/Break each other.
+    def add_dependency_package(self, packages_spec):
+        """Add a packge that depends on packages_spec to the hardware pack.
 
         :param packages_spec: A list of apt package specifications,
             e.g. ``['foo', 'bar (>= 1.2)']``.
         """
         with PackageMaker() as maker:
             dep_package_name = 'hwpack-' + self.metadata.name
-            latest_dep_package_name = dep_package_name + '-latest'
-
-            dep_relationships = {
-                'Replaces': latest_dep_package_name,
-                'Breaks': latest_dep_package_name
-                }
-            deps = ['%s (= %s)'%(p.name, p.version) for p in self.packages]
-            if deps:
-                dep_relationships['Depends'] = ', '.join(deps)
+            relationships = {}
+            if packages_spec:
+                relationships = {'Depends': ', '.join(packages_spec)}
             deb_file_path = maker.make_package(
                 dep_package_name, self.metadata.version,
-                dep_relationships, self.metadata.architecture)
-            self.packages.append(FetchedPackage.from_deb(deb_file_path))
-
-            latest_dep_relationships = {
-                'Replaces': dep_package_name,
-                'Breaks': dep_package_name
-                }
-            if packages_spec:
-                latest_dep_relationships['Depends'] = ', '.join(packages_spec)
-            deb_file_path = maker.make_package(
-                latest_dep_package_name, self.metadata.version,
-                latest_dep_relationships, self.metadata.architecture)
+                relationships, self.metadata.architecture)
             self.packages.append(FetchedPackage.from_deb(deb_file_path))
 
     def to_file(self, fileobj):
