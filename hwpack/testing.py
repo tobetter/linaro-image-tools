@@ -419,7 +419,7 @@ class EachOf(object):
     >>> EachOf([Equals(1)]).match([1])
     >>> EachOf([Equals(1), Equals(2)]).match([1, 2])
     >>> EachOf([Equals(1), Equals(2)]).match([2, 1]) #doctest: +ELLIPSIS
-    <...MismatchesAll...>
+    <...Mismatch...>
     """
 
     def __init__(self, matchers):
@@ -618,7 +618,13 @@ def MatchesAsPackageContent(package_matcher):
 
 
 def MatchesPackageRelationshipList(relationship_matchers):
-    """XXX"""
+    """Matches a set of matchers against a package relationship specification.
+
+    >>> from testtools.matchers import Equals, StartsWith
+    >>> MatchesPackageRelationshipList(
+    ...     [Equals('foo'), StartsWith('bar (')]).match('bar (= 1.0), foo')
+    >>>
+    """
     def process(relationships):
         if relationships is None:
             return []
