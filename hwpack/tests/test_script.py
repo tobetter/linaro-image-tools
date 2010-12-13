@@ -69,12 +69,14 @@ class ScriptTests(TestCaseWithFixtures):
         self.assertEqual("", stdout)
 
     def test_builds_a_hwpack(self):
+        package_name = 'foo'
         available_package = DummyFetchedPackage(
-            "foo", "1.1", architecture="armel")
+            package_name, "1.1", architecture="armel")
         source = self.useFixture(AptSourceFixture([available_package]))
         config = self.useFixture(ConfigFileFixture(
-            '[hwpack]\nname=ahwpack\npackages=foo\narchitectures=armel\n'
-            '\n[ubuntu]\nsources-entry=%s\n' % source.sources_entry))
+            '[hwpack]\nname=ahwpack\npackages=%s\narchitectures=armel\n'
+            '\n[ubuntu]\nsources-entry=%s\n' % (
+                package_name, source.sources_entry)))
         stdout, stderr = self.run_script([config.filename, "1.0"])
         metadata = Metadata("ahwpack", "1.0", "armel")
         self.assertThat(
@@ -82,4 +84,4 @@ class ScriptTests(TestCaseWithFixtures):
             IsHardwarePack(
                 metadata, [available_package],
                 {"ubuntu": source.sources_entry},
-                package_spec='foo'))
+                package_spec=package_name))
