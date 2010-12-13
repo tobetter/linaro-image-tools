@@ -38,9 +38,10 @@ def setup_partitions(board, media, fat_size, image_size,
     if not media.is_block_device:
         image_size_in_bytes = convert_size_to_bytes(image_size)
         cylinders = image_size_in_bytes / CYLINDER_SIZE
-        cmd_runner.run(
+        proc = cmd_runner.run(
             ['qemu-img', 'create', '-f', 'raw', media.path, image_size],
             stdout=open('/dev/null', 'w'))
+        proc.wait()
 
     if should_create_partitions == "yes":
         create_partitions(board, media, fat_size, HEADS, SECTORS, cylinders)

@@ -40,12 +40,9 @@ def create_partitions(board, media, fat_size, heads, sectors, cylinders=None):
     """
     if media.is_block_device:
         # Overwrite any existing partition tables with a fresh one.
-        cmd_runner.run(
+        proc = cmd_runner.run(
             ['parted', '-s', media.path, 'mklabel', 'msdos'], as_root=True)
-        # It sems to be necessary to sleep a bit here to avoid a race
-        # condition with the sfdisk commands executed below.  Try removing it
-        # and running the integration tests to see how it fails.
-        time.sleep(0.5)
+        proc.wait()
 
     if fat_size == 32:
         partition_type = '0x0C'

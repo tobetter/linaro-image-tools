@@ -60,24 +60,26 @@ def make_boot_script(boot_script, tmp_dir):
 
 
 def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
-    cmd_runner.run([
+    proc = cmd_runner.run([
         "dd",
         "if=%s" % imx_file,
         "of=%s" % boot_device_or_file,
         "bs=1024",
         "seek=1",
         "conv=notrunc"], as_root=True)
+    proc.wait()
 
 
 def install_omap_boot_loader(mlo_file, boot_disk):
-    cmd_runner.run(["cp", "-v", mlo_file, boot_disk], as_root=True)
+    cmd_runner.run(["cp", "-v", mlo_file, boot_disk], as_root=True).wait()
     # XXX: Is this really needed?
-    cmd_runner.run(["sync"])
+    cmd_runner.run(["sync"]).wait()
 
 
 def make_boot_ini(boot_script, boot_disk):
-    cmd_runner.run(
+    proc = cmd_runner.run(
         ["cp", "-v", boot_script, "%s/boot.ini" % boot_disk], as_root=True)
+    proc.wait()
 
 
 def populate_boot(board, sub_arch, load_addr, uboot_parts_dir, boot_disk,
