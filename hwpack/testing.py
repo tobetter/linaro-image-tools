@@ -378,7 +378,7 @@ class IsHardwarePack(Matcher):
             if self.package_spec:
                 dep_package_matcher = dep_package_matcher.update(
                     depends=MatchesPackageRelationshipList(
-                        [Equals(p.strip()) for p in  self.package_spec.split(',')]))
+                        [Equals(p.strip()) for p in self.package_spec.split(',')]))
             package_matchers.append(dep_package_matcher)
             matchers.append(HardwarePackHasFile(
                 "pkgs/Packages",

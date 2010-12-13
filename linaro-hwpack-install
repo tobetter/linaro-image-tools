@@ -156,18 +156,17 @@ else
   DEP_PACKAGE_PRESENT="no"
 fi
 
-if [ "$DEP_PACKAGE_PRESENT" == "yes" ]; then
-  if [ "$INSTALL_LATEST" == "yes" ]; then
-    dependency_package="${dependency_package}-latest"
-  fi
-  sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" install "${dependency_package}=${HWPACK_VERSION}"
+if [ "$INSTALL_LATEST" == "yes" ]; then
+  packages=`sed -e 's/=.*//' "${HWPACK_DIR}"/manifest`
 else
-  if [ "$INSTALL_LATEST" == "yes" ]; then
-    packages=`sed 's/=.*//' "${HWPACK_DIR}"/manifest`
-  else
-    packages=`cat "${HWPACK_DIR}"/manifest`
-  fi
-  sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" install $packages
+  packages=`cat "${HWPACK_DIR}"/manifest`
+fi
+
+sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" install ${packages}
+
+if [ "$DEP_PACKAGE_PRESENT" == "yes" ]; then
+  auto_packages=`sed -e 's/=.*//' "${HWPACK_DIR}"/manifest | grep -v "^${dependency_package}"`
+  sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" markauto ${auto_packages}
 fi
 
 echo "Done"
