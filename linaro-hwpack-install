@@ -147,6 +147,22 @@ else
   FORCE_OPTIONS=""
 fi
 
+# "newer" hwpacks contain a dependency package whose Depends is the
+# same as the packages config setting from the file the hwpack was
+# build from.  But if we just installed that, a newer version of a
+# package than that in the hwpack might have made it to the main
+# archive and apt-get would install that instead.  So we install the
+# specific package versions that make up the hwpack.  /That/ however
+# would leave all the packages from the hwpack marked as manually
+# installed, so if a newer hwpack was installed over the top which no
+# longer depended on one of the packages the older one did, the
+# package would not be eligible for autoremoval.  So we mark all the
+# other packages in the hwpack apart from the dependency package as
+# automatically installed with apt-get markauto.
+#
+# For "older" hwpacks that don't have a dependency package, we just
+# manually install the contents of the hwpack.
+
 HWPACK_NAME=`grep NAME "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
 HWPACK_VERSION=`grep VERSION "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
 dependency_package="hwpack-${HWPACK_NAME}"
@@ -157,7 +173,7 @@ else
 fi
 
 if [ "$INSTALL_LATEST" == "yes" ]; then
-  packages=`sed -e 's/=.*//' "${HWPACK_DIR}"/manifest`
+  packages=`sed 's/=.*//' "${HWPACK_DIR}"/manifest`
 else
   packages=`cat "${HWPACK_DIR}"/manifest`
 fi
@@ -165,7 +181,7 @@ fi
 sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" install ${packages}
 
 if [ "$DEP_PACKAGE_PRESENT" == "yes" ]; then
-  auto_packages=`sed -e 's/=.*//' "${HWPACK_DIR}"/manifest | grep -v "^${dependency_package}"`
+  auto_packages=`sed 's/=.*//' "${HWPACK_DIR}"/manifest | grep -v "^${dependency_package}"`
   sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" markauto ${auto_packages}
 fi
 
