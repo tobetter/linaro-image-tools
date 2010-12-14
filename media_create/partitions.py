@@ -38,6 +38,7 @@ def setup_partitions(board, media, fat_size, image_size,
     if not media.is_block_device:
         image_size_in_bytes = convert_size_to_bytes(image_size)
         cylinders = image_size_in_bytes / CYLINDER_SIZE
+        image_size_in_bytes = cylinders * CYLINDER_SIZE
         proc = cmd_runner.run(
             ['qemu-img', 'create', '-f', 'raw', media.path, image_size],
             stdout=open('/dev/null', 'w'))
@@ -160,6 +161,18 @@ def convert_size_to_bytes(size):
     else:
         raise ValueError("Unknown size format: %s.  Use K[bytes], M[bytes] "
                          "or G[bytes]" % size)
+    
+    # Round the size of the raw disk image up to a multiple of 256K so it is
+    # an exact number of SD card erase blocks in length.  Otherwise Linux
+    # under qemu cannot access the last part of the card and is likely to
+    # complain that the last partition on the disk has been truncated.  This
+    # doesn't appear to work in all cases, though, as can be seen on
+    # https://bugs.launchpad.net/linux-linaro/+bug/673335.
+    if real_size % (1024 * 256):
+        cylinders = real_size / CYLINDER_SIZE
+        real_size = cylinders * CYLINDER_SIZE
+        real_size = ((((real_size - 1) / (1024 * 256)) + 1) * (1024 * 256))
+
     return real_size
 
 

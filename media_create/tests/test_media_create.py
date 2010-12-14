@@ -349,13 +349,18 @@ class TestPartitionSetup(TestCaseWithFixtures):
         time.sleep = self.orig_sleep
 
     def test_convert_size_in_kbytes_to_bytes(self):
-        self.assertEqual(10 * 1024, convert_size_to_bytes('10K'))
+        self.assertEqual(512 * 1024, convert_size_to_bytes('512K'))
 
     def test_convert_size_in_mbytes_to_bytes(self):
-        self.assertEqual(11 * 1024**2, convert_size_to_bytes('11M'))
+        self.assertEqual(100 * 1024**2, convert_size_to_bytes('100M'))
 
     def test_convert_size_in_gbytes_to_bytes(self):
         self.assertEqual(12 * 1024**3, convert_size_to_bytes('12G'))
+
+    def test_convert_size_in_kbytes_to_bytes_rounds_to_256k_multiple(self):
+        # See comment in convert_size_to_bytes as to why we need to do this.
+        self.assertEqual(
+            3891 * (1024 * 256), convert_size_to_bytes('1000537K'))
 
     def test_calculate_partition_size_and_offset(self):
         tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')

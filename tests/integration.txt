@@ -2,6 +2,24 @@ A few integration tests we can run while the migration to python is not
 complete.  They probably require root or access to specific block devices so
 they are not meant to be automated.
 
-    >>> python -m media_create.partitions beagle /dev/sdb 32 2G yes
+    # This should print nothing to stdout but will create a binary/ dir under
+    # the current directory.
+    >>> python -m media_create.unpack_binary_tarball <path-to-binary-tarball>
 
+    # This will remove the binary/ dir created above
+    >>> python -m media_create.remove_binary_dir
+
+    # Partition (for real!) /dev/sdb for a beagle board and return the devices
+    # for the boot and root partitions.
+    >>> python -m media_create.partitions beagle /dev/sdb 32 2G yes
+    Checking that no-one is using this disk right now
+    ...
+    BOOTFS=/dev/sdb1 ROOTFS=/dev/sdb2
+
+    # Partition /tmp/beagle.img for a beagle board and return the loopback
+    # devices for the boot and root partitions.
     >>> python -m media_create.partitions beagle /tmp/beagle.img 32 2G yes
+    Warning: /tmp/beagle.img is not a block device
+    ...
+    BOOTFS=/dev/loop0
+    ROOTFS=/dev/loop1
