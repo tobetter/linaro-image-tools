@@ -1,13 +1,19 @@
 import subprocess
 
 
-def run(args, as_root=False, stdout=None):
+def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
     """Run the given command as a sub process.
+
+    Return a Popen instance.
+
+    Callsites must wait() or communicate() with the returned Popen instance.
 
     :param command: A list or tuple containing the command to run and the
                     arguments that should be passed to it.
     :param as_root: Should the given command be run as root (with sudo)?
-    :param stdout: Same as subprocess.Popen().
+    :param stdin: Same as in subprocess.Popen().
+    :param stdout: Same as in subprocess.Popen().
+    :param stderr: Same as in subprocess.Popen().
     """
     assert isinstance(args, (list, tuple)), (
         "The command to run must be a list or tuple, found: %s" % type(args))
@@ -16,9 +22,7 @@ def run(args, as_root=False, stdout=None):
     if as_root:
         args = args[:]
         args.insert(0, 'sudo')
-    proc = Popen(args, stdout=stdout)
-    proc.wait()
-    return proc.returncode
+    return Popen(args, stdin=stdin, stdout=stdout, stderr=stderr)
 
 
 class Popen(subprocess.Popen):

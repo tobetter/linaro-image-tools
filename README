@@ -11,6 +11,8 @@ Before running any tests you need to install the following packages:
   - python-debian >= 0.1.16ubuntu1
   - python-argparse
   - dpkg-dev
+  - python-parted
+  - python-dbus
 
 And run the following command:
 
