@@ -156,7 +156,7 @@ class StringifyRelationshipTests(TestCaseWithFixtures):
             self.assertEqual(
                 "bar | baz", stringify_relationship(candidate, "Depends"))
 
-    def test_package_with_version(self):
+    def test_package_with_le(self):
         target_package = DummyFetchedPackage(
             "foo", "1.0", depends="baz (<= 2.0)")
         source = self.useFixture(AptSourceFixture([target_package]))
@@ -164,6 +164,42 @@ class StringifyRelationshipTests(TestCaseWithFixtures):
             candidate = cache.cache['foo'].candidate
             self.assertEqual(
                 "baz (<= 2.0)", stringify_relationship(candidate, "Depends"))
+
+    def test_package_with_lt(self):
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", depends="baz (<< 2.0)")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                "baz (<< 2.0)", stringify_relationship(candidate, "Depends"))
+
+    def test_package_with_eq(self):
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", depends="baz (= 2.0)")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                "baz (= 2.0)", stringify_relationship(candidate, "Depends"))
+
+    def test_package_with_gt(self):
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", depends="baz (>> 2.0)")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                "baz (>> 2.0)", stringify_relationship(candidate, "Depends"))
+
+    def test_package_with_ge(self):
+        target_package = DummyFetchedPackage(
+            "foo", "1.0", depends="baz (>= 2.0)")
+        source = self.useFixture(AptSourceFixture([target_package]))
+        with IsolatedAptCache([source.sources_entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            self.assertEqual(
+                "baz (>= 2.0)", stringify_relationship(candidate, "Depends"))
 
 
 class PackageMakerTests(TestCaseWithFixtures):

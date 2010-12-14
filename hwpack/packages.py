@@ -79,9 +79,14 @@ def stringify_relationship(pkg, relationship):
             for or_alternative in or_dep.or_dependencies:
                 suffix = ""
                 if or_alternative.relation:
-                    suffix = " (%s %s)" % (
-                        or_alternative.relation,
-                        or_alternative.version)
+                    relation = or_alternative.relation
+                    if relation in ('<', '>'):
+                        # The choice made here by python-apt is to report the
+                        # relationship in a Python spelling; as far as apt
+                        # knows, < is a deprecated spelling of <=; << is the
+                        # spelling of "strictly less than".  Similarly for >.
+                        relation *= 2
+                    suffix = " (%s %s)" % (relation, or_alternative.version)
                 or_list.append("%s%s" % (or_alternative.name, suffix))
             relationship_list.append(" | ".join(or_list))
         relationship_str = ", ".join(relationship_list)
