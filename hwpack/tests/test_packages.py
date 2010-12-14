@@ -1070,3 +1070,11 @@ class PackageFetcherTests(TestCaseWithFixtures):
         self.assertEqual(
             [],
             list(fetcher.cache.cache.get_changes()))
+
+    def test_ignore_capplets_data(self):
+        package1 = DummyFetchedPackage("foo", "1.0", breaks="baz (<< 1.0)")
+        package2 = DummyFetchedPackage("baz", "1.0")
+        package3 = DummyFetchedPackage("top", "1.0", depends="foo, baz")
+        source = self.useFixture(AptSourceFixture([package1, package2, package3]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["top"])

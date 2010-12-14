@@ -523,18 +523,19 @@ class PackageFetcher(object):
         """
         for package in packages:
             self.cache.cache[package].mark_install(auto_fix=False)
-            if self.cache.cache.broken_count:
+            broken = [p.name for p in self.cache.cache
+                    if p.is_inst_broken or p.is_now_broken]
+            if broken:
                 raise DependencyNotSatisfied(
                     "Unable to satisfy dependencies of %s" %
-                    ", ".join([p.name for p in self.cache.cache
-                        if p.is_inst_broken]))
+                    ", ".join(broken))
         installed = []
         for package in self.cache.cache.get_changes():
             candidate = package.candidate
             base = os.path.basename(candidate.filename)
             installed.append(FetchedPackage.from_apt(candidate, base))
         for package in self.cache.cache:
-            if not package.isInstalled:
+            if not package.is_installed:
                 continue
             candidate = package.installed
             base = os.path.basename(candidate.filename)
