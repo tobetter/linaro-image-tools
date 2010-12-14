@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 
@@ -19,6 +20,10 @@ def run(args, as_root=False, stdout=None):
     proc = Popen(args, stdout=stdout)
     proc.wait()
     return proc.returncode
+
+
+def get_extended_env(ext):
+    return os.environ.update(ext)
 
 
 class Popen(subprocess.Popen):

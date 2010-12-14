@@ -1,7 +1,8 @@
-import os
 import re
 import sys
 import subprocess
+
+from media_create import cmd_runner
 
 
 def _run_proc(args, last_arg, env, stdin=None):
@@ -56,17 +57,13 @@ def _select_device(device):
     return True
 
 
-def _get_extended_env(ext):
-    return os.environ.update(ext)
-
-
 def check_device(device, as_root=True):
     """ Checks that a selected device exists.
 
     :param device: The selected device.
     :param as_root: Indicates if this function should be run as root.
     """
-    env = _get_extended_env({'LC_ALL': 'C'})
+    env = cmd_runner.get_extended_env({'LC_ALL': 'C'})
 
     fdisk = _find_device(as_root, device, env)
     if ('-%s-' % fdisk) == ('-%s:-' % device):
