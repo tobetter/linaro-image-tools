@@ -15,16 +15,14 @@ from media_create import ensure_command
 from media_create import populate_boot
 from media_create import partitions
 from media_create.boot_cmd import create_boot_cmd
-from media_create.create_partitions import (
-    create_partitions,
-    run_sfdisk_commands,
-    )
 from media_create.partitions import (
     calculate_partition_size_and_offset,
     convert_size_to_bytes,
+    create_partitions,
     get_boot_and_root_loopback_devices,
     get_boot_and_root_partitions_for_media,
     Media,
+    run_sfdisk_commands,
     setup_partitions,
     )
 from media_create.populate_boot import (

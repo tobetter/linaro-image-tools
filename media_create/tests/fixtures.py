@@ -3,7 +3,7 @@ import shutil
 import subprocess
 import tempfile
 
-from media_create import create_partitions
+from media_create import partitions
 from media_create import cmd_runner
 
 
@@ -133,4 +133,4 @@ class MockRunSfdiskCommandsFixture(MockSomethingFixture):
         mock = MockCallableWithPositionalArgs()
         mock.return_value = ('', '')
         super(MockRunSfdiskCommandsFixture, self).__init__(
-            create_partitions, 'run_sfdisk_commands', mock)
+            partitions, 'run_sfdisk_commands', mock)

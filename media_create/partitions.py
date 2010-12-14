@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import time
 
 import dbus
 from parted import (
@@ -8,7 +9,6 @@ from parted import (
     )
 
 from media_create import cmd_runner
-from media_create.create_partitions import create_partitions
 
 
 HEADS = 255
@@ -32,7 +32,7 @@ def setup_partitions(board, media, fat_size, image_size,
         QEMU image.
     :param should_create_partitions: A string with values "yes" or "no",
         specifying whether or not we should erase existing partitions and
-        create new ones. 
+        create new ones.
     """
     cylinders = None
     if not media.is_block_device:
@@ -161,7 +161,7 @@ def convert_size_to_bytes(size):
     else:
         raise ValueError("Unknown size format: %s.  Use K[bytes], M[bytes] "
                          "or G[bytes]" % size)
-    
+
     # Round the size of the raw disk image up to a multiple of 256K so it is
     # an exact number of SD card erase blocks in length.  Otherwise Linux
     # under qemu cannot access the last part of the card and is likely to
@@ -174,6 +174,69 @@ def convert_size_to_bytes(size):
         real_size = ((((real_size - 1) / (1024 * 256)) + 1) * (1024 * 256))
 
     return real_size
+
+
+def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
+                        as_root=True, stderr=None):
+    """Run the given commands under sfdisk.
+
+    :param commands: A string of sfdisk commands; each on a separate line.
+    :return: A 2-tuple containing the subprocess' stdout and stderr.
+    """
+    args = ['sfdisk',
+            '-D',
+            '-H', str(heads),
+            '-S', str(sectors)]
+    if cylinders is not None:
+        args.extend(['-C', str(cylinders)])
+    args.append(device)
+    proc = cmd_runner.run(
+        args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr,
+        as_root=as_root)
+    return proc.communicate("%s\n" % commands)
+
+
+def create_partitions(board, media, fat_size, heads, sectors, cylinders=None):
+    """Partition the given media according to the board requirements.
+
+    :param board: A string with the board type (e.g. beagle, panda, etc)
+    :param media: A setup_partitions.Media object to partition.
+    :param fat_size: The type of FATs used in the boot partition (16 or 32).
+    :param heads: Number of heads to use in the disk geometry of
+        partitions.
+    :param sectors: Number of sectors to use in the disk geometry of
+        partitions.
+    :param cylinders: The number of cylinders to pass to sfdisk's -C argument.
+        If None the -C argument is not passed.
+    """
+    if media.is_block_device:
+        # Overwrite any existing partition tables with a fresh one.
+        proc = cmd_runner.run(
+            ['parted', '-s', media.path, 'mklabel', 'msdos'], as_root=True)
+        proc.wait()
+
+    if fat_size == 32:
+        partition_type = '0x0C'
+    else:
+        partition_type = '0x0E'
+
+    if board == 'mx51evk':
+        # Create a one cylinder partition for fixed-offset bootloader data at
+        # the beginning of the image (size is one cylinder, so 8224768 bytes
+        # with the first sector for MBR).
+        run_sfdisk_commands(',1,0xDA', heads, sectors, cylinders, media.path)
+
+    # Create a VFAT or FAT16 partition of 9 cylinders (74027520 bytes, ~70
+    # MiB), followed by a Linux-type partition containing the rest of the free
+    # space.
+    sfdisk_cmd = ',9,%s,*\n,,,-' % partition_type
+    run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
+
+    # Sync and sleep to wait for the partition to settle.
+    cmd_runner.run(['sync']).wait()
+    # Sleeping just 1 second seems to be enough here, but if we start getting
+    # errors because the disk is not partitioned then we should revisit this.
+    time.sleep(1)
 
 
 class Media(object):
