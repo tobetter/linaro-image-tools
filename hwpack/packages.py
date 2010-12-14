@@ -131,6 +131,7 @@ class PackageMaker(object):
         if self._temporary_directories is not None:
             raise AssertionError("__enter__ must not be called twice")
         self._temporary_directories = []
+        return self
 
     def __exit__(self, exc_type=None, exc_value=None, traceback=None):
         if self._temporary_directories is None:
@@ -167,7 +168,7 @@ Description: Dummy package to install a hwpack
 
     def make_package(self, name, version, relationships, architecture='all'):
         tmp_dir = self.make_temporary_directory()
-        filename = '%s_%s_all' % (name, version)
+        filename = '%s_%s_%s' % (name, version, architecture)
         packaging_dir = os.path.join(tmp_dir, filename)
         os.mkdir(packaging_dir)
         os.mkdir(os.path.join(packaging_dir, 'DEBIAN'))

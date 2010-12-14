@@ -215,6 +215,20 @@ class PackageMakerTests(TestCaseWithFixtures):
             ['dpkg-name', deb_path], stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT)
         output = proc.communicate()[0]
+        # dpkg-name prints 'dpkg-name: warning: skipping $path' when you give
+        # it a package that is already correctly named.
+        self.assertTrue(
+            'skipping' in output,
+            "'skipping' was not found in dpkg-name output:\n%s" % output)
+
+    def test_make_package_creates_deb_with_correct_file_name_arch(self):
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        deb_path = maker.make_package('foo', '1.0', {}, 'armel')
+        proc = subprocess.Popen(
+            ['dpkg-name', deb_path], stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+        output = proc.communicate()[0]
         self.assertTrue(
             'skipping' in output,
             "'skipping' was not found in dpkg-name output:\n%s" % output)

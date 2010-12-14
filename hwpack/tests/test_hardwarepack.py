@@ -3,10 +3,19 @@ import re
 import tarfile
 
 from testtools import TestCase
+from testtools.matchers import Equals
 
 from hwpack.hardwarepack import HardwarePack, Metadata
 from hwpack.packages import get_packages_file
-from hwpack.testing import DummyFetchedPackage, HardwarePackHasFile, Not
+from hwpack.testing import (
+    DummyFetchedPackage,
+    HardwarePackHasFile,
+    MatchesAsPackagesFile,
+    MatchesAsPackageContent,
+    MatchesPackageRelationshipList,
+    MatchesStructure,
+    Not,
+    )
 
 
 class MetadataTests(TestCase):
@@ -217,6 +226,57 @@ class HardwarePackTests(TestCase):
         self.assertThat(
             tf,
             Not(HardwarePackHasFile("pkgs/%s" % package1.filename)))
+
+    def test_add_dependency_package_adds_package(self):
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_dependency_package([])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile(
+                "pkgs/%s_%s_%s.deb" % (
+                    'hwpack-' + self.metadata.name, self.metadata.version,
+                    self.metadata.architecture),
+                content_matcher=MatchesAsPackageContent(
+                    MatchesStructure(
+                        name=Equals('hwpack-' + self.metadata.name),
+                        architecture=Equals(self.metadata.architecture),
+                        depends=Equals(None),
+                        version=Equals(self.metadata.version)))))
+
+    def test_add_dependency_package_adds_package_with_dependency(self):
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_dependency_package(["foo", "bar (= 1.0)"])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile(
+                "pkgs/%s_%s_%s.deb" % (
+                    'hwpack-' + self.metadata.name, self.metadata.version,
+                    self.metadata.architecture),
+                content_matcher=MatchesAsPackageContent(
+                    MatchesStructure(
+                        name=Equals('hwpack-' + self.metadata.name),
+                        architecture=Equals(self.metadata.architecture),
+                        depends=MatchesPackageRelationshipList(
+                            [Equals("foo"), Equals("bar (= 1.0)")]),
+                        version=Equals(self.metadata.version)))))
+
+    def test_add_dependency_package_adds_package_to_Packages(self):
+        hwpack = HardwarePack(self.metadata)
+        hwpack.add_dependency_package(["foo", "bar (= 1.0)"])
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf,
+            HardwarePackHasFile(
+                "pkgs/Packages",
+                content_matcher=MatchesAsPackagesFile(
+                    MatchesStructure(
+                        name=Equals('hwpack-' + self.metadata.name),
+                        architecture=Equals(self.metadata.architecture),
+                        depends=MatchesPackageRelationshipList(
+                            [Equals("foo"), Equals("bar (= 1.0)")]),
+                        version=Equals(self.metadata.version)))))
 
     def test_creates_Packages_file(self):
         hwpack = HardwarePack(self.metadata)

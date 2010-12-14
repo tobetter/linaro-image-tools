@@ -15,6 +15,7 @@ from hwpack.testing import (
     EachOf,
     MatchesAsPackagesFile,
     MatchesPackage,
+    MatchesPackageRelationshipList,
     MatchesStructure,
     MatchesSetwise,
     parse_packages_file_content,
@@ -38,6 +39,15 @@ class TestEachOf(TestCase):
 
     def test_docstring(self):
         failure_count, output = run_doctest(EachOf, "EachOf")
+        if failure_count:
+            self.fail("Doctest failed with %s" % output)
+
+
+class TestMatchesPackageRelationshipList(TestCase):
+
+    def test_docstring(self):
+        failure_count, output = run_doctest(
+            MatchesPackageRelationshipList, "MatchesPackageRelationshipList")
         if failure_count:
             self.fail("Doctest failed with %s" % output)
 
