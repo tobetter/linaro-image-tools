@@ -344,19 +344,29 @@ class TestCheckDevice(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(check_device, '_select_device',
             lambda device: True))
 
+    def _mock_deselect_device(self):
+        self.useFixture(MockSomethingFixture(check_device, '_select_device',
+            lambda device: False))
+
     def setUp(self):
         super(TestCheckDevice, self).setUp()
         self.useFixture(StdoutToDevnullFixture())
         self._mock_run_proc()
         self._mock_print_mounted_devices()
 
-    def test_check_device_verify_true(self):
+    def test_check_device_and_select(self):
         self._mock_find_device()
         self._mock_select_device()
         self.assertEqual(0, 
             check_device.check_device(self.DEV1, as_root=False))
 
-    def test_check_device_verify_false(self):
+    def test_check_device_and_deselect(self):
+        self._mock_find_device()
+        self._mock_deselect_device()
+        self.assertEqual(1, 
+            check_device.check_device(self.DEV1, as_root=False))
+
+    def test_check_device_not_found(self):
         self._mock_find_device()
         self.assertEqual(1, 
             check_device.check_device(self.DEV2, as_root=False))
