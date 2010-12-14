@@ -9,6 +9,7 @@ from testtools import TestCase
 
 from hwpack.testing import TestCaseWithFixtures
 
+from media_create import check_device
 from media_create import cmd_runner
 from media_create import ensure_command
 from media_create import populate_boot
@@ -35,6 +36,7 @@ from media_create.tests.fixtures import (
     MockCmdRunnerPopenFixture,
     MockSomethingFixture,
     MockRunSfdiskCommandsFixture,
+    StdoutToDevnullFixture,
     )
 
 
@@ -319,3 +321,42 @@ class TestCalculatePartitionSizeAndOffset(TestCaseWithFixtures):
         self.assertEqual(
             [129024L, 32256L, 10321920L, 161280L],
             [vfat_size, vfat_offset, linux_size, linux_offset])
+
+
+class TestCheckDevice(TestCaseWithFixtures):
+
+    DEV1 = 'dev1'
+    DEV2 = 'dev2'
+
+    def _mock_run_proc(self):
+        self.useFixture(MockSomethingFixture(check_device, '_run_proc',
+            lambda args, last_arg, env, stdin=None: args))
+
+    def _mock_find_device(self):
+        self.useFixture(MockSomethingFixture(check_device, '_find_device',
+            lambda device, env, as_root: self.DEV1 + ':'))
+
+    def _mock_print_mounted_devices(self):
+        self.useFixture(MockSomethingFixture(check_device,
+            '_print_mounted_devices', lambda: None))
+
+    def _mock_select_device(self):
+        self.useFixture(MockSomethingFixture(check_device, '_select_device',
+            lambda device: True))
+
+    def setUp(self):
+        super(TestCheckDevice, self).setUp()
+        self.useFixture(StdoutToDevnullFixture())
+        self._mock_run_proc()
+        self._mock_print_mounted_devices()
+
+    def test_check_device_verify_true(self):
+        self._mock_find_device()
+        self._mock_select_device()
+        self.assertEqual(0, 
+            check_device.check_device(self.DEV1, as_root=False))
+
+    def test_check_device_verify_false(self):
+        self._mock_find_device()
+        self.assertEqual(1, 
+            check_device.check_device(self.DEV2, as_root=False))

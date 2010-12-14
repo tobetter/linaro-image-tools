@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 
 from media_create import create_partitions
@@ -123,3 +124,17 @@ class MockRunSfdiskCommandsFixture(MockSomethingFixture):
         mock.return_value = ('', '')
         super(MockRunSfdiskCommandsFixture, self).__init__(
             create_partitions, 'run_sfdisk_commands', mock)
+
+
+class StdoutToDevnullFixture(object):
+
+    def __init__(self):
+        self.orig_stdout = None
+
+    def setUp(self):
+        # Redirect stdout to /dev/null.
+        self.orig_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def tearDown(self):
+        sys.stdout = self.orig_stdout
