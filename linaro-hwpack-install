@@ -183,14 +183,18 @@ else
 fi
 
 if [ "$DEP_PACKAGE_PRESENT" == "yes" ]; then
-  uninstalled_packages=`dpkg -l $packages_without_versions | grep '^[urph]' |
-                        awk '{ print $2; }' | grep -v -F $dependency_package`
+  to_be_installed=
+  for package in $packages_without_versions; do
+    { dpkg --get-selections $package | grep -qw 'install$'; } || to_be_installed="$to_be_installed $package"
+  done
 fi
 
 sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" install ${packages}
 
 if [ "$DEP_PACKAGE_PRESENT" == "yes" ]; then
-  sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" markauto ${uninstalled_packages}
+  if [ -n "${to_be_installed}" ]; then
+    sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" markauto ${to_be_installed}
+  fi
 fi
 
 echo "Done"
