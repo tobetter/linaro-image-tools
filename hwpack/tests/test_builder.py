@@ -33,13 +33,14 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
 
     def test_raises_on_missing_configuration(self):
         e = self.assertRaises(
-            ConfigFileMissing, HardwarePackBuilder, "nonexistant", "1.0")
+            ConfigFileMissing, HardwarePackBuilder, "nonexistant", "1.0", [])
         self.assertEqual("nonexistant", e.filename)
 
     def test_validates_configuration(self):
         config = self.useFixture(ConfigFileFixture(''))
         self.assertRaises(
-            HwpackConfigError, HardwarePackBuilder, config.filename, "1.0")
+            HwpackConfigError, HardwarePackBuilder, config.filename, "1.0",
+            [])
 
     def test_builds_one_pack_per_arch(self):
         available_package = DummyFetchedPackage("foo", "1.1")
@@ -47,7 +48,7 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         config = self.useFixture(ConfigFileFixture(
             '[hwpack]\nname=ahwpack\npackages=foo\narchitectures=i386 armel\n'
             '\n[ubuntu]\nsources-entry=%s\n' % source.sources_entry))
-        builder = HardwarePackBuilder(config.filename, "1.0")
+        builder = HardwarePackBuilder(config.filename, "1.0", [])
         builder.build()
         self.assertTrue(os.path.isfile("hwpack_ahwpack_1.0_i386.tar.gz"))
         self.assertTrue(os.path.isfile("hwpack_ahwpack_1.0_armel.tar.gz"))
@@ -66,7 +67,7 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             '\n[%s]\nsources-entry=%s\n'
             % (hwpack_name, package_name, architecture,
                 source_id, source.sources_entry)))
-        builder = HardwarePackBuilder(config.filename, hwpack_version)
+        builder = HardwarePackBuilder(config.filename, hwpack_version, [])
         builder.build()
         metadata = Metadata(hwpack_name, hwpack_version, architecture)
         self.assertThat(
@@ -95,7 +96,7 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             '\n[%s]\nsources-entry=%s\n'
             % (hwpack_name, package_name1, package_name2, architecture,
                 source_id, source.sources_entry)))
-        builder = HardwarePackBuilder(config.filename, hwpack_version)
+        builder = HardwarePackBuilder(config.filename, hwpack_version, [])
         builder.build()
         metadata = Metadata(hwpack_name, hwpack_version, architecture)
         hwpack_filename = "hwpack_%s_%s_%s.tar.gz" % (
@@ -127,7 +128,7 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             'include-debs=no\n\n[%s]\nsources-entry=%s\n'
             % (hwpack_name, package_name, architecture,
                 source_id, source.sources_entry)))
-        builder = HardwarePackBuilder(config.filename, hwpack_version)
+        builder = HardwarePackBuilder(config.filename, hwpack_version, [])
         builder.build()
         metadata = Metadata(hwpack_name, hwpack_version, architecture)
         self.assertThat(
@@ -158,7 +159,7 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             'assume-installed=%s\n\n[%s]\nsources-entry=%s\n'
             % (hwpack_name, package_name, architecture, assume_installed,
                 source_id, source.sources_entry)))
-        builder = HardwarePackBuilder(config.filename, hwpack_version)
+        builder = HardwarePackBuilder(config.filename, hwpack_version, [])
         builder.build()
         metadata = Metadata(hwpack_name, hwpack_version, architecture)
         filename = "hwpack_%s_%s_%s.tar.gz" % (hwpack_name, hwpack_version,

@@ -19,7 +19,7 @@ class ConfigFileMissing(Exception):
 
 class HardwarePackBuilder(object):
 
-    def __init__(self, config_path, version):
+    def __init__(self, config_path, version, local_debs):
         try:
             with open(config_path) as fp:
                 self.config = Config(fp)

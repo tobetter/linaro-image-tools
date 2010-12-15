@@ -15,6 +15,8 @@ if __name__ == '__main__':
         "from.")
     parser.add_argument(
         "VERSION", help="The version of the hardware pack to create.")
+    parser.add_argument(
+        "--local-deb", help="", action="append")
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
     ch = logging.StreamHandler()
@@ -26,11 +28,13 @@ if __name__ == '__main__':
     logger.addHandler(ch)
     if args.debug:
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         ch.setFormatter(formatter)
         logger.setLevel(logging.DEBUG)
     try:
-        builder = HardwarePackBuilder(args.CONFIG_FILE, args.VERSION)
+        builder = HardwarePackBuilder(
+            args.CONFIG_FILE, args.VERSION, args.local_deb)
     except ConfigFileMissing, e:
         sys.stderr.write(str(e) + "\n")
         sys.exit(1)
