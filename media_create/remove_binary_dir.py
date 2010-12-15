@@ -1,16 +1,13 @@
-#!/usr/bin/python
-
 import sys
 import os.path
-import subprocess
+
+from media_create import cmd_runner
+
 
 def remove_binary_dir(binary_dir='binary/', as_root=True):
     if os.path.exists(binary_dir):
-        args = []
-        if as_root:
-            args.extend(['sudo'])
-        args.extend(['rm', '-rf', binary_dir])
-        proc = subprocess.Popen(args)
+        proc = cmd_runner.run(
+            ['rm', '-rf', binary_dir], as_root=as_root)
         proc.wait()
         return proc.returncode
     return 0
