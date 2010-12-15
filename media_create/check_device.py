@@ -34,20 +34,20 @@ def _find_device(as_root, device, env):
 
 
 def _print_fdisk_dev(as_root, env):
-    sys.stdout.write('\nfdisk -l:\n')
+    print '\nfdisk -l:'
     _exec_fdisk_and_grep(as_root, env, '\"Disk /dev/\"')
 
 
 def _print_mounted_devices():
     mount_file = '/etc/mtab'
-    sys.stdout.write('\nmount:\n')
+    print '\nmount:'
     try:
         with open(mount_file) as f:
             for line in f:
                 if re.match('/dev/', line) is not None:
                     sys.stdout.write(line)
     except IOError:
-        sys.stdout.write('IOError: cannot read %s\n' % mount_file)
+        print 'IOError: cannot read %s' % mount_file
 
 
 def _select_device(device):
@@ -62,29 +62,31 @@ def check_device(device, as_root=True):
 
     :param device: The selected device.
     :param as_root: Indicates if this function should be run as root.
+    :return: True if the device exist and is selected, else False.
     """
     env = cmd_runner.get_extended_env({'LC_ALL': 'C'})
 
     fdisk = _find_device(as_root, device, env)
     if ('-%s-' % fdisk) == ('-%s:-' % device):
-        sys.stdout.write('\nI see...\n')
+        print '\nI see...'
         _print_fdisk_dev(as_root, env)
         _print_mounted_devices()
-        if _select_device(device):
-            return 0
+        return _select_device(device)
     else:
-        sys.stdout.write('\nAre you sure? I do not see [%s].\n' % device)
-        sys.stdout.write('Here is what I see...\n')
+        print '\nAre you sure? I do not see [%s].' % device
+        print 'Here is what I see...'
         _print_fdisk_dev(as_root, env)
         _print_mounted_devices()
-
-    return 1
+        return False
 
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print 'usage: ' + sys.argv[0] + ' <DEVICE>'
-        sys.exit(1)
+        sys.exit(2)
 
-    device = sys.argv[1]
-    sys.exit(check_device(device))
+    device_selected = check_device(sys.argv[1])
+    if device_selected:
+        sys.exit(0)
+    else:
+        sys.exit(1)

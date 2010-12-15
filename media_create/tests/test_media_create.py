@@ -357,16 +357,13 @@ class TestCheckDevice(TestCaseWithFixtures):
     def test_check_device_and_select(self):
         self._mock_find_device()
         self._mock_select_device()
-        self.assertEqual(0, 
-            check_device.check_device(self.DEV1, as_root=False))
+        self.assertTrue(check_device.check_device(self.DEV1, as_root=False))
 
     def test_check_device_and_deselect(self):
         self._mock_find_device()
         self._mock_deselect_device()
-        self.assertEqual(1, 
-            check_device.check_device(self.DEV1, as_root=False))
+        self.assertFalse(check_device.check_device(self.DEV1, as_root=False))
 
     def test_check_device_not_found(self):
         self._mock_find_device()
-        self.assertEqual(1, 
-            check_device.check_device(self.DEV2, as_root=False))
+        self.assertFalse(check_device.check_device(self.DEV2, as_root=False))
