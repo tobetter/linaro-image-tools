@@ -606,13 +606,46 @@ def MatchesAsPackageContent(package_matcher):
     return AfterPreproccessing(load_from_disk, package_matcher)
 
 
+class DoesNotStartWith(Mismatch):
+
+    def __init__(self, matchee, expected):
+        """Create a DoesNotStartWith Mismatch.
+
+        :param matchee: the string that did not match.
+        :param expected: the string that `matchee` was expected to start
+            with.
+        """
+        self.matchee = matchee
+        self.expected = expected
+
+    def describe(self):
+        return "'%s' does not start with '%s'." % (
+            self.matchee, self.expected)
+
+
+class StartsWith(Matcher):
+    """Checks whether one string starts with another."""
+
+    def __init__(self, expected):
+        """Create a StartsWith Matcher.
+
+        :param expected: the string that matchees should start with.
+        """
+        self.expected = expected
+
+    def __str__(self):
+        return "Starts with '%s'." % self.expected
+
+    def match(self, matchee):
+        if not matchee.startswith(self.expected):
+            return DoesNotStartWith(matchee, self.expected)
+        return None
+
+
 def MatchesPackageRelationshipList(relationship_matchers):
     """Matches a set of matchers against a package relationship specification.
 
-    # XXX: Disabled because this seems to require a specific version of
-    # testtools that includes the StartsWith matcher.
-    >> from testtools.matchers import Equals, StartsWith
-    >> MatchesPackageRelationshipList(
+    >>> MatchesPackageRelationshipList(
     ...     [Equals('foo'), StartsWith('bar (')]).match('bar (= 1.0), foo')
     >>>
     """
