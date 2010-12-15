@@ -14,6 +14,7 @@ def _run_proc(args, last_arg, env, stdin=None):
 
 
 def _exec_fdisk_and_grep(as_root, env, grep_str, extra_cmd=None):
+    # TODO: Try UDisk dbus interface to avoid using Popen.
     args = []
     if as_root:
         args.extend(['sudo'])
