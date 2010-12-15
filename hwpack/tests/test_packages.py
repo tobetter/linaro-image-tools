@@ -11,6 +11,7 @@ from hwpack.packages import (
     FetchedPackage,
     get_packages_file,
     IsolatedAptCache,
+    LocalArchiveMaker,
     PackageFetcher,
     PackageMaker,
     stringify_relationship,
@@ -19,6 +20,7 @@ from hwpack.testing import (
     AptSourceFixture,
     ContextManagerFixture,
     DummyFetchedPackage,
+    MatchesPackage,
     TestCaseWithFixtures,
     )
 
@@ -233,7 +235,16 @@ class TemporaryDirectoryManagerTests(TestCaseWithFixtures):
 
 class LocalArchiveMakerTests(TestCaseWithFixtures):
 
-    pass
+    def test_sources_entry_for_debs(self):
+        package = DummyFetchedPackage("foo", "1.0")
+        local_archive_maker = LocalArchiveMaker()
+        self.useFixture(ContextManagerFixture(local_archive_maker))
+        entry = local_archive_maker.sources_entry_for_debs([package])
+        with IsolatedAptCache([entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            created_package = FetchedPackage.from_apt(
+                candidate, package.filename)
+            self.assertThat(created_package, MatchesPackage(package))
 
 
 class PackageMakerTests(TestCaseWithFixtures):

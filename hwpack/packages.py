@@ -159,7 +159,10 @@ class TemporaryDirectoryManager(object):
 class LocalArchiveMaker(TemporaryDirectoryManager):
 
     def sources_entry_for_debs(self, local_debs):
-        pass
+        tmpdir = self.make_temporary_directory()
+        with open(os.path.join(tmpdir, 'Packages'), 'w') as packages_file:
+            packages_file.write(get_packages_file(local_debs))
+        return 'file://%s ./' % (tmpdir, )
 
 
 class PackageMaker(TemporaryDirectoryManager):
