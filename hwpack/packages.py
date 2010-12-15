@@ -616,7 +616,7 @@ class PackageFetcher(object):
         acq = apt_pkg.Acquire(DummyProgress())
         acqfiles = []
         for package in self.cache.cache.get_changes():
-            logger.debug("Fetching %s" % package)
+            logger.debug("Fetching %s ..." % package)
             candidate = package.candidate
             base = os.path.basename(candidate.filename)
             if package.name not in fetched:
@@ -628,6 +628,7 @@ class PackageFetcher(object):
                 acq, candidate.uri, candidate.md5, candidate.size,
                 base, destfile=destfile)
             acqfiles.append((acqfile, result_package, destfile))
+            logger.debug(" ... from %s" % acqfile.desc_uri)
         self.cache.cache.clear()
         acq.run()
         for acqfile, result_package, destfile in acqfiles:
