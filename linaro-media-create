@@ -19,8 +19,10 @@
 
 set -e
 
-unset DEVICE BOOTFS ROOTFS IMAGE_FILE HWPACK_FILE UBOOT_FLAVOR KERNEL_ADDR
+unset DEVICE BOOTFS ROOTFS IMAGE_FILE HWPACK_FILES UBOOT_FLAVOR KERNEL_ADDR
 unset INITRD_ADDR CREATE_SWAP SWAP_SIZE DEPLOY_STEPS
+
+declare -a HWPACK_FILES
 
 #Defaults
 RFS=ext3
@@ -210,7 +212,7 @@ while [ ! -z "$1" ]; do
       ;;
     --hwpack)
       checkparm "$2"
-      HWPACK_FILE="$2"
+      HWPACK_FILES[${#HWPACK_FILES[@]}]="$2"
       ;;
     --hwpack-force-yes)
       HWPACK_FORCE_YES="yes"
@@ -309,7 +311,7 @@ esac
 
 RFS_UUID=`uuidgen -r`
 
-install_hwpack() {
+install_hwpacks () {
   chroot=${DIR}/binary
   # Make sure we unmount /proc in the chroot or else it can't be moved to the
   # rootfs.
@@ -334,7 +336,6 @@ install_hwpack() {
       ;;
   esac
   sudo cp "$LINARO_HWPACK_INSTALL" "${chroot}/usr/bin"
-  sudo cp "$HWPACK_FILE" "$chroot"
 
   # Actually install the hwpack.
   sudo mount proc ${chroot}/proc -t proc
@@ -342,17 +343,23 @@ install_hwpack() {
     sudo umount -v "$chroot/proc"
   }
 
-  echo ""
-  echo "---------------------------------------------------"
-  echo "Installing (apt-get) $HWPACK_FILE in target rootfs."
-  echo ""
-  if [ "$HWPACK_FORCE_YES" = "yes" ]; then
-    sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install --force-yes /"$(basename "$HWPACK_FILE")"
-  else
-    sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /"$(basename "$HWPACK_FILE")"
-  fi
-  echo "---------------------------------------------------"
-  echo ""
+  for HWPACK_FILE in "${HWPACK_FILES[@]}"; do
+
+    sudo cp "$HWPACK_FILE" "$chroot"
+    echo ""
+    echo "---------------------------------------------------"
+    echo "Installing (apt-get) $HWPACK_FILE in target rootfs."
+    echo ""
+    if [ "$HWPACK_FORCE_YES" = "yes" ]; then
+      sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install --force-yes /"$(basename "$HWPACK_FILE")"
+    else
+      sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /"$(basename "$HWPACK_FILE")"
+    fi
+    echo "---------------------------------------------------"
+    echo ""
+    sudo rm -f "${chroot}/$(basename "$HWPACK_FILE")"
+
+  done
 
   # Revert some changes we did to the rootfs as we don't want them in the
   # image.
@@ -365,7 +372,6 @@ install_hwpack() {
     sudo rm -f ${chroot}/usr/bin/qemu-arm-static
   fi
   sudo rm -f ${chroot}/usr/bin/linaro-hwpack-install
-  sudo rm -f "${chroot}/$(basename "$HWPACK_FILE")"
 }
 
 unpack_binary_tarball() {
@@ -707,8 +713,8 @@ if [ "${IMAGE_FILE}" ]; then
 fi
 
 unpack_binary_tarball
-if [ "$HWPACK_FILE" ]; then
-  install_hwpack
+if [ "${#HWPACK_FILES[@]}" -gt 0 ]; then
+  install_hwpacks
 else
   echo "Warning, --hwpack <filename> was not specified, the result is unlikely to be functional without manual effort to setup uImage, MLO, u-boot.bin and so as as appropriate for your hardware."
 fi
