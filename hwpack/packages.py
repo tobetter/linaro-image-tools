@@ -126,13 +126,7 @@ class DummyProgress(object):
         pass
 
 
-class PackageMaker(object):
-    """An object that can create binary debs on the fly.
-
-    PackageMakers implement the context manager protocol to manage the
-    temporary directories the debs are created in.
-    """
-
+class TemporaryDirectoryManager(object):
     def __init__(self):
         self._temporary_directories = None
 
@@ -160,6 +154,20 @@ class PackageMaker(object):
         tmpdir = tempfile.mkdtemp()
         self._temporary_directories.append(tmpdir)
         return tmpdir
+
+
+class LocalArchiveMaker(TemporaryDirectoryManager):
+
+    def sources_entry_for_debs(self, local_debs):
+        pass
+
+
+class PackageMaker(TemporaryDirectoryManager):
+    """An object that can create binary debs on the fly.
+
+    PackageMakers implement the context manager protocol to manage the
+    temporary directories the debs are created in.
+    """
 
     # This template (and the code that uses it) is made more awkward by the
     # fact that blank lines are invalid in control files -- so in particular

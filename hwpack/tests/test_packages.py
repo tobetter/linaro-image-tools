@@ -202,7 +202,7 @@ class StringifyRelationshipTests(TestCaseWithFixtures):
                 "baz (>= 2.0)", stringify_relationship(candidate, "Depends"))
 
 
-class PackageMakerTests(TestCaseWithFixtures):
+class TemporaryDirectoryManagerTests(TestCaseWithFixtures):
 
     def test_enter_twice_fails(self):
         maker = PackageMaker()
@@ -229,6 +229,14 @@ class PackageMakerTests(TestCaseWithFixtures):
         tmpdir = maker.make_temporary_directory()
         maker.__exit__()
         self.assertFalse(os.path.isdir(tmpdir))
+
+
+class LocalArchiveMakerTests(TestCaseWithFixtures):
+
+    pass
+
+
+class PackageMakerTests(TestCaseWithFixtures):
 
     def test_make_package_creates_file(self):
         maker = PackageMaker()
