@@ -313,7 +313,7 @@ class HardwarePackHasFile(TarfileHasFile):
         :type path: str
         """
         kwargs.setdefault("type", tarfile.REGTYPE)
-        if "content" in kwargs:
+        if "content" in kwargs and kwargs['type'] != tarfile.DIRTYPE:
             kwargs.setdefault("size", len(kwargs["content"]))
         if kwargs["type"] == tarfile.DIRTYPE:
             kwargs.setdefault("mode", 0755)

@@ -337,6 +337,17 @@ class HardwarePackTests(TestCase):
             tf, HardwarePackHasFile("sources.list.d/ubuntu.list",
                 content="deb " + source + "\n"))
 
+    def test_adds_sources_list_file_ignores_none_keys(self):
+        hwpack = HardwarePack(self.metadata)
+        source = 'http://example.org/ ubuntu'
+        hwpack.add_apt_sources({
+            'ubuntu': source, None: 'file:///local ./'})
+        tf = self.get_tarfile(hwpack)
+        self.assertThat(
+            tf, HardwarePackHasFile(
+                "sources.list.d", type=tarfile.DIRTYPE,
+                content=["ubuntu.list"]))
+
     def test_adds_multiple_sources_list_files(self):
         hwpack = HardwarePack(self.metadata)
         source1 = 'http://example.org/ ubuntu main universe'
