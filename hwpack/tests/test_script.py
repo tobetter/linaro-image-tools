@@ -57,14 +57,14 @@ class ScriptTests(TestCaseWithFixtures):
     def test_errors_on_missing_configfile_argument(self):
         stdout, stderr = self.run_script([], expected_returncode=2)
         self.assertEqual(
-            "usage: linaro-hwpack-create [-h] CONFIG_FILE VERSION\n"
+            "usage: linaro-hwpack-create [-h] [--debug] CONFIG_FILE VERSION\n"
             "linaro-hwpack-create: error: too few arguments\n", stderr)
         self.assertEqual("", stdout)
 
     def test_errors_on_missing_version_argument(self):
         stdout, stderr = self.run_script(["somefile"], expected_returncode=2)
         self.assertEqual(
-            "usage: linaro-hwpack-create [-h] CONFIG_FILE VERSION\n"
+            "usage: linaro-hwpack-create [-h] [--debug] CONFIG_FILE VERSION\n"
             "linaro-hwpack-create: error: too few arguments\n", stderr)
         self.assertEqual("", stdout)
 

@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import argparse
+import logging
 import sys
 
 from hwpack.builder import ConfigFileMissing, HardwarePackBuilder
@@ -14,7 +15,20 @@ if __name__ == '__main__':
         "from.")
     parser.add_argument(
         "VERSION", help="The version of the hardware pack to create.")
+    parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(message)s")
+    ch.setFormatter(formatter)
+    logger = logging.getLogger("hwpack")
+    logger.setLevel(logging.INFO)
+    logger.addHandler(ch)
+    if args.debug:
+        ch.setLevel(logging.DEBUG)
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        ch.setFormatter(formatter)
+        logger.setLevel(logging.DEBUG)
     try:
         builder = HardwarePackBuilder(args.CONFIG_FILE, args.VERSION)
     except ConfigFileMissing, e:
