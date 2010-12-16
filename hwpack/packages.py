@@ -25,7 +25,9 @@ def get_packages_file(packages, extra_text=None, rel_to=None):
     :param extra_text: extra text to insert in to each stanza.
          Should not end with a newline.
     :type extra_text: str or None
-    :param rel_to: XXX
+    :param rel_to: If present, generate the Filename: parts of the Packages
+        file as paths relative to this location.  If not present, Filename:
+        will just include the file name (not the path).
     :return: the Packages file contents indexing `packages`.
     :rtype: str
     """
