@@ -1,13 +1,18 @@
 import os
+import shutil
 from StringIO import StringIO
 import subprocess
+import tempfile
 import textwrap
 
+import apt_pkg
 from debian.debfile import DebFile
 from testtools import TestCase
+from testtools.matchers import Equals
 
 from hwpack.packages import (
     DependencyNotSatisfied,
+    DummyProgress,
     FetchedPackage,
     get_packages_file,
     IsolatedAptCache,
@@ -15,6 +20,7 @@ from hwpack.packages import (
     PackageFetcher,
     PackageMaker,
     stringify_relationship,
+    TemporaryDirectoryManager,
     )
 from hwpack.testing import (
     AptSourceFixture,
@@ -207,26 +213,26 @@ class StringifyRelationshipTests(TestCaseWithFixtures):
 class TemporaryDirectoryManagerTests(TestCaseWithFixtures):
 
     def test_enter_twice_fails(self):
-        maker = PackageMaker()
+        maker = TemporaryDirectoryManager()
         maker.__enter__()
         self.assertRaises(AssertionError, maker.__enter__)
 
     def test_exit_without_enter_silent(self):
-        maker = PackageMaker()
+        maker = TemporaryDirectoryManager()
         maker.__exit__()
 
     def test_make_temporary_directory_without_enter_fails(self):
-        maker = PackageMaker()
+        maker = TemporaryDirectoryManager()
         self.assertRaises(AssertionError, maker.make_temporary_directory)
 
     def test_make_temporary_directory_makes_directory(self):
-        maker = PackageMaker()
+        maker = TemporaryDirectoryManager()
         self.useFixture(ContextManagerFixture(maker))
         tmpdir = maker.make_temporary_directory()
         self.assertTrue(os.path.isdir(tmpdir))
 
     def test_exit_removes_temporary_directory(self):
-        maker = PackageMaker()
+        maker = TemporaryDirectoryManager()
         self.useFixture(ContextManagerFixture(maker))
         tmpdir = maker.make_temporary_directory()
         maker.__exit__()
@@ -245,6 +251,27 @@ class LocalArchiveMakerTests(TestCaseWithFixtures):
             created_package = FetchedPackage.from_apt(
                 candidate, package.filename)
             self.assertThat(created_package, MatchesPackage(package))
+
+    def test_packages_from_sources_entry_for_debs_are_fetchable(self):
+        local_archive_maker = LocalArchiveMaker()
+        package_maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(local_archive_maker))
+        self.useFixture(ContextManagerFixture(package_maker))
+        deb_file_path = package_maker.make_package("foo", "1.0", {})
+        target_package = FetchedPackage.from_deb(deb_file_path)
+        entry = local_archive_maker.sources_entry_for_debs(
+            [target_package])
+        tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmpdir)
+        with IsolatedAptCache([entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            acq = apt_pkg.Acquire(DummyProgress())
+            base = os.path.basename(candidate.filename)
+            acqfile = apt_pkg.AcquireFile(
+                acq, candidate.uri, candidate.md5, candidate.size,
+                base, destfile=os.path.join(tmpdir, 'deb'))
+            acq.run()
+            self.assertThat(acqfile.status, Equals(acqfile.STAT_DONE))
 
 
 class PackageMakerTests(TestCaseWithFixtures):
@@ -720,7 +747,7 @@ class FetchedPackageTests(TestCaseWithFixtures):
         target_package = DummyFetchedPackage(
             "foo", "1.0", content=open(deb_file_path).read(), **dummy_relationships)
         created_package = FetchedPackage.from_deb(deb_file_path)
-        self.assertEqual(target_package, created_package)
+        self.assertThat(created_package, MatchesPackage(target_package))
 
     def test_from_deb_with_depends(self):
         self.create_package_and_assert_from_deb_translates_relationships(

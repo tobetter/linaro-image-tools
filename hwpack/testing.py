@@ -73,6 +73,7 @@ class DummyFetchedPackage(FetchedPackage):
         self.breaks = breaks
         self._no_content = no_content
         self._content = content
+        self._file_path = None
 
     @property
     def filename(self):

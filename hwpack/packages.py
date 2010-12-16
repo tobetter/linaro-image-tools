@@ -17,7 +17,7 @@ from debian.debfile import DebFile
 logger = logging.getLogger(__name__)
 
 
-def get_packages_file(packages, extra_text=None):
+def get_packages_file(packages, extra_text=None, rel_to=None):
     """Get the Packages file contents indexing `packages`.
 
     :param packages: the packages to index.
@@ -25,6 +25,7 @@ def get_packages_file(packages, extra_text=None):
     :param extra_text: extra text to insert in to each stanza.
          Should not end with a newline.
     :type extra_text: str or None
+    :param rel_to: XXX
     :return: the Packages file contents indexing `packages`.
     :rtype: str
     """
@@ -35,7 +36,10 @@ def get_packages_file(packages, extra_text=None):
         if extra_text is not None:
             parts.append(extra_text)
         parts.append('Version: %s' % package.version)
-        parts.append('Filename: %s' % package.filename)
+        filename = package.filepath
+        if rel_to is not None:
+            filename = os.path.relpath(filename, rel_to)
+        parts.append('Filename: %s' % filename)
         parts.append('Size: %d' % package.size)
         parts.append('Architecture: %s' % package.architecture)
         if package.depends:
@@ -161,7 +165,7 @@ class LocalArchiveMaker(TemporaryDirectoryManager):
     def sources_entry_for_debs(self, local_debs):
         tmpdir = self.make_temporary_directory()
         with open(os.path.join(tmpdir, 'Packages'), 'w') as packages_file:
-            packages_file.write(get_packages_file(local_debs))
+            packages_file.write(get_packages_file(local_debs, rel_to=tmpdir))
         return 'file://%s ./' % (tmpdir, )
 
 
@@ -296,6 +300,14 @@ class FetchedPackage(object):
         self.replaces = replaces
         self.breaks = breaks
         self.content = None
+        self._file_path = None
+
+    @property
+    def filepath(self):
+        if self._file_path is not None:
+            return self._file_path
+        else:
+            return self.filename
 
     @classmethod
     def from_apt(cls, pkg, filename, content=None):
@@ -351,6 +363,7 @@ class FetchedPackage(object):
             name, version, filename, size, md5sum, architecture, depends,
             pre_depends, conflicts, recommends, provides, replaces, breaks)
         pkg.content = open(deb_file_path)
+        pkg._file_path = deb_file_path
         return pkg
 
     # A list of attributes that are compared to determine equality.  Note that
