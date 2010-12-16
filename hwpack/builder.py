@@ -46,16 +46,18 @@ class HardwarePackBuilder(object):
             hwpack = HardwarePack(metadata)
             sources = self.config.sources
             with LocalArchiveMaker() as local_archive_maker:
-                if self.local_debs:
-                    sources[None] = (
-                        local_archive_maker.sources_entry_for_debs(
-                            [FetchedPackage.from_deb(deb)
-                             for deb in self.local_debs],
-                            LOCAL_ARCHIVE_LABEL))
                 hwpack.add_apt_sources(sources)
+                sources = sources.values()
+                if self.local_debs:
+                    packages = [
+                        FetchedPackage.from_deb(deb)
+                        for deb in self.local_debs]
+                    sources.append(
+                        local_archive_maker.sources_entry_for_debs(
+                            packages, LOCAL_ARCHIVE_LABEL))
                 logger.info("Fetching packages")
                 fetcher = PackageFetcher(
-                    sources.values(), architecture=architecture,
+                    sources, architecture=architecture,
                     prefer_label=LOCAL_ARCHIVE_LABEL)
                 with fetcher:
                     fetcher.ignore_packages(self.config.assume_installed)

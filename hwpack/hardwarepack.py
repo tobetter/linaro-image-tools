@@ -217,8 +217,6 @@ class HardwarePack(object):
                     [p for p in self.packages if p.content is not None]))
             tf.create_dir(self.SOURCES_LIST_DIRNAME)
             for source_name, source_info in self.sources.items():
-                if source_name is None:
-                    continue
                 tf.create_file_from_string(
                     self.SOURCES_LIST_DIRNAME + "/" + source_name + ".list",
                     "deb " + source_info + "\n")
