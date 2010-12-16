@@ -185,7 +185,9 @@ fi
 if [ "$DEP_PACKAGE_PRESENT" == "yes" ]; then
   to_be_installed=
   for package in $packages_without_versions; do
-    { dpkg --get-selections $package | grep -qw 'install$'; } || to_be_installed="$to_be_installed $package"
+    if [ "${package}" != "${dependency_package}" ]; then
+      { dpkg --get-selections $package 2>/dev/null| grep -qw 'install$'; } || to_be_installed="$to_be_installed $package"
+    fi
   done
 fi
 
