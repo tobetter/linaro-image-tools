@@ -191,7 +191,8 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         source_id = "ubuntu"
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
-        local_path = maker.make_package(package_name, "1.2", {})
+        local_path = maker.make_package(
+            package_name, "1.2", {}, architecture=architecture)
         available_package = FetchedPackage.from_deb(local_path)
         source = self.useFixture(AptSourceFixture([]))
         config = self.useFixture(ConfigFileFixture(
@@ -208,5 +209,36 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
                 architecture),
             IsHardwarePack(
                 metadata, [available_package],
+                {source_id: source.sources_entry},
+                package_spec=package_name))
+
+    def test_prefers_local_debs(self):
+        hwpack_name = "ahwpack"
+        hwpack_version = "1.0"
+        architecture = "armel"
+        package_name = "foo"
+        source_id = "ubuntu"
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        remote_package = DummyFetchedPackage(
+            package_name, "1.1", architecture=architecture)
+        local_path = maker.make_package(
+            package_name, "1.0", {}, architecture=architecture)
+        local_package = FetchedPackage.from_deb(local_path)
+        source = self.useFixture(AptSourceFixture([remote_package]))
+        config = self.useFixture(ConfigFileFixture(
+            '[hwpack]\nname=%s\npackages=%s\narchitectures=%s\n'
+            '\n[%s]\nsources-entry=%s\n'
+            % (hwpack_name, package_name, architecture,
+                source_id, source.sources_entry)))
+        builder = HardwarePackBuilder(
+            config.filename, hwpack_version, [local_path])
+        builder.build()
+        metadata = Metadata(hwpack_name, hwpack_version, architecture)
+        self.assertThat(
+            "hwpack_%s_%s_%s.tar.gz" % (hwpack_name, hwpack_version,
+                architecture),
+            IsHardwarePack(
+                metadata, [local_package],
                 {source_id: source.sources_entry},
                 package_spec=package_name))
