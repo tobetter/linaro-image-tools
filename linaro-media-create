@@ -283,9 +283,6 @@ DEPLOY_STEPS="setup_partitions $BOOTFS_STEP $ROOTFS_STEP"
 python -m media_create.ensure_command mkimage uboot-mkimage
 python -m media_create.ensure_command uuidgen uuid-runtime
 python -m media_create.ensure_command parted parted
-python -m media_create.ensure_command wget wget
-python -m media_create.ensure_command md5sum coreutils
-python -m media_create.ensure_command realpath realpath
 case "$RFS" in
   ext2|ext3|ext4)
     python -m media_create.ensure_command "mkfs.$RFS" e2fsprogs
