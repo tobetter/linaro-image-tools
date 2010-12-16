@@ -167,9 +167,12 @@ class LocalArchiveMaker(TemporaryDirectoryManager):
         with open(os.path.join(tmpdir, 'Packages'), 'w') as packages_file:
             packages_file.write(get_packages_file(local_debs, rel_to=tmpdir))
         if label:
-            os.system(
-                'apt-ftparchive -o"APT::FTPArchive::Release::Label=%s" '
-                'release %s > %s/Release' % (label, tmpdir, tmpdir))
+            subprocess.check_call(
+                ['apt-ftparchive',
+                 '-oAPT::FTPArchive::Release::Label=%s' % label,
+                 'release',
+                 tmpdir],
+                stdout=open(os.path.join(tmpdir, 'Release'), 'w'))
         return 'file://%s ./' % (tmpdir, )
 
 

@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 from StringIO import StringIO
 import subprocess
@@ -7,6 +8,7 @@ import textwrap
 
 import apt_pkg
 from debian.debfile import DebFile
+from debian import deb822
 from testtools import TestCase
 from testtools.matchers import Equals
 
@@ -272,6 +274,17 @@ class LocalArchiveMakerTests(TestCaseWithFixtures):
                 base, destfile=os.path.join(tmpdir, 'deb'))
             acq.run()
             self.assertThat(acqfile.status, Equals(acqfile.STAT_DONE))
+
+    def test_sources_entry_for_debs_creates_release_with_label(self):
+        package = DummyFetchedPackage("foo", "1.0")
+        local_archive_maker = LocalArchiveMaker()
+        self.useFixture(ContextManagerFixture(local_archive_maker))
+        label_text = 'random-label'
+        entry = local_archive_maker.sources_entry_for_debs(
+            [package], label=label_text)
+        loc = re.match('file://([^ ]*).*', entry).group(1)
+        release = deb822.Release(open(os.path.join(loc, 'Release')))
+        self.assertThat(release['Label'], Equals(label_text))
 
 
 class PackageMakerTests(TestCaseWithFixtures):
