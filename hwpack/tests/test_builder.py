@@ -6,11 +6,16 @@ from testtools import TestCase
 from hwpack.builder import ConfigFileMissing, HardwarePackBuilder
 from hwpack.config import HwpackConfigError
 from hwpack.hardwarepack import Metadata
+from hwpack.packages import (
+    FetchedPackage,
+    PackageMaker,
+    )
 from hwpack.tarfile_matchers import TarfileHasFile
 from hwpack.testing import (
     AptSourceFixture,
     ChdirToTempdirFixture,
     ConfigFileFixture,
+    ContextManagerFixture,
     DummyFetchedPackage,
     IsHardwarePack,
     Not,
@@ -177,3 +182,31 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
                 Not(TarfileHasFile("pkgs/%s" % dependency_package.filename)))
         finally:
             tf.close()
+
+    def test_includes_local_debs(self):
+        hwpack_name = "ahwpack"
+        hwpack_version = "1.0"
+        architecture = "armel"
+        package_name = "foo"
+        source_id = "ubuntu"
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        local_path = maker.make_package(package_name, "1.2", {})
+        available_package = FetchedPackage.from_deb(local_path)
+        source = self.useFixture(AptSourceFixture([]))
+        config = self.useFixture(ConfigFileFixture(
+            '[hwpack]\nname=%s\npackages=%s\narchitectures=%s\n'
+            '\n[%s]\nsources-entry=%s\n'
+            % (hwpack_name, package_name, architecture,
+                source_id, source.sources_entry)))
+        builder = HardwarePackBuilder(
+            config.filename, hwpack_version, [local_path])
+        builder.build()
+        metadata = Metadata(hwpack_name, hwpack_version, architecture)
+        self.assertThat(
+            "hwpack_%s_%s_%s.tar.gz" % (hwpack_name, hwpack_version,
+                architecture),
+            IsHardwarePack(
+                metadata, [available_package],
+                {source_id: source.sources_entry},
+                package_spec=package_name))
