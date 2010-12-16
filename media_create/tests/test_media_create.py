@@ -325,20 +325,17 @@ class TestCalculatePartitionSizeAndOffset(TestCaseWithFixtures):
 
 class TestCheckDevice(TestCaseWithFixtures):
 
-    DEV1 = 'dev1'
-    DEV2 = 'dev2'
-
-    def _mock_run_proc(self):
-        self.useFixture(MockSomethingFixture(check_device, '_run_proc',
-            lambda args, last_arg, env, stdin=None: args))
-
-    def _mock_find_device(self):
+    def _mock_find_device_true(self):
         self.useFixture(MockSomethingFixture(check_device, '_find_device',
-            lambda device, env, as_root: self.DEV1 + ':'))
+            lambda device: True))
 
-    def _mock_print_mounted_devices(self):
+    def _mock_find_device_false(self):
+        self.useFixture(MockSomethingFixture(check_device, '_find_device',
+            lambda device: False))
+
+    def _mock_print_device_info(self):
         self.useFixture(MockSomethingFixture(check_device,
-            '_print_mounted_devices', lambda: None))
+            '_print_device_info', lambda: None))
 
     def _mock_select_device(self):
         self.useFixture(MockSomethingFixture(check_device, '_select_device',
@@ -351,19 +348,18 @@ class TestCheckDevice(TestCaseWithFixtures):
     def setUp(self):
         super(TestCheckDevice, self).setUp()
         self.useFixture(StdoutToDevnullFixture())
-        self._mock_run_proc()
-        self._mock_print_mounted_devices()
+        self._mock_print_device_info()
 
     def test_check_device_and_select(self):
-        self._mock_find_device()
+        self._mock_find_device_true()
         self._mock_select_device()
-        self.assertTrue(check_device.check_device(self.DEV1, as_root=False))
+        self.assertTrue(check_device.check_device(None))
 
     def test_check_device_and_deselect(self):
-        self._mock_find_device()
+        self._mock_find_device_true()
         self._mock_deselect_device()
-        self.assertFalse(check_device.check_device(self.DEV1, as_root=False))
+        self.assertFalse(check_device.check_device(None))
 
     def test_check_device_not_found(self):
-        self._mock_find_device()
-        self.assertFalse(check_device.check_device(self.DEV2, as_root=False))
+        self._mock_find_device_false()
+        self.assertFalse(check_device.check_device(None))
