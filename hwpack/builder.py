@@ -13,6 +13,9 @@ from hwpack.packages import (
 logger = logging.getLogger(__name__)
 
 
+LOCAL_ARCHIVE_LABEL='hwpack-local'
+
+
 class ConfigFileMissing(Exception):
 
     def __init__(self, filename):
@@ -48,11 +51,12 @@ class HardwarePackBuilder(object):
                         local_archive_maker.sources_entry_for_debs(
                             [FetchedPackage.from_deb(deb)
                              for deb in self.local_debs],
-                            'hwpack-local'))
+                            LOCAL_ARCHIVE_LABEL))
                 hwpack.add_apt_sources(sources)
                 logger.info("Fetching packages")
                 fetcher = PackageFetcher(
-                    sources.values(), architecture=architecture, prefer_label='hwpack-local')
+                    sources.values(), architecture=architecture,
+                    prefer_label=LOCAL_ARCHIVE_LABEL)
                 with fetcher:
                     fetcher.ignore_packages(self.config.assume_installed)
                     packages = fetcher.fetch_packages(
