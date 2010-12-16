@@ -162,10 +162,14 @@ class TemporaryDirectoryManager(object):
 
 class LocalArchiveMaker(TemporaryDirectoryManager):
 
-    def sources_entry_for_debs(self, local_debs):
+    def sources_entry_for_debs(self, local_debs, label=None):
         tmpdir = self.make_temporary_directory()
         with open(os.path.join(tmpdir, 'Packages'), 'w') as packages_file:
             packages_file.write(get_packages_file(local_debs, rel_to=tmpdir))
+        if label:
+            os.system(
+                'apt-ftparchive -o"APT::FTPArchive::Release::Label=%s" '
+                'release %s > %s/Release' % (label, tmpdir, tmpdir))
         return 'file://%s ./' % (tmpdir, )
 
 
@@ -419,7 +423,7 @@ class IsolatedAptCache(object):
     :type cache: apt.cache.Cache
     """
 
-    def __init__(self, sources, architecture=None):
+    def __init__(self, sources, architecture=None, prefer_label=None):
         """Create an IsolatedAptCache.
 
         :param sources: a list of sources such that they can be prefixed
@@ -431,6 +435,7 @@ class IsolatedAptCache(object):
         self.sources = sources
         self.architecture = architecture
         self.tempdir = None
+        self.prefer_label = prefer_label
 
     def prepare(self):
         """Prepare the IsolatedAptCache for use.
@@ -460,6 +465,14 @@ class IsolatedAptCache(object):
                 f.write(
                     'Apt {\nArchitecture "%s";\n'
                     'Install-Recommends "true";\n}\n' % self.architecture)
+        if self.prefer_label is not None:
+            apt_preferences = os.path.join(
+                self.tempdir, "etc", "apt", "preferences")
+            with open(apt_preferences, 'w') as f:
+                f.write(
+                    'Package: *\n'
+                    'Pin: release l=%s\n'
+                    'Pin-Priority: 1001\n' % self.prefer_label)
         self.cache = Cache(rootdir=self.tempdir, memonly=True)
         logger.debug("Updating apt cache")
         self.cache.update()
@@ -511,7 +524,7 @@ class DependencyNotSatisfied(Exception):
 class PackageFetcher(object):
     """A class to fetch packages from a defined list of sources."""
 
-    def __init__(self, sources, architecture=None):
+    def __init__(self, sources, architecture=None, prefer_label=None):
         """Create a PackageFetcher.
 
         Once created a PackageFetcher should have its `prepare` method
@@ -523,7 +536,8 @@ class PackageFetcher(object):
         :param architecture: the architecture to fetch packages for.
         :type architecture: str
         """
-        self.cache = IsolatedAptCache(sources, architecture=architecture)
+        self.cache = IsolatedAptCache(
+            sources, architecture=architecture, prefer_label=prefer_label)
 
     def prepare(self):
         """Prepare the PackageFetcher for use.

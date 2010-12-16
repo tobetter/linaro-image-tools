@@ -47,11 +47,12 @@ class HardwarePackBuilder(object):
                     sources[None] = (
                         local_archive_maker.sources_entry_for_debs(
                             [FetchedPackage.from_deb(deb)
-                             for deb in self.local_debs]))
+                             for deb in self.local_debs],
+                            'hwpack-local'))
                 hwpack.add_apt_sources(sources)
                 logger.info("Fetching packages")
                 fetcher = PackageFetcher(
-                    sources.values(), architecture=architecture)
+                    sources.values(), architecture=architecture, prefer_label='hwpack-local')
                 with fetcher:
                     fetcher.ignore_packages(self.config.assume_installed)
                     packages = fetcher.fetch_packages(

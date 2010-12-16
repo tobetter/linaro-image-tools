@@ -220,6 +220,8 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         source_id = "ubuntu"
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
+        # The point here is that remote_package has a later version than
+        # local_package, but local_package is still preferred.
         remote_package = DummyFetchedPackage(
             package_name, "1.1", architecture=architecture)
         local_path = maker.make_package(
