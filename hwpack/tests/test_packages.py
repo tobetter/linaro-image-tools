@@ -862,6 +862,16 @@ class AptCacheTests(TestCaseWithFixtures):
             open(os.path.join(
                 cache.tempdir, "etc", "apt", "apt.conf")).read())
 
+    def test_prepare_with_prefer_label_creates_etc_apt_preferences(self):
+        label_text = 'random-label'
+        cache = IsolatedAptCache([], prefer_label=label_text)
+        self.addCleanup(cache.cleanup)
+        cache.prepare()
+        self.assertIn(
+            label_text,
+            open(os.path.join(
+                cache.tempdir, "etc", "apt", "preferences")).read())
+
     def test_context_manager(self):
         # A smoketest that IsolatedAptCache can be used as a context
         # manager
@@ -903,9 +913,10 @@ class PackageFetcherTests(TestCaseWithFixtures):
             self.assertTrue(os.path.isdir(tempdir))
         self.assertFalse(os.path.exists(tempdir))
 
-    def get_fetcher(self, sources, architecture=None):
+    def get_fetcher(self, sources, architecture=None, prefer_label=None):
         fetcher = PackageFetcher(
-            [s.sources_entry for s in sources], architecture=architecture)
+            [s.sources_entry for s in sources], architecture=architecture,
+            prefer_label=prefer_label)
         self.addCleanup(fetcher.cleanup)
         fetcher.prepare()
         return fetcher
@@ -945,6 +956,18 @@ class PackageFetcherTests(TestCaseWithFixtures):
         fetcher = self.get_fetcher([source])
         self.assertEqual(
             available_package, fetcher.fetch_packages(["foo"])[0])
+
+    def test_fetch_packages_fetches_preferred_label(self):
+        lower_package = DummyFetchedPackage("foo", "1.0")
+        higher_package = DummyFetchedPackage("foo", "2.0")
+        label_text = 'random-label'
+        source1 = self.useFixture(AptSourceFixture([higher_package]))
+        source2 = self.useFixture(
+            AptSourceFixture([lower_package], label=label_text))
+        fetcher = self.get_fetcher(
+            [source1, source2], prefer_label=label_text)
+        self.assertEqual(
+            lower_package, fetcher.fetch_packages(["foo"])[0])
 
     def test_fetch_packages_fetches_multiple_packages(self):
         available_packages = [

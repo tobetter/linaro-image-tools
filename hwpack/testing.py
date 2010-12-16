@@ -2,6 +2,7 @@ from contextlib import contextmanager
 import hashlib
 import os
 import shutil
+import subprocess
 import tempfile
 from StringIO import StringIO
 import tarfile
@@ -112,7 +113,7 @@ class AptSourceFixture(object):
     :type sources_entry: str
     """
 
-    def __init__(self, packages):
+    def __init__(self, packages, label=None):
         """Create an AptSourceFixture.
 
         :param packages: a list of packages to add to the source
@@ -120,6 +121,7 @@ class AptSourceFixture(object):
         :type packages: an iterable of FetchedPackages
         """
         self.packages = packages
+        self.label = label
 
     def setUp(self):
         self.rootdir = tempfile.mkdtemp(prefix="hwpack-apt-source-")
@@ -129,6 +131,13 @@ class AptSourceFixture(object):
                 f.write(package.content.read())
         with open(os.path.join(self.rootdir, "Packages"), 'wb') as f:
             f.write(get_packages_file(self.packages))
+        if self.label is not None:
+            subprocess.check_call(
+                ['apt-ftparchive',
+                 '-oAPT::FTPArchive::Release::Label=%s' % self.label,
+                 'release',
+                 self.rootdir],
+                stdout=open(os.path.join(self.rootdir, 'Release'), 'w'))
 
     def tearDown(self):
         if os.path.exists(self.rootdir):
