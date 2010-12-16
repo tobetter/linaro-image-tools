@@ -382,9 +382,12 @@ class IsHardwarePack(Matcher):
             package_matchers = [
                 MatchesPackage(p) for p in  packages_with_content]
             dep_package_matcher = MatchesStructure(
-                    name=Equals('hwpack-' + self.metadata.name),
-                    version=Equals(self.metadata.version),
-                    architecture=Equals(self.metadata.architecture))
+                name=Equals('hwpack-' + self.metadata.name),
+                version=Equals(self.metadata.version),
+                architecture=Equals(self.metadata.architecture),
+                filename=Equals('hwpack-%s_%s_%s.deb' % (
+                    self.metadata.name, self.metadata.version,
+                    self.metadata.architecture)))
             if self.package_spec:
                 dep_package_matcher = dep_package_matcher.update(
                     depends=MatchesPackageRelationshipList(

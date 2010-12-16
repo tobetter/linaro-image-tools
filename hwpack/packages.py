@@ -36,9 +36,10 @@ def get_packages_file(packages, extra_text=None, rel_to=None):
         if extra_text is not None:
             parts.append(extra_text)
         parts.append('Version: %s' % package.version)
-        filename = package.filepath
         if rel_to is not None:
-            filename = os.path.relpath(filename, rel_to)
+            filename = os.path.relpath(package.filepath, rel_to)
+        else:
+            filename = package.filename
         parts.append('Filename: %s' % filename)
         parts.append('Size: %d' % package.size)
         parts.append('Architecture: %s' % package.architecture)
