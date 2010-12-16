@@ -161,12 +161,12 @@ class TestCaseWithFixtures(TestCase):
         fixture.setUp()
         return fixture
 
-    def createTempFileAsFixture(self, prefix='tmp'):
+    def createTempFileAsFixture(self, prefix='tmp', dir=None):
         """Create a temp file and make sure it is removed on tearDown.
 
         :return: The filename of the file created.
         """
-        _, filename = tempfile.mkstemp(prefix=prefix)
+        _, filename = tempfile.mkstemp(prefix=prefix, dir=dir)
         self.addCleanup(os.unlink, filename)
         return filename
 

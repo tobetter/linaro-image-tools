@@ -14,6 +14,7 @@ from media_create import cmd_runner
 from media_create import ensure_command
 from media_create import populate_boot
 from media_create import partitions
+from media_create import rootfs
 from media_create.boot_cmd import create_boot_cmd
 from media_create.partitions import (
     calculate_partition_size_and_offset,
@@ -33,6 +34,13 @@ from media_create.populate_boot import (
     _run_mkimage,
     )
 from media_create.remove_binary_dir import remove_binary_dir
+from media_create.rootfs import (
+    create_flash_kernel_config,
+    has_space_left_for_swap,
+    move_contents,
+    populate_rootfs,
+    write_data_to_protected_file,
+    )
 from media_create.unpack_binary_tarball import unpack_binary_tarball
 
 from media_create.tests.fixtures import (
@@ -244,12 +252,11 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
         img = self.createTempFileAsFixture()
         # Use that fake boot script to create a boot loader using mkimage.
-        # Send stdout to file as mkimage will print to stdout and we don't
-        # want that.
+        # Send stdout to /dev/null as mkimage will print to stdout and we
+        # don't want that.
         retval = _run_mkimage(
             'script', '0', '0', 'boot script', filename, img,
-            stdout=open(self.createTempFileAsFixture(), 'w'),
-            as_root=False)
+            stdout=open('/dev/null', 'w'), as_root=False)
 
         self.assertEqual(0, retval)
 
@@ -459,3 +466,115 @@ class TestPartitionSetup(TestCaseWithFixtures):
              ['sudo', 'sfdisk', '-D', '-H', '255', '-S', '63', tempfile],
              ['sync']],
             popen_fixture.mock.calls)
+
+
+class TestPopulateRootFS(TestCaseWithFixtures):
+
+    lines_added_to_fstab = None
+    create_flash_kernel_config_called = False
+
+    def test_populate_rootfs(self):
+        def fake_append_to_fstab(disk, additions):
+            self.lines_added_to_fstab = additions
+
+        def fake_create_flash_kernel_config(disk, partition_offset):
+            self.create_flash_kernel_config_called = True
+
+        # Mock stdout, cmd_runner.Popen(), append_to_fstab and
+        # create_flash_kernel_config.
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+        self.useFixture(MockSomethingFixture(
+            rootfs, 'append_to_fstab', fake_append_to_fstab))
+        self.useFixture(MockSomethingFixture(
+            rootfs, 'create_flash_kernel_config',
+            fake_create_flash_kernel_config))
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        # Store a dummy rootdisk and contents_dir in a tempdir.
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        root_disk = os.path.join(tempdir, 'rootdisk')
+        contents_dir = os.path.join(tempdir, 'contents')
+        contents_bin = os.path.join(contents_dir, 'bin')
+        contents_etc = os.path.join(contents_dir, 'etc')
+        os.makedirs(contents_bin)
+        os.makedirs(contents_etc)
+
+        populate_rootfs(
+            contents_dir, root_disk, partition='/dev/rootfs',
+            rootfs_type='ext3', rootfs_uuid='uuid', should_create_swap=True,
+            swap_size=100, partition_offset=0)
+
+        self.assertEqual(
+            ['UUID=uuid / ext3  errors=remount-ro 0 1 ',
+             '/SWAP.swap  none  swap  sw  0 0'],
+            self.lines_added_to_fstab)
+        self.assertEqual(True, self.create_flash_kernel_config_called)
+        swap_file = os.path.join(root_disk, 'SWAP.swap')
+        expected = [
+            ['sudo', 'mount', '/dev/rootfs', root_disk],
+            ['sudo', 'mv', contents_bin, contents_etc, root_disk],
+            ['sudo', 'dd', 'if=/dev/zero', 'of=%s' % swap_file, 'bs=1M',
+             'count=100'],
+            ['sudo', 'mkswap', swap_file],
+            ['sync'],
+            ['sudo', 'umount', root_disk]]
+        self.assertEqual(expected, popen_fixture.mock.calls)
+
+    def test_create_flash_kernel_config(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+
+        create_flash_kernel_config(tempdir, boot_partition_number=1)
+
+        calls = fixture.mock.calls
+        self.assertEqual(1, len(calls), calls)
+        call = calls[0]
+        # The call writes to a tmpfile and then moves it to the,
+        # /etc/flash-kernel.conf, so the tmpfile is the next to last in the
+        # list of arguments stored.
+        tmpfile = call[-2]
+        self.assertEqual(
+            ['sudo', 'mv', '-f', tmpfile,
+             '%s/etc/flash-kernel.conf' % tempdir],
+            call)
+        self.assertEqual('UBOOT_PART=/dev/mmcblk0p1', open(tmpfile).read())
+
+    def test_move_contents(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        file1 = self.createTempFileAsFixture(dir=tempdir)
+
+        move_contents(tempdir, '/tmp/')
+
+        self.assertEqual([['sudo', 'mv', file1, '/tmp/']],
+                         popen_fixture.mock.calls)
+
+    def test_has_space_left_for_swap(self):
+        statvfs = os.statvfs('/')
+        space_left = statvfs.f_bavail * statvfs.f_bsize
+        swap_size_in_megs = space_left / (1024**2)
+        self.assertTrue(
+            has_space_left_for_swap('/', swap_size_in_megs))
+
+    def test_has_no_space_left_for_swap(self):
+        statvfs = os.statvfs('/')
+        space_left = statvfs.f_bavail * statvfs.f_bsize
+        swap_size_in_megs = (space_left / (1024**2)) + 1
+        self.assertFalse(
+            has_space_left_for_swap('/', swap_size_in_megs))
+
+    def test_write_data_to_protected_file(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        data = 'foo'
+        path = '/etc/nonexistant'
+
+        write_data_to_protected_file(path, data)
+
+        calls = fixture.mock.calls
+        self.assertEqual(1, len(calls), calls)
+        call = calls[0]
+        # The call moves tmpfile to the given path, so tmpfile is the next to
+        # last in the list of arguments stored.
+        tmpfile = call[-2]
+        self.assertEqual(['sudo', 'mv', '-f', tmpfile, path], call)
+        self.assertEqual(data, open(tmpfile).read())

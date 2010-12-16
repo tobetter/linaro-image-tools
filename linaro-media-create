@@ -20,7 +20,7 @@
 set -e
 
 unset DEVICE BOOTFS ROOTFS IMAGE_FILE HWPACK_FILE UBOOT_FLAVOR KERNEL_ADDR
-unset INITRD_ADDR CREATE_SWAP SWAP_SIZE DEPLOY_STEPS
+unset INITRD_ADDR DEPLOY_STEPS
 
 #Defaults
 RFS=ext3
@@ -28,6 +28,8 @@ BINARY_TARBALL='binary-tar.tar.gz'
 BOOT_LABEL=boot
 RFS_LABEL=rootfs
 IS_LIVE=0
+CREATE_SWAP=0
+SWAP_SIZE=0
 IS_LOWMEM=0
 FAT_SIZE=32
 IMAGE_SIZE=2G
@@ -492,47 +494,8 @@ populate_boot() {
 }
 
 populate_rootfs() {
-  echo ""
-  echo "Populating rootfs Partition"
-  echo "Be patient, this may take a few minutes"
-  echo ""
-  mkdir -p "${ROOT_DISK}"
-  sudo mount ${ROOTFS} "${ROOT_DISK}"
-
-  sudo mv ${DIR}/binary/* "$ROOT_DISK"
-
-  # add fstab entry for rootfs and boot
-  echo "UUID=${RFS_UUID} / ${RFS}  errors=remount-ro 0 1 " | sudo tee -a "${ROOT_DISK}/etc/fstab"
-
-  if [ "$CREATE_SWAP" ] ; then
-
-    echo ""
-    echo "Creating SWAP File"
-    echo ""
-
-    SPACE_LEFT=$(LC_ALL=C df "${ROOT_DISK}" | grep ${ROOTFS} | awk '{print $4}')
-
-    let SIZE=$SWAP_SIZE*1024
-
-    if [ $SPACE_LEFT -ge $SIZE ] ; then
-      sudo dd if=/dev/zero "of=${ROOT_DISK}/SWAP.swap" bs=1M count=$SWAP_SIZE
-      sudo mkswap "${ROOT_DISK}/SWAP.swap"
-      echo "/SWAP.swap  none  swap  sw  0 0" | sudo tee -a "${ROOT_DISK}/etc/fstab"
-    else
-      echo "SWAP file bigger then whats left on partition"
-    fi
-  fi
-
-  echo ""
-  echo "Creating /etc/flash-kernel.conf"
-  echo ""
-
-  TARGET_BOOT_DEV=/dev/mmcblk0p$(( 1 + $MMC_PART_OFFSET ))
-  echo "UBOOT_PART=${TARGET_BOOT_DEV}" | sudo tee "${ROOT_DISK}/etc/flash-kernel.conf" >/dev/null
-
-  sync
-  sync
-  sudo umount "${ROOT_DISK}" || true
+  python -m media_create.rootfs "binary/" "$ROOT_DISK" "$ROOTFS" "$RFS" \
+      "$RFS_UUID" "$CREATE_SWAP" "$SWAP_SIZE" "$MMC_PART_OFFSET"
 }
 
 remove_image_file() {
