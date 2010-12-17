@@ -424,41 +424,13 @@ register_loopback() {
 setup_partitions() {
   boot_and_root_devices=$(python -m media_create.partitions \
       "$DEVIMAGE" "${DEVICE-$IMAGE_FILE}" "$FAT_SIZE" "$IMAGE_SIZE" \
-      "$SHOULD_CREATE_PARTITIONS")
+      "$BOOT_LABEL" "$RFS_LABEL" "$RFS" "$RFS_UUID" \
+      "$SHOULD_CREATE_PARTITIONS" "$BOOTFS_STEP" "$ROOTFS_STEP")
   eval $boot_and_root_devices
 
   if [ "${IMAGE_FILE}" ]; then
     register_loopback "$BOOTFS"
     register_loopback "$ROOTFS"
-  fi
-
-  prepare_partitions
-}
-
-prepare_partitions() {
-
-  if [ "$BOOTFS_STEP" ]; then
-    echo ""
-    echo "Formating Boot Partition"
-    echo ""
-    if [ -z "$BOOTFS" ]; then
-      echo "Partition $BOOTFS does not exist"
-      exit 2
-    else
-      sudo mkfs.vfat -F ${FAT_SIZE} ${BOOTFS} -n ${BOOT_LABEL}
-    fi
-  fi
-
-  if [ "$ROOTFS_STEP" ]; then
-    echo ""
-    echo "Formating ${RFS} Partition"
-    echo ""
-    if [ -z "$ROOTFS" ]; then
-      echo "Partition $ROOTFS does not exist"
-      exit 2
-    else
-      sudo mkfs.${RFS} -U "$RFS_UUID" ${ROOTFS} -L ${RFS_LABEL}
-    fi
   fi
 }
 

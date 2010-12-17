@@ -428,7 +428,12 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # already setup image file.
         tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        setup_partitions('beagle', Media(tempfile), 32, '2G', 'yes')
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+        uuid = '2e82008e-1af3-4699-8521-3bf5bac1e67a'
+        bootfs, rootfs = setup_partitions(
+            'beagle', Media(tempfile), 32, '2G', 'boot', 'root', 'ext3',
+            uuid, 'yes', 'format-bootfs', 'format-rootfs')
         self.assertEqual(
              # This is the call that would create the image file.
             [['qemu-img', 'create', '-f', 'raw', tempfile, '2G'],
@@ -442,10 +447,14 @@ class TestPartitionSetup(TestCaseWithFixtures):
              ['sudo', 'losetup', '-f', '--show', tempfile, '--offset',
               '32256', '--sizelimit', '129024'],
              ['sudo', 'losetup', '-f', '--show', tempfile, '--offset',
-              '161280', '--sizelimit', '10321920']],
+              '161280', '--sizelimit', '10321920'],
+             ['sudo', 'mkfs.vfat', '-F', '32', bootfs, '-n', 'boot'],
+             ['sudo', 'mkfs.ext3', '-U', uuid, rootfs, '-L', 'root']],
             popen_fixture.mock.calls)
 
     def test_setup_partitions_for_block_device(self):
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
         self.useFixture(MockSomethingFixture(
             partitions, '_get_partition_count', lambda media: 2))
         tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
@@ -453,9 +462,14 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Pretend our tempfile is a block device.
         media.is_block_device = True
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        setup_partitions('beagle', media, 32, '2G', 'yes')
+        uuid = '2e82008e-1af3-4699-8521-3bf5bac1e67a'
+        bootfs, rootfs = setup_partitions(
+            'beagle', media, 32, '2G', 'boot', 'root', 'ext3',
+            uuid, 'yes', 'format-bootfs', 'format-rootfs')
         self.assertEqual(
             [['sudo', 'parted', '-s', tempfile, 'mklabel', 'msdos'],
              ['sudo', 'sfdisk', '-D', '-H', '255', '-S', '63', tempfile],
-             ['sync']],
+             ['sync'],
+             ['sudo', 'mkfs.vfat', '-F', '32', bootfs, '-n', 'boot'],
+             ['sudo', 'mkfs.ext3', '-U', uuid, rootfs, '-L', 'root']],
             popen_fixture.mock.calls)
