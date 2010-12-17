@@ -128,6 +128,11 @@ class HardwarePackTests(TestCase):
         self.assertEqual(
             "hwpack_ahwpack_4_armel_supported.tar.gz", hwpack.filename())
 
+    def test_filename_with_extension(self):
+        hwpack = HardwarePack(self.metadata)
+        self.assertEqual(
+            "hwpack_ahwpack_4_armel.txt", hwpack.filename('.txt'))
+
     def get_tarfile(self, hwpack):
         fileobj = StringIO()
         hwpack.to_file(fileobj)

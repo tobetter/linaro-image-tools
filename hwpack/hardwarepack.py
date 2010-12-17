@@ -115,7 +115,7 @@ class HardwarePack(object):
         self.sources = {}
         self.packages = []
 
-    def filename(self):
+    def filename(self, extension=".tar.gz"):
         """The filename that this hardware pack should have.
 
         Returns the filename that the hardware pack should have, according
@@ -128,9 +128,9 @@ class HardwarePack(object):
             support_suffix = ""
         else:
             support_suffix = "_%s" % self.metadata.support
-        return "hwpack_%s_%s_%s%s.tar.gz" % (
+        return "hwpack_%s_%s_%s%s%s" % (
             self.metadata.name, self.metadata.version,
-            self.metadata.architecture, support_suffix)
+            self.metadata.architecture, support_suffix, extension)
 
     def add_apt_sources(self, sources):
         """Add APT sources to the hardware pack.
