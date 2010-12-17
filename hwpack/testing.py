@@ -1,7 +1,9 @@
 from contextlib import contextmanager
 import hashlib
+import logging
 import os
 import shutil
+import subprocess
 import tempfile
 from StringIO import StringIO
 import tarfile
@@ -73,6 +75,7 @@ class DummyFetchedPackage(FetchedPackage):
         self.breaks = breaks
         self._no_content = no_content
         self._content = content
+        self._file_path = None
 
     @property
     def filename(self):
@@ -111,7 +114,7 @@ class AptSourceFixture(object):
     :type sources_entry: str
     """
 
-    def __init__(self, packages):
+    def __init__(self, packages, label=None):
         """Create an AptSourceFixture.
 
         :param packages: a list of packages to add to the source
@@ -119,6 +122,7 @@ class AptSourceFixture(object):
         :type packages: an iterable of FetchedPackages
         """
         self.packages = packages
+        self.label = label
 
     def setUp(self):
         self.rootdir = tempfile.mkdtemp(prefix="hwpack-apt-source-")
@@ -128,6 +132,13 @@ class AptSourceFixture(object):
                 f.write(package.content.read())
         with open(os.path.join(self.rootdir, "Packages"), 'wb') as f:
             f.write(get_packages_file(self.packages))
+        if self.label is not None:
+            subprocess.check_call(
+                ['apt-ftparchive',
+                 '-oAPT::FTPArchive::Release::Label=%s' % self.label,
+                 'release',
+                 self.rootdir],
+                stdout=open(os.path.join(self.rootdir, 'Release'), 'w'))
 
     def tearDown(self):
         if os.path.exists(self.rootdir):
@@ -313,7 +324,7 @@ class HardwarePackHasFile(TarfileHasFile):
         :type path: str
         """
         kwargs.setdefault("type", tarfile.REGTYPE)
-        if "content" in kwargs:
+        if "content" in kwargs and kwargs['type'] != tarfile.DIRTYPE:
             kwargs.setdefault("size", len(kwargs["content"]))
         if kwargs["type"] == tarfile.DIRTYPE:
             kwargs.setdefault("mode", 0755)
@@ -372,9 +383,12 @@ class IsHardwarePack(Matcher):
             package_matchers = [
                 MatchesPackage(p) for p in  packages_with_content]
             dep_package_matcher = MatchesStructure(
-                    name=Equals('hwpack-' + self.metadata.name),
-                    version=Equals(self.metadata.version),
-                    architecture=Equals(self.metadata.architecture))
+                name=Equals('hwpack-' + self.metadata.name),
+                version=Equals(self.metadata.version),
+                architecture=Equals(self.metadata.architecture),
+                filename=Equals('hwpack-%s_%s_%s.deb' % (
+                    self.metadata.name, self.metadata.version,
+                    self.metadata.architecture)))
             if self.package_spec:
                 dep_package_matcher = dep_package_matcher.update(
                     depends=MatchesPackageRelationshipList(
@@ -655,3 +669,14 @@ def MatchesPackageRelationshipList(relationship_matchers):
         return [rel.strip() for rel in relationships.split(',')]
     return AfterPreproccessing(
         process, MatchesSetwise(*relationship_matchers))
+
+
+class AppendingHandler(logging.Handler):
+    """A logging handler that simply appends messages to a list."""
+
+    def __init__(self):
+        logging.Handler.__init__(self)
+        self.messages = []
+
+    def emit(self, message):
+        self.messages.append(message)

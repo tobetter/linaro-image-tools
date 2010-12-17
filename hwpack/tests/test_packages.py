@@ -1,24 +1,34 @@
 import os
+import re
+import shutil
 from StringIO import StringIO
 import subprocess
+import tempfile
 import textwrap
 
+import apt_pkg
 from debian.debfile import DebFile
+from debian import deb822
 from testtools import TestCase
+from testtools.matchers import Equals
 
 from hwpack.packages import (
     DependencyNotSatisfied,
+    DummyProgress,
     FetchedPackage,
     get_packages_file,
     IsolatedAptCache,
+    LocalArchiveMaker,
     PackageFetcher,
     PackageMaker,
     stringify_relationship,
+    TemporaryDirectoryManager,
     )
 from hwpack.testing import (
     AptSourceFixture,
     ContextManagerFixture,
     DummyFetchedPackage,
+    MatchesPackage,
     TestCaseWithFixtures,
     )
 
@@ -202,33 +212,82 @@ class StringifyRelationshipTests(TestCaseWithFixtures):
                 "baz (>= 2.0)", stringify_relationship(candidate, "Depends"))
 
 
-class PackageMakerTests(TestCaseWithFixtures):
+class TemporaryDirectoryManagerTests(TestCaseWithFixtures):
 
     def test_enter_twice_fails(self):
-        maker = PackageMaker()
+        maker = TemporaryDirectoryManager()
         maker.__enter__()
         self.assertRaises(AssertionError, maker.__enter__)
 
     def test_exit_without_enter_silent(self):
-        maker = PackageMaker()
+        maker = TemporaryDirectoryManager()
         maker.__exit__()
 
     def test_make_temporary_directory_without_enter_fails(self):
-        maker = PackageMaker()
+        maker = TemporaryDirectoryManager()
         self.assertRaises(AssertionError, maker.make_temporary_directory)
 
     def test_make_temporary_directory_makes_directory(self):
-        maker = PackageMaker()
+        maker = TemporaryDirectoryManager()
         self.useFixture(ContextManagerFixture(maker))
         tmpdir = maker.make_temporary_directory()
         self.assertTrue(os.path.isdir(tmpdir))
 
     def test_exit_removes_temporary_directory(self):
-        maker = PackageMaker()
+        maker = TemporaryDirectoryManager()
         self.useFixture(ContextManagerFixture(maker))
         tmpdir = maker.make_temporary_directory()
         maker.__exit__()
         self.assertFalse(os.path.isdir(tmpdir))
+
+
+class LocalArchiveMakerTests(TestCaseWithFixtures):
+
+    def test_sources_entry_for_debs(self):
+        package = DummyFetchedPackage("foo", "1.0")
+        local_archive_maker = LocalArchiveMaker()
+        self.useFixture(ContextManagerFixture(local_archive_maker))
+        entry = local_archive_maker.sources_entry_for_debs([package])
+        with IsolatedAptCache([entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            created_package = FetchedPackage.from_apt(
+                candidate, package.filename)
+            self.assertThat(created_package, MatchesPackage(package))
+
+    def test_packages_from_sources_entry_for_debs_are_fetchable(self):
+        local_archive_maker = LocalArchiveMaker()
+        package_maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(local_archive_maker))
+        self.useFixture(ContextManagerFixture(package_maker))
+        deb_file_path = package_maker.make_package("foo", "1.0", {})
+        target_package = FetchedPackage.from_deb(deb_file_path)
+        entry = local_archive_maker.sources_entry_for_debs(
+            [target_package])
+        tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmpdir)
+        with IsolatedAptCache([entry]) as cache:
+            candidate = cache.cache['foo'].candidate
+            acq = apt_pkg.Acquire(DummyProgress())
+            base = os.path.basename(candidate.filename)
+            acqfile = apt_pkg.AcquireFile(
+                acq, candidate.uri, candidate.md5, candidate.size,
+                base, destfile=os.path.join(tmpdir, 'deb'))
+            acq.run()
+            self.assertThat(acqfile.status, Equals(acqfile.STAT_DONE))
+
+    def test_sources_entry_for_debs_creates_release_with_label(self):
+        package = DummyFetchedPackage("foo", "1.0")
+        local_archive_maker = LocalArchiveMaker()
+        self.useFixture(ContextManagerFixture(local_archive_maker))
+        label_text = 'random-label'
+        entry = local_archive_maker.sources_entry_for_debs(
+            [package], label=label_text)
+        loc = re.match('file://([^ ]*).*', entry).group(1)
+        release = deb822.Release(open(os.path.join(loc, 'Release')))
+        self.assertThat(release['Label'], Equals(label_text))
+
+
+class PackageMakerTests(TestCaseWithFixtures):
 
     def test_make_package_creates_file(self):
         maker = PackageMaker()
@@ -701,7 +760,7 @@ class FetchedPackageTests(TestCaseWithFixtures):
         target_package = DummyFetchedPackage(
             "foo", "1.0", content=open(deb_file_path).read(), **dummy_relationships)
         created_package = FetchedPackage.from_deb(deb_file_path)
-        self.assertEqual(target_package, created_package)
+        self.assertThat(created_package, MatchesPackage(target_package))
 
     def test_from_deb_with_depends(self):
         self.create_package_and_assert_from_deb_translates_relationships(
@@ -803,6 +862,16 @@ class AptCacheTests(TestCaseWithFixtures):
             open(os.path.join(
                 cache.tempdir, "etc", "apt", "apt.conf")).read())
 
+    def test_prepare_with_prefer_label_creates_etc_apt_preferences(self):
+        label_text = 'random-label'
+        cache = IsolatedAptCache([], prefer_label=label_text)
+        self.addCleanup(cache.cleanup)
+        cache.prepare()
+        self.assertIn(
+            label_text,
+            open(os.path.join(
+                cache.tempdir, "etc", "apt", "preferences")).read())
+
     def test_context_manager(self):
         # A smoketest that IsolatedAptCache can be used as a context
         # manager
@@ -844,9 +913,10 @@ class PackageFetcherTests(TestCaseWithFixtures):
             self.assertTrue(os.path.isdir(tempdir))
         self.assertFalse(os.path.exists(tempdir))
 
-    def get_fetcher(self, sources, architecture=None):
+    def get_fetcher(self, sources, architecture=None, prefer_label=None):
         fetcher = PackageFetcher(
-            [s.sources_entry for s in sources], architecture=architecture)
+            [s.sources_entry for s in sources], architecture=architecture,
+            prefer_label=prefer_label)
         self.addCleanup(fetcher.cleanup)
         fetcher.prepare()
         return fetcher
@@ -886,6 +956,18 @@ class PackageFetcherTests(TestCaseWithFixtures):
         fetcher = self.get_fetcher([source])
         self.assertEqual(
             available_package, fetcher.fetch_packages(["foo"])[0])
+
+    def test_fetch_packages_fetches_preferred_label(self):
+        lower_package = DummyFetchedPackage("foo", "1.0")
+        higher_package = DummyFetchedPackage("foo", "2.0")
+        label_text = 'random-label'
+        source1 = self.useFixture(AptSourceFixture([higher_package]))
+        source2 = self.useFixture(
+            AptSourceFixture([lower_package], label=label_text))
+        fetcher = self.get_fetcher(
+            [source1, source2], prefer_label=label_text)
+        self.assertEqual(
+            lower_package, fetcher.fetch_packages(["foo"])[0])
 
     def test_fetch_packages_fetches_multiple_packages(self):
         available_packages = [

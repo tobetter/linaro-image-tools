@@ -1,3 +1,5 @@
+import tarfile
+
 from testtools.matchers import Annotate, Equals, Matcher, Mismatch
 
 
@@ -141,10 +143,22 @@ class TarfileHasFile(Matcher):
                 return TarfileWrongValueMismatch(
                     "mtime", tarball, self.path, self.mtime, info.mtime)
         if self.content_matcher is not None:
-            actual = tarball.extractfile(self.path).read()
-            content_mismatch = self.content_matcher.match(actual)
-            if content_mismatch:
-                return content_mismatch
+            if info.type == tarfile.DIRTYPE:
+                contents = []
+                path_frags = self.path.split('/')
+                for name in tarball.getnames():
+                    name_frags = name.split('/')
+                    if (len(name_frags) == len(path_frags) + 1 and
+                        name_frags[:-1] == path_frags):
+                        contents.append(name_frags[-1])
+                content_mismatch = self.content_matcher.match(contents)
+                if content_mismatch:
+                    return content_mismatch
+            else:
+                actual = tarball.extractfile(self.path).read()
+                content_mismatch = self.content_matcher.match(actual)
+                if content_mismatch:
+                    return content_mismatch
         return None
 
     def __str__(self):
