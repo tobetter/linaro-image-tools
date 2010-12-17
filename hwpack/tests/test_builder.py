@@ -135,40 +135,29 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
                 metadata.name, metadata.version, metadata.architecture),
             IsHardwarePack(
                 metadata, [available_package],
-                sources_dict,
-                packages_without_content=[available_package],
+                sources_dict, packages_without_content=[available_package],
                 package_spec=package_name))
 
     def test_obeys_assume_installed(self):
-        hwpack_name = "ahwpack"
-        hwpack_version = "1.0"
-        architecture = "armel"
         package_name = "foo"
         assume_installed = "bar"
-        source_id = "ubuntu"
         available_package = DummyFetchedPackage(
-            package_name, "1.1", architecture=architecture,
-            depends=assume_installed)
-        dependency_package = DummyFetchedPackage(
-            assume_installed, "1.1", architecture=architecture)
-        source = self.useFixture(
-            AptSourceFixture([available_package, dependency_package]))
-        config = self.useFixture(ConfigFileFixture(
-            '[hwpack]\nname=%s\npackages=%s\narchitectures=%s\n'
-            'assume-installed=%s\n\n[%s]\nsources-entry=%s\n'
-            % (hwpack_name, package_name, architecture, assume_installed,
-                source_id, source.sources_entry)))
-        builder = HardwarePackBuilder(config.filename, hwpack_version, [])
+            package_name, "1.1", depends=assume_installed)
+        dependency_package = DummyFetchedPackage(assume_installed, "1.1")
+        sources_dict = self.sourcesDictForPackages(
+            [available_package, dependency_package])
+        metadata, config = self.makeMetaDataAndConfigFixture(
+            [package_name], sources_dict,
+            extra_config={'assume-installed': assume_installed})
+        builder = HardwarePackBuilder(config.filename, metadata.version, [])
         builder.build()
-        metadata = Metadata(hwpack_name, hwpack_version, architecture)
-        filename = "hwpack_%s_%s_%s.tar.gz" % (hwpack_name, hwpack_version,
-                architecture)
+        filename = "hwpack_%s_%s_%s.tar.gz" % (
+            metadata.name, metadata.version, metadata.architecture)
         self.assertThat(
             filename,
             IsHardwarePack(
                 metadata, [available_package],
-                {source_id: source.sources_entry},
-                package_spec=package_name))
+                sources_dict, package_spec=package_name))
         tf = tarfile.open(filename, mode="r:gz")
         try:
             self.assertThat(
@@ -178,95 +167,66 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             tf.close()
 
     def test_includes_local_debs(self):
-        hwpack_name = "ahwpack"
-        hwpack_version = "1.0"
-        architecture = "armel"
         package_name = "foo"
-        source_id = "ubuntu"
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
-        local_path = maker.make_package(
-            package_name, "1.2", {}, architecture=architecture)
+        local_path = maker.make_package(package_name, "1.2", {})
         available_package = FetchedPackage.from_deb(local_path)
-        source = self.useFixture(AptSourceFixture([]))
-        config = self.useFixture(ConfigFileFixture(
-            '[hwpack]\nname=%s\npackages=%s\narchitectures=%s\n'
-            '\n[%s]\nsources-entry=%s\n'
-            % (hwpack_name, package_name, architecture,
-                source_id, source.sources_entry)))
+        sources_dict = self.sourcesDictForPackages([])
+        metadata, config = self.makeMetaDataAndConfigFixture(
+            [package_name], sources_dict)
         builder = HardwarePackBuilder(
-            config.filename, hwpack_version, [local_path])
+            config.filename, metadata.version, [local_path])
         builder.build()
-        metadata = Metadata(hwpack_name, hwpack_version, architecture)
         self.assertThat(
-            "hwpack_%s_%s_%s.tar.gz" % (hwpack_name, hwpack_version,
-                architecture),
+            "hwpack_%s_%s_%s.tar.gz" % (
+                metadata.name, metadata.version, metadata.architecture),
             IsHardwarePack(
                 metadata, [available_package],
-                {source_id: source.sources_entry},
+                sources_dict,
                 package_spec=package_name))
 
     def test_prefers_local_debs(self):
-        hwpack_name = "ahwpack"
-        hwpack_version = "1.0"
-        architecture = "armel"
         package_name = "foo"
-        source_id = "ubuntu"
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
         # The point here is that remote_package has a later version than
         # local_package, but local_package is still preferred.
-        remote_package = DummyFetchedPackage(
-            package_name, "1.1", architecture=architecture)
-        local_path = maker.make_package(
-            package_name, "1.0", {}, architecture=architecture)
+        remote_package = DummyFetchedPackage(package_name, "1.1")
+        local_path = maker.make_package(package_name, "1.0", {})
         local_package = FetchedPackage.from_deb(local_path)
-        source = self.useFixture(AptSourceFixture([remote_package]))
-        config = self.useFixture(ConfigFileFixture(
-            '[hwpack]\nname=%s\npackages=%s\narchitectures=%s\n'
-            '\n[%s]\nsources-entry=%s\n'
-            % (hwpack_name, package_name, architecture,
-                source_id, source.sources_entry)))
+        sources_dict = self.sourcesDictForPackages([remote_package])
+        metadata, config = self.makeMetaDataAndConfigFixture(
+            [package_name], sources_dict)
         builder = HardwarePackBuilder(
-            config.filename, hwpack_version, [local_path])
+            config.filename, metadata.version, [local_path])
         builder.build()
-        metadata = Metadata(hwpack_name, hwpack_version, architecture)
         self.assertThat(
-            "hwpack_%s_%s_%s.tar.gz" % (hwpack_name, hwpack_version,
-                architecture),
+            "hwpack_%s_%s_%s.tar.gz" % (
+                metadata.name, metadata.version, metadata.architecture),
             IsHardwarePack(
                 metadata, [local_package],
-                {source_id: source.sources_entry},
+                sources_dict,
                 package_spec=package_name))
 
     def test_includes_local_debs_even_if_not_in_config(self):
-        hwpack_name = "ahwpack"
-        hwpack_version = "1.0"
-        architecture = "armel"
         package_name = "foo"
         local_name = "bar"
-        source_id = "ubuntu"
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
-        remote_package = DummyFetchedPackage(
-            package_name, "1.1", architecture=architecture)
-        local_path = maker.make_package(
-            local_name, "1.0", {}, architecture=architecture)
+        remote_package = DummyFetchedPackage(package_name, "1.1")
+        local_path = maker.make_package(local_name, "1.0", {})
         local_package = FetchedPackage.from_deb(local_path)
-        source = self.useFixture(AptSourceFixture([remote_package]))
-        config = self.useFixture(ConfigFileFixture(
-            '[hwpack]\nname=%s\npackages=%s\narchitectures=%s\n'
-            '\n[%s]\nsources-entry=%s\n'
-            % (hwpack_name, package_name, architecture,
-               source_id, source.sources_entry)))
+        sources_dict = self.sourcesDictForPackages([remote_package])
+        metadata, config = self.makeMetaDataAndConfigFixture(
+            [package_name], sources_dict)
         builder = HardwarePackBuilder(
-            config.filename, hwpack_version, [local_path])
+            config.filename, metadata.version, [local_path])
         builder.build()
-        metadata = Metadata(hwpack_name, hwpack_version, architecture)
         self.assertThat(
-            "hwpack_%s_%s_%s.tar.gz" % (hwpack_name, hwpack_version,
-                architecture),
+            "hwpack_%s_%s_%s.tar.gz" % (
+                metadata.name, metadata.version, metadata.architecture),
             IsHardwarePack(
                 metadata, [remote_package, local_package],
-                {source_id: source.sources_entry},
+                sources_dict,
                 package_spec=package_name))
