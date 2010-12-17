@@ -16,7 +16,11 @@ if __name__ == '__main__':
     parser.add_argument(
         "VERSION", help="The version of the hardware pack to create.")
     parser.add_argument(
-        "--local-deb", help="", action="append", dest="local_debs")
+        "--local-deb", action="append", dest="local_debs", default=[],
+        metavar="LOCAL_DEB",
+        help=("Include LOCAL_DEB in the hardware pack, even if it's an older "
+              "version than a package that would be otherwise installed.  "
+              "Can be used more than once."))
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
     ch = logging.StreamHandler()
