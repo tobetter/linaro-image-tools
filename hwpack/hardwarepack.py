@@ -115,7 +115,7 @@ class HardwarePack(object):
         self.sources = {}
         self.packages = []
 
-    def filename(self):
+    def filename(self, extension=".tar.gz"):
         """The filename that this hardware pack should have.
 
         Returns the filename that the hardware pack should have, according
@@ -128,9 +128,9 @@ class HardwarePack(object):
             support_suffix = ""
         else:
             support_suffix = "_%s" % self.metadata.support
-        return "hwpack_%s_%s_%s%s.tar.gz" % (
+        return "hwpack_%s_%s_%s%s%s" % (
             self.metadata.name, self.metadata.version,
-            self.metadata.architecture, support_suffix)
+            self.metadata.architecture, support_suffix, extension)
 
     def add_apt_sources(self, sources):
         """Add APT sources to the hardware pack.
@@ -179,6 +179,13 @@ class HardwarePack(object):
                 relationships, self.metadata.architecture)
             self.packages.append(FetchedPackage.from_deb(deb_file_path))
 
+    def manifest_text(self):
+        manifest_content = ""
+        for package in self.packages:
+            manifest_content += "%s=%s\n" % (
+                package.name, package.version)
+        return manifest_content
+
     def to_file(self, fileobj):
         """Write the hwpack to a file object.
 
@@ -201,16 +208,13 @@ class HardwarePack(object):
             tf.create_file_from_string(
                 self.METADATA_FILENAME, str(self.metadata))
             tf.create_dir(self.PACKAGES_DIRNAME)
-            manifest_content = ""
             for package in self.packages:
                 if package.content is not None:
                     tf.create_file_from_string(
                         self.PACKAGES_DIRNAME + "/" + package.filename,
                         package.content.read())
-                manifest_content += "%s=%s\n" % (
-                    package.name, package.version)
             tf.create_file_from_string(
-                self.MANIFEST_FILENAME, manifest_content)
+                self.MANIFEST_FILENAME, self.manifest_text())
             tf.create_file_from_string(
                 self.PACKAGES_FILENAME,
                 get_packages_file(

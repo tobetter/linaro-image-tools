@@ -12,9 +12,7 @@ Architecture: all
 Depends: ${misc:Depends},
          parted,
          uuid-runtime,
-         wget,
          uboot-mkimage,
-         realpath,
          python,
          python-hwpack,
          python-argparse

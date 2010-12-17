@@ -84,6 +84,17 @@ class TarfileHasFileTests(TestCase):
             matcher = TarfileHasFile("foo")
             self.assertIs(None, matcher.match(tf))
 
+    def test_matches_directory(self):
+        with test_tarfile(contents=[("foo/", "")]) as tf:
+            matcher = TarfileHasFile("foo", type=tarfile.DIRTYPE)
+            self.assertIs(None, matcher.match(tf))
+
+    def test_matches_directory_content(self):
+        with test_tarfile(contents=[("foo/", ""), ("foo/bar", "")]) as tf:
+            matcher = TarfileHasFile(
+                "foo", type=tarfile.DIRTYPE, content=["bar"])
+            self.assertIs(None, matcher.match(tf))
+
     def test_mismatches_missing_path(self):
         with test_tarfile() as tf:
             matcher = TarfileHasFile("foo")
@@ -170,6 +181,16 @@ class TarfileHasFileTests(TestCase):
             mismatch = matcher.match(tf)
             self.assertEquals(
                 "'othercontent' != 'somecontent': The content of "
+                "path \"foo\" did not match",
+                mismatch.describe())
+
+    def test_mismatches_wrong_directory_content(self):
+        with test_tarfile(contents=[("foo/", ""), ("foo/bar", "")]) as tf:
+            matcher = TarfileHasFile(
+                "foo", type=tarfile.DIRTYPE, content=["baz"])
+            mismatch = matcher.match(tf)
+            self.assertEquals(
+                "['baz'] != ['bar']: The content of "
                 "path \"foo\" did not match",
                 mismatch.describe())
 

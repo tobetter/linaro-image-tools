@@ -19,8 +19,10 @@
 
 set -e
 
-unset DEVICE BOOTFS ROOTFS IMAGE_FILE HWPACK_FILE UBOOT_FLAVOR KERNEL_ADDR
+unset DEVICE BOOTFS ROOTFS IMAGE_FILE HWPACK_FILES UBOOT_FLAVOR KERNEL_ADDR
 unset INITRD_ADDR CREATE_SWAP SWAP_SIZE DEPLOY_STEPS
+
+declare -a HWPACK_FILES
 
 #Defaults
 RFS=ext3
@@ -34,7 +36,7 @@ IMAGE_SIZE=2G
 MMC_PART_OFFSET=0
 BOOTFS_STEP="create_boot_cmd populate_boot"
 ROOTFS_STEP="populate_rootfs"
-PARTITION_STEP="create_partitions"
+SHOULD_CREATE_PARTITIONS="yes"
 mmc_option="0:1"
 boot_args_options="rootwait ro"
 HWPACK_FORCE_YES="no"
@@ -180,7 +182,7 @@ while [ ! -z "$1" ]; do
       ;;
     --hwpack)
       checkparm "$2"
-      HWPACK_FILE="$2"
+      HWPACK_FILES[${#HWPACK_FILES[@]}]="$2"
       ;;
     --hwpack-force-yes)
       HWPACK_FORCE_YES="yes"
@@ -242,20 +244,17 @@ while [ ! -z "$1" ]; do
       BOOTFS_STEP=""
       ;;
     --no-part)
-      PARTITION_STEP=""
+      SHOULD_CREATE_PARTITIONS="no"
       ;;
   esac
   shift
 done
 
-DEPLOY_STEPS="$PARTITION_STEP prepare_partitions $BOOTFS_STEP $ROOTFS_STEP"
+DEPLOY_STEPS="setup_partitions $BOOTFS_STEP $ROOTFS_STEP"
 
 python -m media_create.ensure_command mkimage uboot-mkimage
 python -m media_create.ensure_command uuidgen uuid-runtime
 python -m media_create.ensure_command parted parted
-python -m media_create.ensure_command wget wget
-python -m media_create.ensure_command md5sum coreutils
-python -m media_create.ensure_command realpath realpath
 case "$RFS" in
   ext2|ext3|ext4)
     python -m media_create.ensure_command "mkfs.$RFS" e2fsprogs
@@ -279,34 +278,7 @@ esac
 
 RFS_UUID=`uuidgen -r`
 
-get_device_by_id() {
-  if [ ! "${IMAGE_FILE}" ]; then
-    for device in /dev/disk/by-id/*; do
-      if [ `realpath $device` = $DEVICE ]; then
-        case "$device" in
-          *-part[0-9]*)
-            echo "device $DEVICE must not be a partition part ($device)" >&2
-            exit 1
-          ;;
-        esac
-        for part_id in `ls "$device-part"*`; do
-          part=`realpath $part_id`
-          part_no=`echo $part_id | sed -e 's/.*-part//g'`
-          # echo "part $part_no found: $part_id" 1>&2
-          # if there is a non-fs-data part (e.g. mx51evk), MMC_PART_OFFSET=1
-          if test "$part_no" = $((1 + $MMC_PART_OFFSET)); then
-            BOOTFS=$part
-          elif test "$part_no" = $((2 + $MMC_PART_OFFSET)) ; then
-            ROOTFS=$part
-          fi
-        done
-        break
-      fi
-    done
-  fi
-}
-
-install_hwpack() {
+install_hwpacks () {
   chroot=${DIR}/binary
   # Make sure we unmount /proc in the chroot or else it can't be moved to the
   # rootfs.
@@ -331,7 +303,6 @@ install_hwpack() {
       ;;
   esac
   sudo cp "$LINARO_HWPACK_INSTALL" "${chroot}/usr/bin"
-  sudo cp "$HWPACK_FILE" "$chroot"
 
   # Actually install the hwpack.
   sudo mount proc ${chroot}/proc -t proc
@@ -339,17 +310,23 @@ install_hwpack() {
     sudo umount -v "$chroot/proc"
   }
 
-  echo ""
-  echo "---------------------------------------------------"
-  echo "Installing (apt-get) $HWPACK_FILE in target rootfs."
-  echo ""
-  if [ "$HWPACK_FORCE_YES" = "yes" ]; then
-    sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install --force-yes /"$(basename "$HWPACK_FILE")"
-  else
-    sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /"$(basename "$HWPACK_FILE")"
-  fi
-  echo "---------------------------------------------------"
-  echo ""
+  for HWPACK_FILE in "${HWPACK_FILES[@]}"; do
+
+    sudo cp "$HWPACK_FILE" "$chroot"
+    echo ""
+    echo "---------------------------------------------------"
+    echo "Installing (apt-get) $HWPACK_FILE in target rootfs."
+    echo ""
+    if [ "$HWPACK_FORCE_YES" = "yes" ]; then
+      sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install --force-yes /"$(basename "$HWPACK_FILE")"
+    else
+      sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /"$(basename "$HWPACK_FILE")"
+    fi
+    echo "---------------------------------------------------"
+    echo ""
+    sudo rm -f "${chroot}/$(basename "$HWPACK_FILE")"
+
+  done
 
   # Revert some changes we did to the rootfs as we don't want them in the
   # image.
@@ -362,7 +339,6 @@ install_hwpack() {
     sudo rm -f ${chroot}/usr/bin/qemu-arm-static
   fi
   sudo rm -f ${chroot}/usr/bin/linaro-hwpack-install
-  sudo rm -f "${chroot}/$(basename "$HWPACK_FILE")"
 }
 
 unpack_binary_tarball() {
@@ -415,32 +391,21 @@ register_loopback() {
   loop_devices="$loop_devices $1"
 }
 
-create_partitions() {
-  python -m media_create.create_partitions "${DEVIMAGE}" \
-      "${DEVICE-$IMAGE_FILE}" "$FAT_SIZE" "$HEADS" "$SECTORS" "$CYLINDER_ARG"
+setup_partitions() {
+  boot_and_root_devices=$(python -m media_create.partitions \
+      "$DEVIMAGE" "${DEVICE-$IMAGE_FILE}" "$FAT_SIZE" "$IMAGE_SIZE" \
+      "$SHOULD_CREATE_PARTITIONS")
+  eval $boot_and_root_devices
 
   if [ "${IMAGE_FILE}" ]; then
-    sizes_and_offsets=$(python -m media_create.partition_size "${IMAGE_FILE}")
-    eval $sizes_and_offsets
-    BOOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $VFATOFFSET \
-             --sizelimit $VFATSIZE)
     register_loopback "$BOOTFS"
-    ROOTFS=$(sudo losetup -f --show "$IMAGE_FILE" --offset $ROOTOFFSET \
-             --sizelimit $ROOTSIZE)
     register_loopback "$ROOTFS"
   fi
+
+  prepare_partitions
 }
 
-
 prepare_partitions() {
-
-  # sync and sleep a bit as the partitions may have been created in the
-  # previous step.
-  echo -n "waiting for partitioning to settle ..."
-  sync
-  sleep 3
-  echo "done."
-  get_device_by_id
 
   if [ "$BOOTFS_STEP" ]; then
     echo ""
@@ -535,44 +500,12 @@ populate_rootfs() {
   echo "Creating /etc/flash-kernel.conf"
   echo ""
 
+  TARGET_BOOT_DEV=/dev/mmcblk0p$(( 1 + $MMC_PART_OFFSET ))
   echo "UBOOT_PART=${TARGET_BOOT_DEV}" | sudo tee "${ROOT_DISK}/etc/flash-kernel.conf" >/dev/null
 
   sync
   sync
   sudo umount "${ROOT_DISK}" || true
-}
-
-calculatesize() {
-  IMAGE_SIZE=${IMAGE_SIZE/G/M*1024}
-  IMAGE_SIZE=${IMAGE_SIZE/M/K*1024}
-  IMAGE_SIZE=${IMAGE_SIZE/K/*1024}
-  IMAGE_SIZE=$(($IMAGE_SIZE))
-}
-
-setup_sizes() {
-  HEADS=255
-  SECTORS=63
-  SECTORSIZE=512
-  if [ "${IMAGE_FILE}" ]; then
-    calculatesize
-    CYLINDERSIZE=$(($HEADS*$SECTORS*$SECTORSIZE))
-    CYLINDERS=$(($IMAGE_SIZE/$CYLINDERSIZE))
-    CYLINDER_ARG="-C $CYLINDERS"
-    IMAGE_SIZE=$(($CYLINDERS*$CYLINDERSIZE))
-    # Round the size of the raw disk image up to a multiple of 256K
-    # so it is an exact number of SD card erase blocks in length.
-    # Otherwise Linux under qemu cannot access the last part of the
-    # card and is likely to complain that the last partition on the
-    # disk has been truncated.
-    IMAGE_SIZE=$(((($IMAGE_SIZE-1)/(1024*256)+1)*(1024*256)))
-  else
-    CYLINDER_ARG=""
-  fi
-}
-
-# XXX: Apparently there's no need to run qemu-img as root.
-setup_image() {
-  sudo qemu-img create -f raw "$IMAGE_FILE" $IMAGE_SIZE
 }
 
 remove_image_file() {
@@ -628,11 +561,6 @@ cleanup_handler() {
 # so we get called either way.
 trap cleanup_handler EXIT
 trap signal_handler INT TERM
-
-setup_sizes
-if [ "${IMAGE_FILE}" ]; then
-  setup_image
-fi
 
 serial_opts=""
 if [ "$consoles" ]; then
@@ -737,9 +665,6 @@ else
   fi
 fi
 
-TARGET_BOOT_DEV=/dev/mmcblk0p$(( 1 + $MMC_PART_OFFSET ))
-TARGET_ROOT_DEV=/dev/mmcblk0p$(( 2 + $MMC_PART_OFFSET ))
-
 if [ ! "${DEVICE}" -a ! "${IMAGE_FILE}" ]; then
   usage
 fi
@@ -755,8 +680,8 @@ if [ "${IMAGE_FILE}" ]; then
 fi
 
 unpack_binary_tarball
-if [ "$HWPACK_FILE" ]; then
-  install_hwpack
+if [ "${#HWPACK_FILES[@]}" -gt 0 ]; then
+  install_hwpacks
 else
   echo "Warning, --hwpack <filename> was not specified, the result is unlikely to be functional without manual effort to setup uImage, MLO, u-boot.bin and so as as appropriate for your hardware."
 fi
