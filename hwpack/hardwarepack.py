@@ -179,6 +179,13 @@ class HardwarePack(object):
                 relationships, self.metadata.architecture)
             self.packages.append(FetchedPackage.from_deb(deb_file_path))
 
+    def manifest_text(self):
+        manifest_content = ""
+        for package in self.packages:
+            manifest_content += "%s=%s\n" % (
+                package.name, package.version)
+        return manifest_content
+
     def to_file(self, fileobj):
         """Write the hwpack to a file object.
 
@@ -201,16 +208,13 @@ class HardwarePack(object):
             tf.create_file_from_string(
                 self.METADATA_FILENAME, str(self.metadata))
             tf.create_dir(self.PACKAGES_DIRNAME)
-            manifest_content = ""
             for package in self.packages:
                 if package.content is not None:
                     tf.create_file_from_string(
                         self.PACKAGES_DIRNAME + "/" + package.filename,
                         package.content.read())
-                manifest_content += "%s=%s\n" % (
-                    package.name, package.version)
             tf.create_file_from_string(
-                self.MANIFEST_FILENAME, manifest_content)
+                self.MANIFEST_FILENAME, self.manifest_text())
             tf.create_file_from_string(
                 self.PACKAGES_FILENAME,
                 get_packages_file(
