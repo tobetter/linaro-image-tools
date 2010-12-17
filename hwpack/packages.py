@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import os
 import re
 import shutil
@@ -13,7 +14,10 @@ import apt_pkg
 from debian.debfile import DebFile
 
 
-def get_packages_file(packages, extra_text=None):
+logger = logging.getLogger(__name__)
+
+
+def get_packages_file(packages, extra_text=None, rel_to=None):
     """Get the Packages file contents indexing `packages`.
 
     :param packages: the packages to index.
@@ -21,6 +25,9 @@ def get_packages_file(packages, extra_text=None):
     :param extra_text: extra text to insert in to each stanza.
          Should not end with a newline.
     :type extra_text: str or None
+    :param rel_to: If present, generate the Filename: parts of the Packages
+        file as paths relative to this location.  If not present, Filename:
+        will just include the file name (not the path).
     :return: the Packages file contents indexing `packages`.
     :rtype: str
     """
@@ -31,7 +38,11 @@ def get_packages_file(packages, extra_text=None):
         if extra_text is not None:
             parts.append(extra_text)
         parts.append('Version: %s' % package.version)
-        parts.append('Filename: %s' % package.filename)
+        if rel_to is not None:
+            filename = os.path.relpath(package.filepath, rel_to)
+        else:
+            filename = package.filename
+        parts.append('Filename: %s' % filename)
         parts.append('Size: %d' % package.size)
         parts.append('Architecture: %s' % package.architecture)
         if package.depends:
@@ -79,9 +90,14 @@ def stringify_relationship(pkg, relationship):
             for or_alternative in or_dep.or_dependencies:
                 suffix = ""
                 if or_alternative.relation:
-                    suffix = " (%s %s)" % (
-                        or_alternative.relation,
-                        or_alternative.version)
+                    relation = or_alternative.relation
+                    if relation in ('<', '>'):
+                        # The choice made here by python-apt is to report the
+                        # relationship in a Python spelling; as far as apt
+                        # knows, < is a deprecated spelling of <=; << is the
+                        # spelling of "strictly less than".  Similarly for >.
+                        relation *= 2
+                    suffix = " (%s %s)" % (relation, or_alternative.version)
                 or_list.append("%s%s" % (or_alternative.name, suffix))
             relationship_list.append(" | ".join(or_list))
         relationship_str = ", ".join(relationship_list)
@@ -117,13 +133,7 @@ class DummyProgress(object):
         pass
 
 
-class PackageMaker(object):
-    """An object that can create binary debs on the fly.
-
-    PackageMakers implement the context manager protocol to manage the
-    temporary directories the debs are created in.
-    """
-
+class TemporaryDirectoryManager(object):
     def __init__(self):
         self._temporary_directories = None
 
@@ -151,6 +161,30 @@ class PackageMaker(object):
         tmpdir = tempfile.mkdtemp()
         self._temporary_directories.append(tmpdir)
         return tmpdir
+
+
+class LocalArchiveMaker(TemporaryDirectoryManager):
+
+    def sources_entry_for_debs(self, local_debs, label=None):
+        tmpdir = self.make_temporary_directory()
+        with open(os.path.join(tmpdir, 'Packages'), 'w') as packages_file:
+            packages_file.write(get_packages_file(local_debs, rel_to=tmpdir))
+        if label:
+            subprocess.check_call(
+                ['apt-ftparchive',
+                 '-oAPT::FTPArchive::Release::Label=%s' % label,
+                 'release',
+                 tmpdir],
+                stdout=open(os.path.join(tmpdir, 'Release'), 'w'))
+        return 'file://%s ./' % (tmpdir, )
+
+
+class PackageMaker(TemporaryDirectoryManager):
+    """An object that can create binary debs on the fly.
+
+    PackageMakers implement the context manager protocol to manage the
+    temporary directories the debs are created in.
+    """
 
     # This template (and the code that uses it) is made more awkward by the
     # fact that blank lines are invalid in control files -- so in particular
@@ -276,6 +310,14 @@ class FetchedPackage(object):
         self.replaces = replaces
         self.breaks = breaks
         self.content = None
+        self._file_path = None
+
+    @property
+    def filepath(self):
+        if self._file_path is not None:
+            return self._file_path
+        else:
+            return self.filename
 
     @classmethod
     def from_apt(cls, pkg, filename, content=None):
@@ -331,6 +373,7 @@ class FetchedPackage(object):
             name, version, filename, size, md5sum, architecture, depends,
             pre_depends, conflicts, recommends, provides, replaces, breaks)
         pkg.content = open(deb_file_path)
+        pkg._file_path = deb_file_path
         return pkg
 
     # A list of attributes that are compared to determine equality.  Note that
@@ -386,7 +429,7 @@ class IsolatedAptCache(object):
     :type cache: apt.cache.Cache
     """
 
-    def __init__(self, sources, architecture=None):
+    def __init__(self, sources, architecture=None, prefer_label=None):
         """Create an IsolatedAptCache.
 
         :param sources: a list of sources such that they can be prefixed
@@ -398,6 +441,7 @@ class IsolatedAptCache(object):
         self.sources = sources
         self.architecture = architecture
         self.tempdir = None
+        self.prefer_label = prefer_label
 
     def prepare(self):
         """Prepare the IsolatedAptCache for use.
@@ -406,6 +450,7 @@ class IsolatedAptCache(object):
         of sources.
         """
         self.cleanup()
+        logger.debug("Writing apt configs")
         self.tempdir = tempfile.mkdtemp(prefix="hwpack-apt-cache-")
         dirs = ["var/lib/dpkg",
                 "etc/apt/",
@@ -426,7 +471,16 @@ class IsolatedAptCache(object):
                 f.write(
                     'Apt {\nArchitecture "%s";\n'
                     'Install-Recommends "true";\n}\n' % self.architecture)
+        if self.prefer_label is not None:
+            apt_preferences = os.path.join(
+                self.tempdir, "etc", "apt", "preferences")
+            with open(apt_preferences, 'w') as f:
+                f.write(
+                    'Package: *\n'
+                    'Pin: release l=%s\n'
+                    'Pin-Priority: 1001\n' % self.prefer_label)
         self.cache = Cache(rootdir=self.tempdir, memonly=True)
+        logger.debug("Updating apt cache")
         self.cache.update()
         self.cache.open()
         return self
@@ -476,7 +530,7 @@ class DependencyNotSatisfied(Exception):
 class PackageFetcher(object):
     """A class to fetch packages from a defined list of sources."""
 
-    def __init__(self, sources, architecture=None):
+    def __init__(self, sources, architecture=None, prefer_label=None):
         """Create a PackageFetcher.
 
         Once created a PackageFetcher should have its `prepare` method
@@ -488,7 +542,8 @@ class PackageFetcher(object):
         :param architecture: the architecture to fetch packages for.
         :type architecture: str
         """
-        self.cache = IsolatedAptCache(sources, architecture=architecture)
+        self.cache = IsolatedAptCache(
+            sources, architecture=architecture, prefer_label=prefer_label)
 
     def prepare(self):
         """Prepare the PackageFetcher for use.
@@ -521,6 +576,7 @@ class PackageFetcher(object):
         :param packages: the list of package names to ignore.
         :type packages: an iterable of str
         """
+        logger.debug("Ignoring %s" % packages)
         for package in packages:
             self.cache.cache[package].mark_install(auto_fix=False)
             if self.cache.cache.broken_count:
@@ -539,6 +595,7 @@ class PackageFetcher(object):
             candidate = package.installed
             base = os.path.basename(candidate.filename)
             installed.append(FetchedPackage.from_apt(candidate, base))
+            logger.debug("Ignored %s" % package.name)
         self.cache.set_installed_packages(installed)
         broken = [p.name for p in self.cache.cache
                 if p.is_inst_broken or p.is_now_broken]
@@ -556,6 +613,7 @@ class PackageFetcher(object):
                 seen_packages.add(package.name)
         all_packages = set(package_dict.keys())
         for unseen_package in all_packages.difference(seen_packages):
+            logger.debug("%s is ignored, skipping" % unseen_package)
             del package_dict[unseen_package]
 
     def fetch_packages(self, packages, download_content=True):
@@ -602,6 +660,7 @@ class PackageFetcher(object):
         acq = apt_pkg.Acquire(DummyProgress())
         acqfiles = []
         for package in self.cache.cache.get_changes():
+            logger.debug("Fetching %s ..." % package)
             candidate = package.candidate
             base = os.path.basename(candidate.filename)
             if package.name not in fetched:
@@ -613,6 +672,7 @@ class PackageFetcher(object):
                 acq, candidate.uri, candidate.md5, candidate.size,
                 base, destfile=destfile)
             acqfiles.append((acqfile, result_package, destfile))
+            logger.debug(" ... from %s" % acqfile.desc_uri)
         self.cache.cache.clear()
         acq.run()
         for acqfile, result_package, destfile in acqfiles:

@@ -1,16 +1,14 @@
-#!/usr/bin/python
-
 import sys
-import subprocess
+
+from media_create import cmd_runner
+
 
 def unpack_binary_tarball(tarball, as_root=True):
-    args = []
-    if as_root:
-        args.extend(['sudo'])
-    args.extend(['tar', '--numeric-owner', '-xf', tarball])    
-    proc = subprocess.Popen(args)
+    proc = cmd_runner.run(
+        ['tar', '--numeric-owner', '-xf', tarball], as_root=as_root)
     proc.wait()
     return proc.returncode
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
