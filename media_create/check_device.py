@@ -1,62 +1,53 @@
-import re
 import sys
 
 import dbus
 
 
-def _get_devices():
+def _get_udisks_if():
     bus = dbus.SystemBus()
     udisks = dbus.Interface(
         bus.get_object("org.freedesktop.UDisks", "/org/freedesktop/UDisks"),
         'org.freedesktop.UDisks')
-    return udisks.get_dbus_method('EnumerateDevices')()
+
+    return (bus, udisks)
 
 
-def _get_dbus_properties(prop, device, path):
+def _get_dbus_property(prop, device, path):
     return device.Get(
         path, prop, dbus_interface='org.freedesktop.DBus.Properties')
 
 
-def _find_device(device_to_find):
-    bus = dbus.SystemBus()
-    devices = _get_devices()
-    for path in devices:
-        device = bus.get_object("org.freedesktop.UDisks", path)
-        device_file = _get_dbus_properties('DeviceFile', device, path)
-        if device_file == device_to_find:
-            return True
-    return False
-
-
-def _print_partitions():
-    bus = dbus.SystemBus()
-    devices = _get_devices()
-    for path in devices:
-        device = bus.get_object("org.freedesktop.UDisks", path)
-        if _get_dbus_properties('DeviceIsPartition', device, path):
-            print path
-            print _get_dbus_properties('device-mount-paths', device, path)
-            print _get_dbus_properties('partition-size', device, path)
-            print "="*60
-
-
-def _print_mounted_devices():
-    mount_file = '/etc/mtab'
+def _find_device(path):
+    bus, udisks = _get_udisks_if()
     try:
-        with open(mount_file) as f:
-            for line in f:
-                if re.match('/dev/', line) is not None:
-                    sys.stdout.write(line)
-    except IOError:
-        print 'IOError: cannot read %s' % mount_file
+        udisks.get_dbus_method('FindDeviceByDeviceFile')(path)
+    except dbus.exceptions.DBusException:
+        return False
+
+    return True
 
 
-def _print_device_info():
-    print '\nDevice partitions:'
-    _print_partitions()
-    print '\nMounted devices:'
-    _print_mounted_devices()
-    print
+def _print_devices():
+    bus, udisks = _get_udisks_if()
+    print '%-16s %-16s %s' % ('Device', 'Mount point', 'Size')
+    devices = udisks.get_dbus_method('EnumerateDevices')()
+    for path in devices:
+        device = bus.get_object("org.freedesktop.UDisks", path)
+        device_file =  _get_dbus_property('DeviceFile', device, path)
+        
+        mount_paths = _get_dbus_property('device-mount-paths', device, path)
+        mount_point = ''.join(b for b in mount_paths)
+        if mount_point == '':
+            mount_point = 'none'
+        
+        if _get_dbus_property('DeviceIsPartition', device, path):
+            part_size = _get_dbus_property('partition-size', device, path)
+            print '%-16s %-16s %dMB' % (
+                device_file, mount_point, part_size / 1024**2)
+        else:
+            device_size = _get_dbus_property('device-size', device, path)
+            print '%-16s %-16s %dMB' % (
+                device_file, mount_point, part_size / 1024**2)
 
 
 def _select_device(device):
@@ -66,21 +57,25 @@ def _select_device(device):
     return True
 
 
-def check_device(device):
+def check_device(path):
     """Checks that a selected device exists.
 
-    :param device: The selected device.
+    If the device exist, the user is asked to confirm that this is the
+    device to use.
+
+    :param path: Device path.
     :return: True if the device exist and is selected, else False.
+
     """
 
-    if _find_device(device):
+    if _find_device(path):
         print '\nI see...'
-        _print_device_info()
-        return _select_device(device)
+        _print_devices()
+        return _select_device(path)
     else:
-        print '\nAre you sure? I do not see [%s].' % device
+        print '\nAre you sure? I do not see [%s].' % path
         print 'Here is what I see...'
-        _print_device_info()
+        _print_devices()
         return False
 
 
