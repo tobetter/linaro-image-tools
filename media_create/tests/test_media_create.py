@@ -43,7 +43,6 @@ from media_create.tests.fixtures import (
     MockCmdRunnerPopenFixture,
     MockSomethingFixture,
     MockRunSfdiskCommandsFixture,
-    StdoutToDevnullFixture,
     )
 
 
@@ -485,9 +484,13 @@ class TestCheckDevice(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(check_device, '_select_device',
             lambda device: False))
 
+    def _mock_sys_stdout(self):
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open(os.devnull, 'w')))
+
     def setUp(self):
         super(TestCheckDevice, self).setUp()
-        self.useFixture(StdoutToDevnullFixture())
+        self._mock_sys_stdout()
         self._mock_print_devices()
 
     def test_check_device_and_select(self):
