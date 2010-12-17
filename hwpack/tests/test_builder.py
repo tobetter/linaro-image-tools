@@ -58,90 +58,84 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         self.assertTrue(os.path.isfile("hwpack_ahwpack_1.0_i386.tar.gz"))
         self.assertTrue(os.path.isfile("hwpack_ahwpack_1.0_armel.tar.gz"))
 
+    def makeMetaDataAndConfigFixture(
+            self, packages, sources, hwpack_name="ahwpack",
+            hwpack_version="1.0", architecture="armel", extra_config={}):
+        config_text = (
+            '[hwpack]\n'
+            'name=%s\n'
+            'packages=%s\n'
+            'architectures=%s\n'
+            % (hwpack_name, ' '.join(packages), architecture))
+        for key, value in extra_config.iteritems():
+            config_text += '%s=%s\n' % (key, value)
+        config_text += '\n'
+        for source_id, source in sources.iteritems():
+            config_text += '\n'
+            config_text += '[%s]\n' % source_id
+            config_text += 'sources-entry=%s\n' % source
+        config = self.useFixture(ConfigFileFixture(config_text))
+        return Metadata(hwpack_name, hwpack_version, architecture), config
+
+    def sourcesDictForPackages(self, packages):
+        source = self.useFixture(AptSourceFixture(packages))
+        return {'ubuntu': source.sources_entry}
+
     def test_builds_correct_contents(self):
-        hwpack_name = "ahwpack"
-        hwpack_version = "1.0"
-        architecture = "armel"
         package_name = "foo"
-        source_id = "ubuntu"
-        available_package = DummyFetchedPackage(
-            package_name, "1.1", architecture=architecture)
-        source = self.useFixture(AptSourceFixture([available_package]))
-        config = self.useFixture(ConfigFileFixture(
-            '[hwpack]\nname=%s\npackages=%s\narchitectures=%s\n'
-            '\n[%s]\nsources-entry=%s\n'
-            % (hwpack_name, package_name, architecture,
-                source_id, source.sources_entry)))
-        builder = HardwarePackBuilder(config.filename, hwpack_version, [])
+        available_package = DummyFetchedPackage(package_name, "1.1")
+        sources_dict = self.sourcesDictForPackages([available_package])
+        metadata, config = self.makeMetaDataAndConfigFixture(
+            [package_name], sources_dict)
+        builder = HardwarePackBuilder(config.filename, metadata.version, [])
         builder.build()
-        metadata = Metadata(hwpack_name, hwpack_version, architecture)
         self.assertThat(
-            "hwpack_%s_%s_%s.tar.gz" % (hwpack_name, hwpack_version,
-                architecture),
+            "hwpack_%s_%s_%s.tar.gz" % (
+                metadata.name, metadata.version, metadata.architecture),
             IsHardwarePack(
                 metadata, [available_package],
-                {source_id: source.sources_entry},
-                package_spec=package_name))
+                sources_dict, package_spec=package_name))
 
     def test_builds_correct_contents_multiple_packages(self):
-        hwpack_name = "ahwpack"
-        hwpack_version = "1.0"
-        architecture = "armel"
         package_name1 = "foo"
         package_name2 = "goo"
-        source_id = "ubuntu"
-        available_package1 = DummyFetchedPackage(
-            package_name1, "1.1", architecture=architecture)
-        available_package2 = DummyFetchedPackage(
-            package_name2, "1.2", architecture=architecture)
-        source = self.useFixture(
-            AptSourceFixture([available_package1, available_package2]))
-        config = self.useFixture(ConfigFileFixture(
-            '[hwpack]\nname=%s\npackages=%s %s\narchitectures=%s\n'
-            '\n[%s]\nsources-entry=%s\n'
-            % (hwpack_name, package_name1, package_name2, architecture,
-                source_id, source.sources_entry)))
-        builder = HardwarePackBuilder(config.filename, hwpack_version, [])
+        available_package1 = DummyFetchedPackage(package_name1, "1.1")
+        available_package2 = DummyFetchedPackage(package_name2, "1.2")
+        sources_dict = self.sourcesDictForPackages(
+            [available_package1, available_package2])
+        metadata, config = self.makeMetaDataAndConfigFixture(
+            [package_name1, package_name2], sources_dict)
+        builder = HardwarePackBuilder(config.filename, metadata.version, [])
         builder.build()
-        metadata = Metadata(hwpack_name, hwpack_version, architecture)
         hwpack_filename = "hwpack_%s_%s_%s.tar.gz" % (
-            hwpack_name, hwpack_version, architecture)
+                metadata.name, metadata.version, metadata.architecture)
         self.assertThat(
             hwpack_filename,
             IsHardwarePack(
                 metadata, [available_package1, available_package2],
-                {source_id: source.sources_entry},
+                sources_dict,
                 package_spec='%s, %s' % (package_name1, package_name2)))
         self.assertThat(
             hwpack_filename,
             IsHardwarePack(
                 metadata, [available_package2, available_package1],
-                {source_id: source.sources_entry},
+                sources_dict,
                 package_spec='%s, %s' % (package_name1, package_name2)))
 
     def test_obeys_include_debs(self):
-        hwpack_name = "ahwpack"
-        hwpack_version = "1.0"
-        architecture = "armel"
         package_name = "foo"
-        source_id = "ubuntu"
-        available_package = DummyFetchedPackage(
-            package_name, "1.1", architecture=architecture)
-        source = self.useFixture(AptSourceFixture([available_package]))
-        config = self.useFixture(ConfigFileFixture(
-            '[hwpack]\nname=%s\npackages=%s\narchitectures=%s\n'
-            'include-debs=no\n\n[%s]\nsources-entry=%s\n'
-            % (hwpack_name, package_name, architecture,
-                source_id, source.sources_entry)))
-        builder = HardwarePackBuilder(config.filename, hwpack_version, [])
+        available_package = DummyFetchedPackage(package_name, "1.1")
+        sources_dict = self.sourcesDictForPackages([available_package])
+        metadata, config = self.makeMetaDataAndConfigFixture(
+            [package_name], sources_dict, extra_config={'include-debs': 'no'})
+        builder = HardwarePackBuilder(config.filename, metadata.version, [])
         builder.build()
-        metadata = Metadata(hwpack_name, hwpack_version, architecture)
         self.assertThat(
-            "hwpack_%s_%s_%s.tar.gz" % (hwpack_name, hwpack_version,
-                architecture),
+            "hwpack_%s_%s_%s.tar.gz" % (
+                metadata.name, metadata.version, metadata.architecture),
             IsHardwarePack(
                 metadata, [available_package],
-                {source_id: source.sources_entry},
+                sources_dict,
                 packages_without_content=[available_package],
                 package_spec=package_name))
 
