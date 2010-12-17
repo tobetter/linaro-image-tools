@@ -68,7 +68,7 @@ class HardwarePackBuilder(object):
                     hwpack.add_packages(packages)
                     for local_package in local_packages:
                         if local_package not in packages:
-                            logger.error(
+                            logger.warning(
                                 "Local package '%s' not included",
                                 local_package.name)
                     hwpack.add_dependency_package(self.config.packages)

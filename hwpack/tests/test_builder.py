@@ -267,7 +267,7 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
                 package_spec=package_name))
         self.assertThat(
             handler.messages,
-            EachOf([MatchesStructure(levelname=Equals('ERROR'))]))
+            EachOf([MatchesStructure(levelname=Equals('WARNING'))]))
         self.assertThat(
             handler.messages[0].getMessage(),
             Equals("Local package 'bar' not included"))

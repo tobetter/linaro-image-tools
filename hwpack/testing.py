@@ -675,6 +675,7 @@ class AppendingHandler(logging.Handler):
     """A logging handler that simply appends messages to a list."""
 
     def __init__(self):
+        logging.Handler.__init__(self)
         self.messages = []
 
     def emit(self, message):
