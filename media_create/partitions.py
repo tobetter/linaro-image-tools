@@ -22,7 +22,9 @@ CYLINDER_SIZE = HEADS * SECTORS * SECTOR_SIZE
 # small enough that there's not much benefit in doing that, but if it grows we
 # might want to do it.
 def setup_partitions(board, media, fat_size, image_size,
-                     should_create_partitions):
+                     bootfs_label, rootfs_label, rootfs_type, rootfs_uuid,
+                     should_create_partitions, should_format_bootfs,
+                     should_format_rootfs):
     """Make sure the given device is partitioned to boot the given board.
 
     :param board: The board's name, as a string.
@@ -48,9 +50,26 @@ def setup_partitions(board, media, fat_size, image_size,
         create_partitions(board, media, fat_size, HEADS, SECTORS, cylinders)
 
     if media.is_block_device:
-        return get_boot_and_root_partitions_for_media(media)
+        bootfs, rootfs = get_boot_and_root_partitions_for_media(media)
     else:
-        return get_boot_and_root_loopback_devices(media.path)
+        bootfs, rootfs = get_boot_and_root_loopback_devices(media.path)
+
+    if should_format_bootfs:
+        print "\nFormating boot partition\n"
+        proc = cmd_runner.run(
+            ['mkfs.vfat', '-F', str(fat_size), bootfs, '-n', bootfs_label],
+            as_root=True)
+        proc.wait()
+
+    if should_format_rootfs:
+        print "\nFormating root partition\n"
+        mkfs = 'mkfs.%s' % rootfs_type
+        proc = cmd_runner.run(
+            [mkfs, '-U', rootfs_uuid, rootfs, '-L', rootfs_label],
+            as_root=True)
+        proc.wait()
+
+    return bootfs, rootfs
 
 
 def get_boot_and_root_loopback_devices(image_file):
@@ -71,7 +90,7 @@ def get_boot_and_root_loopback_devices(image_file):
         stdout=subprocess.PIPE, as_root=True)
     root_device, _ = proc.communicate()
 
-    return boot_device, root_device
+    return boot_device.strip(), root_device.strip()
 
 
 def calculate_partition_size_and_offset(image_file):
@@ -248,9 +267,18 @@ class Media(object):
 
 
 if __name__ == "__main__":
-    board, device, fat_size, image_size, should_create_partitions = (
-        sys.argv[1:])
+    (board, device, fat_size, image_size, bootfs_label, rootfs_label,
+        rootfs_type, rootfs_uuid, should_create_partitions, bootfs_step,
+        rootfs_step) = sys.argv[1:]
     fat_size = int(fat_size)
+    should_format_bootfs = True
+    should_format_rootfs = True
+    if bootfs_step == "":
+        should_format_bootfs = False
+    if rootfs_step == "":
+        should_format_rootfs = False
     boot, root = setup_partitions(
-        board, Media(device), fat_size, image_size, should_create_partitions)
+        board, Media(device), fat_size, image_size, bootfs_label,
+        rootfs_label, rootfs_type, rootfs_uuid, should_create_partitions,
+        should_format_bootfs, should_format_rootfs)
     print "BOOTFS=%s ROOTFS=%s" % (boot, root)

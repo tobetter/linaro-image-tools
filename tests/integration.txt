@@ -11,14 +11,17 @@ they are not meant to be automated.
 
     # Partition (for real!) /dev/sdb for a beagle board and return the devices
     # for the boot and root partitions.
-    >>> python -m media_create.partitions beagle /dev/sdb 32 2G yes
+    >>> python -m media_create.partitions beagle /dev/sdb 32 2G boot root ext3
+    ...     2e82008e-1af3-4699-8521-3bf5bac1e67a yes format-bootfs format-rootfs
     Checking that no-one is using this disk right now
     ...
     BOOTFS=/dev/sdb1 ROOTFS=/dev/sdb2
 
     # Partition /tmp/beagle.img for a beagle board and return the loopback
     # devices for the boot and root partitions.
-    >>> python -m media_create.partitions beagle /tmp/beagle.img 32 2G yes
+    >>> python -m media_create.partitions beagle /tmp/beagle.img 32 2G boot
+    ...     root ext3 2e82008e-1af3-4699-8521-3bf5bac1e67a yes
+    ...     format-bootfs format-rootfs
     Warning: /tmp/beagle.img is not a block device
     ...
     BOOTFS=/dev/loop0
