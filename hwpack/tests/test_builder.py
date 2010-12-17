@@ -55,17 +55,6 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             HwpackConfigError, HardwarePackBuilder, config.filename, "1.0",
             [])
 
-    def test_builds_one_pack_per_arch(self):
-        available_package = DummyFetchedPackage("foo", "1.1")
-        source = self.useFixture(AptSourceFixture([available_package]))
-        config = self.useFixture(ConfigFileFixture(
-            '[hwpack]\nname=ahwpack\npackages=foo\narchitectures=i386 armel\n'
-            '\n[ubuntu]\nsources-entry=%s\n' % source.sources_entry))
-        builder = HardwarePackBuilder(config.filename, "1.0", [])
-        builder.build()
-        self.assertTrue(os.path.isfile("hwpack_ahwpack_1.0_i386.tar.gz"))
-        self.assertTrue(os.path.isfile("hwpack_ahwpack_1.0_armel.tar.gz"))
-
     def makeMetaDataAndConfigFixture(
             self, packages, sources, hwpack_name="ahwpack",
             hwpack_version="1.0", architecture="armel", extra_config={}):
@@ -85,9 +74,29 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         config = self.useFixture(ConfigFileFixture(config_text))
         return Metadata(hwpack_name, hwpack_version, architecture), config
 
+    def test_creates_external_manifest(self):
+        available_package = DummyFetchedPackage("foo", "1.1")
+        sources_dict = self.sourcesDictForPackages([available_package])
+        metadata, config = self.makeMetaDataAndConfigFixture(
+            ["foo"], sources_dict)
+        builder = HardwarePackBuilder(config.filename, "1.0", [])
+        builder.build()
+        self.assertTrue(
+            os.path.isfile("hwpack_ahwpack_1.0_armel.manifest.txt"))
+
     def sourcesDictForPackages(self, packages):
         source = self.useFixture(AptSourceFixture(packages))
         return {'ubuntu': source.sources_entry}
+
+    def test_builds_one_pack_per_arch(self):
+        available_package = DummyFetchedPackage("foo", "1.1")
+        sources_dict = self.sourcesDictForPackages([available_package])
+        metadata, config = self.makeMetaDataAndConfigFixture(
+            ["foo"], sources_dict, architecture="i386 armel")
+        builder = HardwarePackBuilder(config.filename, "1.0", [])
+        builder.build()
+        self.assertTrue(os.path.isfile("hwpack_ahwpack_1.0_i386.tar.gz"))
+        self.assertTrue(os.path.isfile("hwpack_ahwpack_1.0_armel.tar.gz"))
 
     def test_builds_correct_contents(self):
         package_name = "foo"

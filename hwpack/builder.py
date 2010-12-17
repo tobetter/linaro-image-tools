@@ -75,3 +75,5 @@ class HardwarePackBuilder(object):
                     with open(hwpack.filename(), 'w') as f:
                         hwpack.to_file(f)
                         logger.info("Wrote %s" % hwpack.filename())
+                    with open(hwpack.filename('.manifest.txt'), 'w') as f:
+                        f.write(hwpack.manifest_text())
