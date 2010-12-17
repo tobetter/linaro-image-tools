@@ -49,15 +49,13 @@ class HardwarePackBuilder(object):
                 hwpack.add_apt_sources(sources)
                 sources = sources.values()
                 packages = self.config.packages[:]
-                if self.local_debs:
-                    fetched_packages = [
-                        FetchedPackage.from_deb(deb)
-                        for deb in self.local_debs]
-                    sources.append(
-                        local_archive_maker.sources_entry_for_debs(
-                            fetched_packages, LOCAL_ARCHIVE_LABEL))
-                    packages.extend(
-                        [fp.name for fp in fetched_packages])
+                local_packages = [
+                    FetchedPackage.from_deb(deb)
+                    for deb in self.local_debs]
+                sources.append(
+                    local_archive_maker.sources_entry_for_debs(
+                        local_packages, LOCAL_ARCHIVE_LABEL))
+                packages.extend([lp.name for lp in local_packages])
                 logger.info("Fetching packages")
                 fetcher = PackageFetcher(
                     sources, architecture=architecture,
@@ -68,6 +66,11 @@ class HardwarePackBuilder(object):
                         packages, download_content=self.config.include_debs)
                     logger.debug("Adding packages to hwpack")
                     hwpack.add_packages(packages)
+                    for local_package in local_packages:
+                        if local_package not in packages:
+                            logger.error(
+                                "Local package '%s' not included",
+                                local_package.name)
                     hwpack.add_dependency_package(self.config.packages)
                     with open(hwpack.filename(), 'w') as f:
                         hwpack.to_file(f)

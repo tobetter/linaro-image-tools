@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 import hashlib
+import logging
 import os
 import shutil
 import subprocess
@@ -668,3 +669,13 @@ def MatchesPackageRelationshipList(relationship_matchers):
         return [rel.strip() for rel in relationships.split(',')]
     return AfterPreproccessing(
         process, MatchesSetwise(*relationship_matchers))
+
+
+class AppendingHandler(logging.Handler):
+    """A logging handler that simply appends messages to a list."""
+
+    def __init__(self):
+        self.messages = []
+
+    def emit(self, message):
+        self.messages.append(message)

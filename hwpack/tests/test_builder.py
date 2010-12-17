@@ -2,8 +2,13 @@ import os
 import tarfile
 
 from testtools import TestCase
+from testtools.matchers import Equals
 
-from hwpack.builder import ConfigFileMissing, HardwarePackBuilder
+from hwpack.builder import (
+    ConfigFileMissing,
+    HardwarePackBuilder,
+    logger as builder_logger,
+    )
 from hwpack.config import HwpackConfigError
 from hwpack.hardwarepack import Metadata
 from hwpack.packages import (
@@ -12,12 +17,15 @@ from hwpack.packages import (
     )
 from hwpack.tarfile_matchers import TarfileHasFile
 from hwpack.testing import (
+    AppendingHandler,
     AptSourceFixture,
     ChdirToTempdirFixture,
     ConfigFileFixture,
     ContextManagerFixture,
     DummyFetchedPackage,
+    EachOf,
     IsHardwarePack,
+    MatchesStructure,
     Not,
     TestCaseWithFixtures,
     )
@@ -230,3 +238,36 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
                 metadata, [remote_package, local_package],
                 sources_dict,
                 package_spec=package_name))
+
+    def test_warn_if_not_including_local_deb(self):
+        package_name = "foo"
+        local_name = "bar"
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+        remote_package = DummyFetchedPackage(package_name, "1.1")
+        local_path = maker.make_package(local_name, "1.0", {})
+        sources_dict = self.sourcesDictForPackages([remote_package])
+        metadata, config = self.makeMetaDataAndConfigFixture(
+            [package_name], sources_dict,
+            extra_config={'assume-installed': local_name})
+        builder = HardwarePackBuilder(
+            config.filename, metadata.version, [local_path])
+
+        handler = AppendingHandler()
+        builder_logger.addHandler(handler)
+        self.addCleanup(builder_logger.removeHandler, handler)
+
+        builder.build()
+        self.assertThat(
+            "hwpack_%s_%s_%s.tar.gz" % (
+                metadata.name, metadata.version, metadata.architecture),
+            IsHardwarePack(
+                metadata, [remote_package],
+                sources_dict,
+                package_spec=package_name))
+        self.assertThat(
+            handler.messages,
+            EachOf([MatchesStructure(levelname=Equals('ERROR'))]))
+        self.assertThat(
+            handler.messages[0].getMessage(),
+            Equals("Local package 'bar' not included"))
