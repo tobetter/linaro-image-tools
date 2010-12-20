@@ -3,7 +3,12 @@ import sys
 import dbus
 
 
-def _get_udisks_if():
+def _get_system_bus_and_udisks_iface():
+    """Return the system bus and the UDisks interface.
+    
+    :return: System bus and UDisks inteface tuple.
+
+    """
     bus = dbus.SystemBus()
     udisks = dbus.Interface(
         bus.get_object("org.freedesktop.UDisks", "/org/freedesktop/UDisks"),
@@ -13,22 +18,39 @@ def _get_udisks_if():
 
 
 def _get_dbus_property(prop, device, path):
+    """ Return a named property for a specific device.
+
+    :param prop: Named property.
+    :param device: Device object.
+    :param path: Device path.
+    :return: Device property.
+
+    """
     return device.Get(
         path, prop, dbus_interface='org.freedesktop.DBus.Properties')
 
 
-def _find_device(path):
-    bus, udisks = _get_udisks_if()
+def _does_device_exist(path):
+    """Checks if the provided path is an existing device.
+
+    :param path: Disk device path.
+    :return: True if the device exist, else False.
+
+    """
+    bus, udisks = _get_system_bus_and_udisks_iface()
     try:
         udisks.get_dbus_method('FindDeviceByDeviceFile')(path)
     except dbus.exceptions.DBusException:
+        # TODO: Check that this exception isn't hiding other errors.
         return False
 
     return True
 
 
 def _print_devices():
-    bus, udisks = _get_udisks_if()
+    """Print disk devices found on the system."""
+
+    bus, udisks = _get_system_bus_and_udisks_iface()
     print '%-16s %-16s %s' % ('Device', 'Mount point', 'Size')
     devices = udisks.get_dbus_method('EnumerateDevices')()
     for path in devices:
@@ -51,6 +73,13 @@ def _print_devices():
 
 
 def _select_device(device):
+    """Ask the user to confirm the selected device.
+
+    :param device: Device path.
+    :return: True if the user confirms the selection, else False.
+
+    """
+
     resp = raw_input('Are you 100% sure, on selecting [%s] (y/n)? ' % device)
     if resp.lower() != 'y':
         return False
@@ -68,7 +97,7 @@ def check_device(path):
 
     """
 
-    if _find_device(path):
+    if _does_device_exist(path):
         print '\nI see...'
         _print_devices()
         return _select_device(path)

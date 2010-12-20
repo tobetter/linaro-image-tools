@@ -464,25 +464,25 @@ class TestPartitionSetup(TestCaseWithFixtures):
 
 class TestCheckDevice(TestCaseWithFixtures):
 
-    def _mock_find_device_true(self):
-        self.useFixture(MockSomethingFixture(check_device, '_find_device',
-            lambda device: True))
+    def _mock_does_device_exist_true(self):
+        self.useFixture(MockSomethingFixture(
+            check_device, '_does_device_exist', lambda device: True))
 
-    def _mock_find_device_false(self):
-        self.useFixture(MockSomethingFixture(check_device, '_find_device',
-            lambda device: False))
+    def _mock_does_device_exist_false(self):
+        self.useFixture(MockSomethingFixture(
+            check_device, '_does_device_exist', lambda device: False))
 
     def _mock_print_devices(self):
-        self.useFixture(MockSomethingFixture(check_device,
-            '_print_devices', lambda: None))
+        self.useFixture(MockSomethingFixture(
+            check_device, '_print_devices', lambda: None))
 
     def _mock_select_device(self):
-        self.useFixture(MockSomethingFixture(check_device, '_select_device',
-            lambda device: True))
+        self.useFixture(MockSomethingFixture(
+            check_device, '_select_device', lambda device: True))
 
     def _mock_deselect_device(self):
-        self.useFixture(MockSomethingFixture(check_device, '_select_device',
-            lambda device: False))
+        self.useFixture(MockSomethingFixture(
+            check_device, '_select_device', lambda device: False))
 
     def _mock_sys_stdout(self):
         self.useFixture(MockSomethingFixture(
@@ -494,15 +494,15 @@ class TestCheckDevice(TestCaseWithFixtures):
         self._mock_print_devices()
 
     def test_check_device_and_select(self):
-        self._mock_find_device_true()
+        self._mock_does_device_exist_true()
         self._mock_select_device()
         self.assertTrue(check_device.check_device(None))
 
     def test_check_device_and_deselect(self):
-        self._mock_find_device_true()
+        self._mock_does_device_exist_true()
         self._mock_deselect_device()
         self.assertFalse(check_device.check_device(None))
 
     def test_check_device_not_found(self):
-        self._mock_find_device_false()
+        self._mock_does_device_exist_false()
         self.assertFalse(check_device.check_device(None))
