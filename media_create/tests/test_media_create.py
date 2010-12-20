@@ -10,6 +10,7 @@ from testtools import TestCase
 
 from hwpack.testing import TestCaseWithFixtures
 
+from media_create import check_device
 from media_create import cmd_runner
 from media_create import ensure_command
 from media_create import populate_boot
@@ -592,3 +593,49 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         tmpfile = call[-2]
         self.assertEqual(['sudo', 'mv', '-f', tmpfile, path], call)
         self.assertEqual(data, open(tmpfile).read())
+
+
+class TestCheckDevice(TestCaseWithFixtures):
+
+    def _mock_does_device_exist_true(self):
+        self.useFixture(MockSomethingFixture(
+            check_device, '_does_device_exist', lambda device: True))
+
+    def _mock_does_device_exist_false(self):
+        self.useFixture(MockSomethingFixture(
+            check_device, '_does_device_exist', lambda device: False))
+
+    def _mock_print_devices(self):
+        self.useFixture(MockSomethingFixture(
+            check_device, '_print_devices', lambda: None))
+
+    def _mock_select_device(self):
+        self.useFixture(MockSomethingFixture(
+            check_device, '_select_device', lambda device: True))
+
+    def _mock_deselect_device(self):
+        self.useFixture(MockSomethingFixture(
+            check_device, '_select_device', lambda device: False))
+
+    def _mock_sys_stdout(self):
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open(os.devnull, 'w')))
+
+    def setUp(self):
+        super(TestCheckDevice, self).setUp()
+        self._mock_sys_stdout()
+        self._mock_print_devices()
+
+    def test_check_device_and_select(self):
+        self._mock_does_device_exist_true()
+        self._mock_select_device()
+        self.assertTrue(check_device.check_device(None))
+
+    def test_check_device_and_deselect(self):
+        self._mock_does_device_exist_true()
+        self._mock_deselect_device()
+        self.assertFalse(check_device.check_device(None))
+
+    def test_check_device_not_found(self):
+        self._mock_does_device_exist_false()
+        self.assertFalse(check_device.check_device(None))

@@ -154,36 +154,6 @@ EOF
   exit
 }
 
-check_device() {
-  FDISK=$(sudo LC_ALL=C fdisk -l 2>/dev/null | grep "Disk ${DEVICE}" | awk '{print $2}')
-
-  if test "-$FDISK-" = "-$DEVICE:-"
-  then
-    echo ""
-    echo "I see..."
-    echo "sudo fdisk -l:"
-    sudo LC_ALL=C fdisk -l 2>/dev/null | grep "Disk /dev/" --color=never
-    echo ""
-    echo "mount:"
-    LC_ALL=C mount | grep -v none | grep "/dev/" --color=never
-    echo ""
-    read -p "Are you 100% sure, on selecting [${DEVICE}] (y/n)? "
-    [ "$REPLY" == "y" ] || exit
-    echo ""
-  else
-    echo ""
-    echo "Are you sure? I Don't see [${DEVICE}], here is what I do see..."
-    echo ""
-    echo "sudo fdisk -l:"
-    sudo LC_ALL=C fdisk -l 2>/dev/null| grep "Disk /dev/" --color=never
-    echo ""
-    echo "mount:"
-    LC_ALL=C mount | grep -v none | grep "/dev/" --color=never
-    echo ""
-    exit
-  fi
-}
-
 check_fs_type() {
   case "$RFS" in
     ext2|ext3|ext4|btrfs)
@@ -222,7 +192,7 @@ while [ ! -z "$1" ]; do
     --mmc)
       checkparm "$2"
       DEVICE="$2"
-      check_device
+      python -m media_create.check_device $DEVICE || exit
       ;;
     --image_file)
       checkparm "$2"

@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 
@@ -23,6 +24,10 @@ def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
         args = args[:]
         args.insert(0, 'sudo')
     return Popen(args, stdin=stdin, stdout=stdout, stderr=stderr)
+
+
+def get_extended_env(ext):
+    return os.environ.update(ext)
 
 
 class Popen(subprocess.Popen):
