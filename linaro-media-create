@@ -287,11 +287,11 @@ install_hwpacks () {
 
   LINARO_HWPACK_INSTALL=$(which linaro-hwpack-install)
 
-  sudo mv -f ${chroot}/etc/resolv.conf ${TMP_DIR}/resolv.conf.orig
-  sudo cp /etc/resolv.conf ${chroot}/etc/resolv.conf
+  sudo mv -f "${chroot}/etc/resolv.conf" ${TMP_DIR}/resolv.conf.orig
+  sudo cp /etc/resolv.conf "${chroot}/etc/resolv.conf"
 
-  sudo mv -f ${chroot}/etc/hosts ${TMP_DIR}/hosts.orig
-  sudo cp /etc/hosts ${chroot}/etc/hosts
+  sudo mv -f "${chroot}/etc/hosts" ${TMP_DIR}/hosts.orig
+  sudo cp /etc/hosts "${chroot}/etc/hosts"
 
   local arch_is_arm=no
   case `uname -m` in
@@ -301,13 +301,13 @@ install_hwpacks () {
     *)
       python -m media_create.ensure_command qemu-arm-static qemu-arm-static
       python -m media_create.ensure_command qemu-img qemu-kvm
-      sudo cp /usr/bin/qemu-arm-static ${chroot}/usr/bin
+      sudo cp /usr/bin/qemu-arm-static "${chroot}/usr/bin"
       ;;
   esac
   sudo cp "$LINARO_HWPACK_INSTALL" "${chroot}/usr/bin"
 
   # Actually install the hwpack.
-  sudo mount proc ${chroot}/proc -t proc
+  sudo mount proc "${chroot}/proc" -t proc
   cleanup_chroot() {
     sudo umount -v "$chroot/proc"
   }
@@ -332,15 +332,15 @@ install_hwpacks () {
 
   # Revert some changes we did to the rootfs as we don't want them in the
   # image.
-  sudo umount ${chroot}/proc
+  sudo umount "${chroot}/proc"
   cleanup_chroot() { :; }
 
-  sudo mv -f ${TMP_DIR}/resolv.conf.orig ${chroot}/etc/resolv.conf
-  sudo mv -f ${TMP_DIR}/hosts.orig ${chroot}/etc/hosts
+  sudo mv -f ${TMP_DIR}/resolv.conf.orig "${chroot}/etc/resolv.conf"
+  sudo mv -f ${TMP_DIR}/hosts.orig "${chroot}/etc/hosts"
   if [ "arch_is_arm" = no ]; then
-    sudo rm -f ${chroot}/usr/bin/qemu-arm-static
+    sudo rm -f "${chroot}/usr/bin/qemu-arm-static"
   fi
-  sudo rm -f ${chroot}/usr/bin/linaro-hwpack-install
+  sudo rm -f "${chroot}/usr/bin/linaro-hwpack-install"
 }
 
 unpack_binary_tarball() {
