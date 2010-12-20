@@ -12,7 +12,7 @@ Architecture: all
 Depends: ${misc:Depends},
          parted,
          uuid-runtime,
-         uboot-mkimage,
+         u-boot | uboot-mkimage,
          python,
          python-hwpack,
          python-argparse
