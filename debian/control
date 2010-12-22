@@ -22,7 +22,10 @@ Depends: ${misc:Depends},
          u-boot | uboot-mkimage,
          python,
          python-hwpack,
-         python-argparse
+         python-argparse,
+         python-dbus,
+         python-debian (>= 0.1.16ubuntu1),
+         python-parted
 Description: collection of tools to work with Linaro images
  This package offers a set of tools for use with Linaro images.
  .
