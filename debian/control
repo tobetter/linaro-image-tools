@@ -1,7 +1,11 @@
 Source: linaro-image-tools
 Section: devel
 Priority: optional
-Build-Depends: debhelper (>= 7.0.50~), python-all, python-apt, python-testtools, python-argparse
+Build-Depends: debhelper (>= 7.0.50~),
+               python-all,
+               python-apt,
+               python-testtools,
+               python-argparse
 Standards-Version: 3.9.1
 Maintainer: Linaro Developers <linaro-dev@lists.linaro.org>
 Vcs-Bzr: 
