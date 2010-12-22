@@ -35,7 +35,9 @@ Description: collection of tools to work with Linaro images
 Package: python-hwpack
 Architecture: all
 Section: python
-Depends: ${python:Depends}, python-apt, ${misc:Depends}
+Depends: ${python:Depends},
+         ${misc:Depends},
+         python-apt
 Description: python library for the creation of hardware packs
  Hardware packs allow for the distribution of packages to be combined with
  an image to create a root filesystem at a later date.
