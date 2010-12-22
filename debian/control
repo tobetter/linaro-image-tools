@@ -3,7 +3,10 @@ Section: devel
 Priority: optional
 Build-Depends: debhelper (>= 7.0.50~),
                python-all,
+               python-debian (>= 0.1.16ubuntu1),
+               python-dbus,
                python-apt,
+               python-parted,
                python-testtools (>= 0.9.6),
                python-argparse
 Standards-Version: 3.9.1
