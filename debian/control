@@ -39,9 +39,9 @@ Section: python
 Depends: ${python:Depends},
          ${misc:Depends},
          python-apt
-Description: python library for the creation of hardware packs
+Description: Python library for the creation of hardware packs
  Hardware packs allow for the distribution of packages to be combined with
  an image to create a root filesystem at a later date.
  .
- This package provides a python library to aid with the creation of hardware
+ This package provides a Python library to aid with the creation of hardware
  packs.
