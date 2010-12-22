@@ -11,7 +11,7 @@ Build-Depends: debhelper (>= 7.0.50~),
                python-argparse
 Standards-Version: 3.9.1
 Maintainer: Linaro Developers <linaro-dev@lists.linaro.org>
-Vcs-Bzr: 
+Vcs-Bzr: http://bazaar.launchpad.net/~linaro-maintainers/linaro-image-tools/linaro-image-tools
 XS-Python-Version: >=2.5
 
 Package: linaro-image-tools
