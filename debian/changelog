@@ -1,3 +1,34 @@
+linaro-image-tools (0.4) UNRELEASED; urgency=low
+
+  * New major release
+    - Large parts rewritten in Python (Michael Hudson, Guilherme Salgado,
+      James Westby, Martin Ohlsson).
+    - Various bug fixes.
+    - Notify users that apt-get will be run in target rootfs (Martin Ohlsson);
+      LP: #651906
+    - Use fdisk -l for output rather than sfdisk -l (Martin Ohlsson);
+      LP: #673410.
+    - Allow passing multiple --hwpack when creating an image (Michael Hudson).
+    - Add --hwpack-force-yes to linaro-media-create to forcibly install
+      unauthenticated packages (Michael Hudson).
+    - hwpack-create now has a --debug option (James Westby).
+    - hwpack creation now outputs a manifest external to the hwpack as well
+      (Michael Hudson).
+    - Add ability to add local .debs to the hwpack with --local-deb
+      (Michael Hudson).
+    - Update dependencies; new deps on python-testtools, python-parted,
+      python-dbus and more, drop obsolete deps.
+  * Fix support of space in pathnames (Paul Larson).
+  * Update Depends to cope with mkimage moving from uboot-mkimage to u-boot.
+  * Fix empty Vcs-Bzr.
+  * Strict >= ${source:Version} dependency on python-hwpack.
+  * Use python2 dh sequence instead of python-support; add a python >=
+    2.6.5-1~ build-dep.
+  * Uppercase Python in description (lintian).
+  * Various cleanups.
+
+ -- Loïc Minier <loic.minier@linaro.org>  Thu, 23 Dec 2010 14:41:29 +0100
+
 linaro-image-tools (0.3) maverick-proposed; urgency=low
 
   [ Steve Langasek ]
