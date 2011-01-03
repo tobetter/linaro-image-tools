@@ -69,7 +69,7 @@ def _print_devices():
         else:
             device_size = _get_dbus_property('device-size', device, path)
             print '%-16s %-16s %dMB' % (
-                device_file, mount_point, part_size / 1024**2)
+                device_file, mount_point, device_size / 1024**2)
 
 
 def _select_device(device):
