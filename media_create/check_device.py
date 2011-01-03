@@ -80,7 +80,7 @@ def _select_device(device):
 
     """
 
-    resp = raw_input('Are you 100% sure, on selecting [%s] (y/n)? ' % device)
+    resp = raw_input('Are you 100%% sure, on selecting [%s] (y/n)? ' % device)
     if resp.lower() != 'y':
         return False
     return True
