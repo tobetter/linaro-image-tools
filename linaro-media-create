@@ -382,11 +382,13 @@ register_loopback() {
 }
 
 setup_partitions() {
-  boot_and_root_devices=$(python -m media_create.partitions \
+  python -m media_create.partitions ${TMP_DIR}/boot_and_root_devices \
       "$DEVIMAGE" "${DEVICE-$IMAGE_FILE}" "$FAT_SIZE" "$IMAGE_SIZE" \
       "$BOOT_LABEL" "$RFS_LABEL" "$RFS" "$RFS_UUID" \
-      "$SHOULD_CREATE_PARTITIONS" "$BOOTFS_STEP" "$ROOTFS_STEP")
-  eval $boot_and_root_devices
+      "$SHOULD_CREATE_PARTITIONS" "$BOOTFS_STEP" "$ROOTFS_STEP"
+  # The above call will write the BOOTFS and ROOTFS shell variables to the
+  # file given as the first argument so here we just need to source it.
+  . ${TMP_DIR}/boot_and_root_devices
 
   if [ "${IMAGE_FILE}" ]; then
     register_loopback "$BOOTFS"
