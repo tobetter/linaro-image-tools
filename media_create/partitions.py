@@ -269,7 +269,8 @@ class Media(object):
 if __name__ == "__main__":
     (board, device, fat_size, image_size, bootfs_label, rootfs_label,
         rootfs_type, rootfs_uuid, should_create_partitions, bootfs_step,
-        rootfs_step) = sys.argv[1:]
+        rootfs_step) = sys.argv[2:]
+    out_file = sys.argv[1]
     fat_size = int(fat_size)
     should_format_bootfs = True
     should_format_rootfs = True
@@ -281,4 +282,7 @@ if __name__ == "__main__":
         board, Media(device), fat_size, image_size, bootfs_label,
         rootfs_label, rootfs_type, rootfs_uuid, should_create_partitions,
         should_format_bootfs, should_format_rootfs)
-    print "BOOTFS=%s ROOTFS=%s" % (boot, root)
+    # Write the boot/root partitions to the given out file to be later sourced
+    # in the shell script.
+    with open(out_file, 'w') as fd:
+        fd.write("BOOTFS=%s ROOTFS=%s\n" % (boot, root))
