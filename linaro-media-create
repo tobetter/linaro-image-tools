@@ -269,66 +269,8 @@ esac
 RFS_UUID=`uuidgen -r`
 
 install_hwpacks () {
-  chroot=${DIR}/binary
-  # Make sure we unmount /proc in the chroot or else it can't be moved to the
-  # rootfs.
-
-  LINARO_HWPACK_INSTALL=$(which linaro-hwpack-install)
-
-  sudo mv -f "${chroot}/etc/resolv.conf" ${TMP_DIR}/resolv.conf.orig
-  sudo cp /etc/resolv.conf "${chroot}/etc/resolv.conf"
-
-  sudo mv -f "${chroot}/etc/hosts" ${TMP_DIR}/hosts.orig
-  sudo cp /etc/hosts "${chroot}/etc/hosts"
-
-  local arch_is_arm=no
-  case `uname -m` in
-    arm*)
-      arch_is_arm=yes
-      ;;
-    *)
-      python -m media_create.ensure_command qemu-arm-static qemu-arm-static
-      python -m media_create.ensure_command qemu-img qemu-kvm
-      sudo cp /usr/bin/qemu-arm-static "${chroot}/usr/bin"
-      ;;
-  esac
-  sudo cp "$LINARO_HWPACK_INSTALL" "${chroot}/usr/bin"
-
-  # Actually install the hwpack.
-  sudo mount proc "${chroot}/proc" -t proc
-  cleanup_chroot() {
-    sudo umount -v "$chroot/proc"
-  }
-
-  for HWPACK_FILE in "${HWPACK_FILES[@]}"; do
-
-    sudo cp "$HWPACK_FILE" "$chroot"
-    echo ""
-    echo "---------------------------------------------------"
-    echo "Installing (apt-get) $HWPACK_FILE in target rootfs."
-    echo ""
-    if [ "$HWPACK_FORCE_YES" = "yes" ]; then
-      sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install --force-yes /"$(basename "$HWPACK_FILE")"
-    else
-      sudo LC_ALL=C chroot "$chroot" linaro-hwpack-install /"$(basename "$HWPACK_FILE")"
-    fi
-    echo "---------------------------------------------------"
-    echo ""
-    sudo rm -f "${chroot}/$(basename "$HWPACK_FILE")"
-
-  done
-
-  # Revert some changes we did to the rootfs as we don't want them in the
-  # image.
-  sudo umount "${chroot}/proc"
-  cleanup_chroot() { :; }
-
-  sudo mv -f ${TMP_DIR}/resolv.conf.orig "${chroot}/etc/resolv.conf"
-  sudo mv -f ${TMP_DIR}/hosts.orig "${chroot}/etc/hosts"
-  if [ "arch_is_arm" = no ]; then
-    sudo rm -f "${chroot}/usr/bin/qemu-arm-static"
-  fi
-  sudo rm -f "${chroot}/usr/bin/linaro-hwpack-install"
+  python -m media_create.hwpack "${DIR}/binary" "$HWPACK_FORCE_YES" \
+    "${HWPACK_FILES[@]}"
 }
 
 unpack_binary_tarball() {
@@ -444,10 +386,6 @@ signal_handler() {
   exit 2
 }
 
-# Initially, no action is needed to clean up mounts in the chroot.
-# install_hwpack will temporarily define this function when needed.
-cleanup_chroot() { :; }
-
 cleanup_handler() {
   status=$?
 
@@ -463,7 +401,6 @@ cleanup_handler() {
   echo "Performing cleanup..."
   echo
 
-  cleanup_chroot
   cleanup_sd
   cleanup_mountpoints
   cleanup_tempfiles

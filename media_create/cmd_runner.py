@@ -26,10 +26,6 @@ def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
     return Popen(args, stdin=stdin, stdout=stdout, stderr=stderr)
 
 
-def get_extended_env(ext):
-    return os.environ.update(ext)
-
-
 class Popen(subprocess.Popen):
     """A version of Popen which raises an error on non-zero returncode.
 
@@ -37,9 +33,12 @@ class Popen(subprocess.Popen):
     SubcommandNonZeroReturnValue if it's non-zero.
     """
 
-    def __init__(self, args, **kwargs):
+    def __init__(self, args, env=None, **kwargs):
         self._my_args = args
-        super(Popen, self).__init__(args, **kwargs)
+        if env is None:
+            env = os.environ.copy()
+        env['LC_ALL'] = 'C'
+        super(Popen, self).__init__(args, env=env, **kwargs)
 
     def wait(self):
         returncode = super(Popen, self).wait()
