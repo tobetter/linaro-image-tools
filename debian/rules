@@ -4,4 +4,6 @@
 	dh --buildsystem=python_distutils --with-addon=python2 $*
 
 override_dh_auto_test:
-	python -m testtools.run hwpack.tests.test_suite
+	# XXX: The test-suite currently fails on Lucid. What can we do about
+	# it?
+	python -m testtools.run tests.test_suite
