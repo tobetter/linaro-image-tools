@@ -10,6 +10,7 @@ from media_create.ensure_command import ensure_command
 
 
 def install_hwpacks(chroot_dir, hwpack_force_yes, *hwpack_files):
+    """Install the given hwpacks onto the given chroot."""
     TMP_DIR = tempfile.mkdtemp()
     atexit.register(shutil.rmtree, TMP_DIR)
 
@@ -28,7 +29,6 @@ def install_hwpacks(chroot_dir, hwpack_force_yes, *hwpack_files):
     here = os.path.dirname(__file__)
     linaro_hwpack_install_path = os.path.join(
         here, '..', 'linaro-hwpack-install')
-    print linaro_hwpack_install_path, os.path.exists(linaro_hwpack_install_path)
     if not os.path.exists(linaro_hwpack_install_path):
         linaro_hwpack_install_path = '/usr/bin/linaro-hwpack-install'
     copy_file(linaro_hwpack_install_path,
@@ -37,14 +37,20 @@ def install_hwpacks(chroot_dir, hwpack_force_yes, *hwpack_files):
     mount_chroot_proc(chroot_dir)
 
     for hwpack_file in hwpack_files:
-        hwpack_basename = os.path.basename(hwpack_file)
-        copy_file(hwpack_file, chroot_dir)
-        install_hwpack(chroot_dir, hwpack_basename, hwpack_force_yes)
+        install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes)
 
 
-def install_hwpack(chroot_dir, hwpack_basename, hwpack_force_yes):
+def install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes):
+    """Install an hwpack on the given chroot.
+
+    Copy the hwpack file to the chroot and run linaro-hwpack-install passing
+    that hwpack file to it.  If hwpack_force_yes is True, also pass
+    --force-yes to linaro-hwpack-install.
+    """
+    hwpack_basename = os.path.basename(hwpack_file)
+    copy_file(hwpack_file, chroot_dir)
     print "-" * 60
-    print "Installing (apt-get) $HWPACK_FILE in target rootfs."
+    print "Installing (apt-get) %s in target rootfs." % hwpack_basename
     args = ['chroot', chroot_dir, 'linaro-hwpack-install']
     if hwpack_force_yes:
         args.append('--force-yes')
@@ -68,6 +74,13 @@ def mount_chroot_proc(chroot_dir):
 
 
 def copy_file(filepath, directory):
+    """Copy the given file to the given directory.
+
+    The copying of the file is done in a subprocess and run using sudo.
+
+    We also register an atexit function to remove the file from the given
+    directory.
+    """
     cmd_runner.run(['cp', filepath, directory], as_root=True).wait()
 
     def undo():
@@ -77,8 +90,14 @@ def copy_file(filepath, directory):
 
 
 def temporarily_overwrite_file_on_dir(filepath, directory, tmp_dir):
+    """Temporarily replace a file on the given directory.
+
+    We'll move the existing file on the given directory to a temp dir, then
+    copy over the given file to that directory and register an atexit function
+    to move the orig file back to the given directory.
+    """
     basename = os.path.basename(filepath)
-    path_to_orig = os.path.join(tmp_dir, basename + ".orig")
+    path_to_orig = os.path.join(tmp_dir, basename)
     # Move the existing file from the given directory to the temp dir.
     cmd_runner.run(
         ['mv', '-f', os.path.join(directory, basename), path_to_orig],
