@@ -266,18 +266,6 @@ case "$RFS" in
     ;;
 esac
 
-case "$DEVIMAGE" in
-  beagle)
-    UBOOT_FLAVOR="omap3_beagle"
-  ;;
-  panda)
-    UBOOT_FLAVOR="omap4_panda"
-  ;;    
-  vexpress)
-    UBOOT_FLAVOR="ca9x4_ct_vxp"
-  ;;
-esac
-
 RFS_UUID=`uuidgen -r`
 
 install_hwpacks () {
@@ -528,6 +516,9 @@ esac
 if [ "$DEVIMAGE" ]; then
   case "$DEVIMAGE" in
     beagle|igep)
+      if [ "$DEVIMAGE" == "beagle" ]; then
+        UBOOT_FLAVOR="omap3_beagle"
+      fi
       serial_opts="$serial_opts console=tty0 console=ttyS2,115200n8"
       if [ "$IS_LIVE" -eq 1 ]; then
         serial_opts="$serial_opts serialtty=ttyS2"
@@ -540,6 +531,7 @@ if [ "$DEVIMAGE" ]; then
       boot_args_options="$boot_args_options earlyprintk fixrtc nocompcache vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60"
       ;;
     panda)
+      UBOOT_FLAVOR="omap4_panda"
       serial_opts="$serial_opts console=tty0 console=ttyO2,115200n8"
       if [ "$IS_LIVE" -eq 1 ]; then
         serial_opts="$serial_opts serialtty=ttyO2"
@@ -579,6 +571,7 @@ if [ "$DEVIMAGE" ]; then
       mmc_option="0:2"
       ;;
     vexpress)
+      UBOOT_FLAVOR="ca9x4_ct_vxp"
       serial_opts="$serial_opts console=tty0 console=ttyAMA0,38400n8"
       if [ "$IS_LIVE" -eq 1 ]; then
         serial_opts="$serial_opts serialtty=ttyAMA0"
