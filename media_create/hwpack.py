@@ -9,14 +9,12 @@ from media_create import cmd_runner
 from media_create.ensure_command import ensure_command
 
 
-def install_hwpacks(chroot_dir, hwpack_force_yes, *hwpack_files):
+def install_hwpacks(chroot_dir, tmp_dir, hwpack_force_yes, *hwpack_files):
     """Install the given hwpacks onto the given chroot."""
-    TMP_DIR = tempfile.mkdtemp()
-    atexit.register(shutil.rmtree, TMP_DIR)
 
     chroot_etc = os.path.join(chroot_dir, 'etc')
-    temporarily_overwrite_file_on_dir('/etc/resolv.conf', chroot_etc, TMP_DIR)
-    temporarily_overwrite_file_on_dir('/etc/hosts', chroot_etc, TMP_DIR)
+    temporarily_overwrite_file_on_dir('/etc/resolv.conf', chroot_etc, tmp_dir)
+    temporarily_overwrite_file_on_dir('/etc/hosts', chroot_etc, tmp_dir)
 
     if not platform.machine().startswith('arm'):
         ensure_command('qemu-arm-static', 'qemu-arm-static')
@@ -112,9 +110,11 @@ def temporarily_overwrite_file_on_dir(filepath, directory, tmp_dir):
 
 
 if __name__ == '__main__':
+    tmp_dir = tempfile.mkdtemp()
+    atexit.register(shutil.rmtree, tmp_dir)
     chroot_dir, hwpack_force_yes = sys.argv[1:3]
     hwpack_force_yes = False
     if hwpack_force_yes == "yes":
         hwpack_force_yes = True
     hwpacks = sys.argv[3:]
-    install_hwpacks(chroot_dir, hwpack_force_yes, *hwpacks)
+    install_hwpacks(chroot_dir, tmp_dir, hwpack_force_yes, *hwpacks)
