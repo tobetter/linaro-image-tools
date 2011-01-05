@@ -29,6 +29,7 @@ from media_create.partitions import (
     calculate_partition_size_and_offset,
     convert_size_to_bytes,
     create_partitions,
+    ensure_filesystem_is_not_mounted,
     get_boot_and_root_loopback_devices,
     get_boot_and_root_partitions_for_media,
     Media,
@@ -422,6 +423,17 @@ class TestPartitionSetup(TestCaseWithFixtures):
             stderr=subprocess.PIPE)
         self.assertIn('Successfully wrote the new partition table', stdout)
         return tempfile
+
+    def test_ensure_filesystem_is_not_mounted_for_mounted_partition(self):
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        ensure_filesystem_is_not_mounted('/sys')
+        self.assertEqual(
+            [['sudo', 'umount', '/sys']], popen_fixture.mock.calls)
+
+    def test_ensure_filesystem_is_not_mounted_for_umounted_partition(self):
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        ensure_filesystem_is_not_mounted('/dev/sdz99')
+        self.assertEqual(None, popen_fixture.mock.calls)
 
     def test_get_boot_and_root_loopback_devices(self):
         tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
