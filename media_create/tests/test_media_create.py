@@ -446,6 +446,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             sys, 'stdout', open('/dev/null', 'w')))
+        self.useFixture(MockSomethingFixture(
+            partitions, 'get_boot_and_root_loopback_devices',
+            lambda image: ('/dev/loop99', '/dev/loop98')))
         uuid = '2e82008e-1af3-4699-8521-3bf5bac1e67a'
         bootfs, rootfs = setup_partitions(
             'beagle', Media(tempfile), 32, '2G', 'boot', 'root', 'ext3',
@@ -458,12 +461,6 @@ class TestPartitionSetup(TestCaseWithFixtures):
               tempfile],
              # Make sure changes are written to disk.
              ['sync'],
-             # Register boot/root loopback devices so that we can just copy
-             # their contents over and have it written to the image file.
-             ['sudo', 'losetup', '-f', '--show', tempfile, '--offset',
-              '32256', '--sizelimit', '129024'],
-             ['sudo', 'losetup', '-f', '--show', tempfile, '--offset',
-              '161280', '--sizelimit', '10321920'],
              ['sudo', 'mkfs.vfat', '-F', '32', bootfs, '-n', 'boot'],
              ['sudo', 'mkfs.ext3', '-U', uuid, rootfs, '-L', 'root']],
             popen_fixture.mock.calls)
