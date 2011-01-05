@@ -15,6 +15,8 @@ HEADS = 255
 SECTORS = 63
 SECTOR_SIZE = 512 # bytes
 CYLINDER_SIZE = HEADS * SECTORS * SECTOR_SIZE
+DBUS_PROPERTIES = 'org.freedesktop.DBus.Properties'
+UDISKS = "org.freedesktop.UDisks"
 
 
 # I wonder if it'd make sense to convert this into a small shim which calls
@@ -59,7 +61,7 @@ def setup_partitions(board, media, fat_size, image_size,
         # It looks like KDE somehow automounts the partitions after you
         # repartition a disk so we need to unmount them here to create the
         # filesystem.
-        ensure_filesystem_is_not_mounted(bootfs)
+        ensure_partition_is_not_mounted(bootfs)
         proc = cmd_runner.run(
             ['mkfs.vfat', '-F', str(fat_size), bootfs, '-n', bootfs_label],
             as_root=True)
@@ -68,7 +70,7 @@ def setup_partitions(board, media, fat_size, image_size,
     if should_format_rootfs:
         print "\nFormating root partition\n"
         mkfs = 'mkfs.%s' % rootfs_type
-        ensure_filesystem_is_not_mounted(rootfs)
+        ensure_partition_is_not_mounted(rootfs)
         proc = cmd_runner.run(
             [mkfs, '-U', rootfs_uuid, rootfs, '-L', rootfs_label],
             as_root=True)
@@ -77,10 +79,21 @@ def setup_partitions(board, media, fat_size, image_size,
     return bootfs, rootfs
 
 
-def ensure_filesystem_is_not_mounted(filesystem):
-    """Ensure the given filesystem is not mounted, umounting if necessary."""
-    if filesystem in open('/proc/mounts').read():
-        cmd_runner.run(['umount', filesystem], as_root=True).wait()
+def ensure_partition_is_not_mounted(partition):
+    """Ensure the given partition is not mounted, umounting if necessary."""
+    if is_partition_mounted(partition):
+        cmd_runner.run(['umount', partition], as_root=True).wait()
+
+
+def is_partition_mounted(partition):
+    """Is the given partition mounted?"""
+    device_path = _get_udisks_device_path(partition)
+    device = dbus.SystemBus().get_object(UDISKS, device_path)
+    is_partition = device.Get(
+        device_path, 'DeviceIsPartition', dbus_interface=DBUS_PROPERTIES)
+    assert is_partition, "%s is not a partition" % partition
+    return device.Get(
+        device_path, 'DeviceIsMounted', dbus_interface=DBUS_PROPERTIES)
 
 
 def get_boot_and_root_loopback_devices(image_file):
@@ -167,15 +180,18 @@ def _get_partition_count(media):
     """Return the number of partitions on the given media."""
     # We could do the same easily using python-parted but it requires root
     # rights to read block devices, so we use UDisks here.
+    device_path = _get_udisks_device_path(media.path)
+    device = dbus.SystemBus().get_object(UDISKS, device_path)
+    return device.Get(
+        device_path, 'PartitionTableCount', dbus_interface=DBUS_PROPERTIES)
+
+
+def _get_udisks_device_path(device):
+    """Return the UDisks path for the given device."""
     bus = dbus.SystemBus()
     udisks = dbus.Interface(
-        bus.get_object("org.freedesktop.UDisks", "/org/freedesktop/UDisks"),
-        'org.freedesktop.UDisks')
-    device_path = udisks.get_dbus_method('FindDeviceByDeviceFile')(media.path)
-    device = bus.get_object("org.freedesktop.UDisks", device_path)
-    return device.Get(
-        device_path, 'partition-table-count',
-        dbus_interface='org.freedesktop.DBus.Properties')
+        bus.get_object(UDISKS, "/org/freedesktop/UDisks"), UDISKS)
+    return udisks.get_dbus_method('FindDeviceByDeviceFile')(device)
 
 
 def convert_size_to_bytes(size):

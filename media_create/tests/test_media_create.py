@@ -29,7 +29,7 @@ from media_create.partitions import (
     calculate_partition_size_and_offset,
     convert_size_to_bytes,
     create_partitions,
-    ensure_filesystem_is_not_mounted,
+    ensure_partition_is_not_mounted,
     get_boot_and_root_loopback_devices,
     get_boot_and_root_partitions_for_media,
     Media,
@@ -424,15 +424,19 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.assertIn('Successfully wrote the new partition table', stdout)
         return tempfile
 
-    def test_ensure_filesystem_is_not_mounted_for_mounted_partition(self):
+    def test_ensure_partition_is_not_mounted_for_mounted_partition(self):
+        self.useFixture(MockSomethingFixture(
+            partitions, 'is_partition_mounted', lambda part: True))
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        ensure_filesystem_is_not_mounted('/sys')
+        ensure_partition_is_not_mounted('/dev/whatever')
         self.assertEqual(
-            [['sudo', 'umount', '/sys']], popen_fixture.mock.calls)
+            [['sudo', 'umount', '/dev/whatever']], popen_fixture.mock.calls)
 
-    def test_ensure_filesystem_is_not_mounted_for_umounted_partition(self):
+    def test_ensure_partition_is_not_mounted_for_umounted_partition(self):
+        self.useFixture(MockSomethingFixture(
+            partitions, 'is_partition_mounted', lambda part: False))
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        ensure_filesystem_is_not_mounted('/dev/sdz99')
+        ensure_partition_is_not_mounted('/dev/whatever')
         self.assertEqual(None, popen_fixture.mock.calls)
 
     def test_get_boot_and_root_loopback_devices(self):
@@ -459,6 +463,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             sys, 'stdout', open('/dev/null', 'w')))
         self.useFixture(MockSomethingFixture(
+            partitions, 'is_partition_mounted', lambda part: False))
+        self.useFixture(MockSomethingFixture(
             partitions, 'get_boot_and_root_loopback_devices',
             lambda image: ('/dev/loop99', '/dev/loop98')))
         uuid = '2e82008e-1af3-4699-8521-3bf5bac1e67a'
@@ -482,6 +488,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
             sys, 'stdout', open('/dev/null', 'w')))
         self.useFixture(MockSomethingFixture(
             partitions, '_get_partition_count', lambda media: 2))
+        # Pretend the partitions are mounted.
+        self.useFixture(MockSomethingFixture(
+            partitions, 'is_partition_mounted', lambda part: True))
         tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
         media = Media(tempfile)
         # Pretend our tempfile is a block device.
@@ -495,7 +504,11 @@ class TestPartitionSetup(TestCaseWithFixtures):
             [['sudo', 'parted', '-s', tempfile, 'mklabel', 'msdos'],
              ['sudo', 'sfdisk', '-D', '-H', '255', '-S', '63', tempfile],
              ['sync'],
+             # Since the partitions are mounted, setup_partitions will umount
+             # them before running mkfs.
+             ['sudo', 'umount', bootfs],
              ['sudo', 'mkfs.vfat', '-F', '32', bootfs, '-n', 'boot'],
+             ['sudo', 'umount', rootfs],
              ['sudo', 'mkfs.ext3', '-U', uuid, rootfs, '-L', 'root']],
             popen_fixture.mock.calls)
 
