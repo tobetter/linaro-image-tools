@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import atexit
 import os
 import random
 import string
@@ -17,6 +18,13 @@ from media_create import populate_boot
 from media_create import partitions
 from media_create import rootfs
 from media_create.boot_cmd import create_boot_cmd
+from media_create.hwpack import (
+    copy_file,
+    install_hwpack,
+    install_hwpacks,
+    mount_chroot_proc,
+    temporarily_overwrite_file_on_dir,
+    )
 from media_create.partitions import (
     calculate_partition_size_and_offset,
     convert_size_to_bytes,
@@ -639,3 +647,116 @@ class TestCheckDevice(TestCaseWithFixtures):
     def test_check_device_not_found(self):
         self._mock_does_device_exist_false()
         self.assertFalse(check_device.check_device(None))
+
+
+class AtExitRegister(object):
+    funcs = None
+    def __call__(self, func, *args, **kwargs):
+        if self.funcs is None:
+            self.funcs = []
+        self.funcs.append((func, args, kwargs))
+
+
+class TestInstallHWPack(TestCaseWithFixtures):
+
+    def test_temporarily_overwrite_file_on_dir(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        temporarily_overwrite_file_on_dir('/path/to/file', '/dir', '/tmp/dir')
+        self.assertEquals(
+            [['sudo', 'mv', '-f', '/dir/file', '/tmp/dir/file'],
+             ['sudo', 'cp', '/path/to/file', '/dir']],
+            fixture.mock.calls)
+
+        fixture.mock.calls = []
+        self._run_registered_atexit_functions()
+        self.assertEquals(
+            [['sudo', 'mv', '-f', '/tmp/dir/file', '/dir']],
+            fixture.mock.calls)
+
+    def test_copy_file(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        copy_file('/path/to/file', '/dir')
+        self.assertEquals(
+            [['sudo', 'cp', '/path/to/file', '/dir']],
+            fixture.mock.calls)
+
+        fixture.mock.calls = []
+        self._run_registered_atexit_functions()
+        self.assertEquals(
+            [['sudo', 'rm', '-f', '/dir/file']], fixture.mock.calls)
+
+    def test_mount_chroot_proc(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        mount_chroot_proc('chroot')
+        self.assertEquals(
+            [['sudo', 'mount', 'proc', 'chroot/proc', '-t', 'proc']],
+            fixture.mock.calls)
+
+        fixture.mock.calls = []
+        self._run_registered_atexit_functions()
+        self.assertEquals(
+            [['sudo', 'umount', '-v', 'chroot/proc']], fixture.mock.calls)
+
+    def test_install_hwpack(self):
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        force_yes = False
+        install_hwpack('chroot', 'hwpack.tgz', force_yes)
+        self.assertEquals(
+            [['sudo', 'cp', 'hwpack.tgz', 'chroot'],
+             ['sudo', 'chroot', 'chroot', 'linaro-hwpack-install',
+              '/hwpack.tgz']],
+            fixture.mock.calls)
+
+        fixture.mock.calls = []
+        self._run_registered_atexit_functions()
+        self.assertEquals(
+            [['sudo', 'rm', '-f', 'chroot/hwpack.tgz']], fixture.mock.calls)
+
+    def test_install_hwpacks(self):
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        force_yes = True
+        install_hwpacks(
+            'chroot', '/tmp/dir', force_yes, 'hwpack1.tgz', 'hwpack2.tgz')
+        self.assertEquals(
+            [['sudo', 'mv', '-f', 'chroot/etc/resolv.conf',
+              '/tmp/dir/resolv.conf'],
+             ['sudo', 'cp', '/etc/resolv.conf', 'chroot/etc'],
+             ['sudo', 'mv', '-f', 'chroot/etc/hosts', '/tmp/dir/hosts'],
+             ['sudo', 'cp', '/etc/hosts', 'chroot/etc'],
+             ['sudo', 'cp', '/usr/bin/qemu-arm-static', 'chroot/usr/bin'],
+             ['sudo', 'cp', 'media_create/../linaro-hwpack-install',
+              'chroot/usr/bin'],
+             ['sudo', 'mount', 'proc', 'chroot/proc', '-t', 'proc'],
+             ['sudo', 'cp', 'hwpack1.tgz', 'chroot'],
+             ['sudo', 'chroot', 'chroot', 'linaro-hwpack-install',
+              '--force-yes', '/hwpack1.tgz'],
+             ['sudo', 'cp', 'hwpack2.tgz', 'chroot'],
+             ['sudo', 'chroot', 'chroot', 'linaro-hwpack-install',
+              '--force-yes', '/hwpack2.tgz']],
+            fixture.mock.calls)
+
+        fixture.mock.calls = []
+        self._run_registered_atexit_functions()
+        self.assertEquals(
+            [['sudo', 'mv', '-f', '/tmp/dir/resolv.conf', 'chroot/etc'],
+             ['sudo', 'mv', '-f', '/tmp/dir/hosts', 'chroot/etc'],
+             ['sudo', 'rm', '-f', 'chroot/usr/bin/qemu-arm-static'],
+             ['sudo', 'rm', '-f', 'chroot/usr/bin/linaro-hwpack-install'],
+             ['sudo', 'umount', '-v', 'chroot/proc'],
+             ['sudo', 'rm', '-f', 'chroot/hwpack1.tgz'],
+             ['sudo', 'rm', '-f', 'chroot/hwpack2.tgz']],
+            fixture.mock.calls)
+
+    def _run_registered_atexit_functions(self):
+        for func, args, kwargs in self.atexit_fixture.mock.funcs:
+            func(*args, **kwargs)
+
+    def setUp(self):
+        super(TestInstallHWPack, self).setUp()
+        self.atexit_fixture = self.useFixture(MockSomethingFixture(
+            atexit, 'register', AtExitRegister()))
+
