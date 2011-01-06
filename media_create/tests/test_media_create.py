@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 import atexit
+import glob
 import os
 import random
 import string
@@ -656,19 +657,37 @@ class TestCheckDevice(TestCaseWithFixtures):
         self._mock_sys_stdout()
         self._mock_print_devices()
 
+    def test_ensure_device_partitions_not_mounted(self):
+        partitions_umounted = []
+        def ensure_partition_is_not_mounted_mock(part):
+            partitions_umounted.append(part)
+        self.useFixture(MockSomethingFixture(
+            partitions, 'ensure_partition_is_not_mounted',
+            ensure_partition_is_not_mounted_mock))
+        self.useFixture(MockSomethingFixture(
+            glob, 'glob', lambda pattern: ['/dev/sdz1', '/dev/sdz2']))
+        check_device._ensure_device_partitions_not_mounted('/dev/sdz')
+        self.assertEquals(['/dev/sdz1', '/dev/sdz2'], partitions_umounted)
+
     def test_check_device_and_select(self):
         self._mock_does_device_exist_true()
         self._mock_select_device()
-        self.assertTrue(check_device.check_device(None))
+        self.assertTrue(
+            check_device.confirm_device_selection_and_ensure_it_is_ready(
+                None))
 
     def test_check_device_and_deselect(self):
         self._mock_does_device_exist_true()
         self._mock_deselect_device()
-        self.assertFalse(check_device.check_device(None))
+        self.assertFalse(
+            check_device.confirm_device_selection_and_ensure_it_is_ready(
+                None))
 
     def test_check_device_not_found(self):
         self._mock_does_device_exist_false()
-        self.assertFalse(check_device.check_device(None))
+        self.assertFalse(
+            check_device.confirm_device_selection_and_ensure_it_is_ready(
+                None))
 
 
 class AtExitRegister(object):
