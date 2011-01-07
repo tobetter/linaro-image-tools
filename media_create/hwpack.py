@@ -113,7 +113,6 @@ if __name__ == '__main__':
     tmp_dir = tempfile.mkdtemp()
     atexit.register(shutil.rmtree, tmp_dir)
     chroot_dir, hwpack_force_yes = sys.argv[1:3]
-    hwpack_force_yes = False
     if hwpack_force_yes == "yes":
         hwpack_force_yes = True
     hwpacks = sys.argv[3:]
