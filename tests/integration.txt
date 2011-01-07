@@ -5,26 +5,26 @@ they are not meant to be automated.
     # This should print nothing to stdout but will create a binary/ dir under
     # the current directory.
     >>> python -m media_create.unpack_binary_tarball <path-to-binary-tarball>
+    ...     $(mktemp -d)
 
     # This will remove the binary/ dir created above
     >>> python -m media_create.remove_binary_dir
 
     # Partition (for real!) /dev/sdb for a beagle board and return the devices
     # for the boot and root partitions.
-    >>> python -m media_create.partitions /tmp/out_file beagle /dev/sdb 32 2G
-    ...     boot root ext3 2e82008e-1af3-4699-8521-3bf5bac1e67a yes
-    ...     format-bootfs format-rootfs
+    >>> from media_create.partitions import Media, setup_partitions
+    >>> setup_partitions('beagle', Media('/dev/sdb'), 32, None, 'boot',
+    ...     'root', 'ext3', '2e82008e-1af3-4699-8521-3bf5bac1e67a', True,
+    ...     True, True)
     Checking that no-one is using this disk right now
     ...
-    >>> cat /tmp/out_file
-    BOOTFS=/dev/sdb1 ROOTFS=/dev/sdb2
+    ('/dev/sdb1', '/dev/sdb2')
 
     # Partition /tmp/beagle.img for a beagle board and return the loopback
     # devices for the boot and root partitions.
-    >>> python -m media_create.partitions /tmp/out_file beagle /tmp/beagle.img
-    ...     32 2G boot root ext3 2e82008e-1af3-4699-8521-3bf5bac1e67a yes
-    ...     format-bootfs format-rootfs
+    >>> setup_partitions('beagle', Media('/tmp/beagle.img'), 32, '2G', 'boot',
+    ...     'root', 'ext3', '2e82008e-1af3-4699-8521-3bf5bac1e67a', True,
+    ...     True, True)
     Warning: /tmp/beagle.img is not a block device
     ...
-    >>> cat /tmp/out_file
-    BOOTFS=/dev/loop0 ROOTFS=/dev/loop1
+    ('/dev/loop0', '/dev/loop1')

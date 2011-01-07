@@ -1,9 +1,6 @@
 import atexit
 import os
 import platform
-import shutil
-import sys
-import tempfile
 
 from media_create import cmd_runner
 from media_create.ensure_command import ensure_command
@@ -107,13 +104,3 @@ def temporarily_overwrite_file_on_dir(filepath, directory, tmp_dir):
         cmd_runner.run(
             ['mv', '-f', path_to_orig, directory], as_root=True).wait()
     atexit.register(undo)
-
-
-if __name__ == '__main__':
-    tmp_dir = tempfile.mkdtemp()
-    atexit.register(shutil.rmtree, tmp_dir)
-    chroot_dir, hwpack_force_yes = sys.argv[1:3]
-    if hwpack_force_yes == "yes":
-        hwpack_force_yes = True
-    hwpacks = sys.argv[3:]
-    install_hwpacks(chroot_dir, tmp_dir, hwpack_force_yes, *hwpacks)

@@ -11,7 +11,3 @@ def apt_get_install(command, package):
 def ensure_command(command, package):
     if os.system('which %s 2>/dev/null 1>/dev/null' % command) != 0:
         apt_get_install(command, package)
-
-
-if __name__ == '__main__':
-    ensure_command(sys.argv[1], sys.argv[2])

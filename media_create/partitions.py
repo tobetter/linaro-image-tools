@@ -1,5 +1,5 @@
+import atexit
 import subprocess
-import sys
 import time
 
 import dbus
@@ -34,9 +34,8 @@ def setup_partitions(board, media, fat_size, image_size,
     :param fat_size: The FAT size (16 or 32) for the boot partition.
     :param image_size: The size of the image file, in case we're setting up a
         QEMU image.
-    :param should_create_partitions: A string with values "yes" or "no",
-        specifying whether or not we should erase existing partitions and
-        create new ones.
+    :param should_create_partitions: Whether or not we should erase existing
+        partitions and create new ones.
     """
     cylinders = None
     if not media.is_block_device:
@@ -48,7 +47,7 @@ def setup_partitions(board, media, fat_size, image_size,
             stdout=open('/dev/null', 'w'))
         proc.wait()
 
-    if should_create_partitions == "yes":
+    if should_create_partitions:
         create_partitions(board, media, fat_size, HEADS, SECTORS, cylinders)
 
     if media.is_block_device:
@@ -91,7 +90,6 @@ def is_partition_mounted(partition):
     device = dbus.SystemBus().get_object(UDISKS, device_path)
     is_partition = device.Get(
         device_path, 'DeviceIsPartition', dbus_interface=DBUS_PROPERTIES)
-    assert is_partition, "%s is not a partition" % partition
     return device.Get(
         device_path, 'DeviceIsMounted', dbus_interface=DBUS_PROPERTIES)
 
@@ -103,18 +101,24 @@ def get_boot_and_root_loopback_devices(image_file):
     """
     vfat_size, vfat_offset, linux_size, linux_offset = (
         calculate_partition_size_and_offset(image_file))
-    proc = cmd_runner.run(
-        ['losetup', '-f', '--show', image_file, '--offset',
-         str(vfat_offset), '--sizelimit', str(vfat_size)],
-        stdout=subprocess.PIPE, as_root=True)
-    boot_device, _ = proc.communicate()
-    proc = cmd_runner.run(
-        ['losetup', '-f', '--show', image_file, '--offset',
-         str(linux_offset), '--sizelimit', str(linux_size)],
-        stdout=subprocess.PIPE, as_root=True)
-    root_device, _ = proc.communicate()
+    boot_device = register_loopback(image_file, vfat_offset, vfat_size)
+    root_device = register_loopback(image_file, linux_offset, linux_size)
+    return boot_device, root_device
 
-    return boot_device.strip(), root_device.strip()
+
+def register_loopback(image_file, offset, size):
+    """Register a loopback device with an atexit handler to de-register it."""
+    def undo(device):
+        cmd_runner.run(['losetup', '-d', device], as_root=True).wait()
+
+    proc = cmd_runner.run(
+        ['losetup', '-f', '--show', image_file, '--offset',
+         str(offset), '--sizelimit', str(size)],
+        stdout=subprocess.PIPE, as_root=True)
+    device, _ = proc.communicate()
+    device = device.strip()
+    atexit.register(undo, device)
+    return device
 
 
 def calculate_partition_size_and_offset(image_file):
@@ -291,25 +295,3 @@ class Media(object):
     def __init__(self, path):
         self.path = path
         self.is_block_device = path.startswith('/dev/')
-
-
-if __name__ == "__main__":
-    (board, device, fat_size, image_size, bootfs_label, rootfs_label,
-        rootfs_type, rootfs_uuid, should_create_partitions, bootfs_step,
-        rootfs_step) = sys.argv[2:]
-    out_file = sys.argv[1]
-    fat_size = int(fat_size)
-    should_format_bootfs = True
-    should_format_rootfs = True
-    if bootfs_step == "":
-        should_format_bootfs = False
-    if rootfs_step == "":
-        should_format_rootfs = False
-    boot, root = setup_partitions(
-        board, Media(device), fat_size, image_size, bootfs_label,
-        rootfs_label, rootfs_type, rootfs_uuid, should_create_partitions,
-        should_format_bootfs, should_format_rootfs)
-    # Write the boot/root partitions to the given out file to be later sourced
-    # in the shell script.
-    with open(out_file, 'w') as fd:
-        fd.write("BOOTFS=%s ROOTFS=%s\n" % (boot, root))

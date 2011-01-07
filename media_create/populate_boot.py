@@ -1,5 +1,6 @@
+import errno
 import glob
-import sys
+import os
 
 from media_create import cmd_runner
 
@@ -82,11 +83,36 @@ def make_boot_ini(boot_script, boot_disk):
     proc.wait()
 
 
-def populate_boot(board, sub_arch, load_addr, uboot_parts_dir, boot_disk,
-                  tmp_dir, boot_script_name, boot_device_or_file):
+def populate_boot(board, board_config, chroot_dir, boot_partition, boot_disk,
+                  boot_device_or_file, tmp_dir, is_live):
+
+    parts_dir = 'boot'
+    if is_live:
+        parts_dir = 'casper'
+    uboot_parts_dir = os.path.join(chroot_dir, parts_dir)
+
+    try:
+        os.makedirs(boot_disk)
+    except OSError, exc:
+        if exc.errno == errno.EEXIST:
+            pass
+        else:
+            raise
+    cmd_runner.run(['mount', boot_partition, boot_disk], as_root=True).wait()
+
+    uboot_flavor = board_config.get('uboot_flavor')
+    if uboot_flavor is not None:
+        uboot_bin = os.path.join(
+            chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor, 'u-boot.bin')
+        cmd_runner.run(
+            ['cp', '-v', uboot_bin, boot_disk], as_root=True).wait()
 
     boot_script = "%(boot_disk)s/%(boot_script_name)s" % (
-        dict(boot_disk=boot_disk, boot_script_name=boot_script_name))
+        dict(boot_disk=boot_disk,
+             boot_script_name=board_config['boot_script_name']))
+
+    load_addr = board_config['load_addr']
+    sub_arch = board_config['sub_arch']
 
     # TODO: Once linaro-media-create is fully ported to python, we should
     # split this into several board-specific functions that are defined
@@ -127,6 +153,8 @@ def populate_boot(board, sub_arch, load_addr, uboot_parts_dir, boot_disk,
         raise AssertionError(
             "Internal error; missing support for board: %s" % board)
 
-
-if __name__ == "__main__":
-    sys.exit(populate_boot(*sys.argv[1:]))
+    cmd_runner.run(['sync']).wait()
+    try:
+        cmd_runner.run(['umount', boot_disk]).wait()
+    except cmd_runner.SubcommandNonZeroReturnValue:
+        pass

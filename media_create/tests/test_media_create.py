@@ -18,7 +18,6 @@ from media_create import ensure_command
 from media_create import populate_boot
 from media_create import partitions
 from media_create import rootfs
-from media_create.boot_cmd import create_boot_cmd
 from media_create.hwpack import (
     copy_file,
     install_hwpack,
@@ -44,7 +43,7 @@ from media_create.populate_boot import (
     _get_file_matching,
     _run_mkimage,
     )
-from media_create.remove_binary_dir import remove_binary_dir
+from media_create.remove_binary_dir import remove_dir
 from media_create.rootfs import (
     create_flash_kernel_config,
     has_space_left_for_swap,
@@ -55,7 +54,6 @@ from media_create.rootfs import (
 from media_create.unpack_binary_tarball import unpack_binary_tarball
 
 from media_create.tests.fixtures import (
-    ChangeCurrentWorkingDirFixture,
     CreateTempDirFixture,
     CreateTarballFixture,
     MockCmdRunnerPopenFixture,
@@ -88,30 +86,31 @@ class TestEnsureCommand(TestCase):
         ensure_command.apt_get_install = orig_func
 
 
-class TestCreateBootCMD(TestCase):
-
-    expected_boot_cmd = (
-        "setenv bootcmd 'fatload mmc mmc_option kernel_addr uImage; "
-        "fatload mmc mmc_option initrd_addr uInitrd; bootm kernel_addr "
-        "initrd_addr'\nsetenv bootargs 'serial_opts splash_opts  "
-        "root=UUID=root_uuid boot_args'\nboot")
-
-    def test_create_boot_cmd(self):
-        cmd = create_boot_cmd(
-            is_live=False, is_lowmem=False, mmc_option='mmc_option',
-            root_uuid='root_uuid', kernel_addr="kernel_addr",
-            initrd_addr="initrd_addr", serial_opts="serial_opts",
-            boot_args_options="boot_args", splash_opts="splash_opts")
-        self.assertEqual(self.expected_boot_cmd, cmd)
-
-    def test_create_boot_cmd_as_script(self):
-        args = "%s -m media_create.boot_cmd " % sys.executable
-        args += ("0 0 mmc_option root_uuid kernel_addr initrd_addr "
-                 "serial_opts boot_args splash_opts")
-        process = subprocess.Popen(
-            args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        self.assertEqual(self.expected_boot_cmd, stdout)
+# TODO: Must test this on the board config
+# class TestCreateBootCMD(TestCase):
+# 
+#     expected_boot_cmd = (
+#         "setenv bootcmd 'fatload mmc mmc_option kernel_addr uImage; "
+#         "fatload mmc mmc_option initrd_addr uInitrd; bootm kernel_addr "
+#         "initrd_addr'\nsetenv bootargs 'serial_opts  root=UUID=root_uuid "
+#         "boot_args'\nboot")
+# 
+#     def test_create_boot_cmd(self):
+#         cmd = create_boot_cmd(
+#             is_live=False, is_lowmem=False, mmc_option='mmc_option',
+#             root_uuid='root_uuid', kernel_addr="kernel_addr",
+#             initrd_addr="initrd_addr", serial_opts="serial_opts",
+#             boot_args_options="boot_args")
+#         self.assertEqual(self.expected_boot_cmd, cmd)
+# 
+#     def test_create_boot_cmd_as_script(self):
+#         args = "%s -m media_create.boot_cmd " % sys.executable
+#         args += ("0 0 mmc_option root_uuid kernel_addr initrd_addr "
+#                  "serial_opts boot_args")
+#         process = subprocess.Popen(
+#             args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#         stdout, stderr = process.communicate()
+#         self.assertEqual(self.expected_boot_cmd, stdout)
 
 
 class TestRemoveBinaryDir(TestCaseWithFixtures):
@@ -121,13 +120,12 @@ class TestRemoveBinaryDir(TestCaseWithFixtures):
         self.temp_dir_fixture = CreateTempDirFixture()
         self.useFixture(self.temp_dir_fixture)
 
-    def test_remove_binary_dir(self):
-        rc = remove_binary_dir(
-            binary_dir=self.temp_dir_fixture.get_temp_dir(),
-            as_root=False)
+    def test_remove_dir(self):
+        rc = remove_dir(
+            self.temp_dir_fixture.get_temp_dir(), as_root=False)
         self.assertEqual(rc, 0)
-        self.assertFalse(os.path.exists(
-            self.temp_dir_fixture.get_temp_dir()))
+        self.assertFalse(
+            os.path.exists(self.temp_dir_fixture.get_temp_dir()))
 
 
 class TestUnpackBinaryTarball(TestCaseWithFixtures):
@@ -142,15 +140,10 @@ class TestUnpackBinaryTarball(TestCaseWithFixtures):
             self.tar_dir_fixture.get_temp_dir())
         self.useFixture(self.tarball_fixture)
 
-        self.unpack_dir_fixture = CreateTempDirFixture()
-        self.useFixture(self.unpack_dir_fixture)
-
-        self.useFixture(ChangeCurrentWorkingDirFixture(
-            self.unpack_dir_fixture.get_temp_dir()))
-
     def test_unpack_binary_tarball(self):
-        rc = unpack_binary_tarball(self.tarball_fixture.get_tarball(),
-            as_root=False)
+        tmp_dir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        rc = unpack_binary_tarball(
+            self.tarball_fixture.get_tarball(), tmp_dir, as_root=False)
         self.assertEqual(rc, 0)
 
 
@@ -442,6 +435,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
 
     def test_get_boot_and_root_loopback_devices(self):
         tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
+        atexit_fixture = self.useFixture(MockSomethingFixture(
+            atexit, 'register', AtExitRegister()))
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         # We can't test the return value of get_boot_and_root_loopback_devices
         # because it'd require running losetup as root, so we just make sure
@@ -452,6 +447,18 @@ class TestPartitionSetup(TestCaseWithFixtures):
               '32256', '--sizelimit', '129024'],
              ['sudo', 'losetup', '-f', '--show', tempfile, '--offset',
               '161280', '--sizelimit', '10321920']],
+            popen_fixture.mock.calls)
+
+        # get_boot_and_root_loopback_devices will also setup two exit handlers
+        # to de-register the loopback devices set up above.
+        self.assertEqual(2, len(atexit_fixture.mock.funcs))
+        popen_fixture.mock.calls = []
+        atexit_fixture.mock.run_funcs()
+        # We did not really run losetup above (as it requires root) so here we
+        # don't have a device to pass to 'losetup -d', but when a device is
+        # setup it is passed to the atexit handler.
+        self.assertEquals(
+            [['sudo', 'losetup', '-d', ''], ['sudo', 'losetup', '-d', '']],
             popen_fixture.mock.calls)
 
     def test_setup_partitions_for_image_file(self):
@@ -471,7 +478,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         uuid = '2e82008e-1af3-4699-8521-3bf5bac1e67a'
         bootfs, rootfs = setup_partitions(
             'beagle', Media(tempfile), 32, '2G', 'boot', 'root', 'ext3',
-            uuid, 'yes', 'format-bootfs', 'format-rootfs')
+            uuid, True, True, True)
         self.assertEqual(
              # This is the call that would create the image file.
             [['qemu-img', 'create', '-f', 'raw', tempfile, '2G'],
@@ -499,8 +506,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         uuid = '2e82008e-1af3-4699-8521-3bf5bac1e67a'
         bootfs, rootfs = setup_partitions(
-            'beagle', media, 32, '2G', 'boot', 'root', 'ext3',
-            uuid, 'yes', 'format-bootfs', 'format-rootfs')
+            'beagle', media, 32, '2G', 'boot', 'root', 'ext3', uuid, True,
+            True, True)
         self.assertEqual(
             [['sudo', 'parted', '-s', tempfile, 'mklabel', 'msdos'],
              ['sudo', 'sfdisk', '-D', '-H', '255', '-S', '63', tempfile],
@@ -697,6 +704,11 @@ class AtExitRegister(object):
             self.funcs = []
         self.funcs.append((func, args, kwargs))
 
+    def run_funcs(self):
+        for func, args, kwargs in self.funcs:
+            func(*args, **kwargs)
+
+
 
 class TestInstallHWPack(TestCaseWithFixtures):
 
@@ -709,7 +721,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             fixture.mock.calls)
 
         fixture.mock.calls = []
-        self._run_registered_atexit_functions()
+        self.atexit_fixture.mock.run_funcs()
         self.assertEquals(
             [['sudo', 'mv', '-f', '/tmp/dir/file', '/dir']],
             fixture.mock.calls)
@@ -722,7 +734,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             fixture.mock.calls)
 
         fixture.mock.calls = []
-        self._run_registered_atexit_functions()
+        self.atexit_fixture.mock.run_funcs()
         self.assertEquals(
             [['sudo', 'rm', '-f', '/dir/file']], fixture.mock.calls)
 
@@ -734,7 +746,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             fixture.mock.calls)
 
         fixture.mock.calls = []
-        self._run_registered_atexit_functions()
+        self.atexit_fixture.mock.run_funcs()
         self.assertEquals(
             [['sudo', 'umount', '-v', 'chroot/proc']], fixture.mock.calls)
 
@@ -751,7 +763,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             fixture.mock.calls)
 
         fixture.mock.calls = []
-        self._run_registered_atexit_functions()
+        self.atexit_fixture.mock.run_funcs()
         self.assertEquals(
             [['sudo', 'rm', '-f', 'chroot/hwpack.tgz']], fixture.mock.calls)
 
@@ -781,7 +793,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             fixture.mock.calls)
 
         fixture.mock.calls = []
-        self._run_registered_atexit_functions()
+        self.atexit_fixture.mock.run_funcs()
         self.assertEquals(
             [['sudo', 'mv', '-f', '/tmp/dir/resolv.conf', 'chroot/etc'],
              ['sudo', 'mv', '-f', '/tmp/dir/hosts', 'chroot/etc'],
@@ -792,12 +804,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
              ['sudo', 'rm', '-f', 'chroot/hwpack2.tgz']],
             fixture.mock.calls)
 
-    def _run_registered_atexit_functions(self):
-        for func, args, kwargs in self.atexit_fixture.mock.funcs:
-            func(*args, **kwargs)
-
     def setUp(self):
         super(TestInstallHWPack, self).setUp()
         self.atexit_fixture = self.useFixture(MockSomethingFixture(
             atexit, 'register', AtExitRegister()))
-
