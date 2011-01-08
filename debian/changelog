@@ -19,7 +19,8 @@ linaro-image-tools (0.4) UNRELEASED; urgency=low
     - Update dependencies; new deps on python-testtools, python-parted,
       python-dbus and more, drop obsolete deps.
   * Fix support of space in pathnames (Paul Larson).
-  * Update Depends to cope with mkimage moving from uboot-mkimage to u-boot.
+  * Update Depends to cope with mkimage moving from uboot-mkimage to
+    u-boot-tools.
   * Fix empty Vcs-Bzr.
   * Strict >= ${source:Version} dependency on python-hwpack.
   * Use python2 dh sequence instead of python-support; add a python >=

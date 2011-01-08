@@ -20,7 +20,7 @@ Architecture: all
 Depends: ${misc:Depends},
          parted,
          uuid-runtime,
-         u-boot | uboot-mkimage,
+         u-boot-tools | uboot-mkimage,
          python,
          python-hwpack (>= ${source:Version}),
          python-argparse,
