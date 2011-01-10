@@ -112,16 +112,3 @@ def confirm_device_selection_and_ensure_it_is_ready(device):
         print 'Here is what I see...'
         _print_devices()
     return False
-
-
-if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print 'usage: ' + sys.argv[0] + ' <DEVICE>'
-        sys.exit(2)
-
-    device_selected = confirm_device_selection_and_ensure_it_is_ready(
-        sys.argv[1])
-    if device_selected:
-        sys.exit(0)
-    else:
-        sys.exit(1)

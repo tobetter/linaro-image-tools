@@ -5,6 +5,24 @@ ROOTFS_UUID = str(uuid.uuid4())
 KNOWN_BOARDS = ['beagle', 'igep', 'mx51evk', 'panda', 'ux500', 'vexpress']
 
 
+class Live256MegsAction(argparse.Action):
+    """A custom argparse.Action for the --live-256m option.
+
+    It is a store_true action for the given dest plus a store_true action for
+    'is_live'.
+    """
+
+    def __init__(self, option_strings, dest, default=None, required=False,
+                 help=None, metavar=None):
+        super(Live256MegsAction, self).__init__(
+            option_strings=option_strings, dest=dest, nargs=0,
+            default=False, required=required, help=help)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, True)
+        setattr(namespace, 'is_live', True)
+
+
 def get_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
     parser = argparse.ArgumentParser()
@@ -29,16 +47,14 @@ def get_args_parser():
     parser.add_argument(
         '--swap_file', type=int,
         help='Create a swap file of the given size (in MBs).')
-    # TODO: Must group these two as a mutually exclusive group and create a
-    # custom Action that stores both is_live and is_lowmem in the case of
-    # --live-256m
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
         '--live', dest='is_live', action='store_true',
         help=('Create boot command for casper/live images; if this is not '
               'provided a UUID for the rootfs is generated and used as the '
               'root= option'))
-    parser.add_argument(
-        '--live-256m', dest='is_live', action='store_true',
+    group.add_argument(
+        '--live-256m', dest='is_lowmem', action=Live256MegsAction,
         help=('Create boot command for casper/live images; adds '
               'only-ubiquity option to allow use of live installer on '
               'boards with 256M memory - like beagle.'))

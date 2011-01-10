@@ -54,10 +54,14 @@ def make_uInitrd(uboot_parts_dir, sub_arch, boot_disk):
     return _run_mkimage('ramdisk', '0', '0', 'initramfs', img_data, img)
 
 
-def make_boot_script(boot_script, tmp_dir):
-    img_data = '%s/boot.cmd' % tmp_dir
+def make_boot_script(boot_script_data, tmp_dir, boot_script):
+    # Need to save the boot script data into a file that will be passed to
+    # mkimage.
+    data_file = '%s/boot.cmd' % tmp_dir
+    with open(data_file, 'w') as fd:
+        fd.write(boot_script_data)
     return _run_mkimage(
-        'script', '0', '0', 'boot script', img_data, boot_script)
+        'script', '0', '0', 'boot script', data_file, boot_script)
 
 
 def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
@@ -109,34 +113,37 @@ def populate_boot(board, board_config, chroot_dir, boot_partition, boot_disk,
 
     boot_script = "%(boot_disk)s/%(boot_script_name)s" % (
         dict(boot_disk=boot_disk,
-             boot_script_name=board_config['boot_script_name']))
+             boot_script_name=board_config['boot_script']))
 
     load_addr = board_config['load_addr']
     sub_arch = board_config['sub_arch']
+    boot_cmd = board_config['boot_cmd']
 
     # TODO: Once linaro-media-create is fully ported to python, we should
     # split this into several board-specific functions that are defined
     # somewhere else and just called here.
     if board in ["beagle", "panda"]:
-        mlo_file = "binary/usr/lib/x-loader-omap/MLO"
+        xloader_dir = 'x-loader-omap'
         if board == "panda":
-            mlo_file = "binary/usr/lib/x-loader-omap4/MLO"
+            xloader_dir = 'x-loader-omap4'
+        mlo_file = os.path.join(
+            chroot_dir, 'usr', 'lib', xloader_dir, 'MLO')
         install_omap_boot_loader(mlo_file, boot_disk)
         make_uImage(load_addr, uboot_parts_dir, sub_arch, boot_disk)
         make_uInitrd(uboot_parts_dir, sub_arch, boot_disk)
-        make_boot_script(boot_script, tmp_dir)
+        make_boot_script(boot_cmd, tmp_dir, boot_script)
         make_boot_ini(boot_script, boot_disk)
 
     elif board == "igep":
         make_uImage(load_addr, uboot_parts_dir, sub_arch, boot_disk)
         make_uInitrd(uboot_parts_dir, sub_arch, boot_disk)
-        make_boot_script(boot_script, tmp_dir)
+        make_boot_script(boot_cmd, tmp_dir, boot_script)
         make_boot_ini(boot_script, boot_disk)
 
     elif board == "ux500":
         make_uImage(load_addr, uboot_parts_dir, sub_arch, boot_disk)
         make_uInitrd(uboot_parts_dir, sub_arch, boot_disk)
-        make_boot_script(boot_script, tmp_dir)
+        make_boot_script(boot_cmd, tmp_dir, boot_script)
 
     elif board == "vexpress":
         make_uImage(load_addr, uboot_parts_dir, sub_arch, boot_disk)
@@ -147,7 +154,7 @@ def populate_boot(board, board_config, chroot_dir, boot_partition, boot_disk,
             "binary/usr/lib/u-boot/mx51evk/u-boot.imx", boot_device_or_file)
         make_uImage(load_addr, uboot_parts_dir, sub_arch, boot_disk)
         make_uInitrd(uboot_parts_dir, sub_arch, boot_disk)
-        make_boot_script(boot_script, tmp_dir)
+        make_boot_script(boot_cmd, tmp_dir, boot_script)
 
     else:
         raise AssertionError(
@@ -155,6 +162,6 @@ def populate_boot(board, board_config, chroot_dir, boot_partition, boot_disk,
 
     cmd_runner.run(['sync']).wait()
     try:
-        cmd_runner.run(['umount', boot_disk]).wait()
+        cmd_runner.run(['umount', boot_disk], as_root=True).wait()
     except cmd_runner.SubcommandNonZeroReturnValue:
         pass

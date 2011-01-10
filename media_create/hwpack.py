@@ -6,6 +6,10 @@ from media_create import cmd_runner
 from media_create.ensure_command import ensure_command
 
 
+# TODO: Need to implement something similar to atexit where the functions are
+# executed manually at the end of install_hwpacks because now that everything
+# is in python the atexit functions installed here are no longer called right
+# after install_hwpacks finishes.
 def install_hwpacks(chroot_dir, tmp_dir, hwpack_force_yes, *hwpack_files):
     """Install the given hwpacks onto the given chroot."""
 

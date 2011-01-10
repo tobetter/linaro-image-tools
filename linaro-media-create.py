@@ -71,15 +71,17 @@ if __name__ == '__main__':
     args = parser.parse_args()
     board_config = get_board_config(args)
 
-    if not confirm_device_selection_and_ensure_it_is_ready(args.device):
-        sys.exit(1)
-
     media = Media(args.device)
-    if (not media.is_block_device
-        and (not args.should_format_rootfs or not args.should_format_bootfs)):
+    if media.is_block_device:
+        if not confirm_device_selection_and_ensure_it_is_ready(args.device):
+            sys.exit(1)
+    elif not args.should_format_rootfs or not args.should_format_bootfs:
         print ("Do not use --no-boot or --no-part in conjunction with "
                "--image_file.")
         sys.exit(1)
+    else:
+        # All good, move on.
+        pass
 
     # TODO: Combine these two into a single function.
     remove_dir(ROOTFS_DIR)
@@ -91,7 +93,7 @@ if __name__ == '__main__':
                "functional")
         sys.exit(1)
     else:
-        install_hwpacks(ROOTFS_DIR, args.hwpack_force_yes, hwpacks)
+        install_hwpacks(ROOTFS_DIR, TMP_DIR, args.hwpack_force_yes, *hwpacks)
 
     boot_partition, root_partition = setup_partitions(
         args.board, media, board_config['fat_size'], args.image_size,
