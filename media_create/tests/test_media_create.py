@@ -220,11 +220,12 @@ class TestPopulateBoot(TestCaseWithFixtures):
     def test_make_boot_script(self):
         self._mock_get_file_matching()
         fixture = self._mock_Popen()
-        make_boot_script('boot_script', 'tmp_dir')
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        make_boot_script('boot script data', tempdir, 'boot_script')
         expected = [
             'sudo', 'mkimage', '-A', 'arm', '-O', 'linux', '-T', 'script',
             '-C', 'none', '-a', '0', '-e', '0', '-n', 'boot script',
-            '-d', 'tmp_dir/boot.cmd', 'boot_script']
+            '-d', '%s/boot.cmd' % tempdir, 'boot_script']
         self.assertEqual([expected], fixture.mock.calls)
 
     def test_get_file_matching(self):
