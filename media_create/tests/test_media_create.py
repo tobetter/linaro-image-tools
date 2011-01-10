@@ -22,6 +22,7 @@ from media_create.hwpack import (
     copy_file,
     install_hwpack,
     install_hwpacks,
+    local_atexit as hwpack_local_atexit,
     mount_chroot_proc,
     temporarily_overwrite_file_on_dir,
     )
@@ -721,7 +722,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             fixture.mock.calls)
 
         fixture.mock.calls = []
-        self.atexit_fixture.mock.run_funcs()
+        self.run_local_atexit_funcs()
         self.assertEquals(
             [['sudo', 'mv', '-f', '/tmp/dir/file', '/dir']],
             fixture.mock.calls)
@@ -734,7 +735,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             fixture.mock.calls)
 
         fixture.mock.calls = []
-        self.atexit_fixture.mock.run_funcs()
+        self.run_local_atexit_funcs()
         self.assertEquals(
             [['sudo', 'rm', '-f', '/dir/file']], fixture.mock.calls)
 
@@ -746,7 +747,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             fixture.mock.calls)
 
         fixture.mock.calls = []
-        self.atexit_fixture.mock.run_funcs()
+        self.run_local_atexit_funcs()
         self.assertEquals(
             [['sudo', 'umount', '-v', 'chroot/proc']], fixture.mock.calls)
 
@@ -763,7 +764,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             fixture.mock.calls)
 
         fixture.mock.calls = []
-        self.atexit_fixture.mock.run_funcs()
+        self.run_local_atexit_funcs()
         self.assertEquals(
             [['sudo', 'rm', '-f', 'chroot/hwpack.tgz']], fixture.mock.calls)
 
@@ -789,22 +790,17 @@ class TestInstallHWPack(TestCaseWithFixtures):
               '--force-yes', '/hwpack1.tgz'],
              ['sudo', 'cp', 'hwpack2.tgz', 'chroot'],
              ['sudo', 'chroot', 'chroot', 'linaro-hwpack-install',
-              '--force-yes', '/hwpack2.tgz']],
-            fixture.mock.calls)
-
-        fixture.mock.calls = []
-        self.atexit_fixture.mock.run_funcs()
-        self.assertEquals(
-            [['sudo', 'mv', '-f', '/tmp/dir/resolv.conf', 'chroot/etc'],
-             ['sudo', 'mv', '-f', '/tmp/dir/hosts', 'chroot/etc'],
-             ['sudo', 'rm', '-f', 'chroot/usr/bin/qemu-arm-static'],
-             ['sudo', 'rm', '-f', 'chroot/usr/bin/linaro-hwpack-install'],
-             ['sudo', 'umount', '-v', 'chroot/proc'],
+              '--force-yes', '/hwpack2.tgz'],
+             ['sudo', 'rm', '-f', 'chroot/hwpack2.tgz'],
              ['sudo', 'rm', '-f', 'chroot/hwpack1.tgz'],
-             ['sudo', 'rm', '-f', 'chroot/hwpack2.tgz']],
+             ['sudo', 'umount', '-v', 'chroot/proc'],
+             ['sudo', 'rm', '-f', 'chroot/usr/bin/linaro-hwpack-install'],
+             ['sudo', 'rm', '-f', 'chroot/usr/bin/qemu-arm-static'],
+             ['sudo', 'mv', '-f', '/tmp/dir/hosts', 'chroot/etc'],
+             ['sudo', 'mv', '-f', '/tmp/dir/resolv.conf', 'chroot/etc']],
             fixture.mock.calls)
 
-    def setUp(self):
-        super(TestInstallHWPack, self).setUp()
-        self.atexit_fixture = self.useFixture(MockSomethingFixture(
-            atexit, 'register', AtExitRegister()))
+    def run_local_atexit_funcs(self):
+        # Run the funcs in LIFO order, just like atexit does.
+        while len(hwpack_local_atexit) > 0:
+            hwpack_local_atexit.pop()()
