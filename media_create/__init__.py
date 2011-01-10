@@ -63,7 +63,7 @@ def get_args_parser():
         help=('Add a console to kernel boot parameter; this parameter can be '
               'defined multiple times.'))
     parser.add_argument(
-        '--hwpack', action='append', dest='hwpacks',
+        '--hwpack', action='append', dest='hwpacks', required=True,
         help=('A hardware pack that should be installed in the rootfs; this '
               'parameter can be defined multiple times.'))
     parser.add_argument(

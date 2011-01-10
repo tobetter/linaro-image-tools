@@ -38,10 +38,7 @@ def install_hwpacks(chroot_dir, tmp_dir, hwpack_force_yes, *hwpack_files):
     for hwpack_file in hwpack_files:
         install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes)
 
-    # Run the funcs in LIFO order, just like atexit does.
-    while len(local_atexit) > 0:
-        func = local_atexit.pop()
-        func()
+    run_local_atexit_funcs()
 
 
 def install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes):
@@ -113,3 +110,9 @@ def temporarily_overwrite_file_on_dir(filepath, directory, tmp_dir):
         cmd_runner.run(
             ['mv', '-f', path_to_orig, directory], as_root=True).wait()
     local_atexit.append(undo)
+
+
+def run_local_atexit_funcs():
+    # Run the funcs in LIFO order, just like atexit does.
+    while len(local_atexit) > 0:
+        local_atexit.pop()()

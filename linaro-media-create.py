@@ -4,8 +4,9 @@ import atexit
 import os
 import sys
 import tempfile
+import time
+from subprocess import Popen
 
-from media_create import cmd_runner
 from media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
 from media_create.ensure_command import ensure_command
@@ -37,20 +38,25 @@ ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
 # Registered as the first atexit handler as we want this to be the last
 # handler to execute.
 @atexit.register
-def cleanup():
-    # Just in case anything is left behind.
-    # umount boot/root filesystems, swallowing errors.
-    try:
-        cmd_runner.run(['umount', BOOT_DISK], as_root=True).wait()
-        cmd_runner.run(['umount', ROOT_DISK], as_root=True).wait()
-        # Remove TMP_DIR as root because some files written there are
-        # owned by root.
-        cmd_runner.run(['rm', '-rf', TMP_DIR], as_root=True).wait()
-    except cmd_runner.SubcommandNonZeroReturnValue:
-        pass
+def cleanup_tempdir():
+    """Remove TEMP_DIR with all its contents.
+
+    Before doing so, make sure BOOT_DISK and ROOT_DISK are not mounted.
+    """
+    devnull = open('/dev/null', 'w')
+    # Use raw subprocess.Popen as we don't want to stop in case the
+    # commands end with a non-zero return code.
+    Popen(
+        ['sudo', 'umount', BOOT_DISK], stdout=devnull, stderr=devnull).wait()
+    Popen(
+        ['sudo', 'umount', ROOT_DISK], stdout=devnull, stderr=devnull).wait()
+    # Remove TMP_DIR as root because some files written there are
+    # owned by root.
+    Popen(['sudo', 'rm', '-rf', TMP_DIR]).wait()
 
 
 def ensure_required_commands(args):
+    """Ensure we have the commands that we know are going to be used."""
     required_commands = [
         ('sfdisk', 'util-linux'),
         ('fdisk', 'util-linux'),
@@ -88,12 +94,7 @@ if __name__ == '__main__':
     unpack_binary_tarball(args.binary, TMP_DIR)
 
     hwpacks = args.hwpacks
-    if hwpacks is None:
-        print ("Warning: no hwpack specified; the result is unlikely to be "
-               "functional")
-        sys.exit(1)
-    else:
-        install_hwpacks(ROOTFS_DIR, TMP_DIR, args.hwpack_force_yes, *hwpacks)
+    install_hwpacks(ROOTFS_DIR, TMP_DIR, args.hwpack_force_yes, *hwpacks)
 
     boot_partition, root_partition = setup_partitions(
         args.board, media, board_config['fat_size'], args.image_size,
@@ -113,3 +114,5 @@ if __name__ == '__main__':
         populate_rootfs(ROOTFS_DIR, ROOT_DISK, root_partition, args.rootfs,
             ROOTFS_UUID, create_swap, str(args.swap_file),
             board_config['mmc_part_offset'])
+
+    print "Done creating Linaro image on %s" % args.device

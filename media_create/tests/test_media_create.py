@@ -22,8 +22,8 @@ from media_create.hwpack import (
     copy_file,
     install_hwpack,
     install_hwpacks,
-    local_atexit as hwpack_local_atexit,
     mount_chroot_proc,
+    run_local_atexit_funcs,
     temporarily_overwrite_file_on_dir,
     )
 from media_create.partitions import (
@@ -723,7 +723,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             fixture.mock.calls)
 
         fixture.mock.calls = []
-        self.run_local_atexit_funcs()
+        run_local_atexit_funcs()
         self.assertEquals(
             [['sudo', 'mv', '-f', '/tmp/dir/file', '/dir']],
             fixture.mock.calls)
@@ -736,7 +736,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             fixture.mock.calls)
 
         fixture.mock.calls = []
-        self.run_local_atexit_funcs()
+        run_local_atexit_funcs()
         self.assertEquals(
             [['sudo', 'rm', '-f', '/dir/file']], fixture.mock.calls)
 
@@ -748,7 +748,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             fixture.mock.calls)
 
         fixture.mock.calls = []
-        self.run_local_atexit_funcs()
+        run_local_atexit_funcs()
         self.assertEquals(
             [['sudo', 'umount', '-v', 'chroot/proc']], fixture.mock.calls)
 
@@ -765,7 +765,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             fixture.mock.calls)
 
         fixture.mock.calls = []
-        self.run_local_atexit_funcs()
+        run_local_atexit_funcs()
         self.assertEquals(
             [['sudo', 'rm', '-f', 'chroot/hwpack.tgz']], fixture.mock.calls)
 
@@ -800,8 +800,3 @@ class TestInstallHWPack(TestCaseWithFixtures):
              ['sudo', 'mv', '-f', '/tmp/dir/hosts', 'chroot/etc'],
              ['sudo', 'mv', '-f', '/tmp/dir/resolv.conf', 'chroot/etc']],
             fixture.mock.calls)
-
-    def run_local_atexit_funcs(self):
-        # Run the funcs in LIFO order, just like atexit does.
-        while len(hwpack_local_atexit) > 0:
-            hwpack_local_atexit.pop()()
