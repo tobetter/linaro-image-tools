@@ -5,6 +5,9 @@ import os
 import sys
 import tempfile
 
+from media_create import cmd_runner
+from media_create.check_device import (
+    confirm_device_selection_and_ensure_it_is_ready)
 from media_create.ensure_command import ensure_command
 from media_create.hwpack import install_hwpacks
 from media_create.partitions import (
@@ -34,12 +37,17 @@ ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
 # Registered as the first atexit handler as we want this to be the last
 # handler to execute.
 @atexit.register
-def fallback_cleanup():
-    # TODO:
+def cleanup():
     # Just in case anything is left behind.
     # umount boot/root filesystems, swallowing errors.
-    # remove TMP_DIR
-    pass
+    try:
+        cmd_runner.run(['umount', BOOT_DISK], as_root=True).wait()
+        cmd_runner.run(['umount', ROOT_DISK], as_root=True).wait()
+        # Remove TMP_DIR as root because some files written there are
+        # owned by root.
+        cmd_runner.run(['rm', '-rf', TMP_DIR], as_root=True).wait()
+    except cmd_runner.SubcommandNonZeroReturnValue:
+        pass
 
 
 def ensure_required_commands(args):
@@ -63,7 +71,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     board_config = get_board_config(args)
 
-    # TODO: call check_device.py here!
+    if not confirm_device_selection_and_ensure_it_is_ready(args.device):
+        sys.exit(1)
 
     media = Media(args.device)
     if (not media.is_block_device
