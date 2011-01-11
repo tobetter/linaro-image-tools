@@ -1,558 +1,119 @@
-#!/bin/bash
-# linaro-media-create - Create an installation media from a Linaro image
-
-# Copyright 2010 Robert Nelson <robertcnelson@gmail.com>
-# Copyright 2010 Linaro
-# Based on rcn's setup_sdcard.sh script.
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 3 as published
-# by the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-set -e
-
-unset DEVICE BOOTFS ROOTFS IMAGE_FILE HWPACK_FILES UBOOT_FLAVOR KERNEL_ADDR
-unset INITRD_ADDR DEPLOY_STEPS
-
-declare -a HWPACK_FILES
-
-#Defaults
-RFS=ext3
-BINARY_TARBALL='binary-tar.tar.gz'
-BOOT_LABEL=boot
-RFS_LABEL=rootfs
-IS_LIVE=0
-CREATE_SWAP=0
-SWAP_SIZE=0
-IS_LOWMEM=0
-FAT_SIZE=32
-IMAGE_SIZE=2G
-MMC_PART_OFFSET=0
-BOOTFS_STEP="create_boot_cmd populate_boot"
-ROOTFS_STEP="populate_rootfs"
-SHOULD_CREATE_PARTITIONS="yes"
-mmc_option="0:1"
-boot_args_options="rootwait ro"
-HWPACK_FORCE_YES="no"
-
-DIR=$PWD
-TMP_DIR=$(mktemp -d)
-cleanup_tempfiles() {
-  rm -r "$TMP_DIR"
-
-  cleanup_tempfiles() { :; }
-}
-
-BOOT_DISK="${DIR}/boot-disc"
-ROOT_DISK="${DIR}/root-disc"
-
-cleanup_mountpoints() {
-
-  local dir
-
-  for dir in "$BOOT_DISK" "$ROOT_DISK"; do
-    if [ -d "$dir" ]; then
-      rmdir -v "$dir"
-    fi
-  done
-
-}
-
-# Make sure other scripts are called from the correct place when running this
-# off of a l-m-c working tree.
-script_dir=$(dirname "$(readlink -f "$0")")
-PATH="${script_dir}:$PATH"
-
-# Also make sure the necessary python modules are available when running this
-# off of a l-m-c working tree.
-export PYTHONPATH="$script_dir"
-
-python -m media_create.ensure_command sfdisk util-linux
-python -m media_create.ensure_command fdisk util-linux
-
-usage() {
-  echo "usage: $(basename $0) --mmc /dev/sdd"
-  echo "<or>"
-  echo "usage: $(basename $0) --image_file mmc.img"
-  cat <<EOF
-
-required options:
---mmc </dev/sdX>
-    Unformatted Storage Device
-<or>
---image_file <xxx>
-    specify name of image file
-
---dev <board>
-    use development boot options; this includes setting up serial ttys as well
-    as enabling normal debug options for the target board. Current board values:
-    * beagle
-    * igep
-    * mx51evk
-    * panda
-    * ux500
-    * vexpress
-
-Additional/Optional options:
--h --help
-    this help
-
---rootfs <fs_type>
-    ext2
-    ext3 - <set as default>
-    ext4
-    btrfs
-
---boot_label <boot_label>
-    boot partition label
-
---rfs_label <rfs_label>
-    rootfs partition label
-
---swap_file <xxx>
-    Creats a Swap file of (xxx)MB's
-
---live
-    Create boot command for casper/live images; if this is not
-    provided a UUID for the rootfs is generated and used as the root=
-    option
-
---live-256m
-    Create boot command for casper/live images; adds only-ubiquity option
-    to allow use of live installer on boards with 256M memory - like beagle
-
---console <ttyXY>
-    add a console to kernel boot parameter; this parameter can be defined
-    multiple times.
-
---hwpack <filename>
-    A hardware pack that should be installed in the rootfs.
-
---image_size nnnG or nnnM
-    specify size of SD image to create; use with --image_file only (default: 2G)
-
---binary <filename>
-    specify file used to create the bootable system. Default binary-tar.tar.gz
-
---no-rootfs
-    do not deploy the root filesystem
-
---no-bootfs
-    do not deploy the boot filesystem
-
---no-part
-    reuse existing partitions on the deploy media
-EOF
-  exit
-}
-
-check_fs_type() {
-  case "$RFS" in
-    ext2|ext3|ext4|btrfs)
-      :
-    ;;
-    *)
-      usage
-    ;;
-  esac
-}
-
-checkparm() {
-  case "$1" in
-    -*)
-      echo "E: Need an argument" >&2
-      usage
-    ;;
-  esac
-}
-
-consoles=""
-
-# parse commandline options
-while [ ! -z "$1" ]; do
-  case "$1" in
-    -h|--help)
-      usage
-      ;;
-    --hwpack)
-      checkparm "$2"
-      HWPACK_FILES[${#HWPACK_FILES[@]}]="$2"
-      ;;
-    --hwpack-force-yes)
-      HWPACK_FORCE_YES="yes"
-      ;;
-    --mmc)
-      checkparm "$2"
-      DEVICE="$2"
-      python -m media_create.check_device $DEVICE || exit
-      ;;
-    --image_file)
-      checkparm "$2"
-      IMAGE_FILE="$2"
-      ;;
-    --image_size)
-      checkparm "$2"
-      IMAGE_SIZE=$2
-      ;;
-    --rootfs)
-      checkparm "$2"
-      RFS="$2"
-      check_fs_type
-      ;;
-    --boot_label)
-      checkparm "$2"
-      BOOT_LABEL="$2"
-      ;;
-    --rfs_label)
-      checkparm "$2"
-      RFS_LABEL="$2"
-      ;;
-    --swap_file)
-      checkparm "$2"
-      SWAP_SIZE="$2"
-      CREATE_SWAP=1
-      ;;
-    --live)
-      IS_LIVE=1
-      ;;
-    --live-256m)
-      IS_LIVE=1
-      IS_LOWMEM=1
-      ;;
-    --console)
-      checkparm "$2"
-      consoles="$consoles $2"
-      ;;
-    --dev)
-      checkparm "$2"
-      DEVIMAGE=$2
-      ;;
-    --binary)
-      checkparm "$2"
-      BINARY_TARBALL="$2"
-      ;;
-    --no-rootfs)
-      ROOTFS_STEP=""
-      ;;
-    --no-bootfs)
-      BOOTFS_STEP=""
-      ;;
-    --no-part)
-      SHOULD_CREATE_PARTITIONS="no"
-      ;;
-  esac
-  shift
-done
-
-DEPLOY_STEPS="setup_partitions $BOOTFS_STEP $ROOTFS_STEP"
-
-python -m media_create.ensure_command mkimage uboot-mkimage
-python -m media_create.ensure_command uuidgen uuid-runtime
-python -m media_create.ensure_command parted parted
-case "$RFS" in
-  ext2|ext3|ext4)
-    python -m media_create.ensure_command "mkfs.$RFS" e2fsprogs
-    ;;
-  btrfs)
-    python -m media_create.ensure_command mkfs.btrfs btrfs-tools
-    ;;
-esac
-
-RFS_UUID=`uuidgen -r`
-
-install_hwpacks () {
-  python -m media_create.hwpack "${DIR}/binary" "$HWPACK_FORCE_YES" \
-    "${HWPACK_FILES[@]}"
-}
-
-unpack_binary_tarball() {
-  # Remove the binary/ directory so that previous runs don't interfere here.
-  python -m media_create.remove_binary_dir
-  python -m media_create.unpack_binary_tarball "$BINARY_TARBALL"
-}
-
-create_boot_cmd() {
-  python -m media_create.boot_cmd $IS_LIVE $IS_LOWMEM "$mmc_option" \
-    "$RFS_UUID" "$KERNEL_ADDR" "$INITRD_ADDR" "$serial_opts" \
-    "$boot_args_options" "$splash_opts" > ${TMP_DIR}/boot.cmd
-}
-
-cleanup_sd() {
-
-  echo ""
-  echo "Umounting Partitions"
-  echo ""
-
-  if test -n "$BOOTFS"; then
-    sudo umount ${BOOTFS} &> /dev/null || true
-  fi
-  if test -n "$ROOTFS"; then
-    sudo umount ${ROOTFS} &> /dev/null || true
-  fi
-}
-
-loop_devices=
-
-cleanup_loopbacks() {
-
-  local d
-
-  if [ -n "$loop_devices" ]; then
-
-    echo
-    echo "Releasing loop devices."
-
-    for d in $loop_devices; do
-      if [ -n "$d" ]; then
-        sudo losetup -d "$d"
-      fi
-    done
-
-  fi
-}
-
-register_loopback() {
-  loop_devices="$loop_devices $1"
-}
-
-setup_partitions() {
-  python -m media_create.partitions ${TMP_DIR}/boot_and_root_devices \
-      "$DEVIMAGE" "${DEVICE-$IMAGE_FILE}" "$FAT_SIZE" "$IMAGE_SIZE" \
-      "$BOOT_LABEL" "$RFS_LABEL" "$RFS" "$RFS_UUID" \
-      "$SHOULD_CREATE_PARTITIONS" "$BOOTFS_STEP" "$ROOTFS_STEP"
-  # The above call will write the BOOTFS and ROOTFS shell variables to the
-  # file given as the first argument so here we just need to source it.
-  . ${TMP_DIR}/boot_and_root_devices
-
-  if [ "${IMAGE_FILE}" ]; then
-    register_loopback "$BOOTFS"
-    register_loopback "$ROOTFS"
-  fi
-}
-
-populate_boot() {
-  echo ""
-  echo "Populating Boot Partition"
-  echo ""
- 
-  echo ""
-  echo "Installing Boot Loader"
-  echo ""
- 
-  if [ "$IS_LIVE" -eq 1 ]; then
-    parts_dir="${DIR}/binary/casper"
-  else
-    parts_dir="${DIR}/binary/boot"
-  fi
- 
-  mkdir -p "${BOOT_DISK}"
-  sudo mount ${BOOTFS} "${BOOT_DISK}"
-
-  if [ -n "$UBOOT_FLAVOR" ]; then
-      sudo cp -v "binary/usr/lib/u-boot/${UBOOT_FLAVOR}/u-boot.bin" \
-               "${BOOT_DISK}"
-  fi
-
-  python -m media_create.populate_boot "$DEVIMAGE" "$SUB_ARCH" "$LOAD_ADDR" \
-    "$parts_dir" "$BOOT_DISK" "$TMP_DIR" "$BOOT_SCRIPT" \
-    "${DEVICE:-$IMAGE_FILE}"
-
-  sync
-  sync
-  sudo umount "${BOOT_DISK}" || true
-}
-
-populate_rootfs() {
-  python -m media_create.rootfs "binary/" "$ROOT_DISK" "$ROOTFS" "$RFS" \
-      "$RFS_UUID" "$CREATE_SWAP" "$SWAP_SIZE" "$MMC_PART_OFFSET"
-}
-
-remove_image_file() {
-  if [ -f "$IMAGE_FILE" ]; then
-    rm -v $IMAGE_FILE
-  fi
-}
-
-signal_handler() {
-  cleanup_handler
-  exit 2
-}
-
-cleanup_handler() {
-  status=$?
-
-  trap - EXIT INT TERM
-
-  set +e
-
-  if [ $status != 0 ]; then
-    echo >&2 "$0: FAILED"
-  fi
-
-  echo
-  echo "Performing cleanup..."
-  echo
-
-  cleanup_sd
-  cleanup_mountpoints
-  cleanup_tempfiles
-  cleanup_loopbacks
-  python -m media_create.remove_binary_dir
-
-  if [ "$status" != 0 ]; then
-      remove_image_file
-  fi
-
-  # According to POSIX, for the EXIT trap the shell will now exit with the
-  # exit status of the failing command which triggered the EXIT, or 0 if the
-  # script terminated successfully.
-
-  # For the INT/TERM trap, return to signal_handler.
-}
-
-# Call cleanup_handler as appropriate.
-# The EXIT trap gets called both on normal exit or exit-on-error (set -e)
-# so we get called either way.
-trap cleanup_handler EXIT
-trap signal_handler INT TERM
-
-serial_opts=""
-if [ "$consoles" ]; then
-  for c in ${consoles}; do
-    serial_opts="$serial_opts console=$c"
-  done
-  if [ "$IS_LIVE" -eq 1 ]; then
-    serial_opts="$serial_opts serialtty=ttyS2"
-  fi
-fi
-
-case "$DEVIMAGE" in
-  beagle|igep|mx51evk|panda|ux500|vexpress)
-    :
-  ;;
-  "")
-    echo "Please set some target device with --dev" >&2
-    usage
-  ;;
-  *)
-    echo "Unknown target device $DEVIMAGE" >&2
-    usage
-  ;;
-esac
-
-# This whole thing will be moved into config files that will be specific for
-# each board.
-if [ "$DEVIMAGE" ]; then
-  case "$DEVIMAGE" in
-    beagle|igep)
-      if [ "$DEVIMAGE" == "beagle" ]; then
-        UBOOT_FLAVOR="omap3_beagle"
-      fi
-      serial_opts="$serial_opts console=tty0 console=ttyS2,115200n8"
-      if [ "$IS_LIVE" -eq 1 ]; then
-        serial_opts="$serial_opts serialtty=ttyS2"
-      fi
-      KERNEL_ADDR="0x80000000"
-      INITRD_ADDR="0x81600000"
-      LOAD_ADDR="0x80008000"
-      SUB_ARCH="linaro-omap"
-      BOOT_SCRIPT="boot.scr"
-      boot_args_options="$boot_args_options earlyprintk fixrtc nocompcache vram=12M omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60"
-      ;;
-    panda)
-      UBOOT_FLAVOR="omap4_panda"
-      serial_opts="$serial_opts console=tty0 console=ttyO2,115200n8"
-      if [ "$IS_LIVE" -eq 1 ]; then
-        serial_opts="$serial_opts serialtty=ttyO2"
-      fi
-      KERNEL_ADDR="0x80200000"
-      INITRD_ADDR="0x81600000"
-      LOAD_ADDR="0x80008000"
-      SUB_ARCH="omap4"
-      BOOT_SCRIPT="boot.scr"
-      boot_args_options="$boot_args_options earlyprintk fixrtc nocompcache vram=32M omapfb.debug=y omapfb.vram=0:8M mem=463M ip=none"
-      ;;
-    ux500)
-      serial_opts="$serial_opts console=tty0 console=ttyAMA2,115200n8"
-      if [ "$IS_LIVE" -eq 1 ]; then
-        serial_opts="$serial_opts serialtty=ttyAMA2"
-      fi
-      KERNEL_ADDR="0x00100000"
-      INITRD_ADDR="0x08000000"
-      LOAD_ADDR="0x00008000"
-      SUB_ARCH="ux500"
-      BOOT_SCRIPT="flash.scr"
-      boot_args_options="$boot_args_options earlyprintk rootdelay=1 fixrtc nocompcache"
-      boot_args_options="$boot_args_options mem=96M@0 mem_modem=32M@96M mem=44M@128M pmem=22M@172M mem=30M@194M mem_mali=32M@224M pmem_hwb=54M@256M hwmem=48M@302M mem=152M@360M"
-      mmc_option="1:1"
-      ;;
-    mx51evk)
-      serial_opts="$serial_opts console=tty0 console=ttymxc0,115200n8"
-      if [ "$IS_LIVE" -eq 1 ]; then
-        serial_opts="$serial_opts serialtty=ttymxc0"
-      fi
-      KERNEL_ADDR="0x90000000"
-      INITRD_ADDR="0x90800000"
-      LOAD_ADDR="0x90008000"
-      SUB_ARCH="linaro-mx51"
-      BOOT_SCRIPT="boot.scr"
-      MMC_PART_OFFSET=1
-      mmc_option="0:2"
-      ;;
-    vexpress)
-      UBOOT_FLAVOR="ca9x4_ct_vxp"
-      serial_opts="$serial_opts console=tty0 console=ttyAMA0,38400n8"
-      if [ "$IS_LIVE" -eq 1 ]; then
-        serial_opts="$serial_opts serialtty=ttyAMA0"
-      fi
-      KERNEL_ADDR="0x60008000"
-      INITRD_ADDR="0x81000000"
-      LOAD_ADDR=$KERNEL_ADDR
-      SUB_ARCH="linaro-vexpress"
-      # ARM Boot Monitor is used to load u-boot, uImage etc. into flash and
-      # only allows for FAT16
-      FAT_SIZE=16
-      ;;
-    *)
-      echo "Internal error; missing support for $DEVIMAGE" >&2
-      exit 1
-      ;;
-  esac
-else
-  if [ "$IS_LIVE" -eq 1 ]; then
-    splash_opts="quiet splash"
-  fi
-fi
-
-if [ ! "${DEVICE}" -a ! "${IMAGE_FILE}" ]; then
-  usage
-fi
-
-# The bootfs and rootfs deploy options are only available with physical 
-# devices.  These options are intended for deploying to different devices like
-# a USB drive and an MMC device.  The options do not apply to qemu image_files.
-if [ "${IMAGE_FILE}" ]; then
-  if [ -z "${ROOTFS_STEP}" ] || [ -z "${BOOTFS_STEP}" ]; then
-    echo "Do not use --no-rootfs or --no-bootfs with the --image_file option"
-    exit
-  fi
-fi
-
-unpack_binary_tarball
-if [ "${#HWPACK_FILES[@]}" -gt 0 ]; then
-  install_hwpacks
-else
-  echo "Warning, --hwpack <filename> was not specified, the result is unlikely to be functional without manual effort to setup uImage, MLO, u-boot.bin and so as as appropriate for your hardware."
-fi
-for func in $DEPLOY_STEPS; do
-  $func
-done
-
+#!/usr/bin/env python
+
+import atexit
+import os
+import sys
+import tempfile
+import time
+from subprocess import Popen
+
+from media_create.check_device import (
+    confirm_device_selection_and_ensure_it_is_ready)
+from media_create.ensure_command import ensure_command
+from media_create.hwpack import install_hwpacks
+from media_create.partitions import (
+    Media,
+    setup_partitions,
+    )
+from media_create.populate_boot import populate_boot
+from media_create.remove_binary_dir import remove_dir
+from media_create.rootfs import populate_rootfs
+from media_create.unpack_binary_tarball import unpack_binary_tarball
+from media_create import (
+    get_args_parser,
+    get_board_config,
+    ROOTFS_UUID,
+    )
+
+
+TMP_DIR = tempfile.mkdtemp()
+ROOTFS_DIR = os.path.join(TMP_DIR, 'binary')
+BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
+ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
+
+
+# TODO: Play tricks with PYTHONPATH to make it possible to run this off of a
+# dev tree.
+
+# Registered as the first atexit handler as we want this to be the last
+# handler to execute.
+@atexit.register
+def cleanup_tempdir():
+    """Remove TEMP_DIR with all its contents.
+
+    Before doing so, make sure BOOT_DISK and ROOT_DISK are not mounted.
+    """
+    devnull = open('/dev/null', 'w')
+    # Use raw subprocess.Popen as we don't want to stop in case the
+    # commands end with a non-zero return code.
+    Popen(
+        ['sudo', 'umount', BOOT_DISK], stdout=devnull, stderr=devnull).wait()
+    Popen(
+        ['sudo', 'umount', ROOT_DISK], stdout=devnull, stderr=devnull).wait()
+    # Remove TMP_DIR as root because some files written there are
+    # owned by root.
+    Popen(['sudo', 'rm', '-rf', TMP_DIR]).wait()
+
+
+def ensure_required_commands(args):
+    """Ensure we have the commands that we know are going to be used."""
+    required_commands = [
+        ('sfdisk', 'util-linux'),
+        ('fdisk', 'util-linux'),
+        ('mkimage', 'uboot-mkimage'),
+        ('uuidgen', 'uuid-runtime'),
+        ('parted', 'parted'),
+        ]
+    if args.rootfs in ['ext2', 'ext3', 'ext4']:
+        required_commands.append(('mkfs.%s' % args.rootfs, 'e2fsprogs'))
+    else:
+        required_commands.append(('mkfs.btrfs', 'btrfs-tools'))
+    for command, package in required_commands:
+        ensure_command(command, package)
+
+
+if __name__ == '__main__':
+    parser = get_args_parser()
+    args = parser.parse_args()
+    board_config = get_board_config(
+        args.board, args.is_live, args.is_lowmem, args.consoles)
+
+    media = Media(args.device)
+    if media.is_block_device:
+        if not confirm_device_selection_and_ensure_it_is_ready(args.device):
+            sys.exit(1)
+    elif not args.should_format_rootfs or not args.should_format_bootfs:
+        print ("Do not use --no-boot or --no-part in conjunction with "
+               "--image_file.")
+        sys.exit(1)
+    else:
+        # All good, move on.
+        pass
+
+    # TODO: Combine these two into a single function.
+    remove_dir(ROOTFS_DIR)
+    unpack_binary_tarball(args.binary, TMP_DIR)
+
+    hwpacks = args.hwpacks
+    install_hwpacks(ROOTFS_DIR, TMP_DIR, args.hwpack_force_yes, *hwpacks)
+
+    boot_partition, root_partition = setup_partitions(
+        args.board, media, board_config['fat_size'], args.image_size,
+        args.boot_label, args.rfs_label, args.rootfs, ROOTFS_UUID,
+        args.should_create_partitions,
+        args.should_format_bootfs, args.should_format_rootfs)
+
+    if args.should_format_bootfs:
+        populate_boot(
+            args.board, board_config, ROOTFS_DIR, boot_partition, BOOT_DISK,
+            args.device, TMP_DIR, args.is_live)
+
+    if args.should_format_rootfs:
+        create_swap = False
+        if args.swap_file is not None:
+            create_swap = True
+        populate_rootfs(ROOTFS_DIR, ROOT_DISK, root_partition, args.rootfs,
+            ROOTFS_UUID, create_swap, str(args.swap_file),
+            board_config['mmc_part_offset'])
+
+    print "Done creating Linaro image on %s" % args.device
