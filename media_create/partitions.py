@@ -60,15 +60,7 @@ def setup_partitions(board, media, fat_size, image_size,
         # It looks like KDE somehow automounts the partitions after you
         # repartition a disk so we need to unmount them here to create the
         # filesystem.
-        try:
-            ensure_partition_is_not_mounted(bootfs)
-        except dbus.exceptions.DBusException:
-            # XXX: This is just debug code.
-            print "Failed when trying to ensure %s is not mounted" % bootfs
-            print "Current partition table on device:"
-            print cmd_runner.run(['fdisk', '-l', media.device]).wait()
-            print ("First unused loop device: ",
-                   cmd_runner.run(['losetup', '-f'], as_root=True).wait())
+        ensure_partition_is_not_mounted(bootfs)
         proc = cmd_runner.run(
             ['mkfs.vfat', '-F', str(fat_size), bootfs, '-n', bootfs_label],
             as_root=True)

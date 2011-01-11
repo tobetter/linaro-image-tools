@@ -4,7 +4,6 @@ import atexit
 import os
 import sys
 import tempfile
-import time
 from subprocess import Popen
 
 from media_create.check_device import (
@@ -31,9 +30,6 @@ ROOTFS_DIR = os.path.join(TMP_DIR, 'binary')
 BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
 ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
 
-
-# TODO: Play tricks with PYTHONPATH to make it possible to run this off of a
-# dev tree.
 
 # Registered as the first atexit handler as we want this to be the last
 # handler to execute.
