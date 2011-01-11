@@ -1,8 +1,8 @@
 import os
 import platform
 
-from media_create import cmd_runner
-from media_create.ensure_command import ensure_command
+from linaro_media_create import cmd_runner
+from linaro_media_create.ensure_command import ensure_command
 
 
 # It'd be nice if we could use atexit here, but all the things we need to undo

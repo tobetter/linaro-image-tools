@@ -8,7 +8,7 @@ from parted import (
     Disk,
     )
 
-from media_create import cmd_runner
+from linaro_media_create import cmd_runner
 
 
 HEADS = 255

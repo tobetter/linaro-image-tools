@@ -3,8 +3,8 @@ import shutil
 import subprocess
 import tempfile
 
-from media_create import partitions
-from media_create import cmd_runner
+from linaro_media_create import partitions
+from linaro_media_create import cmd_runner
 
 
 class CreateTempDirFixture(object):

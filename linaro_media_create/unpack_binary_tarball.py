@@ -1,4 +1,4 @@
-from media_create import cmd_runner
+from linaro_media_create import cmd_runner
 
 
 def unpack_binary_tarball(tarball, unpack_dir, as_root=True):

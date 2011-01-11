@@ -6,19 +6,19 @@ import sys
 import tempfile
 from subprocess import Popen
 
-from media_create.check_device import (
+from linaro_media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
-from media_create.ensure_command import ensure_command
-from media_create.hwpack import install_hwpacks
-from media_create.partitions import (
+from linaro_media_create.ensure_command import ensure_command
+from linaro_media_create.hwpack import install_hwpacks
+from linaro_media_create.partitions import (
     Media,
     setup_partitions,
     )
-from media_create.populate_boot import populate_boot
-from media_create.remove_binary_dir import remove_dir
-from media_create.rootfs import populate_rootfs
-from media_create.unpack_binary_tarball import unpack_binary_tarball
-from media_create import (
+from linaro_media_create.populate_boot import populate_boot
+from linaro_media_create.remove_binary_dir import remove_dir
+from linaro_media_create.rootfs import populate_rootfs
+from linaro_media_create.unpack_binary_tarball import unpack_binary_tarball
+from linaro_media_create import (
     get_args_parser,
     get_board_config,
     ROOTFS_UUID,

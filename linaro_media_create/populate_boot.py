@@ -2,7 +2,7 @@ import errno
 import glob
 import os
 
-from media_create import cmd_runner
+from linaro_media_create import cmd_runner
 
 
 def _run_mkimage(img_type, load_addr, entry_point, name, img_data, img,

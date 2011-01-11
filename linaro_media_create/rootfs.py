@@ -2,7 +2,7 @@ import glob
 import os
 import tempfile
 
-from media_create import cmd_runner
+from linaro_media_create import cmd_runner
 
 
 def populate_rootfs(content_dir, root_disk, partition, rootfs_type,

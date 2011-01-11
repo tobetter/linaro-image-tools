@@ -1,6 +1,6 @@
 import os.path
 
-from media_create import cmd_runner
+from linaro_media_create import cmd_runner
 
 
 def remove_dir(directory, as_root=True):
