@@ -1,6 +1,5 @@
 import glob
 import os
-import sys
 import tempfile
 
 from media_create import cmd_runner
@@ -112,15 +111,3 @@ def write_data_to_protected_file(path, data):
     with open(tmpfile, 'w') as fd:
         fd.write(data)
     cmd_runner.run(['mv', '-f', tmpfile, path], as_root=True).wait()
-
-
-if __name__ == '__main__':
-    (contents_dir, root_disk, partition, rootfs_type, rootfs_uuid, create_swap,
-        swap_size, partition_offset) = sys.argv[1:]
-    # The create_swap argument comes as a string containing either 1 or 0, so
-    # we convert it to int and then to boolean.
-    should_create_swap = bool(int(create_swap))
-    partition_offset = int(partition_offset)
-    populate_rootfs(
-        contents_dir, root_disk, partition, rootfs_type, rootfs_uuid,
-        should_create_swap, swap_size, partition_offset)

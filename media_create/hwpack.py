@@ -1,13 +1,14 @@
-import atexit
 import os
 import platform
-import shutil
-import sys
-import tempfile
 
 from media_create import cmd_runner
 from media_create.ensure_command import ensure_command
 
+
+# It'd be nice if we could use atexit here, but all the things we need to undo
+# have to happen right after install_hwpacks completes and the atexit
+# functions would only be called after l-m-c.py exits.
+local_atexit = []
 
 def install_hwpacks(chroot_dir, tmp_dir, hwpack_force_yes, *hwpack_files):
     """Install the given hwpacks onto the given chroot."""
@@ -37,6 +38,8 @@ def install_hwpacks(chroot_dir, tmp_dir, hwpack_force_yes, *hwpack_files):
     for hwpack_file in hwpack_files:
         install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes)
 
+    run_local_atexit_funcs()
+
 
 def install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes):
     """Install an hwpack on the given chroot.
@@ -60,7 +63,7 @@ def install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes):
 def mount_chroot_proc(chroot_dir):
     """Mount a /proc filesystem on the given chroot.
 
-    Also register an atexit function to unmount that /proc filesystem.
+    Also register a function in local_atexit to unmount that /proc filesystem.
     """
     chroot_proc = os.path.join(chroot_dir, 'proc')
     proc = cmd_runner.run(
@@ -68,7 +71,7 @@ def mount_chroot_proc(chroot_dir):
     proc.wait()
     def umount_chroot_proc():
         cmd_runner.run(['umount', '-v', chroot_proc], as_root=True).wait()
-    atexit.register(umount_chroot_proc)
+    local_atexit.append(umount_chroot_proc)
 
 
 def copy_file(filepath, directory):
@@ -76,23 +79,23 @@ def copy_file(filepath, directory):
 
     The copying of the file is done in a subprocess and run using sudo.
 
-    We also register an atexit function to remove the file from the given
-    directory.
+    We also register a function in local_atexit to remove the file from the
+    given directory.
     """
     cmd_runner.run(['cp', filepath, directory], as_root=True).wait()
 
     def undo():
         new_path = os.path.join(directory, os.path.basename(filepath))
         cmd_runner.run(['rm', '-f', new_path], as_root=True).wait()
-    atexit.register(undo)
+    local_atexit.append(undo)
 
 
 def temporarily_overwrite_file_on_dir(filepath, directory, tmp_dir):
     """Temporarily replace a file on the given directory.
 
     We'll move the existing file on the given directory to a temp dir, then
-    copy over the given file to that directory and register an atexit function
-    to move the orig file back to the given directory.
+    copy over the given file to that directory and register a function in
+    local_atexit to move the orig file back to the given directory.
     """
     basename = os.path.basename(filepath)
     path_to_orig = os.path.join(tmp_dir, basename)
@@ -106,14 +109,10 @@ def temporarily_overwrite_file_on_dir(filepath, directory, tmp_dir):
     def undo():
         cmd_runner.run(
             ['mv', '-f', path_to_orig, directory], as_root=True).wait()
-    atexit.register(undo)
+    local_atexit.append(undo)
 
 
-if __name__ == '__main__':
-    tmp_dir = tempfile.mkdtemp()
-    atexit.register(shutil.rmtree, tmp_dir)
-    chroot_dir, hwpack_force_yes = sys.argv[1:3]
-    if hwpack_force_yes == "yes":
-        hwpack_force_yes = True
-    hwpacks = sys.argv[3:]
-    install_hwpacks(chroot_dir, tmp_dir, hwpack_force_yes, *hwpacks)
+def run_local_atexit_funcs():
+    # Run the funcs in LIFO order, just like atexit does.
+    while len(local_atexit) > 0:
+        local_atexit.pop()()

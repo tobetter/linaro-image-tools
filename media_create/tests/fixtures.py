@@ -99,19 +99,6 @@ class MockCmdRunnerPopenFixture(MockSomethingFixture):
             cmd_runner, 'Popen', mock)
 
 
-class ChangeCurrentWorkingDirFixture(object):
-
-    def __init__(self, dir):
-        self.dir = dir
-        self.orig_cwd = os.getcwd()
-
-    def setUp(self):
-        os.chdir(self.dir)
-
-    def tearDown(self):
-        os.chdir(self.orig_cwd)
-
-
 class MockCallableWithPositionalArgs(object):
     """A callable mock which just stores the positional args given to it.
 
