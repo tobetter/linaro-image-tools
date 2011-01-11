@@ -13,7 +13,7 @@ from testtools.matchers import Mismatch
 
 from hwpack.testing import TestCaseWithFixtures
 
-from media_create import (
+from linaro_media_create import (
     check_device,
     cmd_runner,
     ensure_command,
@@ -23,7 +23,7 @@ from media_create import (
     rootfs,
     ROOTFS_UUID,
     )
-from media_create.hwpack import (
+from linaro_media_create.hwpack import (
     copy_file,
     install_hwpack,
     install_hwpacks,
@@ -31,7 +31,7 @@ from media_create.hwpack import (
     run_local_atexit_funcs,
     temporarily_overwrite_file_on_dir,
     )
-from media_create.partitions import (
+from linaro_media_create.partitions import (
     calculate_partition_size_and_offset,
     convert_size_to_bytes,
     create_partitions,
@@ -42,24 +42,24 @@ from media_create.partitions import (
     run_sfdisk_commands,
     setup_partitions,
     )
-from media_create.populate_boot import (
+from linaro_media_create.populate_boot import (
     make_boot_script,
     make_uImage,
     make_uInitrd,
     _get_file_matching,
     _run_mkimage,
     )
-from media_create.remove_binary_dir import remove_dir
-from media_create.rootfs import (
+from linaro_media_create.remove_binary_dir import remove_dir
+from linaro_media_create.rootfs import (
     create_flash_kernel_config,
     has_space_left_for_swap,
     move_contents,
     populate_rootfs,
     write_data_to_protected_file,
     )
-from media_create.unpack_binary_tarball import unpack_binary_tarball
+from linaro_media_create.unpack_binary_tarball import unpack_binary_tarball
 
-from media_create.tests.fixtures import (
+from linaro_media_create.tests.fixtures import (
     CreateTempDirFixture,
     CreateTarballFixture,
     MockCmdRunnerPopenFixture,
@@ -1028,7 +1028,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
              ['sudo', 'mv', '-f', 'chroot/etc/hosts', '/tmp/dir/hosts'],
              ['sudo', 'cp', '/etc/hosts', 'chroot/etc'],
              ['sudo', 'cp', '/usr/bin/qemu-arm-static', 'chroot/usr/bin'],
-             ['sudo', 'cp', 'media_create/../linaro-hwpack-install',
+             ['sudo', 'cp', 'linaro_media_create/../linaro-hwpack-install',
               'chroot/usr/bin'],
              ['sudo', 'mount', 'proc', 'chroot/proc', '-t', 'proc'],
              ['sudo', 'cp', 'hwpack1.tgz', 'chroot'],

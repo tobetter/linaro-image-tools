@@ -3,7 +3,7 @@ import sys
 
 import dbus
 
-from media_create import partitions
+from linaro_media_create import partitions
 
 
 def _get_system_bus_and_udisks_iface():

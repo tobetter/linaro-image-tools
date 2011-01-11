@@ -4,12 +4,12 @@ they are not meant to be automated.
 
     # This should print nothing to stdout but will unpack the given binary
     # tarball under the given directory.
-    >>> from media_create.unpack_binary_tarball import unpack_binary_tarball
+    >>> from linaro_media_create.unpack_binary_tarball import unpack_binary_tarball
     >>> unpack_binary_tarball(<path-to-binary-tarball>, <dir-to-unpack>)
 
     # Partition (for real!) /dev/sdb for a beagle board and return the devices
     # for the boot and root partitions.
-    >>> from media_create.partitions import Media, setup_partitions
+    >>> from linaro_media_create.partitions import Media, setup_partitions
     >>> setup_partitions('beagle', Media('/dev/sdb'), 32, None, 'boot',
     ...     'root', 'ext3', '2e82008e-1af3-4699-8521-3bf5bac1e67a', True,
     ...     True, True)

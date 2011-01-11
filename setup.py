@@ -20,5 +20,5 @@ def get_version():
 setup(
         name="hwpack",
         version=get_version(),
-        packages=["hwpack", "media_create"],
+        packages=["hwpack", "linaro_media_create"],
      )
