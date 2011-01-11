@@ -100,7 +100,6 @@ def get_board_config(board, is_live, is_lowmem, consoles):
     boot_args_options = 'rootwait ro'
     uboot_flavor = None
     fat_size = 32
-    assert board in KNOWN_BOARDS
     serial_opts = ''
     if consoles is not None:
         for console in consoles:
@@ -172,6 +171,7 @@ def get_board_config(board, is_live, is_lowmem, consoles):
         initrd_addr = '0x81000000'
         load_addr = kernel_addr
         sub_arch = 'linaro-vexpress'
+        boot_script = None
         # ARM Boot Monitor is used to load u-boot, uImage etc. into flash and
         # only allows for FAT16
         fat_size = 16

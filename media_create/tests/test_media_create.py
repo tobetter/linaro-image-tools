@@ -215,17 +215,83 @@ class TestGetBoardConfig(TestCase):
         'sub_arch': 'ux500',
         'uboot_flavor': None}
 
+    expected_vexpress_config = {
+        'boot_args_options': 'rootwait ro',
+        'boot_cmd': (
+            "setenv bootcmd 'fatload mmc 0:1 0x60008000 uImage; fatload mmc "
+            "0:1 0x81000000 uInitrd; bootm 0x60008000 0x81000000'\nsetenv "
+            "bootargs ' console = tty0 console = ttyAMA0,38400n8  "
+            "root=UUID=%s rootwait ro'\nboot" % ROOTFS_UUID),
+        'boot_script': None,
+        'fat_size': 16,
+        'initrd_addr': '0x81000000',
+        'kernel_addr': '0x60008000',
+        'load_addr': '0x60008000',
+        'mmc_option': '0:1',
+        'mmc_part_offset': 0,
+        'serial_opts': ' console = tty0 console = ttyAMA0,38400n8',
+        'sub_arch': 'linaro-vexpress',
+        'uboot_flavor': 'ca9x4_ct_vxp'}
+
+    expected_mx51evk_config = {
+        'boot_args_options': 'rootwait ro',
+        'boot_cmd': (
+            "setenv bootcmd 'fatload mmc 0:2 0x90000000 uImage; fatload mmc "
+            "0:2 0x90800000 uInitrd; bootm 0x90000000 0x90800000'\nsetenv "
+            "bootargs ' console = tty0 console = ttymxc0,115200n8  "
+            "root=UUID=%s rootwait ro'\nboot" % ROOTFS_UUID),
+        'boot_script': 'boot.scr',
+        'fat_size': 32,
+        'initrd_addr': '0x90800000',
+        'kernel_addr': '0x90000000',
+        'load_addr': '0x90008000',
+        'mmc_option': '0:2',
+        'mmc_part_offset': 1,
+        'serial_opts': ' console = tty0 console = ttymxc0,115200n8',
+        'sub_arch': 'linaro-mx51',
+        'uboot_flavor': None}
+
+    def test_unknown_board(self):
+        self.assertRaises(
+            ValueError, get_board_config, 'foobar', is_live=True,
+            is_lowmem=False, consoles=None)
+
     def test_vexpress_live(self):
-        self.fail("TODO")
+        config = get_board_config(
+            'vexpress', is_live=True, is_lowmem=False, consoles=None)
+        expected = self.expected_vexpress_config.copy()
+        expected['boot_cmd'] = (
+            "setenv bootcmd 'fatload mmc 0:1 0x60008000 uImage; fatload mmc "
+            "0:1 0x81000000 uInitrd; bootm 0x60008000 0x81000000'\nsetenv "
+            "bootargs ' console = tty0 console = ttyAMA0,38400n8 "
+            "serialtty = ttyAMA0  boot=casper rootwait ro'\nboot")
+        expected['serial_opts'] = (
+            ' console = tty0 console = ttyAMA0,38400n8 serialtty = ttyAMA0')
+        self.assertThat(expected, IsEqualToDict(config))
 
     def test_vexpress(self):
-        self.fail("TODO")
+        config = get_board_config(
+            'vexpress', is_live=False, is_lowmem=False, consoles=None)
+        self.assertThat(self.expected_vexpress_config, IsEqualToDict(config))
 
     def test_mx51evk_live(self):
-        self.fail("TODO")
+        config = get_board_config(
+            'mx51evk', is_live=True, is_lowmem=False, consoles=None)
+        expected = self.expected_mx51evk_config.copy()
+        expected['boot_cmd'] = (
+            "setenv bootcmd 'fatload mmc 0:2 0x90000000 uImage; "
+            "fatload mmc 0:2 0x90800000 uInitrd; bootm 0x90000000 "
+            "0x90800000'\nsetenv bootargs ' console = tty0 "
+            "console = ttymxc0,115200n8 serialtty = ttymxc0  boot=casper "
+            "rootwait ro'\nboot")
+        expected['serial_opts'] = (
+            ' console = tty0 console = ttymxc0,115200n8 serialtty = ttymxc0')
+        self.assertThat(expected, IsEqualToDict(config))
 
     def test_mx51evk(self):
-        self.fail("TODO")
+        config = get_board_config(
+            'mx51evk', is_live=False, is_lowmem=False, consoles=None)
+        self.assertThat(self.expected_mx51evk_config, IsEqualToDict(config))
 
     def test_ux500_live(self):
         config = get_board_config(
