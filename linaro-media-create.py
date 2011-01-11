@@ -75,7 +75,8 @@ def ensure_required_commands(args):
 if __name__ == '__main__':
     parser = get_args_parser()
     args = parser.parse_args()
-    board_config = get_board_config(args)
+    board_config = get_board_config(
+        args.board, args.is_live, args.is_lowmem, args.consoles)
 
     media = Media(args.device)
     if media.is_block_device:
