@@ -2,13 +2,10 @@ A few integration tests we can run while the migration to python is not
 complete.  They probably require root or access to specific block devices so
 they are not meant to be automated.
 
-    # This should print nothing to stdout but will create a binary/ dir under
-    # the current directory.
-    >>> python -m media_create.unpack_binary_tarball <path-to-binary-tarball>
-    ...     $(mktemp -d)
-
-    # This will remove the binary/ dir created above
-    >>> python -m media_create.remove_binary_dir
+    # This should print nothing to stdout but will unpack the given binary
+    # tarball under the given directory.
+    >>> from media_create.unpack_binary_tarball import unpack_binary_tarball
+    >>> unpack_binary_tarball(<path-to-binary-tarball>, <dir-to-unpack>)
 
     # Partition (for real!) /dev/sdb for a beagle board and return the devices
     # for the boot and root partitions.
