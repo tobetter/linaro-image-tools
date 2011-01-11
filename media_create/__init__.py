@@ -74,7 +74,7 @@ def get_args_parser():
         help=('The image size, specified in mega/giga bytes (e.g. 3000M or '
               '3G); use with --image_file only'))
     parser.add_argument(
-        '--binary', default='binary-tar.tar.gz',
+        '--binary', default='binary-tar.tar.gz', required=True,
         help=('The tarball containing the rootfs used to create the bootable '
               'system.'))
     parser.add_argument(
