@@ -89,7 +89,7 @@ def get_args_parser():
     return parser
 
 
-def get_board_config(args):
+def get_board_config(board, is_live, is_lowmem, consoles):
     """Return a dict containing the configs to create an image for a board.
 
     :param args: An argparse.ArgumentParser object containing the arguments
@@ -100,17 +100,15 @@ def get_board_config(args):
     boot_args_options = 'rootwait ro'
     uboot_flavor = None
     fat_size = 32
-    board = args.board
     assert board in KNOWN_BOARDS
-    is_live = args.is_live
     serial_opts = ''
-    if args.consoles is not None:
-        for console in args.consoles:
+    if consoles is not None:
+        for console in consoles:
             serial_opts += ' console=%s' % console
 
         # XXX: I think this is not needed as we have board-specific
         # serial options for when is_live is true.
-        if args.is_live:
+        if is_live:
             serial_opts += ' serialtty=ttyS2'
 
     if board in ('beagle', 'igep'):
@@ -183,10 +181,10 @@ def get_board_config(args):
 
     lowmem_opt = ''
     boot_snippet = 'root=UUID=%s' % ROOTFS_UUID
-    if args.is_live:
+    if is_live:
         serial_opts += ' %s' % live_serial_opts
         boot_snippet = 'boot=casper'
-        if args.is_lowmem:
+        if is_lowmem:
             lowmem_opt = 'only-ubiquity'
 
     boot_cmd = (
