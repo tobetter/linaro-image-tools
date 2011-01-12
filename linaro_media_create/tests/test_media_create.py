@@ -9,7 +9,6 @@ import sys
 import time
 
 from testtools import TestCase
-from testtools.matchers import Mismatch
 
 from hwpack.testing import TestCaseWithFixtures
 
@@ -17,10 +16,12 @@ from linaro_media_create import (
     check_device,
     cmd_runner,
     ensure_command,
-    get_board_config,
     populate_boot,
     partitions,
     rootfs,
+    )
+from linaro_media_create.boards import (
+    board_configs,
     ROOTFS_UUID,
     )
 from linaro_media_create.hwpack import (
@@ -92,110 +93,32 @@ class TestEnsureCommand(TestCase):
         ensure_command.apt_get_install = orig_func
 
 
-class IsEqualToDict(object):
-    """A testtools matcher to compare dicts.
+class TestGetBootCmd(TestCase):
 
-    When there are differences, only the differing keys/values are shown.
-    """
+    def test_vexpress(self):
+        boot_cmd = board_configs['vexpress'].get_boot_cmd(
+            is_live=False, is_lowmem=False, consoles=None)
+        expected = (
+            "setenv bootcmd 'fatload mmc 0:1 0x60008000 uImage; fatload mmc "
+            "0:1 0x81000000 uInitrd; bootm 0x60008000 0x81000000'\nsetenv "
+            "bootargs ' console = tty0 console = ttyAMA0,38400n8  "
+            "root=UUID=%s rootwait ro'\nboot" % ROOTFS_UUID)
+        self.assertEqual(expected, boot_cmd)
 
-    def __init__(self, expected):
-        self.expected = expected
+    def test_mx51evk(self):
+        boot_cmd = board_configs['mx51evk'].get_boot_cmd(
+            is_live=False, is_lowmem=False, consoles=None)
+        expected = (
+            "setenv bootcmd 'fatload mmc 0:2 0x90000000 uImage; fatload mmc "
+            "0:2 0x90800000 uInitrd; bootm 0x90000000 0x90800000'\nsetenv "
+            "bootargs ' console = tty0 console = ttymxc0,115200n8  "
+            "root=UUID=%s rootwait ro'\nboot" % ROOTFS_UUID)
+        self.assertEqual(expected, boot_cmd)
 
-    def match(self, actual):
-        actual_keys = set(actual.keys())
-        expected_keys = set(self.expected.keys())
-        instersection = actual_keys.intersection(expected_keys)
-        expected_only_keys = expected_keys.difference(actual_keys)
-        actual_only_keys = actual_keys.difference(expected_keys)
-        keys_with_differing_values = []
-        for key in instersection:
-            if actual[key] != self.expected[key]:
-                keys_with_differing_values.append(key)
-
-        if (len(expected_only_keys) == 0 and len(actual_only_keys) == 0
-            and len(keys_with_differing_values) == 0):
-            return None
-
-        expected_diffs = []
-        for key in keys_with_differing_values + list(expected_only_keys):
-            expected_diffs.append("%s: %r" % (key, self.expected[key]))
-        expected_diffs = "\n".join(expected_diffs)
-
-        actual_diffs = []
-        for key in keys_with_differing_values + list(actual_only_keys):
-            actual_diffs.append("%s: %r" % (key, actual[key]))
-        actual_diffs = "\n".join(actual_diffs)
-
-        mismatch_string = "\na = %s\n" % expected_diffs
-        mismatch_string += "=" * 60 + "\n"
-        mismatch_string += "b = %s" % actual_diffs
-        return IsEqualToDictMismatch(self.expected, mismatch_string, actual)
-
-
-class IsEqualToDictMismatch(Mismatch):
-
-    def __init__(self, expected, mismatch_string, other):
-        self.expected = expected
-        self._mismatch_string = mismatch_string
-        self.other = other
-
-    def describe(self):
-        return self._mismatch_string
-
-
-class TestGetBoardConfig(TestCase):
-
-    expected_beagle_config = {
-        'boot_cmd': (
-            "setenv bootcmd 'fatload mmc 0:1 0x80000000 uImage; "
-            "fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 "
-            "0x81600000'\nsetenv bootargs ' console=tty0 "
-            "console=ttyS2,115200n8  root=UUID=%s rootwait ro earlyprintk "
-            "fixrtc nocompcache vram=12M omapfb.debug=y "
-            "omapfb.mode=dvi:1280x720MR-16@60'\nboot" % ROOTFS_UUID),
-        'boot_args_options': (
-            'rootwait ro earlyprintk fixrtc nocompcache vram=12M '
-            'omapfb.debug=y omapfb.mode=dvi:1280x720MR-16@60'),
-        'boot_script': 'boot.scr',
-        'fat_size': 32,
-        'initrd_addr': '0x81600000',
-        'kernel_addr': '0x80000000',
-        'load_addr': '0x80008000',
-        'mmc_option': '0:1',
-        'mmc_part_offset': 0,
-        'serial_opts': ' console=tty0 console=ttyS2,115200n8',
-        'sub_arch': 'linaro-omap',
-        'uboot_flavor': 'omap3_beagle'}
-
-    expected_panda_config = {
-        'boot_cmd': (
-            "setenv bootcmd 'fatload mmc 0:1 0x80200000 uImage; fatload mmc "
-            "0:1 0x81600000 uInitrd; bootm 0x80200000 0x81600000'\nsetenv "
-            "bootargs ' console = tty0 console = ttyO2,115200n8  "
-            "root=UUID=%s rootwait ro earlyprintk fixrtc nocompcache "
-            "vram = 32M omapfb.debug = y omapfb.vram = 0:8M mem = 463M "
-            "ip = none'\nboot" % ROOTFS_UUID),
-        'boot_args_options': (
-            'rootwait ro earlyprintk fixrtc nocompcache vram = 32M '
-            'omapfb.debug = y omapfb.vram = 0:8M mem = 463M ip = none'),
-        'boot_script': 'boot.scr',
-        'fat_size': 32,
-        'initrd_addr': '0x81600000',
-        'kernel_addr': '0x80200000',
-        'load_addr': '0x80008000',
-        'mmc_option': '0:1',
-        'mmc_part_offset': 0,
-        'serial_opts': ' console = tty0 console = ttyO2,115200n8',
-        'sub_arch': 'omap4',
-        'uboot_flavor': 'omap4_panda'}
-
-    expected_ux500_config = {
-        'boot_args_options': (
-            'rootwait ro earlyprintk rootdelay = 1 fixrtc nocompcache '
-            'mem = 96M@0 mem_modem = 32M@96M mem = 44M@128M pmem = 22M@172M '
-            'mem = 30M@194M mem_mali = 32M@224M pmem_hwb = 54M@256M '
-            'hwmem = 48M@302M mem = 152M@360M'),
-        'boot_cmd': (
+    def test_ux500(self):
+        boot_cmd = board_configs['ux500'].get_boot_cmd(
+            is_live=False, is_lowmem=False, consoles=None)
+        expected = (
             "setenv bootcmd 'fatload mmc 1:1 0x00100000 uImage; fatload mmc "
             "1:1 0x08000000 uInitrd; bootm 0x00100000 0x08000000'\nsetenv "
             "bootargs ' console = tty0 console = ttyAMA2,115200n8  "
@@ -203,160 +126,32 @@ class TestGetBoardConfig(TestCase):
             "nocompcache mem = 96M@0 mem_modem = 32M@96M mem = 44M@128M "
             "pmem = 22M@172M mem = 30M@194M mem_mali = 32M@224M "
             "pmem_hwb = 54M@256M hwmem = 48M@302M mem = 152M@360M'\nboot"
-            % ROOTFS_UUID),
-        'boot_script': 'flash.scr',
-        'fat_size': 32,
-        'initrd_addr': '0x08000000',
-        'kernel_addr': '0x00100000',
-        'load_addr': '0x00008000',
-        'mmc_option': '1:1',
-        'mmc_part_offset': 0,
-        'serial_opts': ' console = tty0 console = ttyAMA2,115200n8',
-        'sub_arch': 'ux500',
-        'uboot_flavor': None}
-
-    expected_vexpress_config = {
-        'boot_args_options': 'rootwait ro',
-        'boot_cmd': (
-            "setenv bootcmd 'fatload mmc 0:1 0x60008000 uImage; fatload mmc "
-            "0:1 0x81000000 uInitrd; bootm 0x60008000 0x81000000'\nsetenv "
-            "bootargs ' console = tty0 console = ttyAMA0,38400n8  "
-            "root=UUID=%s rootwait ro'\nboot" % ROOTFS_UUID),
-        'boot_script': None,
-        'fat_size': 16,
-        'initrd_addr': '0x81000000',
-        'kernel_addr': '0x60008000',
-        'load_addr': '0x60008000',
-        'mmc_option': '0:1',
-        'mmc_part_offset': 0,
-        'serial_opts': ' console = tty0 console = ttyAMA0,38400n8',
-        'sub_arch': 'linaro-vexpress',
-        'uboot_flavor': 'ca9x4_ct_vxp'}
-
-    expected_mx51evk_config = {
-        'boot_args_options': 'rootwait ro',
-        'boot_cmd': (
-            "setenv bootcmd 'fatload mmc 0:2 0x90000000 uImage; fatload mmc "
-            "0:2 0x90800000 uInitrd; bootm 0x90000000 0x90800000'\nsetenv "
-            "bootargs ' console = tty0 console = ttymxc0,115200n8  "
-            "root=UUID=%s rootwait ro'\nboot" % ROOTFS_UUID),
-        'boot_script': 'boot.scr',
-        'fat_size': 32,
-        'initrd_addr': '0x90800000',
-        'kernel_addr': '0x90000000',
-        'load_addr': '0x90008000',
-        'mmc_option': '0:2',
-        'mmc_part_offset': 1,
-        'serial_opts': ' console = tty0 console = ttymxc0,115200n8',
-        'sub_arch': 'linaro-mx51',
-        'uboot_flavor': None}
-
-    def test_unknown_board(self):
-        self.assertRaises(
-            ValueError, get_board_config, 'foobar', is_live=True,
-            is_lowmem=False, consoles=None)
-
-    def test_vexpress_live(self):
-        config = get_board_config(
-            'vexpress', is_live=True, is_lowmem=False, consoles=None)
-        expected = self.expected_vexpress_config.copy()
-        expected['boot_cmd'] = (
-            "setenv bootcmd 'fatload mmc 0:1 0x60008000 uImage; fatload mmc "
-            "0:1 0x81000000 uInitrd; bootm 0x60008000 0x81000000'\nsetenv "
-            "bootargs ' console = tty0 console = ttyAMA0,38400n8 "
-            "serialtty = ttyAMA0  boot=casper rootwait ro'\nboot")
-        expected['serial_opts'] = (
-            ' console = tty0 console = ttyAMA0,38400n8 serialtty = ttyAMA0')
-        self.assertThat(expected, IsEqualToDict(config))
-
-    def test_vexpress(self):
-        config = get_board_config(
-            'vexpress', is_live=False, is_lowmem=False, consoles=None)
-        self.assertThat(self.expected_vexpress_config, IsEqualToDict(config))
-
-    def test_mx51evk_live(self):
-        config = get_board_config(
-            'mx51evk', is_live=True, is_lowmem=False, consoles=None)
-        expected = self.expected_mx51evk_config.copy()
-        expected['boot_cmd'] = (
-            "setenv bootcmd 'fatload mmc 0:2 0x90000000 uImage; "
-            "fatload mmc 0:2 0x90800000 uInitrd; bootm 0x90000000 "
-            "0x90800000'\nsetenv bootargs ' console = tty0 "
-            "console = ttymxc0,115200n8 serialtty = ttymxc0  boot=casper "
-            "rootwait ro'\nboot")
-        expected['serial_opts'] = (
-            ' console = tty0 console = ttymxc0,115200n8 serialtty = ttymxc0')
-        self.assertThat(expected, IsEqualToDict(config))
-
-    def test_mx51evk(self):
-        config = get_board_config(
-            'mx51evk', is_live=False, is_lowmem=False, consoles=None)
-        self.assertThat(self.expected_mx51evk_config, IsEqualToDict(config))
-
-    def test_ux500_live(self):
-        config = get_board_config(
-            'ux500', is_live=True, is_lowmem=False, consoles=None)
-        boot_cmd = (
-            "setenv bootcmd 'fatload mmc 1:1 0x00100000 uImage; fatload "
-            "mmc 1:1 0x08000000 uInitrd; bootm 0x00100000 0x08000000'\n"
-            "setenv bootargs ' console = tty0 console = ttyAMA2,115200n8 "
-            "serialtty = ttyAMA2  boot=casper rootwait ro earlyprintk "
-            "rootdelay = 1 fixrtc nocompcache mem = 96M@0 "
-            "mem_modem = 32M@96M mem = 44M@128M pmem = 22M@172M "
-            "mem = 30M@194M mem_mali = 32M@224M pmem_hwb = 54M@256M "
-            "hwmem = 48M@302M mem = 152M@360M'\nboot")
-        expected = self.expected_ux500_config.copy()
-        expected['boot_cmd'] = boot_cmd
-        expected['serial_opts'] = (
-            ' console = tty0 console = ttyAMA2,115200n8 serialtty = ttyAMA2')
-        self.assertThat(expected, IsEqualToDict(config))
-
-    def test_ux500(self):
-        config = get_board_config(
-            'ux500', is_live=False, is_lowmem=False, consoles=None)
-        self.assertThat(self.expected_ux500_config, IsEqualToDict(config))
+            % ROOTFS_UUID)
+        self.assertEqual(expected, boot_cmd)
 
     def test_panda(self):
-        config = get_board_config(
-            'panda', is_live=False, is_lowmem=False, consoles=None)
-        self.assertThat(self.expected_panda_config, IsEqualToDict(config))
-
-    def test_panda_live(self):
-        config = get_board_config(
-            'panda', is_live=True, is_lowmem=False, consoles=None)
-        boot_cmd = (
-            "setenv bootcmd 'fatload mmc 0:1 0x80200000 uImage; "
-            "fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80200000 "
-            "0x81600000'\nsetenv bootargs ' console = tty0 "
-            "console = ttyO2,115200n8 serialtty = ttyO2  boot=casper "
-            "rootwait ro earlyprintk fixrtc nocompcache vram = 32M "
-            "omapfb.debug = y omapfb.vram = 0:8M mem = 463M ip = none'\nboot")
-        expected = self.expected_panda_config.copy()
-        expected['boot_cmd'] = boot_cmd
-        expected['serial_opts'] = (
-            ' console = tty0 console = ttyO2,115200n8 serialtty = ttyO2')
-        self.assertThat(expected, IsEqualToDict(config))
+        boot_cmd = board_configs['panda'].get_boot_cmd(
+            is_live=False, is_lowmem=False, consoles=None)
+        expected = (
+            "setenv bootcmd 'fatload mmc 0:1 0x80200000 uImage; fatload mmc "
+            "0:1 0x81600000 uInitrd; bootm 0x80200000 0x81600000'\nsetenv "
+            "bootargs ' console = tty0 console = ttyO2,115200n8  "
+            "root=UUID=%s rootwait ro earlyprintk fixrtc nocompcache "
+            "vram = 32M omapfb.debug = y omapfb.vram = 0:8M mem = 463M "
+            "ip = none'\nboot" % ROOTFS_UUID)
+        self.assertEqual(expected, boot_cmd)
 
     def test_beagle(self):
-        config = get_board_config(
-            'beagle', is_live=False, is_lowmem=False, consoles=None)
-        self.assertThat(self.expected_beagle_config, IsEqualToDict(config))
-
-    def test_beagle_live(self):
-        config = get_board_config(
-            'beagle', is_live=True, is_lowmem=False, consoles=None)
-        boot_cmd = (
+        boot_cmd = board_configs['beagle'].get_boot_cmd(
+            is_live=False, is_lowmem=False, consoles=None)
+        expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x80000000 uImage; "
             "fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 "
             "0x81600000'\nsetenv bootargs ' console=tty0 "
-            "console=ttyS2,115200n8 serialtty=ttyS2  boot=casper rootwait ro "
-            "earlyprintk fixrtc nocompcache vram=12M omapfb.debug=y "
-            "omapfb.mode=dvi:1280x720MR-16@60'\nboot")
-        expected = self.expected_beagle_config.copy()
-        expected['boot_cmd'] = boot_cmd
-        expected['serial_opts'] = (
-            ' console=tty0 console=ttyS2,115200n8 serialtty=ttyS2')
-        self.assertThat(expected, IsEqualToDict(config))
+            "console=ttyS2,115200n8  root=UUID=%s rootwait ro earlyprintk "
+            "fixrtc nocompcache vram=12M omapfb.debug=y "
+            "omapfb.mode=dvi:1280x720MR-16@60'\nboot" % ROOTFS_UUID)
+        self.assertEqual(expected, boot_cmd)
 
 
 class TestRemoveBinaryDir(TestCaseWithFixtures):
