@@ -6,6 +6,7 @@ import random
 import string
 import subprocess
 import sys
+import tempfile
 import time
 
 from testtools import TestCase
@@ -16,13 +17,18 @@ from linaro_media_create import (
     check_device,
     cmd_runner,
     ensure_command,
-    populate_boot,
+    boards,
     partitions,
     rootfs,
     )
 from linaro_media_create.boards import (
     board_configs,
+    make_boot_script,
+    make_uImage,
+    make_uInitrd,
     ROOTFS_UUID,
+    _get_file_matching,
+    _run_mkimage,
     )
 from linaro_media_create.hwpack import (
     copy_file,
@@ -42,13 +48,6 @@ from linaro_media_create.partitions import (
     Media,
     run_sfdisk_commands,
     setup_partitions,
-    )
-from linaro_media_create.populate_boot import (
-    make_boot_script,
-    make_uImage,
-    make_uInitrd,
-    _get_file_matching,
-    _run_mkimage,
     )
 from linaro_media_create.remove_binary_dir import remove_dir
 from linaro_media_create.rootfs import (
@@ -96,7 +95,7 @@ class TestEnsureCommand(TestCase):
 class TestGetBootCmd(TestCase):
 
     def test_vexpress(self):
-        boot_cmd = board_configs['vexpress'].get_boot_cmd(
+        boot_cmd = board_configs['vexpress']._get_boot_cmd(
             is_live=False, is_lowmem=False, consoles=None)
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x60008000 uImage; fatload mmc "
@@ -106,7 +105,7 @@ class TestGetBootCmd(TestCase):
         self.assertEqual(expected, boot_cmd)
 
     def test_mx51evk(self):
-        boot_cmd = board_configs['mx51evk'].get_boot_cmd(
+        boot_cmd = board_configs['mx51evk']._get_boot_cmd(
             is_live=False, is_lowmem=False, consoles=None)
         expected = (
             "setenv bootcmd 'fatload mmc 0:2 0x90000000 uImage; fatload mmc "
@@ -116,7 +115,7 @@ class TestGetBootCmd(TestCase):
         self.assertEqual(expected, boot_cmd)
 
     def test_ux500(self):
-        boot_cmd = board_configs['ux500'].get_boot_cmd(
+        boot_cmd = board_configs['ux500']._get_boot_cmd(
             is_live=False, is_lowmem=False, consoles=None)
         expected = (
             "setenv bootcmd 'fatload mmc 1:1 0x00100000 uImage; fatload mmc "
@@ -130,7 +129,7 @@ class TestGetBootCmd(TestCase):
         self.assertEqual(expected, boot_cmd)
 
     def test_panda(self):
-        boot_cmd = board_configs['panda'].get_boot_cmd(
+        boot_cmd = board_configs['panda']._get_boot_cmd(
             is_live=False, is_lowmem=False, consoles=None)
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x80200000 uImage; fatload mmc "
@@ -142,7 +141,7 @@ class TestGetBootCmd(TestCase):
         self.assertEqual(expected, boot_cmd)
 
     def test_beagle(self):
-        boot_cmd = board_configs['beagle'].get_boot_cmd(
+        boot_cmd = board_configs['beagle']._get_boot_cmd(
             is_live=False, is_lowmem=False, consoles=None)
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x80000000 uImage; "
@@ -229,7 +228,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
     def _mock_get_file_matching(self):
         self.useFixture(MockSomethingFixture(
-            populate_boot, '_get_file_matching',
+            boards, '_get_file_matching',
             lambda regex: regex))
 
     def _mock_Popen(self):
@@ -258,14 +257,15 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.assertEqual([expected], fixture.mock.calls)
 
     def test_make_boot_script(self):
+        self.useFixture(MockSomethingFixture(
+            tempfile, 'mkstemp', lambda: (-1, '/tmp/random-abxzr')))
         self._mock_get_file_matching()
         fixture = self._mock_Popen()
-        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
-        make_boot_script('boot script data', tempdir, 'boot_script')
+        make_boot_script('boot script data', 'boot_script')
         expected = [
             'sudo', 'mkimage', '-A', 'arm', '-O', 'linux', '-T', 'script',
             '-C', 'none', '-a', '0', '-e', '0', '-n', 'boot script',
-            '-d', '%s/boot.cmd' % tempdir, 'boot_script']
+            '-d', '/tmp/random-abxzr', 'boot_script']
         self.assertEqual([expected], fixture.mock.calls)
 
     def test_get_file_matching(self):
