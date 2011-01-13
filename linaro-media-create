@@ -6,6 +6,10 @@ import sys
 import tempfile
 from subprocess import Popen
 
+from linaro_media_create.boards import (
+    board_configs,
+    ROOTFS_UUID,
+    )
 from linaro_media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
 from linaro_media_create.ensure_command import ensure_command
@@ -18,11 +22,7 @@ from linaro_media_create.populate_boot import populate_boot
 from linaro_media_create.remove_binary_dir import remove_dir
 from linaro_media_create.rootfs import populate_rootfs
 from linaro_media_create.unpack_binary_tarball import unpack_binary_tarball
-from linaro_media_create import (
-    get_args_parser,
-    get_board_config,
-    ROOTFS_UUID,
-    )
+from linaro_media_create import get_args_parser
 
 
 TMP_DIR = tempfile.mkdtemp()
@@ -71,8 +71,7 @@ def ensure_required_commands(args):
 if __name__ == '__main__':
     parser = get_args_parser()
     args = parser.parse_args()
-    board_config = get_board_config(
-        args.board, args.is_live, args.is_lowmem, args.consoles)
+    board_config = board_configs[args.board]
 
     media = Media(args.device)
     if media.is_block_device:
@@ -94,7 +93,7 @@ if __name__ == '__main__':
     install_hwpacks(ROOTFS_DIR, TMP_DIR, args.hwpack_force_yes, *hwpacks)
 
     boot_partition, root_partition = setup_partitions(
-        args.board, media, board_config['fat_size'], args.image_size,
+        args.board, media, board_config.fat_size, args.image_size,
         args.boot_label, args.rfs_label, args.rootfs, ROOTFS_UUID,
         args.should_create_partitions,
         args.should_format_bootfs, args.should_format_rootfs)
@@ -102,7 +101,7 @@ if __name__ == '__main__':
     if args.should_format_bootfs:
         populate_boot(
             args.board, board_config, ROOTFS_DIR, boot_partition, BOOT_DISK,
-            args.device, TMP_DIR, args.is_live)
+            args.device, TMP_DIR, args.is_live, args.is_lowmem, args.consoles)
 
     if args.should_format_rootfs:
         create_swap = False
@@ -110,6 +109,6 @@ if __name__ == '__main__':
             create_swap = True
         populate_rootfs(ROOTFS_DIR, ROOT_DISK, root_partition, args.rootfs,
             ROOTFS_UUID, create_swap, str(args.swap_file),
-            board_config['mmc_part_offset'])
+            board_config.mmc_part_offset)
 
     print "Done creating Linaro image on %s" % args.device

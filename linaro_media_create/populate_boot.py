@@ -88,7 +88,7 @@ def make_boot_ini(boot_script, boot_disk):
 
 
 def populate_boot(board, board_config, chroot_dir, boot_partition, boot_disk,
-                  boot_device_or_file, tmp_dir, is_live):
+                  boot_device_or_file, tmp_dir, is_live, is_lowmem, consoles):
 
     parts_dir = 'boot'
     if is_live:
@@ -104,7 +104,7 @@ def populate_boot(board, board_config, chroot_dir, boot_partition, boot_disk,
             raise
     cmd_runner.run(['mount', boot_partition, boot_disk], as_root=True).wait()
 
-    uboot_flavor = board_config.get('uboot_flavor')
+    uboot_flavor = board_config.uboot_flavor
     if uboot_flavor is not None:
         uboot_bin = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor, 'u-boot.bin')
@@ -113,11 +113,11 @@ def populate_boot(board, board_config, chroot_dir, boot_partition, boot_disk,
 
     boot_script = "%(boot_disk)s/%(boot_script_name)s" % (
         dict(boot_disk=boot_disk,
-             boot_script_name=board_config['boot_script']))
+             boot_script_name=board_config.boot_script))
 
-    load_addr = board_config['load_addr']
-    sub_arch = board_config['sub_arch']
-    boot_cmd = board_config['boot_cmd']
+    load_addr = board_config.load_addr
+    sub_arch = board_config.sub_arch
+    boot_cmd = board_config.get_boot_cmd(is_live, is_lowmem, consoles)
 
     # TODO: Once linaro-media-create is fully ported to python, we should
     # split this into several board-specific functions that are defined
