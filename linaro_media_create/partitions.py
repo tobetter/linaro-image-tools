@@ -1,4 +1,5 @@
 import atexit
+import glob
 import subprocess
 import time
 
@@ -175,9 +176,30 @@ def get_boot_and_root_partitions_for_media(media):
             "Unexpected number of partitions on %s: %d" % (
                 media.path, partition_count))
 
-    boot_partition = "%s%d" % (media.path, 1 + partition_offset)
-    root_partition = "%s%d" % (media.path, 2 + partition_offset)
+    boot_partition = _get_device_file_for_partition_number(
+        media.path, 1 + partition_offset)
+    root_partition = _get_device_file_for_partition_number(
+        media.path, 2 + partition_offset)
+    assert boot_partition is not None and root_partition is not None, (
+        "Could not find boot/root partition for %s" % media.path)
     return boot_partition, root_partition
+
+
+def _get_device_file_for_partition_number(device, partition):
+    """Return the device file for the partition number on the given device.
+
+    e.g. /dev/sda1 for the first partition on device /dev/sda or
+    /dev/mmcblk0p3 for the third partition on /dev/mmcblk0.
+    """
+    for dev_file in glob.glob("%s?*" % device):
+        device_path = _get_udisks_device_path(dev_file)
+        udisks_dev = dbus.SystemBus().get_object(UDISKS, device_path)
+        part_number = udisks_dev.Get(
+            device_path, 'PartitionNumber', dbus_interface=DBUS_PROPERTIES)
+        if part_number == partition:
+            return str(udisks_dev.Get(
+                device_path, 'DeviceFile', dbus_interface=DBUS_PROPERTIES))
+    return None
 
 
 def _get_partition_count(media):
