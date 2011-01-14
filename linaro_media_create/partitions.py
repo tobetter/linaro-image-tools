@@ -191,6 +191,8 @@ def _get_device_file_for_partition_number(device, partition):
     e.g. /dev/sda1 for the first partition on device /dev/sda or
     /dev/mmcblk0p3 for the third partition on /dev/mmcblk0.
     """
+    # This could be simpler but UDisks doesn't make it easy for us:
+    # https://bugs.freedesktop.org/show_bug.cgi?id=33113.
     for dev_file in glob.glob("%s?*" % device):
         device_path = _get_udisks_device_path(dev_file)
         udisks_dev = dbus.SystemBus().get_object(UDISKS, device_path)
