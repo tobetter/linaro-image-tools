@@ -49,7 +49,6 @@ from linaro_media_create.partitions import (
     run_sfdisk_commands,
     setup_partitions,
     )
-from linaro_media_create.remove_binary_dir import remove_dir
 from linaro_media_create.rootfs import (
     create_flash_kernel_config,
     has_space_left_for_swap,
@@ -151,21 +150,6 @@ class TestGetBootCmd(TestCase):
             "fixrtc nocompcache vram=12M omapfb.debug=y "
             "omapfb.mode=dvi:1280x720MR-16@60'\nboot" % ROOTFS_UUID)
         self.assertEqual(expected, boot_cmd)
-
-
-class TestRemoveBinaryDir(TestCaseWithFixtures):
-
-    def setUp(self):
-        super(TestRemoveBinaryDir, self).setUp()
-        self.temp_dir_fixture = CreateTempDirFixture()
-        self.useFixture(self.temp_dir_fixture)
-
-    def test_remove_dir(self):
-        rc = remove_dir(
-            self.temp_dir_fixture.get_temp_dir(), as_root=False)
-        self.assertEqual(rc, 0)
-        self.assertFalse(
-            os.path.exists(self.temp_dir_fixture.get_temp_dir()))
 
 
 class TestUnpackBinaryTarball(TestCaseWithFixtures):
