@@ -18,8 +18,12 @@ XS-Python-Version: >= 2.5
 Package: linaro-image-tools
 Architecture: all
 Depends: ${misc:Depends},
+         util-linux,
          parted,
          uuid-runtime,
+         dosfstools,
+         e2fsprogs,
+         btrfs-tools,
          u-boot-tools | uboot-mkimage,
          python,
          python-hwpack (>= ${source:Version}),
@@ -28,6 +32,10 @@ Depends: ${misc:Depends},
          python-debian (>= 0.1.16ubuntu1),
          python-linaro-media-create (>= ${source:Version}),
          python-parted
+# TODO: turn those into dependencies as soon as qemu-kvm builds successfully
+# on armel.
+Suggests: qemu-kvm-extras-static,
+          qemu-kvm
 Description: collection of tools to work with Linaro images
  This package offers a set of tools for use with Linaro images.
  .

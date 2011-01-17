@@ -85,6 +85,10 @@ class MockCmdRunnerPopen(object):
     def wait(self):
         return self.returncode
 
+    @property
+    def commands_executed(self):
+        return [' '.join(args) for args in self.calls]
+
 
 class MockCmdRunnerPopenFixture(MockSomethingFixture):
     """A test fixture which mocks cmd_runner.do_run with the given mock.

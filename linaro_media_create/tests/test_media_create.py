@@ -16,10 +16,10 @@ from hwpack.testing import TestCaseWithFixtures
 from linaro_media_create import (
     check_device,
     cmd_runner,
-    ensure_command,
     boards,
     partitions,
     rootfs,
+    utils,
     )
 from linaro_media_create.boards import (
     board_configs,
@@ -58,6 +58,11 @@ from linaro_media_create.rootfs import (
     write_data_to_protected_file,
     )
 from linaro_media_create.unpack_binary_tarball import unpack_binary_tarball
+from linaro_media_create.utils import (
+    ensure_command,
+    install_package_providing,
+    UnableToFindPackageProvidingCommand,
+    )
 
 from linaro_media_create.tests.fixtures import (
     CreateTempDirFixture,
@@ -68,28 +73,46 @@ from linaro_media_create.tests.fixtures import (
     )
 
 
-class TestEnsureCommand(TestCase):
+class TestEnsureCommand(TestCaseWithFixtures):
 
-    apt_get_called = False
+    install_pkg_providing_called = False
+
+    def setUp(self):
+        super(TestEnsureCommand, self).setUp()
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
 
     def test_command_already_present(self):
-        with self.mock_apt_get_install():
-            ensure_command.ensure_command('apt-get', 'apt')
-        self.assertFalse(self.apt_get_called)
+        self.mock_install_package_providing()
+        ensure_command('apt-get')
+        self.assertFalse(self.install_pkg_providing_called)
 
     def test_command_not_present(self):
-        with self.mock_apt_get_install():
-            ensure_command.ensure_command('apt-get-two-o', 'apt-2')
-        self.assertTrue(self.apt_get_called)
+        self.mock_install_package_providing()
+        ensure_command('apt-get-two-o')
+        self.assertTrue(self.install_pkg_providing_called)
 
-    @contextmanager
-    def mock_apt_get_install(self):
-        def mock_apt_get_install(cmd, pkg):
-            self.apt_get_called = True
-        orig_func = ensure_command.apt_get_install
-        ensure_command.apt_get_install = mock_apt_get_install
-        yield
-        ensure_command.apt_get_install = orig_func
+    def mock_install_package_providing(self):
+        def mock_func(command):
+            self.install_pkg_providing_called = True
+        self.useFixture(MockSomethingFixture(
+            utils, 'install_package_providing', mock_func))
+
+
+class TestInstallPackageProviding(TestCaseWithFixtures):
+
+    def test_found_package(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        install_package_providing('mkfs.vfat')
+        self.assertEqual(
+            ['sudo apt-get install dosfstools'],
+            fixture.mock.commands_executed)
+
+    def test_not_found_package(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        self.assertRaises(
+            UnableToFindPackageProvidingCommand,
+            install_package_providing, 'mkfs.lean')
 
 
 class TestGetBootCmd(TestCase):
