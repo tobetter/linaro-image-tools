@@ -97,8 +97,8 @@ class BoardConfig(object):
 
 class BeagleConfig(BoardConfig):
     uboot_flavor = 'omap3_beagle'
-    extra_serial_opts = 'console=tty0 console=ttyS2,115200n8'
-    live_serial_opts = 'serialtty=ttyS2'
+    extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
+    live_serial_opts = 'serialtty=ttyO2'
     kernel_addr = '0x80000000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
