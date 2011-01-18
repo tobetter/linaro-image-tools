@@ -111,16 +111,14 @@ class BeagleConfig(BoardConfig):
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
-        mlo_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'x-loader-omap', 'MLO')
-        install_omap_boot_loader(mlo_file, boot_dir)
+        install_omap_boot_loader(chroot_dir, boot_dir)
         make_uImage(cls.load_addr, uboot_parts_dir, cls.sub_arch, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.sub_arch, boot_dir)
         make_boot_script(boot_cmd, boot_script)
         make_boot_ini(boot_script, boot_dir)
 
 
-class PandaConfig(BoardConfig):
+class PandaConfig(BeagleConfig):
     uboot_flavor = 'omap4_panda'
     extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
     live_serial_opts = 'serialtty=ttyO2'
@@ -132,17 +130,6 @@ class PandaConfig(BoardConfig):
     extra_boot_args_options = (
         'earlyprintk fixrtc nocompcache vram=32M omapfb.debug=y '
         'omapfb.vram=0:8M mem=463M ip=none')
-
-    @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
-                         boot_dir, boot_script, boot_device_or_file):
-        mlo_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'x-loader-omap4', 'MLO')
-        install_omap_boot_loader(mlo_file, boot_dir)
-        make_uImage(cls.load_addr, uboot_parts_dir, cls.sub_arch, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.sub_arch, boot_dir)
-        make_boot_script(boot_cmd, boot_script)
-        make_boot_ini(boot_script, boot_dir)
 
 
 class IgepConfig(BeagleConfig):
@@ -303,7 +290,31 @@ def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
     proc.wait()
 
 
-def install_omap_boot_loader(mlo_file, boot_disk):
+def _get_mlo_file(chroot_dir):
+    # XXX: This is a temporary solution to make sure l-m-c works with any
+    # version of x-loader-omap. The proper solution is to have hwpacks
+    # specify the location of the MLO file or include just the MLO file
+    # instead of an x-loader-omap package.
+    # This pattern matches the path of MLO files installed by the latest
+    # x-loader-omap package (e.g. /usr/lib/x-loader/<version>/MLO)
+    files = glob.glob(
+        os.path.join(chroot_dir, 'usr', 'lib', '*', '*', 'MLO'))
+    if len(files) == 0:
+        # This one matches the path of MLO files installed by older
+        # x-loader-omap package (e.g. /usr/lib/x-loader-omap[34]/MLO)
+        files = glob.glob(
+            os.path.join(chroot_dir, 'usr', 'lib', '*', 'MLO'))
+    if len(files) == 1:
+        return files[0]
+    elif len(files) > 1:
+        raise AssertionError(
+            "More than one MLO file found on %s" % chroot_dir)
+    else:
+        raise AssertionError("No MLO files found on %s" % chroot_dir)
+
+
+def install_omap_boot_loader(chroot_dir, boot_disk):
+    mlo_file = _get_mlo_file(chroot_dir)
     cmd_runner.run(["cp", "-v", mlo_file, boot_disk], as_root=True).wait()
     # XXX: Is this really needed?
     cmd_runner.run(["sync"]).wait()
