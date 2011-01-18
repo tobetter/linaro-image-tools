@@ -28,6 +28,7 @@ from linaro_media_create.boards import (
     make_uInitrd,
     ROOTFS_UUID,
     _get_file_matching,
+    _get_mlo_file,
     _run_mkimage,
     )
 from linaro_media_create.hwpack import (
@@ -101,6 +102,8 @@ class TestEnsureCommand(TestCaseWithFixtures):
 class TestInstallPackageProviding(TestCaseWithFixtures):
 
     def test_found_package(self):
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         install_package_providing('mkfs.vfat')
         self.assertEqual(
@@ -112,6 +115,43 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
         self.assertRaises(
             UnableToFindPackageProvidingCommand,
             install_package_providing, 'mkfs.lean')
+
+
+class TestGetMLOFile(TestCaseWithFixtures):
+
+    def test_mlo_from_new_xloader(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        path = os.path.join(
+            tempdir, 'usr', 'lib', 'x-loader', 'omap3530beagle')
+        os.makedirs(path)
+        mlo_path = os.path.join(path, 'MLO')
+        open(mlo_path, 'w').close()
+        self.assertEquals(
+            mlo_path, _get_mlo_file(tempdir))
+
+    def test_mlo_from_old_xloader(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        path = os.path.join(tempdir, 'usr', 'lib', 'x-loader-omap4')
+        os.makedirs(path)
+        mlo_path = os.path.join(path, 'MLO')
+        open(mlo_path, 'w').close()
+        self.assertEquals(
+            mlo_path, _get_mlo_file(tempdir))
+
+    def test_no_mlo_found(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        self.assertRaises(
+            AssertionError, _get_mlo_file, tempdir)
+
+    def test_more_than_one_mlo_found(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        for directory in ['x-loader-omap4', 'x-loader-omap3']:
+            path = os.path.join(tempdir, 'usr', 'lib', directory)
+            os.makedirs(path)
+            mlo_path = os.path.join(path, 'MLO')
+            open(mlo_path, 'w').close()
+        self.assertRaises(
+            AssertionError, _get_mlo_file, tempdir)
 
 
 class TestGetBootCmd(TestCase):
