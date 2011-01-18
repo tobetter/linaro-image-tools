@@ -19,7 +19,6 @@ from linaro_media_create.partitions import (
     setup_partitions,
     )
 from linaro_media_create.populate_boot import populate_boot
-from linaro_media_create.remove_binary_dir import remove_dir
 from linaro_media_create.rootfs import populate_rootfs
 from linaro_media_create.unpack_binary_tarball import unpack_binary_tarball
 from linaro_media_create import get_args_parser
@@ -85,8 +84,6 @@ if __name__ == '__main__':
         # All good, move on.
         pass
 
-    # TODO: Combine these two into a single function.
-    remove_dir(ROOTFS_DIR)
     unpack_binary_tarball(args.binary, TMP_DIR)
 
     hwpacks = args.hwpacks
