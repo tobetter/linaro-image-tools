@@ -95,7 +95,19 @@ class BoardConfig(object):
         raise NotImplementedError()
 
 
-class BeagleConfig(BoardConfig):
+class OmapConfig(BoardConfig):
+
+    @classmethod
+    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
+                         boot_dir, boot_script, boot_device_or_file):
+        install_omap_boot_loader(chroot_dir, boot_dir)
+        make_uImage(cls.load_addr, uboot_parts_dir, cls.sub_arch, boot_dir)
+        make_uInitrd(uboot_parts_dir, cls.sub_arch, boot_dir)
+        make_boot_script(boot_cmd, boot_script)
+        make_boot_ini(boot_script, boot_dir)
+
+
+class BeagleConfig(OmapConfig):
     uboot_flavor = 'omap3_beagle'
     extra_serial_opts = 'console=tty0 console=ttyS2,115200n8'
     live_serial_opts = 'serialtty=ttyS2'
@@ -108,17 +120,8 @@ class BeagleConfig(BoardConfig):
         'earlyprintk fixrtc nocompcache vram=12M omapfb.debug=y '
         'omapfb.mode=dvi:1280x720MR-16@60')
 
-    @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
-                         boot_dir, boot_script, boot_device_or_file):
-        install_omap_boot_loader(chroot_dir, boot_dir)
-        make_uImage(cls.load_addr, uboot_parts_dir, cls.sub_arch, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.sub_arch, boot_dir)
-        make_boot_script(boot_cmd, boot_script)
-        make_boot_ini(boot_script, boot_dir)
 
-
-class PandaConfig(BeagleConfig):
+class PandaConfig(OmapConfig):
     uboot_flavor = 'omap4_panda'
     extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
     live_serial_opts = 'serialtty=ttyO2'
@@ -291,10 +294,10 @@ def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
 
 
 def _get_mlo_file(chroot_dir):
-    # XXX: This is a temporary solution to make sure l-m-c works with any
-    # version of x-loader-omap. The proper solution is to have hwpacks
-    # specify the location of the MLO file or include just the MLO file
-    # instead of an x-loader-omap package.
+    # XXX bug=702645: This is a temporary solution to make sure l-m-c works
+    # with any version of x-loader-omap. The proper solution is to have
+    # hwpacks specify the location of the MLO file or include just the MLO
+    # file instead of an x-loader-omap package.
     # This pattern matches the path of MLO files installed by the latest
     # x-loader-omap package (e.g. /usr/lib/x-loader/<version>/MLO)
     files = glob.glob(
