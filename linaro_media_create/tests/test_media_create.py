@@ -409,6 +409,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             partitions, '_get_partition_count', lambda media: 2))
         tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
+        self.useFixture(MockSomethingFixture(
+            partitions, '_get_device_file_for_partition_number',
+            lambda dev, partition: '%s%d' % (tempfile, partition)))
         media = Media(tempfile)
         # Pretend the image file is a block device, or else
         # get_boot_and_root_partitions_for_media will choke.
@@ -422,6 +425,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
             partitions, '_get_partition_count', lambda media: 3))
         tempfile = self._create_qemu_img_with_partitions(
             ',1,0xDA\n,1,0x0C,*\n,,,-')
+        self.useFixture(MockSomethingFixture(
+            partitions, '_get_device_file_for_partition_number',
+            lambda dev, partition: '%s%d' % (tempfile, partition)))
         media = Media(tempfile)
         # Pretend the image file is a block device, or else
         # get_boot_and_root_partitions_for_media will choke.
@@ -526,6 +532,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             partitions, 'is_partition_mounted', lambda part: True))
         tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
+        self.useFixture(MockSomethingFixture(
+            partitions, '_get_device_file_for_partition_number',
+            lambda dev, partition: '%s%d' % (tempfile, partition)))
         media = Media(tempfile)
         # Pretend our tempfile is a block device.
         media.is_block_device = True
