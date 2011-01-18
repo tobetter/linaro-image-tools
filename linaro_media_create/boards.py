@@ -122,16 +122,16 @@ class BeagleConfig(BoardConfig):
 
 class PandaConfig(BoardConfig):
     uboot_flavor = 'omap4_panda'
-    extra_serial_opts = 'console = tty0 console = ttyO2,115200n8'
-    live_serial_opts = 'serialtty = ttyO2'
+    extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
+    live_serial_opts = 'serialtty=ttyO2'
     kernel_addr = '0x80200000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
     sub_arch = 'omap4'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'earlyprintk fixrtc nocompcache vram = 32M omapfb.debug = y '
-        'omapfb.vram = 0:8M mem = 463M ip = none')
+        'earlyprintk fixrtc nocompcache vram=32M omapfb.debug=y '
+        'omapfb.vram=0:8M mem=463M ip=none')
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
@@ -158,18 +158,18 @@ class IgepConfig(BeagleConfig):
 
 
 class Ux500Config(BoardConfig):
-    extra_serial_opts = 'console = tty0 console = ttyAMA2,115200n8'
-    live_serial_opts = 'serialtty = ttyAMA2'
+    extra_serial_opts = 'console=tty0 console=ttyAMA2,115200n8'
+    live_serial_opts = 'serialtty=ttyAMA2'
     kernel_addr = '0x00100000'
     initrd_addr = '0x08000000'
     load_addr = '0x00008000'
     sub_arch = 'ux500'
     boot_script = 'flash.scr'
     extra_boot_args_options = (
-        'earlyprintk rootdelay = 1 fixrtc nocompcache '
-        'mem = 96M@0 mem_modem = 32M@96M mem = 44M@128M pmem = 22M@172M '
-        'mem = 30M@194M mem_mali = 32M@224M pmem_hwb = 54M@256M '
-        'hwmem = 48M@302M mem = 152M@360M')
+        'earlyprintk rootdelay=1 fixrtc nocompcache '
+        'mem=96M@0 mem_modem=32M@96M mem=44M@128M pmem=22M@172M '
+        'mem=30M@194M mem_mali=32M@224M pmem_hwb=54M@256M '
+        'hwmem=48M@302M mem=152M@360M')
     mmc_option = '1:1'
 
     @classmethod
@@ -181,8 +181,8 @@ class Ux500Config(BoardConfig):
 
 
 class Mx51evkConfig(BoardConfig):
-    extra_serial_opts = 'console = tty0 console = ttymxc0,115200n8'
-    live_serial_opts = 'serialtty = ttymxc0'
+    extra_serial_opts = 'console=tty0 console=ttymxc0,115200n8'
+    live_serial_opts = 'serialtty=ttymxc0'
     kernel_addr = '0x90000000'
     initrd_addr = '0x90800000'
     load_addr = '0x90008000'
@@ -204,8 +204,8 @@ class Mx51evkConfig(BoardConfig):
 
 class VexpressConfig(BoardConfig):
     uboot_flavor = 'ca9x4_ct_vxp'
-    extra_serial_opts = 'console = tty0 console = ttyAMA0,38400n8'
-    live_serial_opts = 'serialtty = ttyAMA0'
+    extra_serial_opts = 'console=tty0 console=ttyAMA0,38400n8'
+    live_serial_opts = 'serialtty=ttyAMA0'
     kernel_addr = '0x60008000'
     initrd_addr = '0x81000000'
     load_addr = kernel_addr

@@ -99,7 +99,7 @@ class TestGetBootCmd(TestCase):
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x60008000 uImage; fatload mmc "
             "0:1 0x81000000 uInitrd; bootm 0x60008000 0x81000000'\nsetenv "
-            "bootargs ' console = tty0 console = ttyAMA0,38400n8  "
+            "bootargs ' console=tty0 console=ttyAMA0,38400n8  "
             "root=UUID=%s rootwait ro'\nboot" % ROOTFS_UUID)
         self.assertEqual(expected, boot_cmd)
 
@@ -109,7 +109,7 @@ class TestGetBootCmd(TestCase):
         expected = (
             "setenv bootcmd 'fatload mmc 0:2 0x90000000 uImage; fatload mmc "
             "0:2 0x90800000 uInitrd; bootm 0x90000000 0x90800000'\nsetenv "
-            "bootargs ' console = tty0 console = ttymxc0,115200n8  "
+            "bootargs ' console=tty0 console=ttymxc0,115200n8  "
             "root=UUID=%s rootwait ro'\nboot" % ROOTFS_UUID)
         self.assertEqual(expected, boot_cmd)
 
@@ -119,11 +119,11 @@ class TestGetBootCmd(TestCase):
         expected = (
             "setenv bootcmd 'fatload mmc 1:1 0x00100000 uImage; fatload mmc "
             "1:1 0x08000000 uInitrd; bootm 0x00100000 0x08000000'\nsetenv "
-            "bootargs ' console = tty0 console = ttyAMA2,115200n8  "
-            "root=UUID=%s rootwait ro earlyprintk rootdelay = 1 fixrtc "
-            "nocompcache mem = 96M@0 mem_modem = 32M@96M mem = 44M@128M "
-            "pmem = 22M@172M mem = 30M@194M mem_mali = 32M@224M "
-            "pmem_hwb = 54M@256M hwmem = 48M@302M mem = 152M@360M'\nboot"
+            "bootargs ' console=tty0 console=ttyAMA2,115200n8  "
+            "root=UUID=%s rootwait ro earlyprintk rootdelay=1 fixrtc "
+            "nocompcache mem=96M@0 mem_modem=32M@96M mem=44M@128M "
+            "pmem=22M@172M mem=30M@194M mem_mali=32M@224M "
+            "pmem_hwb=54M@256M hwmem=48M@302M mem=152M@360M'\nboot"
             % ROOTFS_UUID)
         self.assertEqual(expected, boot_cmd)
 
@@ -133,10 +133,10 @@ class TestGetBootCmd(TestCase):
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x80200000 uImage; fatload mmc "
             "0:1 0x81600000 uInitrd; bootm 0x80200000 0x81600000'\nsetenv "
-            "bootargs ' console = tty0 console = ttyO2,115200n8  "
+            "bootargs ' console=tty0 console=ttyO2,115200n8  "
             "root=UUID=%s rootwait ro earlyprintk fixrtc nocompcache "
-            "vram = 32M omapfb.debug = y omapfb.vram = 0:8M mem = 463M "
-            "ip = none'\nboot" % ROOTFS_UUID)
+            "vram=32M omapfb.debug=y omapfb.vram=0:8M mem=463M "
+            "ip=none'\nboot" % ROOTFS_UUID)
         self.assertEqual(expected, boot_cmd)
 
     def test_beagle(self):
