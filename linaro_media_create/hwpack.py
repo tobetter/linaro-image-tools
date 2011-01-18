@@ -1,8 +1,7 @@
 import os
-import platform
 
 from linaro_media_create import cmd_runner
-from linaro_media_create.ensure_command import ensure_command
+from linaro_media_create.utils import is_arm_host
 
 
 # It'd be nice if we could use atexit here, but all the things we need to undo
@@ -17,9 +16,7 @@ def install_hwpacks(chroot_dir, tmp_dir, hwpack_force_yes, *hwpack_files):
     temporarily_overwrite_file_on_dir('/etc/resolv.conf', chroot_etc, tmp_dir)
     temporarily_overwrite_file_on_dir('/etc/hosts', chroot_etc, tmp_dir)
 
-    if not platform.machine().startswith('arm'):
-        ensure_command('qemu-arm-static', 'qemu-arm-static')
-        ensure_command('qemu-img', 'qemu-kvm')
+    if not is_arm_host():
         copy_file('/usr/bin/qemu-arm-static',
                   os.path.join(chroot_dir, 'usr', 'bin'))
 
