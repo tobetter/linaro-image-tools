@@ -31,7 +31,7 @@ class BoardConfig(object):
     kernel_addr = None
     initrd_addr = None
     load_addr = None
-    sub_arch = None
+    kernel_suffix = None
     boot_script = None
 
     @classmethod
@@ -101,8 +101,9 @@ class OmapConfig(BoardConfig):
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
         install_omap_boot_loader(chroot_dir, boot_dir)
-        make_uImage(cls.load_addr, uboot_parts_dir, cls.sub_arch, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.sub_arch, boot_dir)
+        make_uImage(
+            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_boot_script(boot_cmd, boot_script)
         make_boot_ini(boot_script, boot_dir)
 
@@ -114,7 +115,7 @@ class BeagleConfig(OmapConfig):
     kernel_addr = '0x80000000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
-    sub_arch = 'linaro-omap'
+    kernel_suffix = 'linaro-omap'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
         'earlyprintk fixrtc nocompcache vram=12M omapfb.debug=y '
@@ -128,7 +129,7 @@ class PandaConfig(OmapConfig):
     kernel_addr = '0x80200000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
-    sub_arch = 'omap4'
+    kernel_suffix = 'linaro-omap'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
         'earlyprintk fixrtc nocompcache vram=32M omapfb.debug=y '
@@ -141,8 +142,9 @@ class IgepConfig(BeagleConfig):
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
-        make_uImage(cls.load_addr, uboot_parts_dir, cls.sub_arch, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.sub_arch, boot_dir)
+        make_uImage(
+            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_boot_script(boot_cmd, boot_script)
         make_boot_ini(boot_script, boot_dir)
 
@@ -153,7 +155,7 @@ class Ux500Config(BoardConfig):
     kernel_addr = '0x00100000'
     initrd_addr = '0x08000000'
     load_addr = '0x00008000'
-    sub_arch = 'ux500'
+    kernel_suffix = 'ux500'
     boot_script = 'flash.scr'
     extra_boot_args_options = (
         'earlyprintk rootdelay=1 fixrtc nocompcache '
@@ -165,8 +167,9 @@ class Ux500Config(BoardConfig):
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
-        make_uImage(cls.load_addr, uboot_parts_dir, cls.sub_arch, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.sub_arch, boot_dir)
+        make_uImage(
+            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_boot_script(boot_cmd, boot_script)
 
 
@@ -176,7 +179,7 @@ class Mx51evkConfig(BoardConfig):
     kernel_addr = '0x90000000'
     initrd_addr = '0x90800000'
     load_addr = '0x90008000'
-    sub_arch = 'linaro-mx51'
+    kernel_suffix = 'linaro-mx51'
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
@@ -187,8 +190,9 @@ class Mx51evkConfig(BoardConfig):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', 'mx51evk', 'u-boot.imx')
         install_mx51evk_boot_loader(uboot_file, boot_device_or_file)
-        make_uImage(cls.load_addr, uboot_parts_dir, cls.sub_arch, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.sub_arch, boot_dir)
+        make_uImage(
+            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_boot_script(boot_cmd, boot_script)
 
 
@@ -199,7 +203,7 @@ class VexpressConfig(BoardConfig):
     kernel_addr = '0x60008000'
     initrd_addr = '0x81000000'
     load_addr = kernel_addr
-    sub_arch = 'linaro-vexpress'
+    kernel_suffix = 'linaro-vexpress'
     boot_script = None
     # ARM Boot Monitor is used to load u-boot, uImage etc. into flash and
     # only allows for FAT16
@@ -208,8 +212,9 @@ class VexpressConfig(BoardConfig):
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script):
-        make_uImage(cls.load_addr, uboot_parts_dir, cls.sub_arch, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.sub_arch, boot_dir)
+        make_uImage(
+            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
 
 
 board_configs = {
@@ -256,17 +261,17 @@ def _get_file_matching(regex):
         raise ValueError("Too many files matching '%s' found." % regex)
 
 
-def make_uImage(load_addr, uboot_parts_dir, sub_arch, boot_disk):
+def make_uImage(load_addr, uboot_parts_dir, suffix, boot_disk):
     img_data = _get_file_matching(
-        '%s/vmlinuz-*-%s' % (uboot_parts_dir, sub_arch))
+        '%s/vmlinuz-*-%s' % (uboot_parts_dir, suffix))
     img = '%s/uImage' % boot_disk
     return _run_mkimage(
         'kernel', load_addr, load_addr, 'Linux', img_data, img)
 
 
-def make_uInitrd(uboot_parts_dir, sub_arch, boot_disk):
+def make_uInitrd(uboot_parts_dir, suffix, boot_disk):
     img_data = _get_file_matching(
-        '%s/initrd.img-*-%s' % (uboot_parts_dir, sub_arch))
+        '%s/initrd.img-*-%s' % (uboot_parts_dir, suffix))
     img = '%s/uInitrd' % boot_disk
     return _run_mkimage('ramdisk', '0', '0', 'initramfs', img_data, img)
 
