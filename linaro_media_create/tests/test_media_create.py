@@ -198,7 +198,7 @@ class TestGetBootCmd(TestCase):
             "0:1 0x81600000 uInitrd; bootm 0x80200000 0x81600000'\nsetenv "
             "bootargs ' console=tty0 console=ttyO2,115200n8  "
             "root=UUID=%s rootwait ro earlyprintk fixrtc nocompcache "
-            "vram=32M omapfb.debug=y omapfb.vram=0:8M mem=463M "
+            "vram=32M omapfb.vram=0:8M mem=463M "
             "ip=none'\nboot" % ROOTFS_UUID)
         self.assertEqual(expected, boot_cmd)
 
@@ -210,7 +210,7 @@ class TestGetBootCmd(TestCase):
             "fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 "
             "0x81600000'\nsetenv bootargs ' console=tty0 "
             "console=ttyO2,115200n8  root=UUID=%s rootwait ro earlyprintk "
-            "fixrtc nocompcache vram=12M omapfb.debug=y "
+            "fixrtc nocompcache vram=12M "
             "omapfb.mode=dvi:1280x720MR-16@60'\nboot" % ROOTFS_UUID)
         self.assertEqual(expected, boot_cmd)
 
