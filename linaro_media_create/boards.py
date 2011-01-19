@@ -121,6 +121,16 @@ class BeagleConfig(OmapConfig):
         'earlyprintk fixrtc nocompcache vram=12M '
         'omapfb.mode=dvi:1280x720MR-16@60')
 
+class OveroConfig(OmapConfig):
+    uboot_flavor = 'omap3_overo'
+    extra_serial_opts = 'console=ttyS2,115200n8'
+    kernel_addr = '0x80000000'
+    initrd_addr = '0x81600000'
+    load_addr = '0x80008000'
+    sub_arch = 'linaro-omap'
+    boot_script = 'boot.scr'
+    extra_boot_args_options = (
+        'earlyprintk')
 
 class PandaConfig(OmapConfig):
     uboot_flavor = 'omap4_panda'
@@ -224,6 +234,7 @@ board_configs = {
     'vexpress': VexpressConfig,
     'ux500': Ux500Config,
     'mx51evk': Mx51evkConfig,
+    'overo': OveroConfig,
     }
 
 
