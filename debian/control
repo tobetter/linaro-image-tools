@@ -18,7 +18,6 @@ XS-Python-Version: >= 2.5
 Package: linaro-image-tools
 Architecture: all
 Depends: ${misc:Depends},
-         util-linux,
          parted,
          uuid-runtime,
          dosfstools,
