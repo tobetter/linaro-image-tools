@@ -6,4 +6,4 @@
 override_dh_auto_test:
 	# XXX: The test-suite currently fails on Lucid. What can we do about
 	# it?
-	python -m testtools.run tests.test_suite
+	NO_PKG_MANGLE=1 python -m testtools.run tests.test_suite
