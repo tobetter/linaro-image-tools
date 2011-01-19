@@ -117,7 +117,7 @@ class BeagleConfig(OmapConfig):
     sub_arch = 'linaro-omap'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'earlyprintk fixrtc nocompcache vram=12M omapfb.debug=y '
+        'earlyprintk fixrtc nocompcache vram=12M '
         'omapfb.mode=dvi:1280x720MR-16@60')
 
 
@@ -131,7 +131,7 @@ class PandaConfig(OmapConfig):
     sub_arch = 'omap4'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'earlyprintk fixrtc nocompcache vram=32M omapfb.debug=y '
+        'earlyprintk fixrtc nocompcache vram=32M '
         'omapfb.vram=0:8M mem=463M ip=none')
 
 
