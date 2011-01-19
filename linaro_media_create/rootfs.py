@@ -79,7 +79,7 @@ def move_contents(from_, root_disk):
     assert os.path.isdir(from_), "%s is not a directory" % from_
     files = glob.glob(os.path.join(from_, '*'))
     mv_cmd = ['mv']
-    mv_cmd.extend(files)
+    mv_cmd.extend(sorted(files))
     mv_cmd.append(root_disk)
     cmd_runner.run(mv_cmd, as_root=True).wait()
 
