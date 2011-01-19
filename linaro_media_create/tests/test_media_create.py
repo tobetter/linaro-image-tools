@@ -214,6 +214,16 @@ class TestGetBootCmd(TestCase):
             "omapfb.mode=dvi:1280x720MR-16@60'\nboot" % ROOTFS_UUID)
         self.assertEqual(expected, boot_cmd)
 
+    def test_overo(self):
+        boot_cmd = board_configs['overo']._get_boot_cmd(
+            is_live=False, is_lowmem=False, consoles=None)
+        expected = (
+            "setenv bootcmd 'fatload mmc 0:1 0x80000000 uImage; "
+            "fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 "
+            "0x81600000'\nsetenv bootargs ' "
+            "console=ttyS2,115200n8  root=UUID=%s rootwait ro earlyprintk'"
+            "\nboot" % ROOTFS_UUID)
+        self.assertEqual(expected, boot_cmd)
 
 class TestUnpackBinaryTarball(TestCaseWithFixtures):
 
