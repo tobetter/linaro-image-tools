@@ -1,3 +1,19 @@
+linaro-image-tools (0.4.1) natty; urgency=low
+
+  * Brown paperbag release.
+  * Sort files in commands ran by linaro_media_create.rootfs.move_contents()
+    as this breaks the testsuite on some filesystems.
+  * Disable pkgbinarymangler when running the testsuite as it might cause some
+    stderr output which confuses it.
+  * Uppercase Python in python-linaro-media-create long description.
+  * Drop util-linux from Depends as it's Essential.
+  * Update Build-Deps for testsuite requirements (qemu-kvm for qemu-img,
+    u-boot | uboot-mkimage for mkimage and command-not-found for
+    CommandNotFound) and recommend command-not-found to locate the package of
+    missing commands.
+
+ -- Loïc Minier <loic.minier@linaro.org>  Wed, 19 Jan 2011 19:32:38 +0100
+
 linaro-image-tools (0.4) natty; urgency=low
 
   IMPORTANT: this version of linaro-image-tools breaks support for 10.05
