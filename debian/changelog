@@ -1,5 +1,9 @@
-linaro-image-tools (0.4) UNRELEASED; urgency=low
+linaro-image-tools (0.4) natty; urgency=low
 
+  IMPORTANT: this version of linaro-image-tools breaks support for 10.05
+  images; we hope to restore this support really soon but it was more
+  important to release this update and have support for linaro-n images.
+ 
   * New major release
     - Large parts rewritten in Python (Michael Hudson, Guilherme Salgado,
       James Westby, Martin Ohlsson).
@@ -27,6 +31,7 @@ linaro-image-tools (0.4) UNRELEASED; urgency=low
     2.6.5-1~ build-dep.
   * Uppercase Python in description (lintian).
   * Various cleanups.
+  * Drop omapfb.debug=y from kernel cmdlines as DSS2 is stable nowadays.
 
  -- Loïc Minier <loic.minier@linaro.org>  Thu, 23 Dec 2010 14:41:29 +0100
 
