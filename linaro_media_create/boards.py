@@ -127,7 +127,7 @@ class OveroConfig(OmapConfig):
     kernel_addr = '0x80000000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
-    sub_arch = 'linaro-omap'
+    kernel_suffix = 'linaro-omap'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
         'earlyprintk')
