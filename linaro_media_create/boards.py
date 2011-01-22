@@ -221,7 +221,7 @@ class VexpressConfig(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
-                         boot_dir, boot_script):
+                         boot_dir, boot_script, boot_device_or_file):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
