@@ -89,8 +89,6 @@ def is_partition_mounted(partition):
     """Is the given partition mounted?"""
     device_path = _get_udisks_device_path(partition)
     device = dbus.SystemBus().get_object(UDISKS, device_path)
-    is_partition = device.Get(
-        device_path, 'DeviceIsPartition', dbus_interface=DBUS_PROPERTIES)
     return device.Get(
         device_path, 'DeviceIsMounted', dbus_interface=DBUS_PROPERTIES)
 

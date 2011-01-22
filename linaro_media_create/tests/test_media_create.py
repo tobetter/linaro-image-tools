@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 import atexit
 import glob
 import os
@@ -111,7 +110,6 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
             fixture.mock.commands_executed)
 
     def test_not_found_package(self):
-        fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.assertRaises(
             UnableToFindPackageProvidingCommand,
             install_package_providing, 'mkfs.lean')
