@@ -223,6 +223,7 @@ Description: Dummy package to install a hwpack
             control_file.write(control_file_text)
         env = os.environ
         env['LC_ALL'] = 'C'
+        env['NO_PKG_MANGLE'] = '1'
         proc = subprocess.Popen(
             ['dpkg-deb', '-b', packaging_dir],
             env = env,
