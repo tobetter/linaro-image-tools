@@ -221,8 +221,12 @@ Description: Dummy package to install a hwpack
         with open(os.path.join(
             packaging_dir, 'DEBIAN', 'control'), 'w') as control_file:
             control_file.write(control_file_text)
+        env = os.environ
+        env['LC_ALL'] = 'C'
+        env['NO_PKG_MANGLE'] = '1'
         proc = subprocess.Popen(
             ['dpkg-deb', '-b', packaging_dir],
+            env=env,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdoutdata, stderrdata) = proc.communicate()
         if proc.returncode:
