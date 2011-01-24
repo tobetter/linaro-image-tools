@@ -387,9 +387,11 @@ class TestCreatePartitions(TestCaseWithFixtures):
             [['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
              ['sync']],
             popen_fixture.mock.calls)
+        # Notice that we create all partitions in a single sfdisk run because
+        # every time we run sfdisk it actually repartitions the device,
+        # erasing any partitions created previously.
         self.assertEqual(
-            [(',1,0xDA', 255, 63, '', self.media.path),
-             (',9,0x0C,*\n,,,-', 255, 63, '', self.media.path)],
+            [(',1,0xDA\n,9,0x0C,*\n,,,-', 255, 63, '', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):
