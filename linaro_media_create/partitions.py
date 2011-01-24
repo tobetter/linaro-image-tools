@@ -254,6 +254,10 @@ def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
                         as_root=True, stderr=None):
     """Run the given commands under sfdisk.
 
+    Every time sfdisk is invoked it will repartition the device so to create
+    multiple partitions you should craft a list of newline-separated commands
+    to be executed in a single sfdisk run.
+
     :param commands: A string of sfdisk commands; each on a separate line.
     :return: A 2-tuple containing the subprocess' stdout and stderr.
     """
@@ -294,16 +298,16 @@ def create_partitions(board, media, fat_size, heads, sectors, cylinders=None):
     else:
         partition_type = '0x0E'
 
+    sfdisk_cmd = ',9,%s,*\n,,,-' % partition_type
     if board == 'mx51evk':
         # Create a one cylinder partition for fixed-offset bootloader data at
         # the beginning of the image (size is one cylinder, so 8224768 bytes
         # with the first sector for MBR).
-        run_sfdisk_commands(',1,0xDA', heads, sectors, cylinders, media.path)
+        sfdisk_cmd = ',1,0xDA\n%s' % sfdisk_cmd
 
     # Create a VFAT or FAT16 partition of 9 cylinders (74027520 bytes, ~70
     # MiB), followed by a Linux-type partition containing the rest of the free
     # space.
-    sfdisk_cmd = ',9,%s,*\n,,,-' % partition_type
     run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
 
     # Sync and sleep to wait for the partition to settle.
