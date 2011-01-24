@@ -146,7 +146,6 @@ class Config(object):
         """
         sources = {}
         sections = self.parser.sections()
-        found = False
         for section_name in sections:
             if section_name == self.MAIN_SECTION:
                 continue

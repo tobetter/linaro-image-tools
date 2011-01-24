@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 import atexit
 import glob
 import os
@@ -111,7 +110,6 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
             fixture.mock.commands_executed)
 
     def test_not_found_package(self):
-        fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.assertRaises(
             UnableToFindPackageProvidingCommand,
             install_package_providing, 'mkfs.lean')
@@ -581,7 +579,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             partitions, 'get_boot_and_root_loopback_devices',
             lambda image: ('/dev/loop99', '/dev/loop98')))
         uuid = '2e82008e-1af3-4699-8521-3bf5bac1e67a'
-        bootfs, rootfs = setup_partitions(
+        bootfs_dev, rootfs_dev = setup_partitions(
             'beagle', Media(tempfile), 32, '2G', 'boot', 'root', 'ext3',
             uuid, True, True, True)
         self.assertEqual(
@@ -592,8 +590,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
               tempfile],
              # Make sure changes are written to disk.
              ['sync'],
-             ['sudo', 'mkfs.vfat', '-F', '32', bootfs, '-n', 'boot'],
-             ['sudo', 'mkfs.ext3', '-U', uuid, rootfs, '-L', 'root']],
+             ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
+             ['sudo', 'mkfs.ext3', '-U', uuid, rootfs_dev, '-L', 'root']],
             popen_fixture.mock.calls)
 
     def test_setup_partitions_for_block_device(self):
@@ -613,7 +611,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         media.is_block_device = True
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         uuid = '2e82008e-1af3-4699-8521-3bf5bac1e67a'
-        bootfs, rootfs = setup_partitions(
+        bootfs_dev, rootfs_dev = setup_partitions(
             'beagle', media, 32, '2G', 'boot', 'root', 'ext3', uuid, True,
             True, True)
         self.assertEqual(
@@ -622,10 +620,10 @@ class TestPartitionSetup(TestCaseWithFixtures):
              ['sync'],
              # Since the partitions are mounted, setup_partitions will umount
              # them before running mkfs.
-             ['sudo', 'umount', bootfs],
-             ['sudo', 'mkfs.vfat', '-F', '32', bootfs, '-n', 'boot'],
-             ['sudo', 'umount', rootfs],
-             ['sudo', 'mkfs.ext3', '-U', uuid, rootfs, '-L', 'root']],
+             ['sudo', 'umount', bootfs_dev],
+             ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
+             ['sudo', 'umount', rootfs_dev],
+             ['sudo', 'mkfs.ext3', '-U', uuid, rootfs_dev, '-L', 'root']],
             popen_fixture.mock.calls)
 
 
