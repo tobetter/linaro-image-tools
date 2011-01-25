@@ -123,7 +123,7 @@ class BeagleConfig(OmapConfig):
 
 class OveroConfig(OmapConfig):
     uboot_flavor = 'omap3_overo'
-    extra_serial_opts = 'console=ttyS2,115200n8'
+    extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
     kernel_addr = '0x80000000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
