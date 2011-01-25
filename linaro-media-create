@@ -26,11 +26,11 @@ from linaro_media_create.utils import (
     )
 from linaro_media_create import get_args_parser
 
-
-TMP_DIR = tempfile.mkdtemp()
-ROOTFS_DIR = os.path.join(TMP_DIR, 'binary')
-BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
-ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
+# Just define the global variables
+TMP_DIR = None
+ROOTFS_DIR = None
+BOOT_DISK = None
+ROOT_DISK = None
 
 
 # Registered as the first atexit handler as we want this to be the last
@@ -44,13 +44,16 @@ def cleanup_tempdir():
     devnull = open('/dev/null', 'w')
     # Use raw subprocess.Popen as we don't want to stop in case the
     # commands end with a non-zero return code.
-    Popen(
-        ['sudo', 'umount', BOOT_DISK], stdout=devnull, stderr=devnull).wait()
-    Popen(
-        ['sudo', 'umount', ROOT_DISK], stdout=devnull, stderr=devnull).wait()
+    if BOOT_DISK is not None:
+        Popen(['sudo', 'umount', BOOT_DISK],
+              stdout=devnull, stderr=devnull).wait()
+    if ROOT_DISK is not None:
+        Popen(['sudo', 'umount', ROOT_DISK],
+              stdout=devnull, stderr=devnull).wait()
     # Remove TMP_DIR as root because some files written there are
     # owned by root.
-    Popen(['sudo', 'rm', '-rf', TMP_DIR]).wait()
+    if TMP_DIR is not None:
+        Popen(['sudo', 'rm', '-rf', TMP_DIR]).wait()
 
 
 def ensure_required_commands(args):
@@ -71,6 +74,14 @@ def ensure_required_commands(args):
 if __name__ == '__main__':
     parser = get_args_parser()
     args = parser.parse_args()
+
+    # If --help was specified this won't execute.
+    # Create temp dir and initialize rest of path vars.
+    TMP_DIR = tempfile.mkdtemp()
+    ROOTFS_DIR = os.path.join(TMP_DIR, 'binary')
+    BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
+    ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
+
     board_config = board_configs[args.board]
 
     ensure_required_commands(args)
