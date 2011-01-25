@@ -157,8 +157,9 @@ class TestGetMLOFile(TestCaseWithFixtures):
 
 class TestBootSteps(TestCaseWithFixtures):
     def setUp(self):
-        self.funcs_calls = []
         super(TestBootSteps, self).setUp()
+        self.funcs_calls = []
+        self.mock_all_boards_funcs()
 
     """Mock all functions of linaro_media_create.boards with a call tracer."""
     def mock_all_boards_funcs(self):
@@ -176,14 +177,12 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_vexpress_steps(self):
         config = linaro_media_create.boards.VexpressConfig
-        self.mock_all_boards_funcs()
         self.make_boot_files(config)
         expected = ['make_uImage', 'make_uInitrd']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_mx51evk_steps(self):
         config = linaro_media_create.boards.Mx51evkConfig
-        self.mock_all_boards_funcs()
         self.make_boot_files(config)
         expected = [
             'install_mx51evk_boot_loader', 'make_uImage', 'make_uInitrd',
@@ -192,14 +191,12 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_ux500_steps(self):
         config = linaro_media_create.boards.Ux500Config
-        self.mock_all_boards_funcs()
         self.make_boot_files(config)
         expected = ['make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_panda_steps(self):
         config = linaro_media_create.boards.PandaConfig
-        self.mock_all_boards_funcs()
         self.make_boot_files(config)
         expected = [
             'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
@@ -208,7 +205,6 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_beagle_steps(self):
         config = linaro_media_create.boards.BeagleConfig
-        self.mock_all_boards_funcs()
         self.make_boot_files(config)
         expected = [
             'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
@@ -217,7 +213,6 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_overo_steps(self):
         config = linaro_media_create.boards.OveroConfig
-        self.mock_all_boards_funcs()
         self.make_boot_files(config)
         expected = [
             'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
