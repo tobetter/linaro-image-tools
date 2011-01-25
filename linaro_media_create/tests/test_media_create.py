@@ -161,8 +161,9 @@ class TestBootSteps(TestCaseWithFixtures):
         self.funcs_calls = []
         self.mock_all_boards_funcs()
 
-    """Mock all functions of linaro_media_create.boards with a call tracer."""
     def mock_all_boards_funcs(self):
+        """Mock all functions of linaro_media_create.boards with a call tracer."""
+
         def mock_func_creator(name):
             return lambda *args, **kwargs: self.funcs_calls.append(name)
 
