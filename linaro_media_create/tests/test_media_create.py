@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import types
 
 from testtools import TestCase
 
@@ -20,6 +21,7 @@ from linaro_media_create import (
     rootfs,
     utils,
     )
+import linaro_media_create
 from linaro_media_create.boards import (
     board_configs,
     make_boot_script,
@@ -151,6 +153,70 @@ class TestGetMLOFile(TestCaseWithFixtures):
         self.assertRaises(
             AssertionError, _get_mlo_file, tempdir)
 
+class TestBootSteps(TestCaseWithFixtures):
+    def setUp(self):
+        super(TestBootSteps, self).setUp()
+        self.funcs_calls = []
+        self.mock_all_boards_funcs()
+
+    def mock_all_boards_funcs(self):
+        """Mock all functions of linaro_media_create.boards with a call tracer."""
+
+        def mock_func_creator(name):
+            return lambda *args, **kwargs: self.funcs_calls.append(name)
+
+        for name in dir(linaro_media_create.boards):
+            attr = getattr(linaro_media_create.boards, name)
+            if type(attr) == types.FunctionType:
+                self.useFixture(MockSomethingFixture(
+                    linaro_media_create.boards, name, mock_func_creator(name)))
+
+    def make_boot_files(self, config):
+        config.make_boot_files('', False, False, [], '', '', '', '')
+
+    def test_vexpress_steps(self):
+        config = linaro_media_create.boards.VexpressConfig
+        self.make_boot_files(config)
+        expected = ['make_uImage', 'make_uInitrd']
+        self.assertEqual(expected, self.funcs_calls)
+
+    def test_mx51evk_steps(self):
+        config = linaro_media_create.boards.Mx51evkConfig
+        self.make_boot_files(config)
+        expected = [
+            'install_mx51evk_boot_loader', 'make_uImage', 'make_uInitrd',
+            'make_boot_script']
+        self.assertEqual(expected, self.funcs_calls)
+
+    def test_ux500_steps(self):
+        config = linaro_media_create.boards.Ux500Config
+        self.make_boot_files(config)
+        expected = ['make_uImage', 'make_uInitrd', 'make_boot_script']
+        self.assertEqual(expected, self.funcs_calls)
+
+    def test_panda_steps(self):
+        config = linaro_media_create.boards.PandaConfig
+        self.make_boot_files(config)
+        expected = [
+            'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
+            'make_boot_script', 'make_boot_ini']
+        self.assertEqual(expected, self.funcs_calls)
+
+    def test_beagle_steps(self):
+        config = linaro_media_create.boards.BeagleConfig
+        self.make_boot_files(config)
+        expected = [
+            'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
+            'make_boot_script', 'make_boot_ini']
+        self.assertEqual(expected, self.funcs_calls)
+
+    def test_overo_steps(self):
+        config = linaro_media_create.boards.OveroConfig
+        self.make_boot_files(config)
+        expected = [
+            'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
+            'make_boot_script', 'make_boot_ini']
+        self.assertEqual(expected, self.funcs_calls)
 
 class TestGetBootCmd(TestCase):
 
