@@ -30,12 +30,12 @@ def install_hwpacks(chroot_dir, tmp_dir, hwpack_force_yes, *hwpack_files):
     copy_file(linaro_hwpack_install_path,
               os.path.join(chroot_dir, 'usr', 'bin'))
 
-    mount_chroot_proc(chroot_dir)
-
-    for hwpack_file in hwpack_files:
-        install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes)
-
-    run_local_atexit_funcs()
+    try:
+        mount_chroot_proc(chroot_dir)
+        for hwpack_file in hwpack_files:
+            install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes)
+    finally:
+        run_local_atexit_funcs()
 
 
 def install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes):
@@ -63,12 +63,14 @@ def mount_chroot_proc(chroot_dir):
     Also register a function in local_atexit to unmount that /proc filesystem.
     """
     chroot_proc = os.path.join(chroot_dir, 'proc')
-    proc = cmd_runner.run(
-        ['mount', 'proc', chroot_proc, '-t', 'proc'], as_root=True)
-    proc.wait()
+
     def umount_chroot_proc():
         cmd_runner.run(['umount', '-v', chroot_proc], as_root=True).wait()
     local_atexit.append(umount_chroot_proc)
+
+    proc = cmd_runner.run(
+        ['mount', 'proc', chroot_proc, '-t', 'proc'], as_root=True)
+    proc.wait()
 
 
 def copy_file(filepath, directory):
