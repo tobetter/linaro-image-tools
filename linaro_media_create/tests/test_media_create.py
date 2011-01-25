@@ -284,8 +284,8 @@ class TestGetBootCmd(TestCase):
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x80000000 uImage; "
             "fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 "
-            "0x81600000'\nsetenv bootargs ' "
-            "console=ttyS2,115200n8  root=UUID=%s rootwait ro earlyprintk'"
+            "0x81600000'\nsetenv bootargs ' console=tty0 "
+            "console=ttyO2,115200n8  root=UUID=%s rootwait ro earlyprintk'"
             "\nboot" % ROOTFS_UUID)
         self.assertEqual(expected, boot_cmd)
 
