@@ -24,15 +24,14 @@ UDISKS = "org.freedesktop.UDisks"
 # the appropriate function for the given type of device?  I think it's still
 # small enough that there's not much benefit in doing that, but if it grows we
 # might want to do it.
-def setup_partitions(board, media, fat_size, image_size,
-                     bootfs_label, rootfs_label, rootfs_type, rootfs_uuid,
+def setup_partitions(board_config, media, image_size, bootfs_label,
+                     rootfs_label, rootfs_type, rootfs_uuid,
                      should_create_partitions, should_format_bootfs,
                      should_format_rootfs):
     """Make sure the given device is partitioned to boot the given board.
 
-    :param board: The board's name, as a string.
+    :param board_config: A BoardConfig class.
     :param media: The Media we should partition.
-    :param fat_size: The FAT size (16 or 32) for the boot partition.
     :param image_size: The size of the image file, in case we're setting up a
         QEMU image.
     :param should_create_partitions: Whether or not we should erase existing
@@ -49,7 +48,8 @@ def setup_partitions(board, media, fat_size, image_size,
         proc.wait()
 
     if should_create_partitions:
-        create_partitions(board, media, fat_size, HEADS, SECTORS, cylinders)
+        create_partitions(
+            board_config, media, HEADS, SECTORS, cylinders)
 
     if media.is_block_device:
         bootfs, rootfs = get_boot_and_root_partitions_for_media(media)
@@ -63,7 +63,8 @@ def setup_partitions(board, media, fat_size, image_size,
         # filesystem.
         ensure_partition_is_not_mounted(bootfs)
         proc = cmd_runner.run(
-            ['mkfs.vfat', '-F', str(fat_size), bootfs, '-n', bootfs_label],
+            ['mkfs.vfat', '-F', str(board_config.fat_size), bootfs, '-n',
+             bootfs_label],
             as_root=True)
         proc.wait()
 
@@ -272,12 +273,11 @@ def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
     return proc.communicate("%s\n" % commands)
 
 
-def create_partitions(board, media, fat_size, heads, sectors, cylinders=None):
+def create_partitions(board_config, media, heads, sectors, cylinders=None):
     """Partition the given media according to the board requirements.
 
-    :param board: A string with the board type (e.g. beagle, panda, etc)
+    :param board_config: A BoardConfig class.
     :param media: A setup_partitions.Media object to partition.
-    :param fat_size: The type of FATs used in the boot partition (16 or 32).
     :param heads: Number of heads to use in the disk geometry of
         partitions.
     :param sectors: Number of sectors to use in the disk geometry of
@@ -291,21 +291,7 @@ def create_partitions(board, media, fat_size, heads, sectors, cylinders=None):
             ['parted', '-s', media.path, 'mklabel', 'msdos'], as_root=True)
         proc.wait()
 
-    if fat_size == 32:
-        partition_type = '0x0C'
-    else:
-        partition_type = '0x0E'
-
-    sfdisk_cmd = ',9,%s,*\n,,,-' % partition_type
-    if board == 'mx51evk':
-        # Create a one cylinder partition for fixed-offset bootloader data at
-        # the beginning of the image (size is one cylinder, so 8224768 bytes
-        # with the first sector for MBR).
-        sfdisk_cmd = ',1,0xDA\n%s' % sfdisk_cmd
-
-    # Create a VFAT or FAT16 partition of 9 cylinders (74027520 bytes, ~70
-    # MiB), followed by a Linux-type partition containing the rest of the free
-    # space.
+    sfdisk_cmd = board_config.get_sfdisk_cmd()
     run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
 
     # Sync and sleep to wait for the partition to settle.

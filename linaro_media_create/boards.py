@@ -35,6 +35,19 @@ class BoardConfig(object):
     boot_script = None
 
     @classmethod
+    def get_sfdisk_cmd(cls):
+        """Return the sfdisk command to partition the media."""
+        if cls.fat_size == 32:
+            partition_type = '0x0C'
+        else:
+            partition_type = '0x0E'
+
+        # This will create a partition of the given type, containing 9
+        # cylinders (74027520 bytes, ~70 MiB), followed by a Linux-type
+        # partition containing the rest of the free space.
+        return ',9,%s,*\n,,,-' % partition_type
+
+    @classmethod
     def _get_boot_cmd(cls, is_live, is_lowmem, consoles):
         """Get the boot command for this board.
 
@@ -193,6 +206,14 @@ class Mx51evkConfig(BoardConfig):
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
+
+    @classmethod
+    def get_sfdisk_cmd(cls):
+        # Create a one cylinder partition for fixed-offset bootloader data at
+        # the beginning of the image (size is one cylinder, so 8224768 bytes
+        # with the first sector for MBR).
+        sfdisk_cmd = super(Mx51evkConfig, cls).get_sfdisk_cmd()
+        return ',1,0xDA\n%s' % sfdisk_cmd
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,

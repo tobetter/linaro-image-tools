@@ -218,6 +218,19 @@ class TestBootSteps(TestCaseWithFixtures):
             'make_boot_script', 'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
 
+
+class TestGetSfdiskCmd(TestCase):
+
+    def test_default(self):
+        self.assertEquals(
+            ',9,0x0C,*\n,,,-', boards.BoardConfig.get_sfdisk_cmd())
+
+    def test_mx51evk(self):
+        self.assertEquals(
+            ',1,0xDA\n,9,0x0C,*\n,,,-',
+            board_configs['mx51evk'].get_sfdisk_cmd())
+
+
 class TestGetBootCmd(TestCase):
 
     def test_vexpress(self):
@@ -447,7 +460,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
-        create_partitions('mx51evk', self.media, 32, 255, 63, '')
+        create_partitions(
+            board_configs['mx51evk'], self.media, 255, 63, '')
 
         self.assertEqual(
             [['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
@@ -464,7 +478,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
-        create_partitions('beagle', self.media, 32, 255, 63, '')
+        create_partitions(
+            board_configs['beagle'], self.media, 255, 63, '')
 
         self.assertEqual(
             [['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
@@ -479,7 +494,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
         tempfile = self.createTempFileAsFixture()
-        create_partitions('beagle', Media(tempfile), 32, 255, 63, '')
+        create_partitions(
+            board_configs['beagle'], Media(tempfile), 255, 63, '')
 
         # Unlike the test for partitioning of a regular block device, in this
         # case parted was not called as there's no existing partition table
@@ -648,8 +664,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
             lambda image: ('/dev/loop99', '/dev/loop98')))
         uuid = '2e82008e-1af3-4699-8521-3bf5bac1e67a'
         bootfs_dev, rootfs_dev = setup_partitions(
-            'beagle', Media(tempfile), 32, '2G', 'boot', 'root', 'ext3',
-            uuid, True, True, True)
+            board_configs['beagle'], Media(tempfile), '2G', 'boot',
+            'root', 'ext3', uuid, True, True, True)
         self.assertEqual(
              # This is the call that would create the image file.
             [['qemu-img', 'create', '-f', 'raw', tempfile, '2G'],
@@ -680,8 +696,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         uuid = '2e82008e-1af3-4699-8521-3bf5bac1e67a'
         bootfs_dev, rootfs_dev = setup_partitions(
-            'beagle', media, 32, '2G', 'boot', 'root', 'ext3', uuid, True,
-            True, True)
+            board_configs['beagle'], media, '2G', 'boot', 'root', 'ext3',
+            uuid, True, True, True)
         self.assertEqual(
             [['sudo', 'parted', '-s', tempfile, 'mklabel', 'msdos'],
              ['sudo', 'sfdisk', '-D', '-H', '255', '-S', '63', tempfile],
