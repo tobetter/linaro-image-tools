@@ -59,7 +59,7 @@ def cleanup_tempdir():
 def ensure_required_commands(args):
     """Ensure we have the commands that we know are going to be used."""
     required_commands = [
-        'mkfs.vfat', 'sfdisk', 'fdisk', 'mkimage', 'uuidgen', 'parted']
+        'mkfs.vfat', 'sfdisk', 'mkimage', 'uuidgen', 'parted']
     if not is_arm_host():
         required_commands.append('qemu-arm-static')
         required_commands.append('qemu-img')
