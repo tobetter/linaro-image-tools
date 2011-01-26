@@ -134,6 +134,7 @@ class BeagleConfig(OmapConfig):
         'earlyprintk fixrtc nocompcache vram=12M '
         'omapfb.mode=dvi:1280x720MR-16@60')
 
+
 class OveroConfig(OmapConfig):
     uboot_flavor = 'omap3_overo'
     extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
@@ -144,6 +145,7 @@ class OveroConfig(OmapConfig):
     boot_script = 'boot.scr'
     extra_boot_args_options = (
         'earlyprintk')
+
 
 class PandaConfig(OmapConfig):
     uboot_flavor = 'omap4_panda'

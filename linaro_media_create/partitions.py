@@ -52,7 +52,8 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
             board_config, media, HEADS, SECTORS, cylinders)
 
     if media.is_block_device:
-        bootfs, rootfs = get_boot_and_root_partitions_for_media(media)
+        bootfs, rootfs = get_boot_and_root_partitions_for_media(
+            media, board_config)
     else:
         bootfs, rootfs = get_boot_and_root_loopback_devices(media.path)
 
@@ -151,34 +152,21 @@ def calculate_partition_size_and_offset(image_file):
     return vfat_size, vfat_offset, linux_size, linux_offset
 
 
-def get_boot_and_root_partitions_for_media(media):
+def get_boot_and_root_partitions_for_media(media, board_config):
     """Return the device files for the boot and root partitions of media.
 
-    If the given media has 2 partitions, the first is boot and the second is
-    root. If there are 3 partitions, the second is boot and third is root.
-
-    If there are any other number of partitions, ValueError is raised.
+    For boot we use partition number 1 plus the board's defined partition
+    offset and for root we use partition number 2 plus the board's offset.
 
     This function must only be used for block devices.
     """
     assert media.is_block_device, (
         "This function must only be used for block devices")
 
-    partition_count = _get_partition_count(media)
-
-    if partition_count == 2:
-        partition_offset = 0
-    elif partition_count == 3:
-        partition_offset = 1
-    else:
-        raise ValueError(
-            "Unexpected number of partitions on %s: %d" % (
-                media.path, partition_count))
-
     boot_partition = _get_device_file_for_partition_number(
-        media.path, 1 + partition_offset)
+        media.path, 1 + board_config.mmc_part_offset)
     root_partition = _get_device_file_for_partition_number(
-        media.path, 2 + partition_offset)
+        media.path, 2 + board_config.mmc_part_offset)
     assert boot_partition is not None and root_partition is not None, (
         "Could not find boot/root partition for %s" % media.path)
     return boot_partition, root_partition
@@ -201,16 +189,6 @@ def _get_device_file_for_partition_number(device, partition):
             return str(udisks_dev.Get(
                 device_path, 'DeviceFile', dbus_interface=DBUS_PROPERTIES))
     return None
-
-
-def _get_partition_count(media):
-    """Return the number of partitions on the given media."""
-    # We could do the same easily using python-parted but it requires root
-    # rights to read block devices, so we use UDisks here.
-    device_path = _get_udisks_device_path(media.path)
-    device = dbus.SystemBus().get_object(UDISKS, device_path)
-    return device.Get(
-        device_path, 'PartitionTableCount', dbus_interface=DBUS_PROPERTIES)
 
 
 def _get_udisks_device_path(device):
