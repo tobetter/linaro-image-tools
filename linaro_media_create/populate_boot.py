@@ -4,8 +4,9 @@ import os
 from linaro_media_create import cmd_runner
 
 
-def populate_boot(board_config, chroot_dir, boot_partition, boot_disk,
-                  boot_device_or_file, is_live, is_lowmem, consoles):
+def populate_boot(board_config, chroot_dir, rootfs_uuid, boot_partition,
+                  boot_disk, boot_device_or_file, is_live, is_lowmem,
+                  consoles):
 
     parts_dir = 'boot'
     if is_live:
@@ -33,8 +34,8 @@ def populate_boot(board_config, chroot_dir, boot_partition, boot_disk,
              boot_script_name=board_config.boot_script))
 
     board_config.make_boot_files(
-        uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir, boot_disk,
-        boot_script, boot_device_or_file)
+        uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir, rootfs_uuid,
+        boot_disk, boot_script, boot_device_or_file)
 
     cmd_runner.run(['sync']).wait()
     try:

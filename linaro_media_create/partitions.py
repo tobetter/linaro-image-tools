@@ -1,5 +1,6 @@
 import atexit
 import glob
+import re
 import subprocess
 import time
 
@@ -25,9 +26,8 @@ UDISKS = "org.freedesktop.UDisks"
 # small enough that there's not much benefit in doing that, but if it grows we
 # might want to do it.
 def setup_partitions(board_config, media, image_size, bootfs_label,
-                     rootfs_label, rootfs_type, rootfs_uuid,
-                     should_create_partitions, should_format_bootfs,
-                     should_format_rootfs):
+                     rootfs_label, rootfs_type, should_create_partitions,
+                     should_format_bootfs, should_format_rootfs):
     """Make sure the given device is partitioned to boot the given board.
 
     :param board_config: A BoardConfig class.
@@ -73,11 +73,30 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
         mkfs = 'mkfs.%s' % rootfs_type
         ensure_partition_is_not_mounted(rootfs)
         proc = cmd_runner.run(
-            [mkfs, '-U', rootfs_uuid, rootfs, '-L', rootfs_label],
+            [mkfs, rootfs, '-L', rootfs_label],
             as_root=True)
         proc.wait()
 
-    return bootfs, rootfs
+    rootfs_uuid = get_uuid(rootfs)
+
+    return bootfs, rootfs, rootfs_uuid
+
+
+def get_uuid(partition):
+    """Find UUID of the given partition."""
+    proc = cmd_runner.run(
+        ['blkid', '-o', 'udev', partition],
+        stdout=subprocess.PIPE)
+    blkid_output, _ = proc.communicate()
+    return _parse_blkid_output(blkid_output)
+
+
+def _parse_blkid_output(output):
+    for line in output.splitlines():
+        uuid_match = re.match("ID_FS_UUID=(.*)", line)
+        if uuid_match:
+            return uuid_match.group(1)
+    return None
 
 
 def ensure_partition_is_not_mounted(partition):
