@@ -560,36 +560,29 @@ class TestPartitionSetup(TestCaseWithFixtures):
             [129024L, 32256L, 10321920L, 161280L],
             [vfat_size, vfat_offset, linux_size, linux_offset])
 
-    def test_get_boot_and_root_partitions_for_media_with_2_partitions(self):
-        self.useFixture(MockSomethingFixture(
-            partitions, '_get_partition_count', lambda media: 2))
-        tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
+    def test_get_boot_and_root_partitions_for_media_beagle(self):
         self.useFixture(MockSomethingFixture(
             partitions, '_get_device_file_for_partition_number',
             lambda dev, partition: '%s%d' % (tempfile, partition)))
+        tempfile = self.createTempFileAsFixture()
         media = Media(tempfile)
-        # Pretend the image file is a block device, or else
-        # get_boot_and_root_partitions_for_media will choke.
         media.is_block_device = True
         self.assertEqual(
             ("%s%d" % (tempfile, 1), "%s%d" % (tempfile, 2)),
-            get_boot_and_root_partitions_for_media(media))
+            get_boot_and_root_partitions_for_media(
+                media, board_configs['beagle']))
 
-    def test_get_boot_and_root_partitions_for_media_with_3_partitions(self):
-        self.useFixture(MockSomethingFixture(
-            partitions, '_get_partition_count', lambda media: 3))
-        tempfile = self._create_qemu_img_with_partitions(
-            ',1,0xDA\n,1,0x0C,*\n,,,-')
+    def test_get_boot_and_root_partitions_for_media_mx51evk(self):
         self.useFixture(MockSomethingFixture(
             partitions, '_get_device_file_for_partition_number',
             lambda dev, partition: '%s%d' % (tempfile, partition)))
+        tempfile = self.createTempFileAsFixture()
         media = Media(tempfile)
-        # Pretend the image file is a block device, or else
-        # get_boot_and_root_partitions_for_media will choke.
         media.is_block_device = True
         self.assertEqual(
             ("%s%d" % (tempfile, 2), "%s%d" % (tempfile, 3)),
-            get_boot_and_root_partitions_for_media(media))
+            get_boot_and_root_partitions_for_media(
+                media, board_configs['mx51evk']))
 
     def _create_qemu_img_with_partitions(self, sfdisk_commands):
         tempfile = self.createTempFileAsFixture()
@@ -681,8 +674,6 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def test_setup_partitions_for_block_device(self):
         self.useFixture(MockSomethingFixture(
             sys, 'stdout', open('/dev/null', 'w')))
-        self.useFixture(MockSomethingFixture(
-            partitions, '_get_partition_count', lambda media: 2))
         # Pretend the partitions are mounted.
         self.useFixture(MockSomethingFixture(
             partitions, 'is_partition_mounted', lambda part: True))
