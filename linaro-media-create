@@ -8,7 +8,6 @@ from subprocess import Popen
 
 from linaro_media_create.boards import (
     board_configs,
-    ROOTFS_UUID,
     )
 from linaro_media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
@@ -16,6 +15,7 @@ from linaro_media_create.hwpack import install_hwpacks
 from linaro_media_create.partitions import (
     Media,
     setup_partitions,
+    get_uuid,
     )
 from linaro_media_create.populate_boot import populate_boot
 from linaro_media_create.rootfs import populate_rootfs
@@ -59,7 +59,7 @@ def cleanup_tempdir():
 def ensure_required_commands(args):
     """Ensure we have the commands that we know are going to be used."""
     required_commands = [
-        'mkfs.vfat', 'sfdisk', 'mkimage', 'uuidgen', 'parted']
+        'mkfs.vfat', 'sfdisk', 'mkimage', 'parted']
     if not is_arm_host():
         required_commands.append('qemu-arm-static')
         required_commands.append('qemu-img')
@@ -105,20 +105,22 @@ if __name__ == '__main__':
 
     boot_partition, root_partition = setup_partitions(
         board_config, media, args.image_size, args.boot_label, args.rfs_label,
-        args.rootfs, ROOTFS_UUID, args.should_create_partitions,
-        args.should_format_bootfs, args.should_format_rootfs)
+        args.rootfs, args.should_create_partitions, args.should_format_bootfs,
+        args.should_format_rootfs)
+
+    rootfs_uuid = get_uuid(root_partition)
 
     if args.should_format_bootfs:
         populate_boot(
-            board_config, ROOTFS_DIR, boot_partition, BOOT_DISK, args.device,
-            args.is_live, args.is_lowmem, args.consoles)
+            board_config, ROOTFS_DIR, rootfs_uuid, boot_partition, BOOT_DISK,
+            args.device, args.is_live, args.is_lowmem, args.consoles)
 
     if args.should_format_rootfs:
         create_swap = False
         if args.swap_file is not None:
             create_swap = True
         populate_rootfs(ROOTFS_DIR, ROOT_DISK, root_partition, args.rootfs,
-            ROOTFS_UUID, create_swap, str(args.swap_file),
+            rootfs_uuid, create_swap, str(args.swap_file),
             board_config.mmc_part_offset)
 
     print "Done creating Linaro image on %s" % args.device

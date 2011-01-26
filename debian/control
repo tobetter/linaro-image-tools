@@ -22,7 +22,6 @@ Package: linaro-image-tools
 Architecture: all
 Depends: ${misc:Depends},
          parted,
-         uuid-runtime,
          dosfstools,
          u-boot-tools | uboot-mkimage,
          python,

@@ -52,8 +52,7 @@ def get_args_parser():
     group.add_argument(
         '--live', dest='is_live', action='store_true',
         help=('Create boot command for casper/live images; if this is not '
-              'provided a UUID for the rootfs is generated and used as the '
-              'root= option'))
+              'provided the UUID for the rootfs is used as the root= option'))
     group.add_argument(
         '--live-256m', dest='is_lowmem', action=Live256MegsAction,
         help=('Create boot command for casper/live images; adds '

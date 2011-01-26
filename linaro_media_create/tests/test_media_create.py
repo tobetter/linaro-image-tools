@@ -27,7 +27,6 @@ from linaro_media_create.boards import (
     make_boot_script,
     make_uImage,
     make_uInitrd,
-    ROOTFS_UUID,
     _get_file_matching,
     _get_mlo_file,
     _run_mkimage,
@@ -50,6 +49,8 @@ from linaro_media_create.partitions import (
     Media,
     run_sfdisk_commands,
     setup_partitions,
+    get_uuid,
+    _parse_blkid_output,
     )
 from linaro_media_create.rootfs import (
     create_flash_kernel_config,
@@ -172,7 +173,7 @@ class TestBootSteps(TestCaseWithFixtures):
                     linaro_media_create.boards, name, mock_func_creator(name)))
 
     def make_boot_files(self, config):
-        config.make_boot_files('', False, False, [], '', '', '', '')
+        config.make_boot_files('', False, False, [], '', '', '', '', '')
 
     def test_vexpress_steps(self):
         config = linaro_media_create.boards.VexpressConfig
@@ -235,71 +236,76 @@ class TestGetBootCmd(TestCase):
 
     def test_vexpress(self):
         boot_cmd = board_configs['vexpress']._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=None)
+            is_live=False, is_lowmem=False, consoles=None,
+            rootfs_uuid="deadbeef")
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x60008000 uImage; fatload mmc "
             "0:1 0x81000000 uInitrd; bootm 0x60008000 0x81000000'\nsetenv "
             "bootargs ' console=tty0 console=ttyAMA0,38400n8  "
-            "root=UUID=%s rootwait ro'\nboot" % ROOTFS_UUID)
+            "root=UUID=deadbeef rootwait ro'\nboot")
         self.assertEqual(expected, boot_cmd)
 
     def test_mx51evk(self):
         boot_cmd = board_configs['mx51evk']._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=None)
+            is_live=False, is_lowmem=False, consoles=None,
+            rootfs_uuid="deadbeef")
         expected = (
             "setenv bootcmd 'fatload mmc 0:2 0x90000000 uImage; fatload mmc "
             "0:2 0x90800000 uInitrd; bootm 0x90000000 0x90800000'\nsetenv "
             "bootargs ' console=tty0 console=ttymxc0,115200n8  "
-            "root=UUID=%s rootwait ro'\nboot" % ROOTFS_UUID)
+            "root=UUID=deadbeef rootwait ro'\nboot")
         self.assertEqual(expected, boot_cmd)
 
     def test_ux500(self):
         boot_cmd = board_configs['ux500']._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=None)
+            is_live=False, is_lowmem=False, consoles=None,
+            rootfs_uuid="deadbeef")
         expected = (
             "setenv bootcmd 'fatload mmc 1:1 0x00100000 uImage; fatload mmc "
             "1:1 0x08000000 uInitrd; bootm 0x00100000 0x08000000'\nsetenv "
             "bootargs ' console=tty0 console=ttyAMA2,115200n8  "
-            "root=UUID=%s rootwait ro earlyprintk rootdelay=1 fixrtc "
+            "root=UUID=deadbeef rootwait ro earlyprintk rootdelay=1 fixrtc "
             "nocompcache mem=96M@0 mem_modem=32M@96M mem=44M@128M "
             "pmem=22M@172M mem=30M@194M mem_mali=32M@224M "
-            "pmem_hwb=54M@256M hwmem=48M@302M mem=152M@360M'\nboot"
-            % ROOTFS_UUID)
+            "pmem_hwb=54M@256M hwmem=48M@302M mem=152M@360M'\nboot")
         self.assertEqual(expected, boot_cmd)
 
     def test_panda(self):
         boot_cmd = board_configs['panda']._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=None)
+            is_live=False, is_lowmem=False, consoles=None,
+            rootfs_uuid="deadbeef")
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x80200000 uImage; fatload mmc "
             "0:1 0x81600000 uInitrd; bootm 0x80200000 0x81600000'\nsetenv "
             "bootargs ' console=tty0 console=ttyO2,115200n8  "
-            "root=UUID=%s rootwait ro earlyprintk fixrtc nocompcache "
+            "root=UUID=deadbeef rootwait ro earlyprintk fixrtc nocompcache "
             "vram=32M omapfb.vram=0:8M mem=463M "
-            "ip=none'\nboot" % ROOTFS_UUID)
+            "ip=none'\nboot")
         self.assertEqual(expected, boot_cmd)
 
     def test_beagle(self):
         boot_cmd = board_configs['beagle']._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=None)
+            is_live=False, is_lowmem=False, consoles=None,
+            rootfs_uuid="deadbeef")
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x80000000 uImage; "
             "fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 "
             "0x81600000'\nsetenv bootargs ' console=tty0 "
-            "console=ttyO2,115200n8  root=UUID=%s rootwait ro earlyprintk "
-            "fixrtc nocompcache vram=12M "
-            "omapfb.mode=dvi:1280x720MR-16@60'\nboot" % ROOTFS_UUID)
+            "console=ttyO2,115200n8  root=UUID=deadbeef rootwait ro "
+            "earlyprintk fixrtc nocompcache vram=12M "
+            "omapfb.mode=dvi:1280x720MR-16@60'\nboot")
         self.assertEqual(expected, boot_cmd)
 
     def test_overo(self):
         boot_cmd = board_configs['overo']._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=None)
+            is_live=False, is_lowmem=False, consoles=None,
+            rootfs_uuid="deadbeef")
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x80000000 uImage; "
             "fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 "
             "0x81600000'\nsetenv bootargs ' console=tty0 "
-            "console=ttyO2,115200n8  root=UUID=%s rootwait ro earlyprintk'"
-            "\nboot" % ROOTFS_UUID)
+            "console=ttyO2,115200n8  root=UUID=deadbeef rootwait ro "
+            "earlyprintk'\nboot")
         self.assertEqual(expected, boot_cmd)
 
 class TestUnpackBinaryTarball(TestCaseWithFixtures):
@@ -319,6 +325,30 @@ class TestUnpackBinaryTarball(TestCaseWithFixtures):
         rc = unpack_binary_tarball(
             self.tarball_fixture.get_tarball(), tmp_dir, as_root=False)
         self.assertEqual(rc, 0)
+
+
+class TestGetUuid(TestCaseWithFixtures):
+
+    def setUp(self):
+        super(TestGetUuid, self).setUp()
+
+    def test_get_uuid(self):
+        fixture = MockCmdRunnerPopenFixture()
+        self.useFixture(fixture)
+        get_uuid("/dev/rootfs")
+        self.assertEquals(
+            [[
+                "sudo", "blkid", "-o", "udev", "-p", "-c", "/dev/null",
+                "/dev/rootfs"]],
+            fixture.mock.calls)
+
+    def test_parse_blkid_output(self):
+        output = (
+            "ID_FS_UUID=67d641db-ea7d-4acf-9f46-5f1f8275dce2\n"
+            "ID_FS_UUID_ENC=67d641db-ea7d-4acf-9f46-5f1f8275dce2\n"
+            "ID_FS_TYPE=ext4\n")
+        uuid = _parse_blkid_output(output)
+        self.assertEquals("67d641db-ea7d-4acf-9f46-5f1f8275dce2", uuid)
 
 
 class TestCmdRunner(TestCaseWithFixtures):
@@ -655,10 +685,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             partitions, 'get_boot_and_root_loopback_devices',
             lambda image: ('/dev/loop99', '/dev/loop98')))
-        uuid = '2e82008e-1af3-4699-8521-3bf5bac1e67a'
         bootfs_dev, rootfs_dev = setup_partitions(
             board_configs['beagle'], Media(tempfile), '2G', 'boot',
-            'root', 'ext3', uuid, True, True, True)
+            'root', 'ext3', True, True, True)
         self.assertEqual(
              # This is the call that would create the image file.
             [['qemu-img', 'create', '-f', 'raw', tempfile, '2G'],
@@ -668,7 +697,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
              # Make sure changes are written to disk.
              ['sync'],
              ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
-             ['sudo', 'mkfs.ext3', '-U', uuid, rootfs_dev, '-L', 'root']],
+             ['sudo', 'mkfs.ext3', rootfs_dev, '-L', 'root']],
             popen_fixture.mock.calls)
 
     def test_setup_partitions_for_block_device(self):
@@ -685,10 +714,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Pretend our tempfile is a block device.
         media.is_block_device = True
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        uuid = '2e82008e-1af3-4699-8521-3bf5bac1e67a'
         bootfs_dev, rootfs_dev = setup_partitions(
             board_configs['beagle'], media, '2G', 'boot', 'root', 'ext3',
-            uuid, True, True, True)
+            True, True, True)
         self.assertEqual(
             [['sudo', 'parted', '-s', tempfile, 'mklabel', 'msdos'],
              ['sudo', 'sfdisk', '-D', '-H', '255', '-S', '63', tempfile],
@@ -698,7 +726,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
              ['sudo', 'umount', bootfs_dev],
              ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
              ['sudo', 'umount', rootfs_dev],
-             ['sudo', 'mkfs.ext3', '-U', uuid, rootfs_dev, '-L', 'root']],
+             ['sudo', 'mkfs.ext3', rootfs_dev, '-L', 'root']],
             popen_fixture.mock.calls)
 
 

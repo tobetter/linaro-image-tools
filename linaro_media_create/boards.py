@@ -9,11 +9,8 @@ import atexit
 import glob
 import os
 import tempfile
-import uuid
 
 from linaro_media_create import cmd_runner
-
-ROOTFS_UUID = str(uuid.uuid4())
 
 
 class BoardConfig(object):
@@ -48,7 +45,7 @@ class BoardConfig(object):
         return ',9,%s,*\n,,,-' % partition_type
 
     @classmethod
-    def _get_boot_cmd(cls, is_live, is_lowmem, consoles):
+    def _get_boot_cmd(cls, is_live, is_lowmem, consoles, rootfs_uuid):
         """Get the boot command for this board.
 
         In general subclasses should not have to override this.
@@ -69,7 +66,7 @@ class BoardConfig(object):
         serial_opts += ' %s' % cls.extra_serial_opts
 
         lowmem_opt = ''
-        boot_snippet = 'root=UUID=%s' % ROOTFS_UUID
+        boot_snippet = 'root=UUID=%s' % rootfs_uuid
         if is_live:
             serial_opts += ' %s' % cls.live_serial_opts
             boot_snippet = 'boot=casper'
@@ -91,8 +88,9 @@ class BoardConfig(object):
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        root_dir, boot_dir, boot_script, boot_device_or_file):
-        boot_cmd = cls._get_boot_cmd(is_live, is_lowmem, consoles)
+                        root_dir, rootfs_uuid, boot_dir, boot_script,
+                        boot_device_or_file):
+        boot_cmd = cls._get_boot_cmd(is_live, is_lowmem, consoles, rootfs_uuid)
         cls._make_boot_files(
             uboot_parts_dir, boot_cmd, root_dir, boot_dir, boot_script,
             boot_device_or_file)
