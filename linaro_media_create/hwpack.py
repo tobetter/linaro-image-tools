@@ -113,5 +113,19 @@ def temporarily_overwrite_file_on_dir(filepath, directory, tmp_dir):
 
 def run_local_atexit_funcs():
     # Run the funcs in LIFO order, just like atexit does.
+    exc_info = None
     while len(local_atexit) > 0:
-        local_atexit.pop()()
+        func = local_atexit.pop()
+        try:
+            func()
+        except SystemExit:
+            exc_info = sys.exc_info()
+        except:
+            import traceback
+            print >> sys.stderr, "Error in local_atexit:"
+            traceback.print_exc()
+            exc_info = sys.exc_info()
+
+    if exc_info is not None:
+        raise exc_info[0], exc_info[1], exc_info[2]
+
