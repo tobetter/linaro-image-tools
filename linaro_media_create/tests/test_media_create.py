@@ -49,6 +49,7 @@ from linaro_media_create.partitions import (
     Media,
     run_sfdisk_commands,
     setup_partitions,
+    get_uuid,
     _parse_blkid_output,
     )
 from linaro_media_create.rootfs import (
@@ -330,6 +331,14 @@ class TestGetUuid(TestCaseWithFixtures):
 
     def setUp(self):
         super(TestGetUuid, self).setUp()
+
+    def test_get_uuid(self):
+        fixture = MockCmdRunnerPopenFixture()
+        self.useFixture(fixture)
+        get_uuid("/dev/rootfs")
+        self.assertEquals(
+            [["blkid", "-o", "udev", "/dev/rootfs"]],
+            fixture.mock.calls)
 
     def test_parse_blkid_output(self):
         output = (
