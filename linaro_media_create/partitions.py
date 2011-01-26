@@ -83,7 +83,8 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
 def get_uuid(partition):
     """Find UUID of the given partition."""
     proc = cmd_runner.run(
-        ['blkid', '-o', 'udev', partition],
+        ['blkid', '-o', 'udev', '-p', '-c', '/dev/null', partition],
+        as_root=True,
         stdout=subprocess.PIPE)
     blkid_output, _ = proc.communicate()
     return _parse_blkid_output(blkid_output)

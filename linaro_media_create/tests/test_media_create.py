@@ -337,7 +337,9 @@ class TestGetUuid(TestCaseWithFixtures):
         self.useFixture(fixture)
         get_uuid("/dev/rootfs")
         self.assertEquals(
-            [["blkid", "-o", "udev", "/dev/rootfs"]],
+            [[
+                "sudo", "blkid", "-o", "udev", "-p", "-c", "/dev/null",
+                "/dev/rootfs"]],
             fixture.mock.calls)
 
     def test_parse_blkid_output(self):
