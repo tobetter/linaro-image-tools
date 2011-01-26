@@ -681,7 +681,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             partitions, 'get_boot_and_root_loopback_devices',
             lambda image: ('/dev/loop99', '/dev/loop98')))
-        bootfs_dev, rootfs_dev, rootfs_uuid = setup_partitions(
+        bootfs_dev, rootfs_dev = setup_partitions(
             board_configs['beagle'], Media(tempfile), '2G', 'boot',
             'root', 'ext3', True, True, True)
         self.assertEqual(
@@ -693,8 +693,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
              # Make sure changes are written to disk.
              ['sync'],
              ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
-             ['sudo', 'mkfs.ext3', rootfs_dev, '-L', 'root'],
-             ['blkid', '-o', 'udev', rootfs_dev]],
+             ['sudo', 'mkfs.ext3', rootfs_dev, '-L', 'root']],
             popen_fixture.mock.calls)
 
     def test_setup_partitions_for_block_device(self):
@@ -713,7 +712,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Pretend our tempfile is a block device.
         media.is_block_device = True
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        bootfs_dev, rootfs_dev, rootfs_uuid = setup_partitions(
+        bootfs_dev, rootfs_dev = setup_partitions(
             board_configs['beagle'], media, '2G', 'boot', 'root', 'ext3',
             True, True, True)
         self.assertEqual(
@@ -725,8 +724,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
              ['sudo', 'umount', bootfs_dev],
              ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
              ['sudo', 'umount', rootfs_dev],
-             ['sudo', 'mkfs.ext3', rootfs_dev, '-L', 'root'],
-             ['blkid', '-o', 'udev', rootfs_dev]],
+             ['sudo', 'mkfs.ext3', rootfs_dev, '-L', 'root']],
             popen_fixture.mock.calls)
 
 

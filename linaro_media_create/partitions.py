@@ -77,9 +77,7 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
             as_root=True)
         proc.wait()
 
-    rootfs_uuid = get_uuid(rootfs)
-
-    return bootfs, rootfs, rootfs_uuid
+    return bootfs, rootfs
 
 
 def get_uuid(partition):

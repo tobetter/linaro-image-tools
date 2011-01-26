@@ -15,6 +15,7 @@ from linaro_media_create.hwpack import install_hwpacks
 from linaro_media_create.partitions import (
     Media,
     setup_partitions,
+    get_uuid,
     )
 from linaro_media_create.populate_boot import populate_boot
 from linaro_media_create.rootfs import populate_rootfs
@@ -102,10 +103,12 @@ if __name__ == '__main__':
     hwpacks = args.hwpacks
     install_hwpacks(ROOTFS_DIR, TMP_DIR, args.hwpack_force_yes, *hwpacks)
 
-    boot_partition, root_partition, rootfs_uuid = setup_partitions(
+    boot_partition, root_partition = setup_partitions(
         board_config, media, args.image_size, args.boot_label, args.rfs_label,
         args.rootfs, args.should_create_partitions, args.should_format_bootfs,
         args.should_format_rootfs)
+
+    rootfs_uuid = get_uuid(root_partition)
 
     if args.should_format_bootfs:
         populate_boot(
