@@ -724,8 +724,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
              # Since the partitions are mounted, setup_partitions will umount
              # them before running mkfs.
              ['sudo', 'umount', bootfs_dev],
-             ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
              ['sudo', 'umount', rootfs_dev],
+             ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
              ['sudo', 'mkfs.ext3', rootfs_dev, '-L', 'root']],
             popen_fixture.mock.calls)
 

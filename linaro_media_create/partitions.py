@@ -54,15 +54,16 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
     if media.is_block_device:
         bootfs, rootfs = get_boot_and_root_partitions_for_media(
             media, board_config)
+        # It looks like KDE somehow automounts the partitions after you
+        # repartition a disk so we need to unmount them here to create the
+        # filesystem.
+        ensure_partition_is_not_mounted(bootfs)
+        ensure_partition_is_not_mounted(rootfs)
     else:
         bootfs, rootfs = get_boot_and_root_loopback_devices(media.path)
 
     if should_format_bootfs:
         print "\nFormating boot partition\n"
-        # It looks like KDE somehow automounts the partitions after you
-        # repartition a disk so we need to unmount them here to create the
-        # filesystem.
-        ensure_partition_is_not_mounted(bootfs)
         proc = cmd_runner.run(
             ['mkfs.vfat', '-F', str(board_config.fat_size), bootfs, '-n',
              bootfs_label],
@@ -72,7 +73,6 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
     if should_format_rootfs:
         print "\nFormating root partition\n"
         mkfs = 'mkfs.%s' % rootfs_type
-        ensure_partition_is_not_mounted(rootfs)
         proc = cmd_runner.run(
             [mkfs, rootfs, '-L', rootfs_label],
             as_root=True)
