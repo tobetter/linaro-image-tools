@@ -161,7 +161,7 @@ class TestBootSteps(TestCaseWithFixtures):
         self.mock_all_boards_funcs()
 
     def mock_all_boards_funcs(self):
-        """Mock all functions of linaro_media_create.boards with a call tracer."""
+        """Mock functions of linaro_media_create.boards with a call tracer."""
 
         def mock_func_creator(name):
             return lambda *args, **kwargs: self.funcs_calls.append(name)
@@ -680,8 +680,15 @@ class TestPartitionSetup(TestCaseWithFixtures):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             sys, 'stdout', open('/dev/null', 'w')))
+        def ensure_partition_not_mounted(part):
+            raise AssertionError(
+                "ensure_partition_is_not_mounted must not be called when "
+                "generating image files. It makes no sense to do that and "
+                "it depends on UDisks, thus making it hard to run on a "
+                "chroot")
         self.useFixture(MockSomethingFixture(
-            partitions, 'is_partition_mounted', lambda part: False))
+            partitions,
+            'ensure_partition_is_not_mounted', ensure_partition_not_mounted))
         self.useFixture(MockSomethingFixture(
             partitions, 'get_boot_and_root_loopback_devices',
             lambda image: ('/dev/loop99', '/dev/loop98')))
@@ -724,8 +731,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
              # Since the partitions are mounted, setup_partitions will umount
              # them before running mkfs.
              ['sudo', 'umount', bootfs_dev],
-             ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
              ['sudo', 'umount', rootfs_dev],
+             ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
              ['sudo', 'mkfs.ext3', rootfs_dev, '-L', 'root']],
             popen_fixture.mock.calls)
 
