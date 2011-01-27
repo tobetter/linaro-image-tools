@@ -28,7 +28,7 @@ def install_package_providing(command):
     package, _ = packages[0]
     print ("Installing required command %s from package %s"
            % (command, package))
-    cmd_runner.run(['apt-get', 'install', package], as_root=True)
+    cmd_runner.run(['apt-get', 'install', package], as_root=True).wait()
 
 
 def ensure_command(command):
