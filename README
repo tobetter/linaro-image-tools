@@ -13,6 +13,8 @@ Before running any tests you need to install the following packages:
   - dpkg-dev
   - python-parted
   - python-dbus
+  - python-apt
+  - qemu-kvm
 
 And run the following command:
 

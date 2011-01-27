@@ -354,16 +354,17 @@ class TestGetUuid(TestCaseWithFixtures):
 class TestCmdRunner(TestCaseWithFixtures):
 
     def test_run(self):
-        fixture = MockCmdRunnerPopenFixture()
-        self.useFixture(fixture)
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
         proc = cmd_runner.run(['foo', 'bar', 'baz'])
+        # Call wait or else MockCmdRunnerPopenFixture() raises an
+        # AssertionError().
+        proc.wait()
         self.assertEqual(0, proc.returncode)
         self.assertEqual([['foo', 'bar', 'baz']], fixture.mock.calls)
 
     def test_run_as_root(self):
-        fixture = MockCmdRunnerPopenFixture()
-        self.useFixture(fixture)
-        cmd_runner.run(['foo', 'bar'], as_root=True)
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        cmd_runner.run(['foo', 'bar'], as_root=True).wait()
         self.assertEqual([['sudo', 'foo', 'bar']], fixture.mock.calls)
 
     def test_run_succeeds_on_zero_return_code(self):

@@ -66,7 +66,13 @@ class MockSomethingFixture(object):
 class MockCmdRunnerPopen(object):
     """A mock for cmd_runner.Popen() which stores the args given to it."""
     calls = None
+    # A variable that is set to False in __call__() and only set back to True
+    # when wait() is called, to indicate that tht subprocess has finished. Is
+    # used in tests to make sure all callsites wait for their child.
+    child_finished = True
+
     def __call__(self, cmd, *args, **kwargs):
+        self.child_finished = False
         if self.calls is None:
             self.calls = []
         if isinstance(cmd, basestring):
@@ -83,6 +89,7 @@ class MockCmdRunnerPopen(object):
         return '', ''
 
     def wait(self):
+        self.child_finished = True
         return self.returncode
 
     @property
@@ -96,11 +103,16 @@ class MockCmdRunnerPopenFixture(MockSomethingFixture):
     If no mock is given, a MockCmdRunnerPopen instance is used.
     """
 
-    def __init__(self, mock=None):
-        if mock is None:
-            mock = MockCmdRunnerPopen()
+    def __init__(self):
         super(MockCmdRunnerPopenFixture, self).__init__(
-            cmd_runner, 'Popen', mock)
+            cmd_runner, 'Popen', MockCmdRunnerPopen())
+
+    def tearDown(self):
+        super(MockCmdRunnerPopenFixture, self).tearDown()
+        if not self.mock.child_finished:
+            raise AssertionError(
+                "You should call wait() or communicate() to ensure "
+                "the subprocess is finished before proceeding.")
 
 
 class MockCallableWithPositionalArgs(object):
