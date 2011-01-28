@@ -1,0 +1,20 @@
+Metadata-Version: 1.1
+Name: linaro-image-tools
+Version: 0.4.2
+Summary: Tools to create and write Linaro images
+Home-page: https://launchpad.net/linaro-image-tools
+Author: Linaro Infrastructure team
+Author-email: linaro-dev@lists.linaro.org
+License: GPL v3 or later
+Description: UNKNOWN
+Platform: UNKNOWN
+Requires: CommandNotFound
+Requires: apt.cache
+Requires: apt.package
+Requires: apt_pkg
+Requires: dbus
+Requires: debian
+Requires: parted
+Requires: testtools
+Provides: hwpack
+Provides: linaro_media_create

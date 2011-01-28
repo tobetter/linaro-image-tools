@@ -1,0 +1,132 @@
+linaro-image-tools (0.4.2-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+    - Switch to non-native mode and drop Vcs-Bzr.
+    - Build-depend on python-distutils-extra for DistutilsExtra.
+    - Fixes support for mx51evk images; LP: #705410.
+    - New or noteworthy:
+      . Support for Gumstix Overo boards has been added.
+      . Support for Freescale mx51evk (Babbage) boards has been fixed.
+      . Support for ARM Versatile Express boards has been fixed.
+      . The fdisk command is not required anymore.
+      . The UUID of the rootfs is not pre-computed anymore; this allows btrfs
+        to be used for the root filesystem.
+      . Linaro Image Tools are now released as a standalone tarball; you need
+        https://launchpad.net/python-distutils-extra to run setup.py.
+      . Support for 10.11 / linaro-m images has been restored.
+      . The hardware pack handling code is now GPLv2+
+  * Append /sbin to PATH and export it as to locate parted and sfdisk.
+
+ -- Loïc Minier <loic.minier@linaro.org>  Fri, 28 Jan 2011 22:09:14 +0100
+
+linaro-image-tools (0.4.1) natty; urgency=low
+
+  * Brown paperbag release.
+  * Sort files in commands ran by linaro_media_create.rootfs.move_contents()
+    as this breaks the testsuite on some filesystems.
+  * Disable pkgbinarymangler when running the testsuite as it might cause some
+    stderr output which confuses it.
+  * Uppercase Python in python-linaro-media-create long description.
+  * Drop util-linux from Depends as it's Essential.
+  * Update Build-Deps for testsuite requirements (qemu-kvm for qemu-img,
+    u-boot | uboot-mkimage for mkimage and command-not-found for
+    CommandNotFound) and recommend command-not-found to locate the package of
+    missing commands.
+
+ -- Loïc Minier <loic.minier@linaro.org>  Wed, 19 Jan 2011 19:32:38 +0100
+
+linaro-image-tools (0.4) natty; urgency=low
+
+  IMPORTANT: this version of linaro-image-tools breaks support for 10.05
+  images; we hope to restore this support really soon but it was more
+  important to release this update and have support for linaro-n images.
+ 
+  * New major release
+    - Large parts rewritten in Python (Michael Hudson, Guilherme Salgado,
+      James Westby, Martin Ohlsson).
+    - Various bug fixes.
+    - Notify users that apt-get will be run in target rootfs (Martin Ohlsson);
+      LP: #651906
+    - Use fdisk -l for output rather than sfdisk -l (Martin Ohlsson);
+      LP: #673410.
+    - Allow passing multiple --hwpack when creating an image (Michael Hudson).
+    - Add --hwpack-force-yes to linaro-media-create to forcibly install
+      unauthenticated packages (Michael Hudson).
+    - hwpack-create now has a --debug option (James Westby).
+    - hwpack creation now outputs a manifest external to the hwpack as well
+      (Michael Hudson).
+    - Add ability to add local .debs to the hwpack with --local-deb
+      (Michael Hudson).
+    - Update dependencies; new deps on python-testtools, python-parted,
+      python-dbus and more, drop obsolete deps.
+  * Fix support of space in pathnames (Paul Larson).
+  * Update Depends to cope with mkimage moving from uboot-mkimage to
+    u-boot-tools.
+  * Fix empty Vcs-Bzr.
+  * Strict >= ${source:Version} dependency on python-hwpack.
+  * Use python2 dh sequence instead of python-support; add a python >=
+    2.6.5-1~ build-dep.
+  * Uppercase Python in description (lintian).
+  * Various cleanups.
+  * Drop omapfb.debug=y from kernel cmdlines as DSS2 is stable nowadays.
+
+ -- Loïc Minier <loic.minier@linaro.org>  Thu, 23 Dec 2010 14:41:29 +0100
+
+linaro-image-tools (0.3) maverick-proposed; urgency=low
+
+  [ Steve Langasek ]
+  * no longer using the 'omap' uboot flavor support in live-helper; instead,
+    run the mkimage commands directly for omap.
+  * fix the paths used for looking up x-loader and u-boot binaries in the
+    tarball; these don't belong in /boot at all, pull them from /usr/lib.
+  * only enforce the presence of commands we're actually using; this lets
+    us automatically pull in btrfs-tools when btrfs is specified.
+  * add sudo to a couple more commands in linaro-media-create, so the script
+    itself can run as non-root as intended.
+
+  [ James Westby ]
+  * Add a linaro-hwpack-create script for the creation of hardware packs.
+
+  [ Steve Langasek ]
+  * Fix lookup of linaro-hwpack-install to work correctly when l-m-c is on
+    the path.  Closes: #652669.
+
+  [ Loïc Minier ]
+  * Drop spurious single quote character in boot_args_options for beagle|igep;
+    thanks Peter Maydell; LP: #667400.
+  * Set LC_ALL=C when entering the chroot as it has no locales.  LP: #651905.
+
+  [ Tom Gall ]
+  * Use --numeric-owner argument to tar when unpacking, so that files get
+    the right owner on boot of the image.  LP: #652121.
+
+  [ Dave Martin ]
+  * Implement proper cleanup handling on signal / exit, so that we don't
+    leave clutter behind on error.  This also fixes the message at the end of
+    a successful install about being unable to unmount proc.  LP: #616385,
+    #660196, #667394, #643601, #627383.
+
+ -- Steve Langasek <steve.langasek@ubuntu.com>  Tue, 09 Nov 2010 12:50:26 -0800
+
+linaro-image-tools (0.2) maverick; urgency=low
+
+  [ James Westby ]
+  * Add a module that provides some improvements to tarfile.
+  * Add some matchers for testing the content of tarfiles.
+  * Add the skeleton code to create empty hardware packs.
+
+  [ Torez Smith ]
+  * Add IGEP support; LP: #627611.
+
+  [ Loïc Minier ]
+  * Fix deps in control as well: depend on uuid-runtime rather than
+    uuidgen-runtime and do not depend on util-linux, e2fsprogs and coreutils
+    as these are Essential: yes; thanks Colin Watson.
+
+ -- Loïc Minier <loic.minier@linaro.org>  Sun, 05 Sep 2010 10:26:20 +0200
+
+linaro-image-tools (0.1) maverick; urgency=low
+
+  * Initial packaging
+
+ -- Loïc Minier <loic.minier@linaro.org>  Tue, 31 Aug 2010 22:32:49 +0200
