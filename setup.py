@@ -13,7 +13,6 @@ DistUtilsExtra.auto.setup(
         author='Linaro Infrastructure team',
         author_email="linaro-dev@lists.linaro.org",
 
-        packages=["hwpack", "linaro_media_create"],
         scripts=[
             "linaro-hwpack-create", "linaro-hwpack-install",
             "linaro-media-create"],
