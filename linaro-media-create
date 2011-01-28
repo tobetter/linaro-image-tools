@@ -1,4 +1,22 @@
 #!/usr/bin/env python
+# Copyright (C) 2010, 2011 Linaro
+#
+# Author: Guilherme Salgado <guilherme.salgado@linaro.org>
+#
+# This file is part of Linaro Image Tools.
+#
+# Linaro Image Tools is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Linaro Image Tools is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
 import atexit
 import os
@@ -8,7 +26,6 @@ from subprocess import Popen
 
 from linaro_media_create.boards import (
     board_configs,
-    ROOTFS_UUID,
     )
 from linaro_media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
@@ -16,6 +33,7 @@ from linaro_media_create.hwpack import install_hwpacks
 from linaro_media_create.partitions import (
     Media,
     setup_partitions,
+    get_uuid,
     )
 from linaro_media_create.populate_boot import populate_boot
 from linaro_media_create.rootfs import populate_rootfs
@@ -26,11 +44,11 @@ from linaro_media_create.utils import (
     )
 from linaro_media_create import get_args_parser
 
-
-TMP_DIR = tempfile.mkdtemp()
-ROOTFS_DIR = os.path.join(TMP_DIR, 'binary')
-BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
-ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
+# Just define the global variables
+TMP_DIR = None
+ROOTFS_DIR = None
+BOOT_DISK = None
+ROOT_DISK = None
 
 
 # Registered as the first atexit handler as we want this to be the last
@@ -44,19 +62,22 @@ def cleanup_tempdir():
     devnull = open('/dev/null', 'w')
     # Use raw subprocess.Popen as we don't want to stop in case the
     # commands end with a non-zero return code.
-    Popen(
-        ['sudo', 'umount', BOOT_DISK], stdout=devnull, stderr=devnull).wait()
-    Popen(
-        ['sudo', 'umount', ROOT_DISK], stdout=devnull, stderr=devnull).wait()
+    if BOOT_DISK is not None:
+        Popen(['sudo', 'umount', BOOT_DISK],
+              stdout=devnull, stderr=devnull).wait()
+    if ROOT_DISK is not None:
+        Popen(['sudo', 'umount', ROOT_DISK],
+              stdout=devnull, stderr=devnull).wait()
     # Remove TMP_DIR as root because some files written there are
     # owned by root.
-    Popen(['sudo', 'rm', '-rf', TMP_DIR]).wait()
+    if TMP_DIR is not None:
+        Popen(['sudo', 'rm', '-rf', TMP_DIR]).wait()
 
 
 def ensure_required_commands(args):
     """Ensure we have the commands that we know are going to be used."""
     required_commands = [
-        'mkfs.vfat', 'sfdisk', 'fdisk', 'mkimage', 'uuidgen', 'parted']
+        'mkfs.vfat', 'sfdisk', 'mkimage', 'parted']
     if not is_arm_host():
         required_commands.append('qemu-arm-static')
         required_commands.append('qemu-img')
@@ -71,6 +92,14 @@ def ensure_required_commands(args):
 if __name__ == '__main__':
     parser = get_args_parser()
     args = parser.parse_args()
+
+    # If --help was specified this won't execute.
+    # Create temp dir and initialize rest of path vars.
+    TMP_DIR = tempfile.mkdtemp()
+    ROOTFS_DIR = os.path.join(TMP_DIR, 'binary')
+    BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
+    ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
+
     board_config = board_configs[args.board]
 
     ensure_required_commands(args)
@@ -93,22 +122,23 @@ if __name__ == '__main__':
     install_hwpacks(ROOTFS_DIR, TMP_DIR, args.hwpack_force_yes, *hwpacks)
 
     boot_partition, root_partition = setup_partitions(
-        args.board, media, board_config.fat_size, args.image_size,
-        args.boot_label, args.rfs_label, args.rootfs, ROOTFS_UUID,
-        args.should_create_partitions,
-        args.should_format_bootfs, args.should_format_rootfs)
+        board_config, media, args.image_size, args.boot_label, args.rfs_label,
+        args.rootfs, args.should_create_partitions, args.should_format_bootfs,
+        args.should_format_rootfs)
+
+    rootfs_uuid = get_uuid(root_partition)
 
     if args.should_format_bootfs:
         populate_boot(
-            board_config, ROOTFS_DIR, boot_partition, BOOT_DISK, args.device,
-            args.is_live, args.is_lowmem, args.consoles)
+            board_config, ROOTFS_DIR, rootfs_uuid, boot_partition, BOOT_DISK,
+            args.device, args.is_live, args.is_lowmem, args.consoles)
 
     if args.should_format_rootfs:
         create_swap = False
         if args.swap_file is not None:
             create_swap = True
         populate_rootfs(ROOTFS_DIR, ROOT_DISK, root_partition, args.rootfs,
-            ROOTFS_UUID, create_swap, str(args.swap_file),
+            rootfs_uuid, create_swap, str(args.swap_file),
             board_config.mmc_part_offset)
 
     print "Done creating Linaro image on %s" % args.device

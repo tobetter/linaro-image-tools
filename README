@@ -1,6 +1,26 @@
 This project contains a collection of tools to help creating Linaro bootable
 images to be used in development boards.
 
+= Running linaro-media-create =
+
+To run linaro-media-create you'll need to make sure the following packages are
+installed:
+
+  - parted
+  - dosfstools
+  - u-boot-tools or uboot-mkimage
+  - python-argparse
+  - python-dbus
+  - python-debian >= 0.1.16ubuntu1
+  - python-parted
+  - qemu-kvm-extras-static >= 0.13.0 (only if you're running on x86).
+    If you're not running Natty, you can get them from
+      - http://tinyurl.com/6yqzkre for 64-bit
+      - http://tinyurl.com/68rvuoz for 32-bit
+  - qemu-kvm
+  - btrfs-tools
+  - command-not-found
+
 = Running tests =
 
 Before running any tests you need to install the following packages:
@@ -13,6 +33,8 @@ Before running any tests you need to install the following packages:
   - dpkg-dev
   - python-parted
   - python-dbus
+  - python-apt
+  - qemu-kvm
 
 And run the following command:
 

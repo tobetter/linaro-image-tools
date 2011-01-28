@@ -1,0 +1,13 @@
+Format-Specification: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=135
+Name: Linaro Image Tools
+Maintainer: Linaro Infrastructure team <linaro-dev@linaro.org>
+Source: https://launchpad.net/linaro-image-tools
+
+Files: linaro-hwpack-create linaro-hwpack-install hwpack/*
+Copyright: 2010, 2011 Linaro Limited 
+License: GPL-2+
+
+Files: linaro-media-create linaro_media_create/*
+Copyright: 2010, 2011 Linaro Limited 
+License: GPL-3+
+

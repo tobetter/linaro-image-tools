@@ -1,3 +1,22 @@
+# Copyright (C) 2010, 2011 Linaro
+#
+# Author: Guilherme Salgado <guilherme.salgado@linaro.org>
+#
+# This file is part of Linaro Image Tools.
+# 
+# Linaro Image Tools is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Linaro Image Tools is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
+
 import argparse
 
 from linaro_media_create.boards import board_configs
@@ -52,8 +71,7 @@ def get_args_parser():
     group.add_argument(
         '--live', dest='is_live', action='store_true',
         help=('Create boot command for casper/live images; if this is not '
-              'provided a UUID for the rootfs is generated and used as the '
-              'root= option'))
+              'provided the UUID for the rootfs is used as the root= option'))
     group.add_argument(
         '--live-256m', dest='is_lowmem', action=Live256MegsAction,
         help=('Create boot command for casper/live images; adds '
