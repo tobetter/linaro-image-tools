@@ -166,58 +166,84 @@ class TestBootSteps(TestCaseWithFixtures):
         def mock_func_creator(name):
             return lambda *args, **kwargs: self.funcs_calls.append(name)
 
-        for name in dir(linaro_media_create.boards):
-            attr = getattr(linaro_media_create.boards, name)
+        for name in dir(boards):
+            attr = getattr(boards, name)
             if type(attr) == types.FunctionType:
                 self.useFixture(MockSomethingFixture(
-                    linaro_media_create.boards, name, mock_func_creator(name)))
+                    linaro_media_create.boards, name,
+                    mock_func_creator(name)))
+
+    def mock_set_appropriate_serial_tty(self, config):
+
+        def set_appropriate_serial_tty_mock(cls, chroot_dir):
+            cls.serial_tty = cls._serial_tty
+
+        self.useFixture(MockSomethingFixture(
+            config, 'set_appropriate_serial_tty',
+            classmethod(set_appropriate_serial_tty_mock)))
 
     def make_boot_files(self, config):
         config.make_boot_files('', False, False, [], '', '', '', '', '')
 
     def test_vexpress_steps(self):
-        config = linaro_media_create.boards.VexpressConfig
-        self.make_boot_files(config)
+        self.make_boot_files(boards.VexpressConfig)
         expected = ['make_uImage', 'make_uInitrd']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_mx51evk_steps(self):
-        config = linaro_media_create.boards.Mx51evkConfig
-        self.make_boot_files(config)
+        self.make_boot_files(boards.Mx51evkConfig)
         expected = [
             'install_mx51evk_boot_loader', 'make_uImage', 'make_uInitrd',
             'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_ux500_steps(self):
-        config = linaro_media_create.boards.Ux500Config
-        self.make_boot_files(config)
+        self.make_boot_files(boards.Ux500Config)
         expected = ['make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_panda_steps(self):
-        config = linaro_media_create.boards.PandaConfig
-        self.make_boot_files(config)
+        self.mock_set_appropriate_serial_tty(boards.PandaConfig)
+        self.make_boot_files(boards.PandaConfig)
         expected = [
             'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
             'make_boot_script', 'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_beagle_steps(self):
-        config = linaro_media_create.boards.BeagleConfig
-        self.make_boot_files(config)
+        self.mock_set_appropriate_serial_tty(boards.BeagleConfig)
+        self.make_boot_files(boards.BeagleConfig)
         expected = [
             'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
             'make_boot_script', 'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_overo_steps(self):
-        config = linaro_media_create.boards.OveroConfig
-        self.make_boot_files(config)
+        self.mock_set_appropriate_serial_tty(boards.OveroConfig)
+        self.make_boot_files(boards.OveroConfig)
         expected = [
             'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
             'make_boot_script', 'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
+
+
+class TestFixForBug697824(TestCaseWithFixtures):
+
+    def test_set_appropriate_serial_tty_old_kernel(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        boot_dir = os.path.join(tempdir, 'boot')
+        os.makedirs(boot_dir)
+        open(os.path.join(boot_dir, 'vmlinuz-2.6.35-23-foo'), 'w').close()
+        boards.BeagleConfig.set_appropriate_serial_tty(tempdir)
+        self.assertEquals('ttyS2', boards.BeagleConfig.serial_tty)
+
+    def test_set_appropriate_serial_tty_new_kernel(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        boot_dir = os.path.join(tempdir, 'boot')
+        os.makedirs(boot_dir)
+        open(os.path.join(boot_dir, 'vmlinuz-2.6.36-13-foo'), 'w').close()
+        boards.BeagleConfig.set_appropriate_serial_tty(tempdir)
+        self.assertEquals('ttyO2', boards.BeagleConfig.serial_tty)
 
 
 class TestGetSfdiskCmd(TestCase):
@@ -284,7 +310,12 @@ class TestGetBootCmd(TestCase):
         self.assertEqual(expected, boot_cmd)
 
     def test_beagle(self):
-        boot_cmd = board_configs['beagle']._get_boot_cmd(
+        # XXX: To fix bug 697824 we have to change class attributes of our
+        # OMAP board configs, and some tests do that so to make sure they
+        # don't interfere with us we'll reset that before doing anything.
+        config = board_configs['beagle']
+        config.serial_tty = config._serial_tty
+        boot_cmd = config._get_boot_cmd(
             is_live=False, is_lowmem=False, consoles=None,
             rootfs_uuid="deadbeef")
         expected = (
