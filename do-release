@@ -1,0 +1,47 @@
+#!/bin/sh
+# tag tree, generate ChangeLog and roll a release tarball
+
+set -e
+
+self="$(basename "$0")"
+
+usage() {
+    echo "Usage: $self <version>"
+}
+
+log() {
+    echo "$*" >&2
+}
+
+log_i() {
+    log "I:" "$@"
+}
+
+die() {
+    log "E:" "$@"
+    exit 1
+}
+
+version="$1"
+
+if [ -z "$version" ]; then
+    usage >&2
+    exit 1
+fi
+
+if bzr tags | awk '{print $1}' | grep -qFx "$version"; then
+    die "Tag $version already exists; aborting"
+fi
+
+log_i "Creating tag $version"
+bzr tag "$version"
+
+log_i "Generating ChangeLog"
+bzr log -v --gnu-changelog >ChangeLog
+
+log_i "Creating release tarball in parent directory"
+./setup.py sdist -d ..
+
+log_i "Cleaning up"
+rm -f ChangeLog MANIFEST
+
