@@ -8,4 +8,7 @@ setup(
         name="linaro-image-tools",
         version="0.4.1.1",
         packages=["hwpack", "linaro_media_create"],
+        scripts=[
+            "linaro-hwpack-create", "linaro-hwpack-install",
+            "linaro-media-create"],
      )
