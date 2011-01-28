@@ -29,9 +29,15 @@ if [ -z "$version" ]; then
     exit 1
 fi
 
+log_i "Checking tree status"
 status=`bzr status`
 if [ -n "$status" ]; then
     die "Tree is dirty according to bzr status"
+fi
+
+log_i "Running tests"
+if ! python -m testtools.run tests.test_suite; then
+    die "Testsuite doesn't pass"
 fi
 
 if bzr tags | awk '{print $1}' | grep -qFx "$version"; then
