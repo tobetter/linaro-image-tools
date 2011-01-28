@@ -44,6 +44,12 @@ if bzr tags | awk '{print $1}' | grep -qFx "$version"; then
     die "Tag $version already exists"
 fi
 
+log_i "Setting version to $version in setup.py"
+sed -i "s/^\\([[:space:]]*version=\"\\)[^\"]*\",\$/\1$version\",/" setup.py
+
+log_i "Committing $version"
+bzr commit -m "Release $version"
+
 log_i "Creating tag $version"
 bzr tag "$version"
 
