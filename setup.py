@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
+# https://launchpad.net/python-distutils-extra
+import DistUtilsExtra.auto
 
-setup(
+DistUtilsExtra.auto.setup(
         name="linaro-image-tools",
         version="0.4.1.1",
         description="Tools to create and write Linaro images",
