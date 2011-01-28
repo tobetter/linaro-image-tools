@@ -29,8 +29,13 @@ if [ -z "$version" ]; then
     exit 1
 fi
 
+status=`bzr status`
+if [ -n "$status" ]; then
+    die "Tree is dirty according to bzr status"
+fi
+
 if bzr tags | awk '{print $1}' | grep -qFx "$version"; then
-    die "Tag $version already exists; aborting"
+    die "Tag $version already exists"
 fi
 
 log_i "Creating tag $version"
