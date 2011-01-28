@@ -6,7 +6,7 @@
 # TODO: When upgrading to a newer hwpack, make sure packages and apt sources
 # that are no longer needed are removed.
 
-# Copyright (C) 2010,2011 Linaro
+# Copyright (C) 2010, 2011 Linaro
 #
 # Author: Guilherme Salgado <guilherme.salgado@linaro.org>
 #
