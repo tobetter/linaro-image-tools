@@ -62,3 +62,6 @@ log_i "Creating release tarball in parent directory"
 log_i "Cleaning up"
 rm -f ChangeLog MANIFEST
 
+log_i "Signing tarball"
+gpg --armor --sign --detach-sig "../linaro-image-tools-$version.tar.gz"
+
