@@ -20,7 +20,7 @@ def get_version():
 
 
 setup(
-        name="hwpack",
+        name="linaro-image-tools",
         version=get_version(),
         packages=["hwpack", "linaro_media_create"],
      )
