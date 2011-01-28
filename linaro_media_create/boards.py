@@ -8,6 +8,7 @@ board_configs at the bottom of this file.
 import atexit
 import glob
 import os
+import re
 import tempfile
 
 from linaro_media_create import cmd_runner
@@ -30,6 +31,7 @@ class BoardConfig(object):
     load_addr = None
     kernel_suffix = None
     boot_script = None
+    serial_tty = None
 
     @classmethod
     def get_sfdisk_cmd(cls):
@@ -61,7 +63,7 @@ class BoardConfig(object):
             # XXX: I think this is not needed as we have board-specific
             # serial options for when is_live is true.
             if is_live:
-                serial_opts += ' serialtty=ttyS2'
+                serial_opts += ' serialtty=%s' % cls.serial_tty
 
         serial_opts += ' %s' % cls.extra_serial_opts
 
@@ -90,7 +92,8 @@ class BoardConfig(object):
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         root_dir, rootfs_uuid, boot_dir, boot_script,
                         boot_device_or_file):
-        boot_cmd = cls._get_boot_cmd(is_live, is_lowmem, consoles, rootfs_uuid)
+        boot_cmd = cls._get_boot_cmd(
+            is_live, is_lowmem, consoles, rootfs_uuid)
         cls._make_boot_files(
             uboot_parts_dir, boot_cmd, root_dir, boot_dir, boot_script,
             boot_device_or_file)
@@ -106,11 +109,51 @@ class BoardConfig(object):
         raise NotImplementedError()
 
 
+class classproperty(object):
+    """A descriptor that provides @property behavior on class methods."""
+    def __init__(self, getter):
+        self.getter = getter
+    def __get__(self, instance, cls):
+        return self.getter(cls)
+
+
 class OmapConfig(BoardConfig):
+
+    # XXX: Here we define these things as dynamic properties because our
+    # temporary hack to fix bug 697824 relies on changing the board's
+    # serial_tty at run time.
+    _extra_serial_opts = None
+    _live_serial_opts = None
+    _serial_tty = None
+
+    @classproperty
+    def live_serial_opts(cls):
+        return cls._live_serial_opts % cls.serial_tty
+
+    @classproperty
+    def extra_serial_opts(cls):
+        return cls._extra_serial_opts % cls.serial_tty
+
+    @classmethod
+    def set_appropriate_serial_tty(cls, chroot_dir):
+        """Set the appropriate serial_tty depending on the kernel used.
+
+        If the kernel found in the chroot dir is << 2.6.36 we use tyyS2, else
+        we use the default value (_serial_tty).
+        """
+        # XXX: This is also part of our temporary hack to fix bug 697824.
+        cls.serial_tty = cls._serial_tty
+        vmlinuz = _get_file_matching(
+            os.path.join(chroot_dir, 'boot', 'vmlinuz*'))
+        basename = os.path.basename(vmlinuz)
+        minor_version = re.match('.*2\.6\.([0-9]{2}).*', basename).group(1)
+        if int(minor_version) < 36:
+            cls.serial_tty = 'ttyS2'
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
+        cls.set_appropriate_serial_tty(chroot_dir)
         install_omap_boot_loader(chroot_dir, boot_dir)
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
@@ -121,8 +164,9 @@ class OmapConfig(BoardConfig):
 
 class BeagleConfig(OmapConfig):
     uboot_flavor = 'omap3_beagle'
-    extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
-    live_serial_opts = 'serialtty=ttyO2'
+    _serial_tty = 'ttyO2'
+    _extra_serial_opts = 'console=tty0 console=%s,115200n8'
+    _live_serial_opts = 'serialtty=%s'
     kernel_addr = '0x80000000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
@@ -135,7 +179,8 @@ class BeagleConfig(OmapConfig):
 
 class OveroConfig(OmapConfig):
     uboot_flavor = 'omap3_overo'
-    extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
+    _serial_tty = 'ttyO2'
+    _extra_serial_opts = 'console=tty0 console=%s,115200n8'
     kernel_addr = '0x80000000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
@@ -147,8 +192,9 @@ class OveroConfig(OmapConfig):
 
 class PandaConfig(OmapConfig):
     uboot_flavor = 'omap4_panda'
-    extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
-    live_serial_opts = 'serialtty=ttyO2'
+    _serial_tty = 'ttyO2'
+    _extra_serial_opts = 'console=tty0 console=%s,115200n8'
+    _live_serial_opts = 'serialtty=%s'
     kernel_addr = '0x80200000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
@@ -173,8 +219,9 @@ class IgepConfig(BeagleConfig):
 
 
 class Ux500Config(BoardConfig):
-    extra_serial_opts = 'console=tty0 console=ttyAMA2,115200n8'
-    live_serial_opts = 'serialtty=ttyAMA2'
+    serial_tty = 'ttyAMA2'
+    extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
+    live_serial_opts = 'serialtty=%s' % serial_tty
     kernel_addr = '0x00100000'
     initrd_addr = '0x08000000'
     load_addr = '0x00008000'
@@ -197,8 +244,9 @@ class Ux500Config(BoardConfig):
 
 
 class Mx51evkConfig(BoardConfig):
-    extra_serial_opts = 'console=tty0 console=ttymxc0,115200n8'
-    live_serial_opts = 'serialtty=ttymxc0'
+    serial_tty = 'ttymxc0'
+    extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
+    live_serial_opts = 'serialtty=%s' % serial_tty
     kernel_addr = '0x90000000'
     initrd_addr = '0x90800000'
     load_addr = '0x90008000'
@@ -229,8 +277,9 @@ class Mx51evkConfig(BoardConfig):
 
 class VexpressConfig(BoardConfig):
     uboot_flavor = 'ca9x4_ct_vxp'
-    extra_serial_opts = 'console=tty0 console=ttyAMA0,38400n8'
-    live_serial_opts = 'serialtty=ttyAMA0'
+    serial_tty = 'ttyAMA0'
+    extra_serial_opts = 'console=tty0 console=%s,38400n8' % serial_tty
+    live_serial_opts = 'serialtty=%s' % serial_tty
     kernel_addr = '0x60008000'
     initrd_addr = '0x81000000'
     load_addr = kernel_addr
