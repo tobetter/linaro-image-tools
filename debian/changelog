@@ -1,3 +1,14 @@
+linaro-image-tools (0.4.2-0ubuntu3) natty; urgency=low
+
+  * Switch back to python-support instead of dh_python2 as it makes it harder
+    to backport this package to lucid.
+    - Build-dep on python-support.
+    - Call dh with no build-sequence or addon args.
+    - Relax (unversion) the python build-dep.
+  * Suffix the python-debian build-dep with ~ to include backported versions.
+
+ -- Loïc Minier <loic.minier@linaro.org>  Sat, 29 Jan 2011 21:10:28 +0100
+
 linaro-image-tools (0.4.2-0ubuntu2) natty; urgency=low
 
   * Depend on sudo until it's made optional (e.g. when running

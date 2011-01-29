@@ -3,7 +3,7 @@
 export PATH := $(PATH):/sbin
 
 %:
-	dh --buildsystem=python_distutils --with-addon=python2 $*
+	dh $*
 
 override_dh_auto_test:
 	# XXX: The test-suite currently fails on Lucid. What can we do about

@@ -1,18 +1,19 @@
 Source: linaro-image-tools
 Section: devel
 Priority: optional
-Build-Depends: debhelper (>= 7.0.50~),
-               python (>= 2.6.5-1~),
+Build-Depends: command-not-found,
+               debhelper (>= 7.0.50~),
+               python,
                python-all,
-               python-debian (>= 0.1.16ubuntu1),
+               python-apt,
+               python-argparse,
+               python-debian (>= 0.1.16ubuntu1~),
                python-dbus,
                python-distutils-extra,
-               python-apt,
                python-parted,
+               python-support,
                python-testtools (>> 0.9.5),
-               python-argparse,
                qemu-kvm,
-               command-not-found,
                u-boot-tools | uboot-mkimage
 Standards-Version: 3.9.1
 Maintainer: Linaro Developers <linaro-dev@lists.linaro.org>
