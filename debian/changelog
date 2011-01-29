@@ -1,3 +1,10 @@
+linaro-image-tools (0.4.2-0ubuntu2) natty; urgency=low
+
+  * Depend on sudo until it's made optional (e.g. when running
+    linaro-media-create within sudo).
+
+ -- Loïc Minier <loic.minier@linaro.org>  Sat, 29 Jan 2011 17:29:49 +0100
+
 linaro-image-tools (0.4.2-0ubuntu1) natty; urgency=low
 
   * New upstream release.

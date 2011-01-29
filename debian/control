@@ -30,7 +30,8 @@ Depends: ${misc:Depends},
          python-dbus,
          python-debian (>= 0.1.16ubuntu1),
          python-linaro-media-create (>= ${source:Version}),
-         python-parted
+         python-parted,
+         sudo
 Recommends: qemu-kvm-extras-static,
             qemu-kvm,
             btrfs-tools,
