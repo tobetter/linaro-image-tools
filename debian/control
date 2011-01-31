@@ -33,7 +33,7 @@ Depends: ${misc:Depends},
          python-linaro-media-create (>= ${source:Version}),
          python-parted,
          sudo
-Recommends: qemu-kvm-extras-static,
+Recommends: qemu-user-static | qemu-kvm-extras-static,
             qemu-kvm,
             btrfs-tools,
             command-not-found
