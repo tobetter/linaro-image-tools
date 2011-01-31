@@ -170,9 +170,18 @@ class OmapConfig(BoardConfig):
             cls.serial_tty = 'ttyS2'
 
     @classmethod
+    def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
+                        root_dir, rootfs_uuid, boot_dir, boot_script,
+                        boot_device_or_file):
+        # XXX: This is also part of our temporary hack to fix bug 697824.
+        cls.set_appropriate_serial_tty(root_dir)
+        super(OmapConfig, cls).make_boot_files(
+            uboot_parts_dir, is_live, is_lowmem, consoles, root_dir,
+            rootfs_uuid, boot_dir, boot_script, boot_device_or_file)
+
+    @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
-        cls.set_appropriate_serial_tty(chroot_dir)
         install_omap_boot_loader(chroot_dir, boot_dir)
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
