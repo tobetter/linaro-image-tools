@@ -35,6 +35,7 @@ Before running any tests you need to install the following packages:
   - python-dbus
   - python-apt
   - qemu-kvm
+  - sfdisk
 
 And run the following command:
 
