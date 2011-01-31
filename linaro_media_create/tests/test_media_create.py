@@ -3,7 +3,7 @@
 # Author: Guilherme Salgado <guilherme.salgado@linaro.org>
 #
 # This file is part of Linaro Image Tools.
-# 
+#
 # Linaro Image Tools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -42,6 +42,7 @@ from linaro_media_create import (
     )
 import linaro_media_create
 from linaro_media_create.boards import (
+    BoardConfig,
     board_configs,
     make_boot_script,
     make_uImage,
@@ -248,6 +249,30 @@ class TestBootSteps(TestCaseWithFixtures):
 
 class TestFixForBug697824(TestCaseWithFixtures):
 
+    def mock_set_appropriate_serial_tty(self, config):
+
+        def set_appropriate_serial_tty_mock(cls, chroot_dir):
+            self.set_appropriate_serial_tty_called = True
+            cls.serial_tty = cls._serial_tty
+
+        self.useFixture(MockSomethingFixture(
+            config, 'set_appropriate_serial_tty',
+            classmethod(set_appropriate_serial_tty_mock)))
+
+    def test_omap_make_boot_files(self):
+        self.set_appropriate_serial_tty_called = False
+        self.mock_set_appropriate_serial_tty(board_configs['beagle'])
+        self.useFixture(MockSomethingFixture(
+            BoardConfig, 'make_boot_files',
+            classmethod(lambda *args: None)))
+        # We don't need to worry about what's passed to make_boot_files()
+        # because we mock the method which does the real work above and here
+        # we're only interested in ensuring that OmapConfig.make_boot_files()
+        # calls set_appropriate_serial_tty().
+        board_configs['beagle'].make_boot_files(
+            None, None, None, None, None, None, None, None, None)
+        self.assertTrue(self.set_appropriate_serial_tty_called)
+
     def test_set_appropriate_serial_tty_old_kernel(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         boot_dir = os.path.join(tempdir, 'boot')
@@ -316,7 +341,12 @@ class TestGetBootCmd(TestCase):
         self.assertEqual(expected, boot_cmd)
 
     def test_panda(self):
-        boot_cmd = board_configs['panda']._get_boot_cmd(
+        # XXX: To fix bug 697824 we have to change class attributes of our
+        # OMAP board configs, and some tests do that so to make sure they
+        # don't interfere with us we'll reset that before doing anything.
+        config = board_configs['panda']
+        config.serial_tty = config._serial_tty
+        boot_cmd = config._get_boot_cmd(
             is_live=False, is_lowmem=False, consoles=None,
             rootfs_uuid="deadbeef")
         expected = (
@@ -347,7 +377,12 @@ class TestGetBootCmd(TestCase):
         self.assertEqual(expected, boot_cmd)
 
     def test_overo(self):
-        boot_cmd = board_configs['overo']._get_boot_cmd(
+        # XXX: To fix bug 697824 we have to change class attributes of our
+        # OMAP board configs, and some tests do that so to make sure they
+        # don't interfere with us we'll reset that before doing anything.
+        config = board_configs['overo']
+        config.serial_tty = config._serial_tty
+        boot_cmd = config._get_boot_cmd(
             is_live=False, is_lowmem=False, consoles=None,
             rootfs_uuid="deadbeef")
         expected = (
