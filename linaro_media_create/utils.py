@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import platform
 
 try:
@@ -60,6 +61,31 @@ def ensure_command(command):
             ['which', command], stdout=open('/dev/null', 'w')).wait()
     except cmd_runner.SubcommandNonZeroReturnValue:
         install_package_providing(command)
+
+def find_command(name):
+    """Finds a linaro-image-tools commands.
+
+    Searches only the current directory when running from a checkout, and only
+    search PATH when running from an installed version.
+    """
+    assert name != ""
+    assert os.path.dirname(name) == ""
+
+    if not os.environ.has_key("PATH"):
+        os.environ["PATH"] = ":/bin:usr/bin"
+
+    if os.path.isabs(__file__):
+        dirs = os.environ["PATH"].split(os.pathsep)
+    else:
+        # search relative to current directory
+        dirs = ('',)
+
+    for dir in dirs:
+        path = os.path.join(dir, name)
+        if os.path.exists(path) and os.access(path, os.X_OK):
+            return path
+
+    return None
 
 
 def is_arm_host():

@@ -81,6 +81,7 @@ from linaro_media_create.rootfs import (
 from linaro_media_create.unpack_binary_tarball import unpack_binary_tarball
 from linaro_media_create.utils import (
     ensure_command,
+    find_command,
     install_package_providing,
     UnableToFindPackageProvidingCommand,
     )
@@ -1048,6 +1049,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
         force_yes = True
         install_hwpacks(
             'chroot', '/tmp/dir', force_yes, 'hwpack1.tgz', 'hwpack2.tgz')
+        linaro_hwpack_install = find_command('linaro-hwpack-install')
         self.assertEquals(
             [['sudo', 'mv', '-f', 'chroot/etc/resolv.conf',
               '/tmp/dir/resolv.conf'],
@@ -1055,8 +1057,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
              ['sudo', 'mv', '-f', 'chroot/etc/hosts', '/tmp/dir/hosts'],
              ['sudo', 'cp', '/etc/hosts', 'chroot/etc'],
              ['sudo', 'cp', '/usr/bin/qemu-arm-static', 'chroot/usr/bin'],
-             ['sudo', 'cp', 'linaro_media_create/../linaro-hwpack-install',
-              'chroot/usr/bin'],
+             ['sudo', 'cp', linaro_hwpack_install, 'chroot/usr/bin'],
              ['sudo', 'mount', 'proc', 'chroot/proc', '-t', 'proc'],
              ['sudo', 'cp', 'hwpack1.tgz', 'chroot'],
              ['sudo', 'chroot', 'chroot', 'linaro-hwpack-install',
