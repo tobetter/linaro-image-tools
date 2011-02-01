@@ -44,19 +44,24 @@ class CreateTempDirFixture(object):
 
 class CreateTarballFixture(object):
 
-    def __init__(self, dir):
-        self.dir = dir
-        self.tarball = os.path.join(self.dir, 'tarball.tar.gz')
+    def __init__(self, basedir, reldir='tarball', filename='tarball.tar.gz'):
+        self.basedir = basedir
+        self.reldir = reldir
+        self.tarball = os.path.join(self.basedir, filename)
 
     def setUp(self):
         # Create gzipped tar archive.
-        args = ['tar', '-czf', self.tarball, self.dir]
+        os.mkdir(os.path.join(self.basedir, reldir))
+        args = ['tar', '-C', self.basedir, '-czf', self.tarball, self.reldir]
         proc = subprocess.Popen(args)
         proc.wait()
 
     def tearDown(self):
         if os.path.exists(self.tarball):
             os.remove(self.tarball)
+        dir = os.path.join(self.basedir, subdir)
+        if os.path.exists(dir):
+            os.rmdir(dir)
 
     def get_tarball(self):
         return self.tarball
