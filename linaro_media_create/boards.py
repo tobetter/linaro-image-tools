@@ -1,3 +1,22 @@
+# Copyright (C) 2010, 2011 Linaro
+#
+# Author: Guilherme Salgado <guilherme.salgado@linaro.org>
+#
+# This file is part of Linaro Image Tools.
+#
+# Linaro Image Tools is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Linaro Image Tools is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
+
 """Configuration for boards supported by linaro-media-create.
 
 To add support for a new board, you need to create a subclass of
@@ -8,12 +27,10 @@ board_configs at the bottom of this file.
 import atexit
 import glob
 import os
+import re
 import tempfile
-import uuid
 
 from linaro_media_create import cmd_runner
-
-ROOTFS_UUID = str(uuid.uuid4())
 
 
 class BoardConfig(object):
@@ -33,9 +50,23 @@ class BoardConfig(object):
     load_addr = None
     kernel_suffix = None
     boot_script = None
+    serial_tty = None
 
     @classmethod
-    def _get_boot_cmd(cls, is_live, is_lowmem, consoles):
+    def get_sfdisk_cmd(cls):
+        """Return the sfdisk command to partition the media."""
+        if cls.fat_size == 32:
+            partition_type = '0x0C'
+        else:
+            partition_type = '0x0E'
+
+        # This will create a partition of the given type, containing 9
+        # cylinders (74027520 bytes, ~70 MiB), followed by a Linux-type
+        # partition containing the rest of the free space.
+        return ',9,%s,*\n,,,-' % partition_type
+
+    @classmethod
+    def _get_boot_cmd(cls, is_live, is_lowmem, consoles, rootfs_uuid):
         """Get the boot command for this board.
 
         In general subclasses should not have to override this.
@@ -51,12 +82,12 @@ class BoardConfig(object):
             # XXX: I think this is not needed as we have board-specific
             # serial options for when is_live is true.
             if is_live:
-                serial_opts += ' serialtty=ttyS2'
+                serial_opts += ' serialtty=%s' % cls.serial_tty
 
         serial_opts += ' %s' % cls.extra_serial_opts
 
         lowmem_opt = ''
-        boot_snippet = 'root=UUID=%s' % ROOTFS_UUID
+        boot_snippet = 'root=UUID=%s' % rootfs_uuid
         if is_live:
             serial_opts += ' %s' % cls.live_serial_opts
             boot_snippet = 'boot=casper'
@@ -78,8 +109,10 @@ class BoardConfig(object):
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        root_dir, boot_dir, boot_script, boot_device_or_file):
-        boot_cmd = cls._get_boot_cmd(is_live, is_lowmem, consoles)
+                        root_dir, rootfs_uuid, boot_dir, boot_script,
+                        boot_device_or_file):
+        boot_cmd = cls._get_boot_cmd(
+            is_live, is_lowmem, consoles, rootfs_uuid)
         cls._make_boot_files(
             uboot_parts_dir, boot_cmd, root_dir, boot_dir, boot_script,
             boot_device_or_file)
@@ -95,7 +128,67 @@ class BoardConfig(object):
         raise NotImplementedError()
 
 
+class classproperty(object):
+    """A descriptor that provides @property behavior on class methods."""
+    def __init__(self, getter):
+        self.getter = getter
+    def __get__(self, instance, cls):
+        return self.getter(cls)
+
+
 class OmapConfig(BoardConfig):
+
+    # XXX: Here we define these things as dynamic properties because our
+    # temporary hack to fix bug 697824 relies on changing the board's
+    # serial_tty at run time.
+    _extra_serial_opts = None
+    _live_serial_opts = None
+    _serial_tty = None
+
+    @classproperty
+    def serial_tty(cls):
+        # This is just to make sure no callsites use .serial_tty before
+        # calling set_appropriate_serial_tty(). If we had this in the first
+        # place we'd have uncovered bug 710971 before releasing.
+        raise AttributeError(
+            "You must not use this attribute before calling "
+            "set_appropriate_serial_tty")
+
+    @classproperty
+    def live_serial_opts(cls):
+        return cls._live_serial_opts % cls.serial_tty
+
+    @classproperty
+    def extra_serial_opts(cls):
+        return cls._extra_serial_opts % cls.serial_tty
+
+    @classmethod
+    def set_appropriate_serial_tty(cls, chroot_dir):
+        """Set the appropriate serial_tty depending on the kernel used.
+
+        If the kernel found in the chroot dir is << 2.6.36 we use tyyS2, else
+        we use the default value (_serial_tty).
+        """
+        # XXX: This is also part of our temporary hack to fix bug 697824.
+        cls.serial_tty = classproperty(lambda cls: cls._serial_tty)
+        vmlinuz = _get_file_matching(
+            os.path.join(chroot_dir, 'boot', 'vmlinuz*'))
+        basename = os.path.basename(vmlinuz)
+        minor_version = re.match('.*2\.6\.([0-9]{2}).*', basename).group(1)
+        if int(minor_version) < 36:
+            cls.serial_tty = classproperty(lambda cls: 'ttyS2')
+
+    @classmethod
+    def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
+                        root_dir, rootfs_uuid, boot_dir, boot_script,
+                        boot_device_or_file):
+        # XXX: This is also part of our temporary hack to fix bug 697824; we
+        # need to call set_appropriate_serial_tty() before doing anything that
+        # may use cls.serial_tty.
+        cls.set_appropriate_serial_tty(root_dir)
+        super(OmapConfig, cls).make_boot_files(
+            uboot_parts_dir, is_live, is_lowmem, consoles, root_dir,
+            rootfs_uuid, boot_dir, boot_script, boot_device_or_file)
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
@@ -110,8 +203,9 @@ class OmapConfig(BoardConfig):
 
 class BeagleConfig(OmapConfig):
     uboot_flavor = 'omap3_beagle'
-    extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
-    live_serial_opts = 'serialtty=ttyO2'
+    _serial_tty = 'ttyO2'
+    _extra_serial_opts = 'console=tty0 console=%s,115200n8'
+    _live_serial_opts = 'serialtty=%s'
     kernel_addr = '0x80000000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
@@ -121,9 +215,11 @@ class BeagleConfig(OmapConfig):
         'earlyprintk fixrtc nocompcache vram=12M '
         'omapfb.mode=dvi:1280x720MR-16@60')
 
+
 class OveroConfig(OmapConfig):
     uboot_flavor = 'omap3_overo'
-    extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
+    _serial_tty = 'ttyO2'
+    _extra_serial_opts = 'console=tty0 console=%s,115200n8'
     kernel_addr = '0x80000000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
@@ -132,10 +228,12 @@ class OveroConfig(OmapConfig):
     extra_boot_args_options = (
         'earlyprintk')
 
+
 class PandaConfig(OmapConfig):
     uboot_flavor = 'omap4_panda'
-    extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
-    live_serial_opts = 'serialtty=ttyO2'
+    _serial_tty = 'ttyO2'
+    _extra_serial_opts = 'console=tty0 console=%s,115200n8'
+    _live_serial_opts = 'serialtty=%s'
     kernel_addr = '0x80200000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
@@ -160,8 +258,9 @@ class IgepConfig(BeagleConfig):
 
 
 class Ux500Config(BoardConfig):
-    extra_serial_opts = 'console=tty0 console=ttyAMA2,115200n8'
-    live_serial_opts = 'serialtty=ttyAMA2'
+    serial_tty = 'ttyAMA2'
+    extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
+    live_serial_opts = 'serialtty=%s' % serial_tty
     kernel_addr = '0x00100000'
     initrd_addr = '0x08000000'
     load_addr = '0x00008000'
@@ -184,8 +283,9 @@ class Ux500Config(BoardConfig):
 
 
 class Mx51evkConfig(BoardConfig):
-    extra_serial_opts = 'console=tty0 console=ttymxc0,115200n8'
-    live_serial_opts = 'serialtty=ttymxc0'
+    serial_tty = 'ttymxc0'
+    extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
+    live_serial_opts = 'serialtty=%s' % serial_tty
     kernel_addr = '0x90000000'
     initrd_addr = '0x90800000'
     load_addr = '0x90008000'
@@ -193,6 +293,14 @@ class Mx51evkConfig(BoardConfig):
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
+
+    @classmethod
+    def get_sfdisk_cmd(cls):
+        # Create a one cylinder partition for fixed-offset bootloader data at
+        # the beginning of the image (size is one cylinder, so 8224768 bytes
+        # with the first sector for MBR).
+        sfdisk_cmd = super(Mx51evkConfig, cls).get_sfdisk_cmd()
+        return ',1,0xDA\n%s' % sfdisk_cmd
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
@@ -208,8 +316,9 @@ class Mx51evkConfig(BoardConfig):
 
 class VexpressConfig(BoardConfig):
     uboot_flavor = 'ca9x4_ct_vxp'
-    extra_serial_opts = 'console=tty0 console=ttyAMA0,38400n8'
-    live_serial_opts = 'serialtty=ttyAMA0'
+    serial_tty = 'ttyAMA0'
+    extra_serial_opts = 'console=tty0 console=%s,38400n8' % serial_tty
+    live_serial_opts = 'serialtty=%s' % serial_tty
     kernel_addr = '0x60008000'
     initrd_addr = '0x81000000'
     load_addr = kernel_addr

@@ -1,3 +1,22 @@
+# Copyright (C) 2010, 2011 Linaro
+#
+# Author: Guilherme Salgado <guilherme.salgado@linaro.org>
+#
+# This file is part of Linaro Image Tools.
+#
+# Linaro Image Tools is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Linaro Image Tools is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import shutil
 import subprocess
@@ -66,7 +85,13 @@ class MockSomethingFixture(object):
 class MockCmdRunnerPopen(object):
     """A mock for cmd_runner.Popen() which stores the args given to it."""
     calls = None
+    # A variable that is set to False in __call__() and only set back to True
+    # when wait() is called, to indicate that tht subprocess has finished. Is
+    # used in tests to make sure all callsites wait for their child.
+    child_finished = True
+
     def __call__(self, cmd, *args, **kwargs):
+        self.child_finished = False
         if self.calls is None:
             self.calls = []
         if isinstance(cmd, basestring):
@@ -83,6 +108,7 @@ class MockCmdRunnerPopen(object):
         return '', ''
 
     def wait(self):
+        self.child_finished = True
         return self.returncode
 
     @property
@@ -96,11 +122,16 @@ class MockCmdRunnerPopenFixture(MockSomethingFixture):
     If no mock is given, a MockCmdRunnerPopen instance is used.
     """
 
-    def __init__(self, mock=None):
-        if mock is None:
-            mock = MockCmdRunnerPopen()
+    def __init__(self):
         super(MockCmdRunnerPopenFixture, self).__init__(
-            cmd_runner, 'Popen', mock)
+            cmd_runner, 'Popen', MockCmdRunnerPopen())
+
+    def tearDown(self):
+        super(MockCmdRunnerPopenFixture, self).tearDown()
+        if not self.mock.child_finished:
+            raise AssertionError(
+                "You should call wait() or communicate() to ensure "
+                "the subprocess is finished before proceeding.")
 
 
 class MockCallableWithPositionalArgs(object):

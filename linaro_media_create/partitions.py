@@ -1,5 +1,25 @@
+# Copyright (C) 2010, 2011 Linaro
+#
+# Author: Guilherme Salgado <guilherme.salgado@linaro.org>
+#
+# This file is part of Linaro Image Tools.
+# 
+# Linaro Image Tools is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Linaro Image Tools is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
+
 import atexit
 import glob
+import re
 import subprocess
 import time
 
@@ -24,15 +44,13 @@ UDISKS = "org.freedesktop.UDisks"
 # the appropriate function for the given type of device?  I think it's still
 # small enough that there's not much benefit in doing that, but if it grows we
 # might want to do it.
-def setup_partitions(board, media, fat_size, image_size,
-                     bootfs_label, rootfs_label, rootfs_type, rootfs_uuid,
-                     should_create_partitions, should_format_bootfs,
-                     should_format_rootfs):
+def setup_partitions(board_config, media, image_size, bootfs_label,
+                     rootfs_label, rootfs_type, should_create_partitions,
+                     should_format_bootfs, should_format_rootfs):
     """Make sure the given device is partitioned to boot the given board.
 
-    :param board: The board's name, as a string.
+    :param board_config: A BoardConfig class.
     :param media: The Media we should partition.
-    :param fat_size: The FAT size (16 or 32) for the boot partition.
     :param image_size: The size of the image file, in case we're setting up a
         QEMU image.
     :param should_create_partitions: Whether or not we should erase existing
@@ -49,34 +67,55 @@ def setup_partitions(board, media, fat_size, image_size,
         proc.wait()
 
     if should_create_partitions:
-        create_partitions(board, media, fat_size, HEADS, SECTORS, cylinders)
+        create_partitions(
+            board_config, media, HEADS, SECTORS, cylinders)
 
     if media.is_block_device:
-        bootfs, rootfs = get_boot_and_root_partitions_for_media(media)
+        bootfs, rootfs = get_boot_and_root_partitions_for_media(
+            media, board_config)
+        # It looks like KDE somehow automounts the partitions after you
+        # repartition a disk so we need to unmount them here to create the
+        # filesystem.
+        ensure_partition_is_not_mounted(bootfs)
+        ensure_partition_is_not_mounted(rootfs)
     else:
         bootfs, rootfs = get_boot_and_root_loopback_devices(media.path)
 
     if should_format_bootfs:
         print "\nFormating boot partition\n"
-        # It looks like KDE somehow automounts the partitions after you
-        # repartition a disk so we need to unmount them here to create the
-        # filesystem.
-        ensure_partition_is_not_mounted(bootfs)
         proc = cmd_runner.run(
-            ['mkfs.vfat', '-F', str(fat_size), bootfs, '-n', bootfs_label],
+            ['mkfs.vfat', '-F', str(board_config.fat_size), bootfs, '-n',
+             bootfs_label],
             as_root=True)
         proc.wait()
 
     if should_format_rootfs:
         print "\nFormating root partition\n"
         mkfs = 'mkfs.%s' % rootfs_type
-        ensure_partition_is_not_mounted(rootfs)
         proc = cmd_runner.run(
-            [mkfs, '-U', rootfs_uuid, rootfs, '-L', rootfs_label],
+            [mkfs, rootfs, '-L', rootfs_label],
             as_root=True)
         proc.wait()
 
     return bootfs, rootfs
+
+
+def get_uuid(partition):
+    """Find UUID of the given partition."""
+    proc = cmd_runner.run(
+        ['blkid', '-o', 'udev', '-p', '-c', '/dev/null', partition],
+        as_root=True,
+        stdout=subprocess.PIPE)
+    blkid_output, _ = proc.communicate()
+    return _parse_blkid_output(blkid_output)
+
+
+def _parse_blkid_output(output):
+    for line in output.splitlines():
+        uuid_match = re.match("ID_FS_UUID=(.*)", line)
+        if uuid_match:
+            return uuid_match.group(1)
+    return None
 
 
 def ensure_partition_is_not_mounted(partition):
@@ -150,34 +189,21 @@ def calculate_partition_size_and_offset(image_file):
     return vfat_size, vfat_offset, linux_size, linux_offset
 
 
-def get_boot_and_root_partitions_for_media(media):
+def get_boot_and_root_partitions_for_media(media, board_config):
     """Return the device files for the boot and root partitions of media.
 
-    If the given media has 2 partitions, the first is boot and the second is
-    root. If there are 3 partitions, the second is boot and third is root.
-
-    If there are any other number of partitions, ValueError is raised.
+    For boot we use partition number 1 plus the board's defined partition
+    offset and for root we use partition number 2 plus the board's offset.
 
     This function must only be used for block devices.
     """
     assert media.is_block_device, (
         "This function must only be used for block devices")
 
-    partition_count = _get_partition_count(media)
-
-    if partition_count == 2:
-        partition_offset = 0
-    elif partition_count == 3:
-        partition_offset = 1
-    else:
-        raise ValueError(
-            "Unexpected number of partitions on %s: %d" % (
-                media.path, partition_count))
-
     boot_partition = _get_device_file_for_partition_number(
-        media.path, 1 + partition_offset)
+        media.path, 1 + board_config.mmc_part_offset)
     root_partition = _get_device_file_for_partition_number(
-        media.path, 2 + partition_offset)
+        media.path, 2 + board_config.mmc_part_offset)
     assert boot_partition is not None and root_partition is not None, (
         "Could not find boot/root partition for %s" % media.path)
     return boot_partition, root_partition
@@ -200,16 +226,6 @@ def _get_device_file_for_partition_number(device, partition):
             return str(udisks_dev.Get(
                 device_path, 'DeviceFile', dbus_interface=DBUS_PROPERTIES))
     return None
-
-
-def _get_partition_count(media):
-    """Return the number of partitions on the given media."""
-    # We could do the same easily using python-parted but it requires root
-    # rights to read block devices, so we use UDisks here.
-    device_path = _get_udisks_device_path(media.path)
-    device = dbus.SystemBus().get_object(UDISKS, device_path)
-    return device.Get(
-        device_path, 'PartitionTableCount', dbus_interface=DBUS_PROPERTIES)
 
 
 def _get_udisks_device_path(device):
@@ -272,12 +288,11 @@ def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
     return proc.communicate("%s\n" % commands)
 
 
-def create_partitions(board, media, fat_size, heads, sectors, cylinders=None):
+def create_partitions(board_config, media, heads, sectors, cylinders=None):
     """Partition the given media according to the board requirements.
 
-    :param board: A string with the board type (e.g. beagle, panda, etc)
+    :param board_config: A BoardConfig class.
     :param media: A setup_partitions.Media object to partition.
-    :param fat_size: The type of FATs used in the boot partition (16 or 32).
     :param heads: Number of heads to use in the disk geometry of
         partitions.
     :param sectors: Number of sectors to use in the disk geometry of
@@ -291,21 +306,7 @@ def create_partitions(board, media, fat_size, heads, sectors, cylinders=None):
             ['parted', '-s', media.path, 'mklabel', 'msdos'], as_root=True)
         proc.wait()
 
-    if fat_size == 32:
-        partition_type = '0x0C'
-    else:
-        partition_type = '0x0E'
-
-    sfdisk_cmd = ',9,%s,*\n,,,-' % partition_type
-    if board == 'mx51evk':
-        # Create a one cylinder partition for fixed-offset bootloader data at
-        # the beginning of the image (size is one cylinder, so 8224768 bytes
-        # with the first sector for MBR).
-        sfdisk_cmd = ',1,0xDA\n%s' % sfdisk_cmd
-
-    # Create a VFAT or FAT16 partition of 9 cylinders (74027520 bytes, ~70
-    # MiB), followed by a Linux-type partition containing the rest of the free
-    # space.
+    sfdisk_cmd = board_config.get_sfdisk_cmd()
     run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
 
     # Sync and sleep to wait for the partition to settle.
