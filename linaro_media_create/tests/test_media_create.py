@@ -1109,3 +1109,64 @@ class TestInstallHWPack(TestCaseWithFixtures):
              ['sudo', 'mv', '-f', '/tmp/dir/hosts', 'chroot/etc'],
              ['sudo', 'mv', '-f', '/tmp/dir/resolv.conf', 'chroot/etc']],
             fixture.mock.calls)
+
+    def test_run_local_atexit_funcs(self):
+        self.useFixture(MockSomethingFixture(
+            sys, 'stderr', open('/dev/null', 'w')))
+        self.call_order = []
+        class TestException(Exception):
+            pass
+        def raising_func():
+            self.call_order.append('raising_func')
+            raise TestException()
+        def behaving_func():
+            self.call_order.append('behaving_func')
+            self.behaving_func_called = True
+        # run_local_atexit_funcs() runs the atexit handlers in LIFO order, but
+        # even though the first function called (raising_func) will raise
+        # an exception, the second one will still be called after it.
+        linaro_media_create.hwpack.local_atexit = [
+            behaving_func, raising_func]
+        # run_local_atexit_funcs() also propagates the last exception raised
+        # by one of the functions.
+        self.assertRaises(
+            TestException, linaro_media_create.hwpack.run_local_atexit_funcs)
+        self.assertEquals(
+            ['raising_func', 'behaving_func'], self.call_order)
+
+    def test_hwpack_atexit(self):
+        self.run_local_atexit_functions_called = False
+
+        def mock_run_local_atexit_functions():
+            self.run_local_atexit_functions_called = True
+
+        def mock_install_hwpack(p1, p2, p3):
+            raise Exception('hwpack mock exception')
+
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+        self.useFixture(MockCmdRunnerPopenFixture())
+        self.useFixture(MockSomethingFixture(
+            linaro_media_create.hwpack, 'install_hwpack', mock_install_hwpack))
+        self.useFixture(MockSomethingFixture(
+            linaro_media_create.hwpack, 'run_local_atexit_funcs',
+            mock_run_local_atexit_functions))
+
+        force_yes = True
+        exception_caught = False
+        try:
+            install_hwpacks(
+                'chroot', '/tmp/dir', force_yes, 'hwp.tgz', 'hwp2.tgz')
+        except:
+            exception_caught = True
+        self.assertTrue(self.run_local_atexit_functions_called)
+        self.assertTrue(exception_caught)
+
+    def setUp(self):
+        super(TestInstallHWPack, self).setUp()
+        # Ensure the list of cleanup functions gets cleared to make sure tests
+        # don't interfere with one another.
+        def clear_atexits():
+            linaro_media_create.hwpack.local_atexit = []
+        self.addCleanup(clear_atexits)
+

@@ -18,6 +18,7 @@
 # along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import sys
 
 from linaro_media_create import cmd_runner
 from linaro_media_create.utils import is_arm_host
@@ -49,12 +50,12 @@ def install_hwpacks(chroot_dir, tmp_dir, hwpack_force_yes, *hwpack_files):
     copy_file(linaro_hwpack_install_path,
               os.path.join(chroot_dir, 'usr', 'bin'))
 
-    mount_chroot_proc(chroot_dir)
-
-    for hwpack_file in hwpack_files:
-        install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes)
-
-    run_local_atexit_funcs()
+    try:
+        mount_chroot_proc(chroot_dir)
+        for hwpack_file in hwpack_files:
+            install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes)
+    finally:
+        run_local_atexit_funcs()
 
 
 def install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes):
@@ -82,12 +83,14 @@ def mount_chroot_proc(chroot_dir):
     Also register a function in local_atexit to unmount that /proc filesystem.
     """
     chroot_proc = os.path.join(chroot_dir, 'proc')
-    proc = cmd_runner.run(
-        ['mount', 'proc', chroot_proc, '-t', 'proc'], as_root=True)
-    proc.wait()
+
     def umount_chroot_proc():
         cmd_runner.run(['umount', '-v', chroot_proc], as_root=True).wait()
     local_atexit.append(umount_chroot_proc)
+
+    proc = cmd_runner.run(
+        ['mount', 'proc', chroot_proc, '-t', 'proc'], as_root=True)
+    proc.wait()
 
 
 def copy_file(filepath, directory):
@@ -130,5 +133,18 @@ def temporarily_overwrite_file_on_dir(filepath, directory, tmp_dir):
 
 def run_local_atexit_funcs():
     # Run the funcs in LIFO order, just like atexit does.
+    exc_info = None
     while len(local_atexit) > 0:
-        local_atexit.pop()()
+        func = local_atexit.pop()
+        try:
+            func()
+        except SystemExit:
+            exc_info = sys.exc_info()
+        except:
+            import traceback
+            print >> sys.stderr, "Error in local_atexit:"
+            traceback.print_exc()
+            exc_info = sys.exc_info()
+
+    if exc_info is not None:
+        raise exc_info[0], exc_info[1], exc_info[2]
