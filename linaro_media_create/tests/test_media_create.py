@@ -121,6 +121,23 @@ class TestEnsureCommand(TestCaseWithFixtures):
             utils, 'install_package_providing', mock_func))
 
 
+class TestFindCommand(TestCaseWithFixtures):
+
+    def test_existing_command(self):
+        lmc = 'linaro-media-create'
+        if os.path.isabs(__file__):
+            expected, _ = cmd_runner.run(
+                ['which', lmc, ],
+                stdout=subprocess.PIPE).communicate()
+            expected = expected.strip()
+        else:
+            expected = lmc
+        self.assertEquals(expected, find_command(lmc))
+
+    def test_nonexisting_command(self):
+        self.assertEquals(find_command('linaro-moo'), None)
+
+
 class TestInstallPackageProviding(TestCaseWithFixtures):
 
     def test_found_package(self):
