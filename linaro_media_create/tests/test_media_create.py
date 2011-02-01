@@ -271,7 +271,9 @@ class TestFixForBug697824(TestCaseWithFixtures):
         # calls set_appropriate_serial_tty().
         board_configs['beagle'].make_boot_files(
             None, None, None, None, None, None, None, None, None)
-        self.assertTrue(self.set_appropriate_serial_tty_called)
+        self.assertTrue(
+            self.set_appropriate_serial_tty_called,
+            "make_boot_files didn't call set_appropriate_serial_tty")
 
     def test_set_appropriate_serial_tty_old_kernel(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
