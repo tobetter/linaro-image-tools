@@ -22,7 +22,6 @@ import atexit
 import os
 import sys
 import tempfile
-from subprocess import Popen
 
 from linaro_media_create.boards import (
     board_configs,
@@ -42,7 +41,10 @@ from linaro_media_create.utils import (
     ensure_command,
     is_arm_host,
     )
-from linaro_media_create import get_args_parser
+from linaro_media_create import (
+    cmd_runner,
+    get_args_parser
+    )
 
 # Just define the global variables
 TMP_DIR = None
@@ -60,18 +62,20 @@ def cleanup_tempdir():
     Before doing so, make sure BOOT_DISK and ROOT_DISK are not mounted.
     """
     devnull = open('/dev/null', 'w')
-    # Use raw subprocess.Popen as we don't want to stop in case the
-    # commands end with a non-zero return code.
-    if BOOT_DISK is not None:
-        Popen(['sudo', 'umount', BOOT_DISK],
-              stdout=devnull, stderr=devnull).wait()
-    if ROOT_DISK is not None:
-        Popen(['sudo', 'umount', ROOT_DISK],
-              stdout=devnull, stderr=devnull).wait()
+    # ignore non-zero return codes
+    try:
+        if BOOT_DISK is not None:
+            cmd_runner.Popen(['umount', BOOT_DISK],
+                  stdout=devnull, stderr=devnull, as_root=True).wait()
+        if ROOT_DISK is not None:
+            cmd_runner.Popen(['umount', ROOT_DISK],
+                  stdout=devnull, stderr=devnull, as_root=True).wait()
+    except SubcommandNonZeroReturnValue:
+        pass
     # Remove TMP_DIR as root because some files written there are
     # owned by root.
     if TMP_DIR is not None:
-        Popen(['sudo', 'rm', '-rf', TMP_DIR]).wait()
+        cmd_runner.Popen(['rm', '-rf', TMP_DIR], as_root=True).wait()
 
 
 def ensure_required_commands(args):
