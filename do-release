@@ -65,3 +65,8 @@ rm -f ChangeLog MANIFEST
 log_i "Signing tarball"
 gpg --armor --sign --detach-sig "../linaro-image-tools-$version.tar.gz"
 
+log_i "Setting version to $version.1 in setup.py"
+sed -i "s/^\\([[:space:]]*version=\"\\)[^\"]*\",\$/\1$version.1\",/" setup.py
+
+log_i "Committing $version"
+bzr commit -m "Post-release version bump to $version.1"

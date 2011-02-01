@@ -1,3 +1,11 @@
+linaro-image-tools (0.4.3-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+    - Fixes kernel cmdline for OMAP boards; LP: #710971.
+  * Add Vcs-Bzr field pointing at the UDD branch.
+
+ -- Loïc Minier <loic.minier@linaro.org>  Tue, 01 Feb 2011 18:04:21 +0100
+
 linaro-image-tools (0.4.2-0ubuntu4) natty; urgency=low
 
   * Recommend qemu-user-static | qemu-kvm-extras-static to accomodate for new

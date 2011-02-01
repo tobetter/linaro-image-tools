@@ -146,6 +146,15 @@ class OmapConfig(BoardConfig):
     _serial_tty = None
 
     @classproperty
+    def serial_tty(cls):
+        # This is just to make sure no callsites use .serial_tty before
+        # calling set_appropriate_serial_tty(). If we had this in the first
+        # place we'd have uncovered bug 710971 before releasing.
+        raise AttributeError(
+            "You must not use this attribute before calling "
+            "set_appropriate_serial_tty")
+
+    @classproperty
     def live_serial_opts(cls):
         return cls._live_serial_opts % cls.serial_tty
 
@@ -161,18 +170,29 @@ class OmapConfig(BoardConfig):
         we use the default value (_serial_tty).
         """
         # XXX: This is also part of our temporary hack to fix bug 697824.
-        cls.serial_tty = cls._serial_tty
+        cls.serial_tty = classproperty(lambda cls: cls._serial_tty)
         vmlinuz = _get_file_matching(
             os.path.join(chroot_dir, 'boot', 'vmlinuz*'))
         basename = os.path.basename(vmlinuz)
         minor_version = re.match('.*2\.6\.([0-9]{2}).*', basename).group(1)
         if int(minor_version) < 36:
-            cls.serial_tty = 'ttyS2'
+            cls.serial_tty = classproperty(lambda cls: 'ttyS2')
+
+    @classmethod
+    def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
+                        root_dir, rootfs_uuid, boot_dir, boot_script,
+                        boot_device_or_file):
+        # XXX: This is also part of our temporary hack to fix bug 697824; we
+        # need to call set_appropriate_serial_tty() before doing anything that
+        # may use cls.serial_tty.
+        cls.set_appropriate_serial_tty(root_dir)
+        super(OmapConfig, cls).make_boot_files(
+            uboot_parts_dir, is_live, is_lowmem, consoles, root_dir,
+            rootfs_uuid, boot_dir, boot_script, boot_device_or_file)
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
-        cls.set_appropriate_serial_tty(chroot_dir)
         install_omap_boot_loader(chroot_dir, boot_dir)
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
