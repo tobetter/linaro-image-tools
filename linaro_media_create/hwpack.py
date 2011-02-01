@@ -18,6 +18,7 @@
 # along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import sys
 
 from linaro_media_create import cmd_runner
 from linaro_media_create.utils import is_arm_host
@@ -147,4 +148,3 @@ def run_local_atexit_funcs():
 
     if exc_info is not None:
         raise exc_info[0], exc_info[1], exc_info[2]
-
