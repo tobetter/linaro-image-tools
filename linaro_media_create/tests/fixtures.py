@@ -51,7 +51,7 @@ class CreateTarballFixture(object):
 
     def setUp(self):
         # Create gzipped tar archive.
-        os.mkdir(os.path.join(self.basedir, reldir))
+        os.mkdir(os.path.join(self.basedir, self.reldir))
         args = ['tar', '-C', self.basedir, '-czf', self.tarball, self.reldir]
         proc = subprocess.Popen(args)
         proc.wait()
@@ -59,7 +59,7 @@ class CreateTarballFixture(object):
     def tearDown(self):
         if os.path.exists(self.tarball):
             os.remove(self.tarball)
-        dir = os.path.join(self.basedir, subdir)
+        dir = os.path.join(self.basedir, self.reldir)
         if os.path.exists(dir):
             os.rmdir(dir)
 
