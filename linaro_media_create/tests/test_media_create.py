@@ -972,3 +972,38 @@ class TestInstallHWPack(TestCaseWithFixtures):
              ['sudo', 'mv', '-f', '/tmp/dir/hosts', 'chroot/etc'],
              ['sudo', 'mv', '-f', '/tmp/dir/resolv.conf', 'chroot/etc']],
             fixture.mock.calls)
+
+    def test_hwpack_atexit(self):
+        self.run_local_atexit_functions_called = False
+
+        # ensure this list gets cleared, or other test functions may
+        # fail because the list isn't what they expected
+        def clear_atexits():
+            linaro_media_create.hwpack.local_atexit = []
+        self.addCleanup(clear_atexits)
+
+        def mock_run_local_atexit_functions():
+            self.run_local_atexit_functions_called = True
+
+        def mock_install_hwpack(p1, p2, p3):
+            raise Exception('hwpack mock exception')
+
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+        self.useFixture(MockCmdRunnerPopenFixture())
+        self.useFixture(MockSomethingFixture(
+            linaro_media_create.hwpack, 'install_hwpack', mock_install_hwpack))
+        self.useFixture(MockSomethingFixture(
+            linaro_media_create.hwpack, 'run_local_atexit_funcs',
+            mock_run_local_atexit_functions))
+
+
+        force_yes = True
+        exception_caught = False
+        try:
+            install_hwpacks('chroot', '/tmp/dir', force_yes, 'hwp.tgz', 'hwp2.tgz')
+        except:
+            exception_caught = True
+        self.assertTrue(self.run_local_atexit_functions_called)
+        self.assertTrue(exception_caught)
+
