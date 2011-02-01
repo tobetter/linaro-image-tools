@@ -37,10 +37,10 @@ def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
     """
     assert isinstance(args, (list, tuple)), (
         "The command to run must be a list or tuple, found: %s" % type(args))
-    # TODO: We might want to always use 'sudo -E' here to avoid problems like
-    # https://launchpad.net/bugs/673570
-    if as_root:
+    if as_root and os.getuid() != 0:
         args = args[:]
+        # TODO: We might want to always use 'sudo -E' here to avoid problems
+        # like https://launchpad.net/bugs/673570
         args.insert(0, 'sudo')
     return Popen(args, stdin=stdin, stdout=stdout, stderr=stderr)
 
