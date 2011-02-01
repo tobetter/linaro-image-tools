@@ -1,3 +1,9 @@
+linaro-image-tools (0.4.3-0ubuntu2) natty; urgency=low
+
+  * Fix ChangeLog and PKG-INFO lacking some 0.4.3 updates.
+
+ -- Loïc Minier <loic.minier@linaro.org>  Tue, 01 Feb 2011 18:13:03 +0100
+
 linaro-image-tools (0.4.3-0ubuntu1) natty; urgency=low
 
   * New upstream release.

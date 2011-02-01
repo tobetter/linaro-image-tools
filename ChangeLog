@@ -1,3 +1,59 @@
+2011-02-01  Loïc Minier  <lool@dooz.org>
+
+	* setup.py:
+
+	Release 0.4.3
+
+2011-02-01  Loïc Minier  <lool@dooz.org>
+
+	* do-release:
+
+	Bump version after release.
+
+2011-02-01  Guilherme Salgado  <salgado@canonical.com>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Fix bug 710971 by making sure OmapConfig.serial_tty is never used before set_appropriate_serial_tty() is called.
+
+2011-02-01  Guilherme Salgado  <salgado@canonical.com>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Some tweaks to the test added in the previous commit and add a safety net to avoid bugs similar to #710971
+
+2011-01-31  Guilherme Salgado  <salgado@canonical.com>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	A test for the fix in the previous commit
+
+2011-01-31  Guilherme Salgado  <salgado@canonical.com>
+
+	* linaro_media_create/boards.py:
+
+	Fix the bug, but a test is tricky to write
+
+2011-01-31  Guilherme Salgado  <salgado@canonical.com>
+
+	* README:
+
+	Mention sfdisk on the requirements to run the test suite
+
+2011-01-29  Loïc Minier  <lool@dooz.org>
+
+	* setup.py:
+
+	Remove useless import.
+
+2011-01-28  Loïc Minier  <lool@dooz.org>
+
+	* setup.py:
+
+	Post-release bump to 0.4.2.1.
+
 2011-01-28  Loïc Minier  <lool@dooz.org>
 
 	* setup.py:
