@@ -21,6 +21,7 @@ import atexit
 import glob
 import os
 import random
+import stat
 import string
 import subprocess
 import sys
@@ -82,6 +83,7 @@ from linaro_media_create.rootfs import (
 from linaro_media_create.unpack_binary_tarball import unpack_binary_tarball
 from linaro_media_create.utils import (
     ensure_command,
+    find_command,
     install_package_providing,
     UnableToFindPackageProvidingCommand,
     )
@@ -119,6 +121,32 @@ class TestEnsureCommand(TestCaseWithFixtures):
             self.install_pkg_providing_called = True
         self.useFixture(MockSomethingFixture(
             utils, 'install_package_providing', mock_func))
+
+
+class TestFindCommand(TestCaseWithFixtures):
+
+    def test_preferred_dir(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        lmc = 'linaro-media-create'
+        path = os.path.join(tempdir, lmc)
+        open(path, 'w').close()
+        os.chmod(path, stat.S_IXUSR)
+        self.assertEquals(path, find_command(lmc, tempdir))
+
+    def test_existing_command(self):
+        lmc = 'linaro-media-create'
+        # running from bzr checkout?
+        if os.path.isabs(__file__):
+            expected, _ = cmd_runner.run(
+                ['which', lmc, ],
+                stdout=subprocess.PIPE).communicate()
+            expected = expected.strip()
+        else:
+            expected = os.path.join(os.getcwd(), lmc)
+        self.assertEquals(expected, find_command(lmc))
+
+    def test_nonexisting_command(self):
+        self.assertEquals(find_command('linaro-moo'), None)
 
 
 class TestInstallPackageProviding(TestCaseWithFixtures):
@@ -1083,8 +1111,17 @@ class TestInstallHWPack(TestCaseWithFixtures):
             sys, 'stdout', open('/dev/null', 'w')))
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         force_yes = True
+
+        prefer_dir = None
+        # running from bzr checkout?
+        if not os.path.isabs(__file__):
+            prefer_dir = os.getcwd()
+
         install_hwpacks(
-            'chroot', '/tmp/dir', force_yes, 'hwpack1.tgz', 'hwpack2.tgz')
+            'chroot', '/tmp/dir', prefer_dir, force_yes, 'hwpack1.tgz',
+            'hwpack2.tgz')
+        linaro_hwpack_install = find_command(
+            'linaro-hwpack-install', prefer_dir=prefer_dir)
         self.assertEquals(
             [['sudo', 'mv', '-f', 'chroot/etc/resolv.conf',
               '/tmp/dir/resolv.conf'],
@@ -1092,8 +1129,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
              ['sudo', 'mv', '-f', 'chroot/etc/hosts', '/tmp/dir/hosts'],
              ['sudo', 'cp', '/etc/hosts', 'chroot/etc'],
              ['sudo', 'cp', '/usr/bin/qemu-arm-static', 'chroot/usr/bin'],
-             ['sudo', 'cp', 'linaro_media_create/../linaro-hwpack-install',
-              'chroot/usr/bin'],
+             ['sudo', 'cp', linaro_hwpack_install, 'chroot/usr/bin'],
              ['sudo', 'mount', 'proc', 'chroot/proc', '-t', 'proc'],
              ['sudo', 'cp', 'hwpack1.tgz', 'chroot'],
              ['sudo', 'chroot', 'chroot', 'linaro-hwpack-install',
@@ -1152,11 +1188,17 @@ class TestInstallHWPack(TestCaseWithFixtures):
             linaro_media_create.hwpack, 'run_local_atexit_funcs',
             mock_run_local_atexit_functions))
 
+        prefer_dir = None
+        # running from bzr checkout?
+        if not os.path.isabs(__file__):
+            prefer_dir = os.getcwd()
+
         force_yes = True
         exception_caught = False
         try:
             install_hwpacks(
-                'chroot', '/tmp/dir', force_yes, 'hwp.tgz', 'hwp2.tgz')
+                'chroot', '/tmp/dir', prefer_dir, force_yes, 'hwp.tgz',
+                'hwp2.tgz')
         except:
             exception_caught = True
         self.assertTrue(self.run_local_atexit_functions_called)

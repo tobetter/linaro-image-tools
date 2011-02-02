@@ -121,7 +121,11 @@ if __name__ == '__main__':
     unpack_binary_tarball(args.binary, TMP_DIR)
 
     hwpacks = args.hwpacks
-    install_hwpacks(ROOTFS_DIR, TMP_DIR, args.hwpack_force_yes, *hwpacks)
+    lmc_dir = os.path.dirname(__file__)
+    if lmc_dir == '':
+        lmc_dir = None
+    install_hwpacks(
+        ROOTFS_DIR, TMP_DIR, lmc_dir, args.hwpack_force_yes, *hwpacks)
 
     boot_partition, root_partition = setup_partitions(
         board_config, media, args.image_size, args.boot_label, args.rfs_label,

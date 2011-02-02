@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import platform
 
 try:
@@ -60,6 +61,37 @@ def ensure_command(command):
             ['which', command], stdout=open('/dev/null', 'w')).wait()
     except cmd_runner.SubcommandNonZeroReturnValue:
         install_package_providing(command)
+
+def find_command(name, prefer_dir=None):
+    """Finds a linaro-image-tools command.
+
+    Prefers specified directory, otherwise searches only the current directory
+    when running from a checkout, or only PATH when running from an installed
+    version.
+    """
+    assert name != ""
+    assert os.path.dirname(name) == ""
+
+    if not os.environ.has_key("PATH"):
+        os.environ["PATH"] = ":/bin:usr/bin"
+
+    # default to searching in current directory when running from a bzr
+    # checkout
+    dirs = [os.getcwd(),]
+    if os.path.isabs(__file__):
+        dirs = os.environ["PATH"].split(os.pathsep)
+        # empty dir in PATH means current directory
+        dirs = map(lambda x: x == '' and '.' or x, dirs)
+
+    if prefer_dir is not None:
+        dirs.insert(0, prefer_dir)
+
+    for dir in dirs:
+        path = os.path.join(dir, name)
+        if os.path.exists(path) and os.access(path, os.X_OK):
+            return path
+
+    return None
 
 
 def is_arm_host():
