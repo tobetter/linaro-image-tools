@@ -21,6 +21,7 @@ import atexit
 import glob
 import os
 import random
+import stat
 import string
 import subprocess
 import sys
@@ -122,6 +123,14 @@ class TestEnsureCommand(TestCaseWithFixtures):
 
 
 class TestFindCommand(TestCaseWithFixtures):
+
+    def test_preferred_dir(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        lmc = 'linaro-media-create'
+        path = os.path.join(tempdir, lmc)
+        open(path, 'w').close()
+        os.chmod(path, stat.S_IXUSR)
+        self.assertEquals(path, find_command(lmc, tempdir))
 
     def test_existing_command(self):
         lmc = 'linaro-media-create'

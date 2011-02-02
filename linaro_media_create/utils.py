@@ -62,11 +62,12 @@ def ensure_command(command):
     except cmd_runner.SubcommandNonZeroReturnValue:
         install_package_providing(command)
 
-def find_command(name):
-    """Finds a linaro-image-tools commands.
+def find_command(name, prefer_dir=None):
+    """Finds a linaro-image-tools command.
 
-    Searches only the current directory when running from a checkout, and only
-    search PATH when running from an installed version.
+    Prefers specified directory, otherwise searches only the current directory
+    when running from a checkout, or only PATH when running from an installed
+    version.
     """
     assert name != ""
     assert os.path.dirname(name) == ""
@@ -78,7 +79,10 @@ def find_command(name):
         dirs = os.environ["PATH"].split(os.pathsep)
     else:
         # search relative to current directory
-        dirs = ('',)
+        dirs = ['',]
+
+    if prefer_dir is not None:
+        dirs.insert(0, prefer_dir)
 
     for dir in dirs:
         path = os.path.join(dir, name)
