@@ -141,7 +141,7 @@ class TestFindCommand(TestCaseWithFixtures):
                 stdout=subprocess.PIPE).communicate()
             expected = expected.strip()
         else:
-            expected = os.path.join(".", lmc)
+            expected = os.path.join(os.getcwd(), lmc)
         self.assertEquals(expected, find_command(lmc))
 
     def test_nonexisting_command(self):
@@ -1078,7 +1078,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
         prefer_dir = None
         # running from bzr checkout?
         if not os.path.isabs(__file__):
-            prefer_dir = "."
+            prefer_dir = os.getcwd()
 
         install_hwpacks(
             'chroot', '/tmp/dir', prefer_dir, force_yes, 'hwpack1.tgz',

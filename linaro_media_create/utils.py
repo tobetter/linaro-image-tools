@@ -77,7 +77,7 @@ def find_command(name, prefer_dir=None):
 
     # default to searching in current directory when running from a bzr
     # checkout
-    dirs = ['.',]
+    dirs = [os.getcwd(),]
     if os.path.isabs(__file__):
         dirs = os.environ["PATH"].split(os.pathsep)
         # empty dir in PATH means current directory
