@@ -65,17 +65,17 @@ def cleanup_tempdir():
     # ignore non-zero return codes
     try:
         if BOOT_DISK is not None:
-            cmd_runner.Popen(['umount', BOOT_DISK],
+            cmd_runner.run(['umount', BOOT_DISK],
                   stdout=devnull, stderr=devnull, as_root=True).wait()
         if ROOT_DISK is not None:
-            cmd_runner.Popen(['umount', ROOT_DISK],
+            cmd_runner.run(['umount', ROOT_DISK],
                   stdout=devnull, stderr=devnull, as_root=True).wait()
     except cmd_runner.SubcommandNonZeroReturnValue:
         pass
     # Remove TMP_DIR as root because some files written there are
     # owned by root.
     if TMP_DIR is not None:
-        cmd_runner.Popen(['rm', '-rf', TMP_DIR], as_root=True).wait()
+        cmd_runner.run(['rm', '-rf', TMP_DIR], as_root=True).wait()
 
 
 def ensure_required_commands(args):
