@@ -70,7 +70,7 @@ def cleanup_tempdir():
         if ROOT_DISK is not None:
             cmd_runner.Popen(['umount', ROOT_DISK],
                   stdout=devnull, stderr=devnull, as_root=True).wait()
-    except SubcommandNonZeroReturnValue:
+    except cmd_runner.SubcommandNonZeroReturnValue:
         pass
     # Remove TMP_DIR as root because some files written there are
     # owned by root.
