@@ -1073,9 +1073,17 @@ class TestInstallHWPack(TestCaseWithFixtures):
             sys, 'stdout', open('/dev/null', 'w')))
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         force_yes = True
+
+        prefer_dir = None
+        # running from bzr checkout?
+        if not os.path.isabs(__file__):
+            prefer_dir = "."
+
         install_hwpacks(
-            'chroot', '/tmp/dir', force_yes, 'hwpack1.tgz', 'hwpack2.tgz')
-        linaro_hwpack_install = find_command('linaro-hwpack-install')
+            'chroot', '/tmp/dir', prefer_dir, force_yes, 'hwpack1.tgz',
+            'hwpack2.tgz')
+        linaro_hwpack_install = find_command(
+            'linaro-hwpack-install', prefer_dir=prefer_dir)
         self.assertEquals(
             [['sudo', 'mv', '-f', 'chroot/etc/resolv.conf',
               '/tmp/dir/resolv.conf'],

@@ -31,7 +31,8 @@ from linaro_media_create.utils import (
 # functions would only be called after l-m-c.py exits.
 local_atexit = []
 
-def install_hwpacks(chroot_dir, tmp_dir, hwpack_force_yes, *hwpack_files):
+def install_hwpacks(
+    chroot_dir, tmp_dir, tools_dir, hwpack_force_yes, *hwpack_files):
     """Install the given hwpacks onto the given chroot."""
 
     chroot_etc = os.path.join(chroot_dir, 'etc')
@@ -42,7 +43,8 @@ def install_hwpacks(chroot_dir, tmp_dir, hwpack_force_yes, *hwpack_files):
         copy_file('/usr/bin/qemu-arm-static',
                   os.path.join(chroot_dir, 'usr', 'bin'))
 
-    linaro_hwpack_install_path = find_command('linaro-hwpack-install')
+    linaro_hwpack_install_path = find_command(
+        'linaro-hwpack-install', prefer_dir=tools_dir)
     # FIXME: shouldn't use chroot/usr/bin as this might conflict with installed
     # packages; would be best to use some custom directory like
     # chroot/linaro-image-tools/bin
