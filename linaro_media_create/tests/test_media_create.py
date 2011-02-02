@@ -134,13 +134,14 @@ class TestFindCommand(TestCaseWithFixtures):
 
     def test_existing_command(self):
         lmc = 'linaro-media-create'
+        # running from bzr checkout?
         if os.path.isabs(__file__):
             expected, _ = cmd_runner.run(
                 ['which', lmc, ],
                 stdout=subprocess.PIPE).communicate()
             expected = expected.strip()
         else:
-            expected = lmc
+            expected = os.path.join(".", lmc)
         self.assertEquals(expected, find_command(lmc))
 
     def test_nonexisting_command(self):

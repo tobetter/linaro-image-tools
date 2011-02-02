@@ -75,11 +75,13 @@ def find_command(name, prefer_dir=None):
     if not os.environ.has_key("PATH"):
         os.environ["PATH"] = ":/bin:usr/bin"
 
+    # default to searching in current directory when running from a bzr
+    # checkout
+    dirs = ['.',]
     if os.path.isabs(__file__):
         dirs = os.environ["PATH"].split(os.pathsep)
-    else:
-        # search relative to current directory
-        dirs = ['',]
+        # empty dir in PATH means current directory
+        dirs = map(lambda x: x == '' and '.' or x, dirs)
 
     if prefer_dir is not None:
         dirs.insert(0, prefer_dir)
