@@ -63,15 +63,13 @@ def cleanup_tempdir():
     """
     devnull = open('/dev/null', 'w')
     # ignore non-zero return codes
-    try:
-        if BOOT_DISK is not None:
-            cmd_runner.run(['umount', BOOT_DISK],
-                  stdout=devnull, stderr=devnull, as_root=True).wait()
-        if ROOT_DISK is not None:
-            cmd_runner.run(['umount', ROOT_DISK],
-                  stdout=devnull, stderr=devnull, as_root=True).wait()
-    except cmd_runner.SubcommandNonZeroReturnValue:
-        pass
+    for disk in BOOT_DISK, ROOT_DISK:
+        if disk is not None:
+            try:
+                cmd_runner.run(['umount', disk],
+                      stdout=devnull, stderr=devnull, as_root=True).wait()
+            except cmd_runner.SubcommandNonZeroReturnValue:
+                pass
     # Remove TMP_DIR as root because some files written there are
     # owned by root.
     if TMP_DIR is not None:
