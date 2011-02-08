@@ -81,7 +81,7 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
     else:
         bootfs, rootfs = get_boot_and_root_loopback_devices(media.path)
 
-    if should_format_bootfs:
+    if should_format_bootfs and board_config.fat_size != 0:
         print "\nFormating boot partition\n"
         proc = cmd_runner.run(
             ['mkfs.vfat', '-F', str(board_config.fat_size), bootfs, '-n',

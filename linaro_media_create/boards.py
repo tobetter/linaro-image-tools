@@ -55,6 +55,7 @@ class BoardConfig(object):
     @classmethod
     def get_sfdisk_cmd(cls):
         """Return the sfdisk command to partition the media."""
+
         if cls.fat_size == 32:
             partition_type = '0x0C'
         else:
@@ -201,6 +202,7 @@ class OmapConfig(BoardConfig):
         make_boot_ini(boot_script, boot_dir)
 
 
+
 class BeagleConfig(OmapConfig):
     uboot_flavor = 'omap3_beagle'
     _serial_tty = 'ttyO2'
@@ -336,6 +338,52 @@ class VexpressConfig(BoardConfig):
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
 
 
+class SamsungConfig(BoardConfig):
+
+    @classmethod
+    def get_sfdisk_cmd(cls):
+        # Create a one cylinder partition for fixed-offset bootloader data at
+        # the beginning of the image (size is 14 cylinder, so 115,146,752 bytes
+        # with the first sector for MBR).
+        sfdisk_cmd = super(SamsungConfig, cls).get_sfdisk_cmd()
+        return ',14,0xDA\n,,,-'
+
+    @classmethod
+    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
+                         boot_dir, boot_script, boot_device_or_file):
+
+        uboot_file = os.path.join(
+            chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.v310')
+        install_smdkv310_boot_loader(uboot_file, boot_device_or_file)
+        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        make_boot_script(boot_cmd, boot_script)
+        env_file = os.path.join(
+            boot_dir, 'boot.scr')
+        install_smdkv310_boot_env(env_file, boot_device_or_file)
+
+        make_uImage(
+            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        uImage_file = os.path.join(
+            boot_dir, 'uImage')
+        install_smdkv310_uImage(uImage_file, boot_device_or_file)
+        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        uInitrd_file = os.path.join(
+            boot_dir, 'uInitrd')
+        install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
+
+
+class SMDKV310Config(SamsungConfig):
+    fat_size = 0
+    extra_serial_opts = 'console=ttySAC1,115200'
+    live_serial_opts = 'serialtty=ttyO2'
+    kernel_addr = '0x40007000'
+    initrd_addr = '0x40800000'
+    load_addr = '0x40007000'
+    kernel_suffix = 's5pv310'
+    boot_script = 'boot.scr'
+    extra_boot_args_options = (
+        'root=/dev/mmcblk0p1 rootdelay=1 rw init=/bin/bash')
+
 board_configs = {
     'beagle': BeagleConfig,
     'igep': IgepConfig,
@@ -344,6 +392,7 @@ board_configs = {
     'ux500': Ux500Config,
     'mx51evk': Mx51evkConfig,
     'overo': OveroConfig,
+    'smdkv310': SMDKV310Config,
     }
 
 
@@ -452,3 +501,67 @@ def make_boot_ini(boot_script, boot_disk):
     proc = cmd_runner.run(
         ["cp", "-v", boot_script, "%s/boot.ini" % boot_disk], as_root=True)
     proc.wait()
+
+def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
+    proc = cmd_runner.run([
+        "dd",
+        "if=%s" % imx_file,
+        "of=%s" % boot_device_or_file,
+        "bs=1024",
+        "seek=1",
+        "conv=notrunc"], as_root=True)
+    proc.wait()
+
+
+def install_smdkv310_uImage(uImage_file, boot_device_or_file):
+    proc = cmd_runner.run([
+        "dd",
+        "if=%s" % uImage_file,
+        "of=%s" % boot_device_or_file,
+        "bs=512",
+        "seek=1089",
+        "conv=notrunc"], as_root=True)
+    proc.wait()
+
+def install_smdkv310_initrd(initrd_file, boot_device_or_file):
+    proc = cmd_runner.run([
+        "dd",
+        "if=%s" % initrd_file,
+        "of=%s" % boot_device_or_file,
+        "bs=512",
+        "seek=9281",
+        "conv=notrunc"], as_root=True)
+    proc.wait()
+
+def install_smdkv310_boot_env(env_file, boot_device_or_file):
+    proc = cmd_runner.run([
+        "dd",
+        "if=%s" % env_file,
+        "of=%s" % boot_device_or_file,
+        "bs=512",
+        "seek=33",
+        "count=32",
+        "conv=notrunc"], as_root=True)
+    proc.wait()
+
+def install_smdkv310_boot_loader(v310_file, boot_device_or_file):
+    proc = cmd_runner.run([
+        "dd",
+        "if=%s" % v310_file,
+        "of=%s" % boot_device_or_file,
+        "bs=512",
+        "seek=1",
+        "count=32",
+        "conv=notrunc"], as_root=True)
+    proc.wait()
+    proc = cmd_runner.run([
+        "dd",
+        "if=%s" % v310_file,
+        "of=%s" % boot_device_or_file,
+        "bs=512",
+        "seek=65",
+        "skip=64",
+        "conv=notrunc"], as_root=True)
+    proc.wait()
+
+
