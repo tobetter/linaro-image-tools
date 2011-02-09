@@ -399,12 +399,12 @@ def make_uInitrd(uboot_parts_dir, suffix, boot_disk):
 def make_boot_script(boot_script_data, boot_script):
     # Need to save the boot script data into a file that will be passed to
     # mkimage.
-    _, tmpfile = tempfile.mkstemp()
-    atexit.register(os.unlink, tmpfile)
-    with open(tmpfile, 'w') as fd:
+    plain_boot_script = os.path.join(
+        os.path.dirname(boot_script), 'boot.script')
+    with open(plain_boot_script, 'w') as fd:
         fd.write(boot_script_data)
     return _run_mkimage(
-        'script', '0', '0', 'boot script', tmpfile, boot_script)
+        'script', '0', '0', 'boot script', plain_boot_script, boot_script)
 
 
 def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
