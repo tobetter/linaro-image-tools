@@ -828,7 +828,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             'root', 'ext3', True, True, True)
         self.assertEqual(
              # This is the call that would create the image file.
-            [['qemu-img', 'create', '-f', 'raw', tempfile, '2G'],
+            [['qemu-img', 'create', '-f', 'raw', tempfile, '2146798080'],
              # This call would partition the image file.
              ['sudo', 'sfdisk', '-D', '-H', '255', '-S', '63', '-C', '261',
               tempfile],

@@ -62,7 +62,9 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
         cylinders = image_size_in_bytes / CYLINDER_SIZE
         image_size_in_bytes = cylinders * CYLINDER_SIZE
         proc = cmd_runner.run(
-            ['qemu-img', 'create', '-f', 'raw', media.path, image_size],
+            [
+                'qemu-img', 'create', '-f', 'raw', media.path,
+                str(image_size_in_bytes)],
             stdout=open('/dev/null', 'w'))
         proc.wait()
 
