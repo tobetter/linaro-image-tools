@@ -29,9 +29,11 @@ import glob
 import os
 import re
 import tempfile
+import struct
 
 from linaro_media_create import cmd_runner
-
+from binascii import hexlify 
+from binascii import crc32
 
 class BoardConfig(object):
     """The configuration used when building an image for a board."""
@@ -337,8 +339,22 @@ class VexpressConfig(BoardConfig):
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
 
-
 class SamsungConfig(BoardConfig):
+    boot_env = [
+        'baudrate=115200',
+        'bootargs=root=/dev/mmcblk0p2 rootdelay=1 rw init=/bin/bash console=ttySAC1,115200',
+        'bootcmd=movi read kernel 40007000; movi read rootfs 41000000 600000; bootm 40007000',
+        'bootdelay=3',
+        'ethact=smc911x-0',
+        'ethaddr=00:40:5c:26:0a:5b',
+        'gatewayip=192.168.0.1',
+        'ipaddr=192.168.0.20',
+        'netmask=255.255.255.0',
+        'serverip=192.168.0.10',
+        'stderr=serial',
+        'stdin=serial',
+        'stdout=serial'
+        ]
 
     @classmethod
     def get_sfdisk_cmd(cls):
@@ -356,9 +372,10 @@ class SamsungConfig(BoardConfig):
             chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.v310')
         install_smdkv310_boot_loader(uboot_file, boot_device_or_file)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_boot_script(boot_cmd, boot_script)
+
         env_file = os.path.join(
-            boot_dir, 'boot.scr')
+            boot_dir, 'boot_env.flash' )
+        make_flashable_env(cls.boot_env, env_file)
         install_smdkv310_boot_env(env_file, boot_device_or_file)
 
         make_uImage(
@@ -366,6 +383,7 @@ class SamsungConfig(BoardConfig):
         uImage_file = os.path.join(
             boot_dir, 'uImage')
         install_smdkv310_uImage(uImage_file, boot_device_or_file)
+
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
         uInitrd_file = os.path.join(
             boot_dir, 'uInitrd')
@@ -376,9 +394,9 @@ class SMDKV310Config(SamsungConfig):
     fat_size = 0
     extra_serial_opts = 'console=ttySAC1,115200'
     live_serial_opts = 'serialtty=ttyO2'
-    kernel_addr = '0x40007000'
+    kernel_addr = '0x40008000'
     initrd_addr = '0x40800000'
-    load_addr = '0x40007000'
+    load_addr = '0x40008000'
     kernel_suffix = 's5pv310'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
@@ -408,6 +426,7 @@ def _run_mkimage(img_type, load_addr, entry_point, name, img_data, img,
            '-n', name,
            '-d', img_data,
            img]
+
     proc = cmd_runner.run(cmd, as_root=as_root, stdout=stdout)
     proc.wait()
     return proc.returncode
@@ -455,6 +474,25 @@ def make_boot_script(boot_script_data, boot_script):
     return _run_mkimage(
         'script', '0', '0', 'boot script', tmpfile, boot_script)
 
+
+def make_flashable_env( boot_env, env_file ) :
+    env = ''
+
+    for s in boot_env :
+        for c in s :
+            env += struct.pack( 'c', c  )
+        env += struct.pack( 'B', 0 )
+            
+    while len( env ) < (16 * 1024 - 4):
+        env += struct.pack( 'B', 0 )
+
+    crc = crc32( env )
+    env = struct.pack( '<i', crc ) + env
+    
+    with open(env_file, 'w') as fd:
+        fd.write( env )
+        
+    fd.close
 
 def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
     proc = cmd_runner.run([
@@ -514,13 +552,16 @@ def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
 
 
 def install_smdkv310_uImage(uImage_file, boot_device_or_file):
-    proc = cmd_runner.run([
+    cmd = [
         "dd",
         "if=%s" % uImage_file,
         "of=%s" % boot_device_or_file,
         "bs=512",
         "seek=1089",
-        "conv=notrunc"], as_root=True)
+        "conv=notrunc"]
+
+    proc = cmd_runner.run( cmd, as_root=True)
+
     proc.wait()
 
 def install_smdkv310_initrd(initrd_file, boot_device_or_file):
