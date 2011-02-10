@@ -341,7 +341,8 @@ class SamsungConfig(BoardConfig):
     boot_env = [
         'baudrate=115200',
         'bootargs=root=/dev/mmcblk0p2 rootwait rw init=/bin/bash console=ttySAC1,115200',
-        'bootcmd=movi read kernel 40007000; movi read rootfs 41000000 600000; bootm 40007000',
+        'bootcmd=movi read kernel 40007000; movi read rootfs 41000000 600000;'
+        'bootm 40007000 41000000',
         'bootdelay=3',
         'ethact=smc911x-0',
         'ethaddr=00:40:5c:26:0a:5b',
