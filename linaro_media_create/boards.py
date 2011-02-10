@@ -56,18 +56,20 @@ LOADER_PART_START_S = 2
 # start sector of boot partition, +8 MiB; +4 MiB would still be in the first
 # cylinder
 BOOT_PART_START_S = 8 * 1024 * 1024 / 512
-assert BOOT_PART_START_S / PART_ALIGN_S * PART_ALIGN_S == BOOT_PART_START_S
+assert BOOT_PART_START_S % PART_ALIGN_S == 0, "Boot partition isn't aligned"
 # start sector of root partition, +64 MiB; means boot partition is roughly
 # 56 MiB; XXX there's currently no way to set the relative sizes of boot and
 # root partitions
 ROOT_PART_START_S = 64 * 1024 * 1024 / 512
-assert ROOT_PART_START_S / PART_ALIGN_S * PART_ALIGN_S == ROOT_PART_START_S
+assert ROOT_PART_START_S % PART_ALIGN_S == 0, "Root partition isn't aligned"
 BOOT_PART_START_CYL = BOOT_PART_START_S / (63 * 255)
 LOADER_PART_SIZE_S = BOOT_PART_START_CYL * (63 * 255) - LOADER_PART_START_S
-assert LOADER_PART_START_S + LOADER_PART_SIZE_S < BOOT_PART_START_S
+assert LOADER_PART_START_S + LOADER_PART_SIZE_S < BOOT_PART_START_S, (
+    "Bootloader and boot partitions overlap")
 ROOT_PART_START_CYL = ROOT_PART_START_S / (63 * 255)
 BOOT_PART_SIZE_S = ROOT_PART_START_CYL * (63 * 255) - BOOT_PART_START_S
-assert BOOT_PART_START_S + BOOT_PART_SIZE_S < ROOT_PART_START_S
+assert BOOT_PART_START_S + BOOT_PART_SIZE_S < ROOT_PART_START_S, (
+    "Boot and root partitions overlap")
 
 
 class BoardConfig(object):
