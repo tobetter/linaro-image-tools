@@ -194,6 +194,7 @@ def calculate_partition_size_and_offset(image_file):
             linux_offset = geometry.start * 512
             linux_size = geometry.length * 512
             linux_partition = partition
+            break
 
     assert vfat_partition is not None, (
         "Couldn't find boot partition on %s" % image_file)
