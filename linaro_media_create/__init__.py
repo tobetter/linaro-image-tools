@@ -78,7 +78,7 @@ def get_args_parser():
               'only-ubiquity option to allow use of live installer on '
               'boards with 256M memory - like beagle.'))
     parser.add_argument(
-        '--console', action='append', dest='consoles',
+        '--console', action='append', dest='consoles', default=[],
         help=('Add a console to kernel boot parameter; this parameter can be '
               'defined multiple times.'))
     parser.add_argument(
