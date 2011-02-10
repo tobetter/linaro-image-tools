@@ -721,6 +721,14 @@ class TestPartitionSetup(TestCaseWithFixtures):
             [129024L, 32256L, 10321920L, 161280L],
             [vfat_size, vfat_offset, linux_size, linux_offset])
 
+    def test_partition_numbering(self):
+        # another Linux partition after the boot/root parts
+        tempfile = self._create_qemu_img_with_partitions(
+            ',1,0x0C,*\n,1,,-\n,,,-')
+        vfat_size, vfat_offset, linux_size, linux_offset = (
+            calculate_partition_size_and_offset(tempfile))
+        self.assertEqual(linux_offset, 5 * 63 * 512)
+
     def test_get_boot_and_root_partitions_for_media_beagle(self):
         self.useFixture(MockSomethingFixture(
             partitions, '_get_device_file_for_partition_number',
