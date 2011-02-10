@@ -27,6 +27,7 @@ import dbus
 from parted import (
     Device,
     Disk,
+    PARTITION_NORMAL,
     )
 
 from linaro_media_create import cmd_runner
@@ -174,19 +175,29 @@ def calculate_partition_size_and_offset(image_file):
     # block device we'd need root rights.
     disk = Disk(Device(image_file))
     vfat_partition = None
+    linux_partition = None
     for partition in disk.partitions:
+        assert partition.type == PARTITION_NORMAL
         if 'boot' in partition.getFlagsAsString():
             geometry = partition.geometry
             vfat_offset = geometry.start * 512
             vfat_size = geometry.length * 512
             vfat_partition = partition
+        elif vfat_partition is not None:
+            # next partition after boot partition is the root partition
+            # NB: don't use vfat_partition.nextPartition() as that might return
+            # a partition of type PARTITION_FREESPACE; it's much easier to
+            # iterate disk.partitions which only returns
+            # parted.PARTITION_NORMAL partitions
+            geometry = partition.geometry
+            linux_offset = geometry.start * 512
+            linux_size = geometry.length * 512
+            linux_partition = partition
 
     assert vfat_partition is not None, (
         "Couldn't find boot partition on %s" % image_file)
-    linux_partition = vfat_partition.nextPartition()
-    geometry = linux_partition.geometry
-    linux_offset = geometry.start * 512
-    linux_size = geometry.length * 512
+    assert linux_partition is not None, (
+        "Couldn't find root partition on %s" % image_file)
     return vfat_size, vfat_offset, linux_size, linux_offset
 
 
