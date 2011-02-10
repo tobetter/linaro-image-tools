@@ -699,6 +699,11 @@ class TestPartitionSetup(TestCaseWithFixtures):
         super(TestPartitionSetup, self).tearDown()
         time.sleep = self.orig_sleep
 
+    def _create_tempfile(self):
+        # boot part at +8 MiB, root part at +16 MiB
+        return self._create_qemu_img_with_partitions(
+            '16384,15746,0x0C,*\n32768,,,-')
+
     def test_convert_size_in_kbytes_to_bytes(self):
         self.assertEqual(512 * 1024, convert_size_to_bytes('512K'))
 
@@ -709,8 +714,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.assertEqual(12 * 1024**3, convert_size_to_bytes('12G'))
 
     def test_calculate_partition_size_and_offset(self):
-        # boot part at +8 MiB, root part at +16 MiB
-        tempfile = self._create_qemu_img_with_partitions('16384,15746,0x0C,*\n32768,,,-')
+        tempfile = self._create_tempfile()
         vfat_size, vfat_offset, linux_size, linux_offset = (
             calculate_partition_size_and_offset(tempfile))
         self.assertEqual(
@@ -771,8 +775,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.assertEqual(None, popen_fixture.mock.calls)
 
     def test_get_boot_and_root_loopback_devices(self):
-        # boot part at +8 MiB, root part at +16 MiB
-        tempfile = self._create_qemu_img_with_partitions('16384,15746,0x0C,*\n32768,,,-')
+        tempfile = self._create_tempfile()
         atexit_fixture = self.useFixture(MockSomethingFixture(
             atexit, 'register', AtExitRegister()))
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
@@ -804,8 +807,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # but here we mock Popen() and thanks to that the image is not setup
         # (via qemu-img) inside setup_partitions.  That's why we pass an
         # already setup image file.
-        # boot part at +8 MiB, root part at +16 MiB
-        tempfile = self._create_qemu_img_with_partitions('16384,15746,0x0C,*\n32768,,,-')
+        tempfile = self._create_tempfile()
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             sys, 'stdout', open('/dev/null', 'w')))
@@ -842,8 +844,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Pretend the partitions are mounted.
         self.useFixture(MockSomethingFixture(
             partitions, 'is_partition_mounted', lambda part: True))
-        # boot part at +8 MiB, root part at +16 MiB
-        tempfile = self._create_qemu_img_with_partitions('16384,15746,0x0C,*\n32768,,,-')
+        tempfile = self._create_tempfile()
         self.useFixture(MockSomethingFixture(
             partitions, '_get_device_file_for_partition_number',
             lambda dev, partition: '%s%d' % (tempfile, partition)))
