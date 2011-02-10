@@ -722,6 +722,16 @@ class TestPartitionSetup(TestCaseWithFixtures):
             [129024L, 32256L, 10321920L, 161280L],
             [vfat_size, vfat_offset, linux_size, linux_offset])
 
+    def test_partition_numbering(self):
+        # another Linux partition after the boot/root parts
+        tempfile = self._create_qemu_img_with_partitions(
+            ',1,0x0C,*\n,1,,-\n,,,-')
+        vfat_size, vfat_offset, linux_size, linux_offset = (
+            calculate_partition_size_and_offset(tempfile))
+        # check that the linux partition offset starts on second cylinder so
+        # that it's the partition immediately following the vfat one
+        self.assertEqual(linux_offset, 5 * 63 * 512)
+
     def test_get_boot_and_root_partitions_for_media_beagle(self):
         self.useFixture(MockSomethingFixture(
             partitions, '_get_device_file_for_partition_number',
@@ -829,7 +839,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             'root', 'ext3', True, True, True)
         self.assertEqual(
              # This is the call that would create the image file.
-            [['qemu-img', 'create', '-f', 'raw', tempfile, '2G'],
+            [['qemu-img', 'create', '-f', 'raw', tempfile, '2147483648'],
              # This call would partition the image file.
              ['sudo', 'sfdisk', '-D', '-H', '255', '-S', '63', '-C', '261',
               tempfile],
