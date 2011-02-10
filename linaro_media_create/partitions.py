@@ -176,7 +176,9 @@ def calculate_partition_size_and_offset(image_file):
     vfat_partition = None
     linux_partition = None
     for partition in disk.partitions:
-        assert partition.type == PARTITION_NORMAL
+        assert partition.type == PARTITION_NORMAL, (
+            "Parted should only return normal partitions but got type %i" %
+                partition.type)
         if 'boot' in partition.getFlagsAsString():
             geometry = partition.geometry
             vfat_offset = geometry.start * 512
