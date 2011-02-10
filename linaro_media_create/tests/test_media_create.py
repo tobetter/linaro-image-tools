@@ -727,6 +727,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
             ',1,0x0C,*\n,1,,-\n,,,-')
         vfat_size, vfat_offset, linux_size, linux_offset = (
             calculate_partition_size_and_offset(tempfile))
+        # check that the linux partition offset starts on second cylinder so
+        # that it's the partition immediately following the vfat one
         self.assertEqual(linux_offset, 5 * 63 * 512)
 
     def test_get_boot_and_root_partitions_for_media_beagle(self):
