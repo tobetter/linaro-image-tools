@@ -731,7 +731,6 @@ class TestPartitionSetup(TestCaseWithFixtures):
         tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
         vfat_size, vfat_offset, linux_size, linux_offset = (
             calculate_partition_size_and_offset(tempfile))
-        print "vfat %s %s linux %s" % (vfat_offset, vfat_size, linux_offset)
         self.assertTrue(vfat_offset + vfat_size <= linux_offset)
 
     def test_get_boot_and_root_partitions_for_media_beagle(self):
