@@ -40,7 +40,8 @@ def populate_boot(board_config, chroot_dir, rootfs_uuid, boot_partition,
         else:
             raise
 
-    if board_config.fat_size != 0 :
+    # this probably needs refactoring - see bug 716469
+    if board_config.uses_fat_boot_partition:
         cmd_runner.run(['mount', boot_partition, boot_disk], as_root=True).wait()
 
         uboot_flavor = board_config.uboot_flavor

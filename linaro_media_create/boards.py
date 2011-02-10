@@ -32,7 +32,6 @@ import tempfile
 import struct
 
 from linaro_media_create import cmd_runner
-from binascii import hexlify 
 from binascii import crc32
 
 class BoardConfig(object):
@@ -42,6 +41,7 @@ class BoardConfig(object):
     mmc_option = '0:1'
     mmc_part_offset = 0
     fat_size = 32
+    uses_fat_boot_partition = True
     extra_serial_opts = ''
     live_serial_opts = ''
     extra_boot_args_options = None
@@ -57,7 +57,6 @@ class BoardConfig(object):
     @classmethod
     def get_sfdisk_cmd(cls):
         """Return the sfdisk command to partition the media."""
-
         if cls.fat_size == 32:
             partition_type = '0x0C'
         else:
@@ -204,7 +203,6 @@ class OmapConfig(BoardConfig):
         make_boot_ini(boot_script, boot_dir)
 
 
-
 class BeagleConfig(OmapConfig):
     uboot_flavor = 'omap3_beagle'
     _serial_tty = 'ttyO2'
@@ -342,56 +340,43 @@ class VexpressConfig(BoardConfig):
 class SamsungConfig(BoardConfig):
     boot_env = [
         'baudrate=115200',
-        'bootargs=root=/dev/mmcblk0p2 rootdelay=1 rw init=/bin/bash console=ttySAC1,115200',
+        'bootargs=root=/dev/mmcblk0p2 rootwait rw init=/bin/bash console=ttySAC1,115200',
         'bootcmd=movi read kernel 40007000; movi read rootfs 41000000 600000; bootm 40007000',
         'bootdelay=3',
         'ethact=smc911x-0',
         'ethaddr=00:40:5c:26:0a:5b',
-        'gatewayip=192.168.0.1',
-        'ipaddr=192.168.0.20',
-        'netmask=255.255.255.0',
-        'serverip=192.168.0.10',
-        'stderr=serial',
-        'stdin=serial',
-        'stdout=serial'
         ]
 
     @classmethod
     def get_sfdisk_cmd(cls):
-        # Create a one cylinder partition for fixed-offset bootloader data at
+        # Create a 14 cylinder partition for fixed-offset bootloader data at
         # the beginning of the image (size is 14 cylinder, so 115,146,752 bytes
-        # with the first sector for MBR).
-        sfdisk_cmd = super(SamsungConfig, cls).get_sfdisk_cmd()
+        # with the first sector for MBR). And create a linux partition for 
+        # the remainder of the disk
         return ',14,0xDA\n,,,-'
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
-
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.v310')
         install_smdkv310_boot_loader(uboot_file, boot_device_or_file)
-        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
 
-        env_file = os.path.join(
-            boot_dir, 'boot_env.flash' )
-        make_flashable_env(cls.boot_env, env_file)
+        env_file = os.path.join(boot_dir, 'boot_env.flash')
+        # SMDK v310 uses a 16K environment
+        make_flashable_env(cls.boot_env, 16384, env_file)
         install_smdkv310_boot_env(env_file, boot_device_or_file)
 
-        make_uImage(
+        uImage_file = make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        uImage_file = os.path.join(
-            boot_dir, 'uImage')
         install_smdkv310_uImage(uImage_file, boot_device_or_file)
 
-        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        uInitrd_file = os.path.join(
-            boot_dir, 'uInitrd')
+        uInitrd_file = make_uInitrd(
+            uboot_parts_dir, cls.kernel_suffix, boot_dir)
         install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
 
 
 class SMDKV310Config(SamsungConfig):
-    fat_size = 0
     extra_serial_opts = 'console=ttySAC1,115200'
     live_serial_opts = 'serialtty=ttyO2'
     kernel_addr = '0x40008000'
@@ -400,7 +385,8 @@ class SMDKV310Config(SamsungConfig):
     kernel_suffix = 's5pv310'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'root=/dev/mmcblk0p1 rootdelay=1 rw init=/bin/bash')
+        'root=/dev/mmcblk0p2 rootwait rw init=/bin/bash')
+    uses_fat_boot_partition = False
 
 board_configs = {
     'beagle': BeagleConfig,
@@ -453,15 +439,16 @@ def make_uImage(load_addr, uboot_parts_dir, suffix, boot_disk):
     img_data = _get_file_matching(
         '%s/vmlinuz-*-%s' % (uboot_parts_dir, suffix))
     img = '%s/uImage' % boot_disk
-    return _run_mkimage(
+    _run_mkimage(
         'kernel', load_addr, load_addr, 'Linux', img_data, img)
-
+    return img
 
 def make_uInitrd(uboot_parts_dir, suffix, boot_disk):
     img_data = _get_file_matching(
         '%s/initrd.img-*-%s' % (uboot_parts_dir, suffix))
     img = '%s/uInitrd' % boot_disk
-    return _run_mkimage('ramdisk', '0', '0', 'initramfs', img_data, img)
+    _run_mkimage('ramdisk', '0', '0', 'initramfs', img_data, img)
+    return img
 
 
 def make_boot_script(boot_script_data, boot_script):
@@ -475,24 +462,21 @@ def make_boot_script(boot_script_data, boot_script):
         'script', '0', '0', 'boot script', tmpfile, boot_script)
 
 
-def make_flashable_env( boot_env, env_file ) :
+def make_flashable_env(boot_env, env_size, env_file):
     env = ''
 
-    for s in boot_env :
-        for c in s :
-            env += struct.pack( 'c', c  )
-        env += struct.pack( 'B', 0 )
-            
-    while len( env ) < (16 * 1024 - 4):
-        env += struct.pack( 'B', 0 )
+    env = struct.pack('B', 0 ).join(boot_env)
 
-    crc = crc32( env )
-    env = struct.pack( '<i', crc ) + env
+    # pad the rest of the env for the CRC calc
+    while len(env) < (env_size - 4):
+        env += struct.pack('B', 0)
+
+    crc = crc32(env)
+    env = struct.pack('<i', crc) + env
     
     with open(env_file, 'w') as fd:
-        fd.write( env )
-        
-    fd.close
+        fd.write(env)
+
 
 def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
     proc = cmd_runner.run([
@@ -540,16 +524,7 @@ def make_boot_ini(boot_script, boot_disk):
         ["cp", "-v", boot_script, "%s/boot.ini" % boot_disk], as_root=True)
     proc.wait()
 
-def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
-    proc = cmd_runner.run([
-        "dd",
-        "if=%s" % imx_file,
-        "of=%s" % boot_device_or_file,
-        "bs=1024",
-        "seek=1",
-        "conv=notrunc"], as_root=True)
-    proc.wait()
-
+    return "%s/boot.ini" % boot_disk
 
 def install_smdkv310_uImage(uImage_file, boot_device_or_file):
     cmd = [
