@@ -262,17 +262,6 @@ def convert_size_to_bytes(size):
         raise ValueError("Unknown size format: %s.  Use K[bytes], M[bytes] "
                          "or G[bytes]" % size)
 
-    # Round the size of the raw disk image up to a multiple of 256K so it is
-    # an exact number of SD card erase blocks in length.  Otherwise Linux
-    # under qemu cannot access the last part of the card and is likely to
-    # complain that the last partition on the disk has been truncated.  This
-    # doesn't appear to work in all cases, though, as can be seen on
-    # https://bugs.launchpad.net/linux-linaro/+bug/673335.
-    if real_size % (1024 * 256):
-        cylinders = real_size / CYLINDER_SIZE
-        real_size = cylinders * CYLINDER_SIZE
-        real_size = ((((real_size - 1) / (1024 * 256)) + 1) * (1024 * 256))
-
     return real_size
 
 
@@ -287,8 +276,13 @@ def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
     :param commands: A string of sfdisk commands; each on a separate line.
     :return: A 2-tuple containing the subprocess' stdout and stderr.
     """
+    # --force is unfortunate, but a consequence of having partitions not
+    # starting on cylinder boundaries: sfdisk will abort with "Warning:
+    # partition 2 does not start at a cylinder boundary"
     args = ['sfdisk',
+            '--force',
             '-D',
+            '-uS',
             '-H', str(heads),
             '-S', str(sectors)]
     if cylinders is not None:

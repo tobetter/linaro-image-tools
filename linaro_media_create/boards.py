@@ -32,6 +32,43 @@ import tempfile
 
 from linaro_media_create import cmd_runner
 
+# Notes:
+# * geometry is currently always 255 heads and 63 sectors due to limitations of
+#   older OMAP3 boot ROMs
+# * we want partitions aligned on 4 MiB as to get the best performance and
+#   limit wear-leveling
+# * partitions should preferably end on cylinder boundaries, at least to please
+#   sfdisk but also just to have them as big as possible
+# * this assumes that root partition follows the boot partition which follows
+#   an optional bootloader partition
+# * image_size is passed on the command-line and should preferably be a power
+#   of 2; it should be used as a "don't go over this size" information for a
+#   real device, and a "give me a file exactly this big" requirement for an
+#   image file.  Having exactly a power of 2 helps with QEMU; there seem to be
+#   some truncating issues otherwise. XXX to be researched
+
+# number of sectors of 512 bytes that we align the start of partitions on; we
+# align on 4 MiB
+PART_ALIGN_S = 4 * 1024 * 1024 / 512
+# start sector of optional bootloader partition, +2s; this is just after MBR
+# and partition table; this partition needs not be aligned
+LOADER_PART_START_S = 2
+# start sector of boot partition, +8 MiB; +4 MiB would still be in the first
+# cylinder
+BOOT_PART_START_S = 8 * 1024 * 1024 / 512
+assert BOOT_PART_START_S / PART_ALIGN_S * PART_ALIGN_S == BOOT_PART_START_S
+# start sector of root partition, +64 MiB; means boot partition is roughly
+# 56 MiB; XXX there's currently no way to set the relative sizes of boot and
+# root partitions
+ROOT_PART_START_S = 64 * 1024 * 1024 / 512
+assert ROOT_PART_START_S / PART_ALIGN_S * PART_ALIGN_S == ROOT_PART_START_S
+BOOT_PART_START_CYL = BOOT_PART_START_S / (63 * 255)
+LOADER_PART_SIZE_S = BOOT_PART_START_CYL * (63 * 255) - LOADER_PART_START_S
+assert LOADER_PART_START_S + LOADER_PART_SIZE_S < BOOT_PART_START_S
+ROOT_PART_START_CYL = ROOT_PART_START_S / (63 * 255)
+BOOT_PART_SIZE_S = ROOT_PART_START_CYL * (63 * 255) - BOOT_PART_START_S
+assert BOOT_PART_START_S + BOOT_PART_SIZE_S < ROOT_PART_START_S
+
 
 class BoardConfig(object):
     """The configuration used when building an image for a board."""
@@ -60,10 +97,16 @@ class BoardConfig(object):
         else:
             partition_type = '0x0E'
 
-        # This will create a partition of the given type, containing 9
-        # cylinders (74027520 bytes, ~70 MiB), followed by a Linux-type
-        # partition containing the rest of the free space.
-        return ',9,%s,*\n,,,-' % partition_type
+        # This will create a boot partition of type partition_type at offset
+        # (in sectors) BOOT_PART_START_S and of size BOOT_PART_SIZE_S followed
+        # by a root partition of the default type (Linux) at offset (in
+        # sectors) ROOT_PART_START_S filling the remaining space
+        # XXX we should honor the specified image size by specifying a
+        # corresponding root partition size
+        return '%s,%s,%s,*\n%s,,,-' % (
+            BOOT_PART_START_S, BOOT_PART_SIZE_S, partition_type,
+            ROOT_PART_START_S,
+            )
 
     @classmethod
     def _get_boot_cmd(cls, is_live, is_lowmem, consoles, rootfs_uuid):
@@ -300,7 +343,9 @@ class Mx51evkConfig(BoardConfig):
         # the beginning of the image (size is one cylinder, so 8224768 bytes
         # with the first sector for MBR).
         sfdisk_cmd = super(Mx51evkConfig, cls).get_sfdisk_cmd()
-        return ',1,0xDA\n%s' % sfdisk_cmd
+        return '%s,%s,0xDA\n%s' % (
+            LOADER_PART_START_S, LOADER_PART_SIZE_S, sfdisk_cmd,
+            )
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
