@@ -253,6 +253,15 @@ class TestBootSteps(TestCaseWithFixtures):
             'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
+    def test_smdkv310_steps(self):
+        self.make_boot_files(boards.SMDKV310Config)
+        expected = [
+            'install_smdkv310_boot_loader', 'make_flashable_env',
+            'install_smdkv310_boot_env', 'make_uImage', 
+            'install_smdkv310_uImage', 'make_uInitrd', 
+            'install_smdkv310_initrd' ]
+        self.assertEqual(expected, self.funcs_calls)
+
     def test_ux500_steps(self):
         self.make_boot_files(boards.Ux500Config)
         expected = ['make_uImage', 'make_uInitrd', 'make_boot_script']
@@ -339,6 +348,11 @@ class TestGetSfdiskCmd(TestCase):
             ',1,0xDA\n,9,0x0C,*\n,,,-',
             board_configs['mx51evk'].get_sfdisk_cmd())
 
+    def test_smdkv310(self):
+        self.assertEquals(
+            ',14,0xDA\n,,,-',
+            board_configs['smdkv310'].get_sfdisk_cmd())
+
 
 class TestGetBootCmd(TestCase):
 
@@ -362,6 +376,20 @@ class TestGetBootCmd(TestCase):
             "0:2 0x90800000 uInitrd; bootm 0x90000000 0x90800000'\nsetenv "
             "bootargs ' console=tty0 console=ttymxc0,115200n8  "
             "root=UUID=deadbeef rootwait ro'\nboot")
+        self.assertEqual(expected, boot_cmd)
+
+    def test_smdkv310(self):
+        # this is kind of a useless test as this environment isn't
+        # currently used. I'll keep it for completeness and it env 
+        # might get used in the future
+        boot_cmd = board_configs['smdkv310']._get_boot_cmd(
+            is_live=False, is_lowmem=False, consoles=None,
+            rootfs_uuid="deadbeef")
+        expected = (
+            "setenv bootcmd 'fatload mmc 0:1 0x40008000 uImage; fatload mmc "
+            "0:1 0x40800000 uInitrd; bootm 0x40008000 0x40800000'\nsetenv "
+            "bootargs ' console=ttySAC1,115200  root=UUID=deadbeef rootwait "
+            "ro root=/dev/mmcblk0p2 rootwait rw init=/bin/bash'\nboot")
         self.assertEqual(expected, boot_cmd)
 
     def test_ux500(self):
@@ -633,6 +661,25 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # erasing any partitions created previously.
         self.assertEqual(
             [(',1,0xDA\n,9,0x0C,*\n,,,-', 255, 63, '', self.media.path)],
+            sfdisk_fixture.mock.calls)
+
+    def test_create_partitions_for_smdkv310(self):
+        # For this board we create a one cylinder partition at the beginning.
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
+
+        create_partitions(
+            board_configs['smdkv310'], self.media, 255, 63, '')
+
+        self.assertEqual(
+            [['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
+             ['sync']],
+            popen_fixture.mock.calls)
+        # Notice that we create all partitions in a single sfdisk run because
+        # every time we run sfdisk it actually repartitions the device,
+        # erasing any partitions created previously.
+        self.assertEqual(
+            [(',14,0xDA\n,,,-', 255, 63, '', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):
