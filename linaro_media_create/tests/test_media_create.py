@@ -721,18 +721,6 @@ class TestPartitionSetup(TestCaseWithFixtures):
             [129024L, 32256L, 10321920L, 161280L],
             [vfat_size, vfat_offset, linux_size, linux_offset])
 
-    def test_partition_ordering(self):
-        tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
-        vfat_size, vfat_offset, linux_size, linux_offset = (
-            calculate_partition_size_and_offset(tempfile))
-        self.assertTrue(vfat_offset < linux_offset)
-
-    def test_partition_overlap(self):
-        tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
-        vfat_size, vfat_offset, linux_size, linux_offset = (
-            calculate_partition_size_and_offset(tempfile))
-        self.assertTrue(vfat_offset + vfat_size <= linux_offset)
-
     def test_get_boot_and_root_partitions_for_media_beagle(self):
         self.useFixture(MockSomethingFixture(
             partitions, '_get_device_file_for_partition_number',
