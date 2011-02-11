@@ -36,12 +36,10 @@ from linaro_media_create.partitions import SECTOR_SIZE
 # Notes:
 # * geometry is currently always 255 heads and 63 sectors due to limitations of
 #   older OMAP3 boot ROMs
+# * apparently some OMAP3 ROMs don't tolerate vfat length of an odd number of
+#   sectors (only sizes rounded to 1 KiB seem to boot)
 # * we want partitions aligned on 4 MiB as to get the best performance and
 #   limit wear-leveling
-# * partitions should preferably end on cylinder boundaries, at least to please
-#   sfdisk but also just to have them as big as possible
-# * this assumes that root partition follows the boot partition which follows
-#   an optional bootloader partition
 # * image_size is passed on the command-line and should preferably be a power
 #   of 2; it should be used as a "don't go over this size" information for a
 #   real device, and a "give me a file exactly this big" requirement for an
@@ -112,10 +110,14 @@ class BoardConfig(object):
         if should_align_boot_part:
             boot_align = PART_ALIGN_S
 
-        # can only start on sector 1 (sector 0 is MBR / partition table); align
-        # on sector 63 for compatibility with broken versions of x-loader
+        # can only start on sector 1 (sector 0 is MBR / partition table)
         boot_start, boot_end, boot_len = align_partition(
             1, BOOT_MIN_SIZE_S, boot_align, PART_ALIGN_S)
+        # apparently OMAP3 ROMs require the vfat length to be an even number
+        # of sectors (multiple of 1 KiB); decrease the length if it's odd,
+        # there should still be enough room
+        boot_len = boot_len - boot_len % 2
+        boot_end = boot_start + boot_len - 1
         # we ignore _root_end / _root_len and return a sfdisk command to
         # instruct the use of all remaining space; XXX if he we had some root
         # size config, we could do something more sensible

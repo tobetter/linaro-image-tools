@@ -355,7 +355,7 @@ class TestGetSfdiskCmd(TestCase):
 
     def test_default(self):
         self.assertEqual(
-            '63,106433,0x0C,*\n106496,,,-',
+            '63,106432,0x0C,*\n106496,,,-',
             boards.BoardConfig.get_sfdisk_cmd())
 
     def test_default_aligned(self):
@@ -677,7 +677,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
              ['sync']],
             popen_fixture.mock.calls)
         self.assertEqual(
-            [('63,106433,0x0C,*\n106496,,,-', 255, 63, '', self.media.path)],
+            [('63,106432,0x0C,*\n106496,,,-', 255, 63, '', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_with_img_file(self):
@@ -694,7 +694,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertEqual([['sync']], popen_fixture.mock.calls)
 
         self.assertEqual(
-            [('63,106433,0x0C,*\n106496,,,-', 255, 63, '', tempfile)],
+            [('63,106432,0x0C,*\n106496,,,-', 255, 63, '', tempfile)],
             sfdisk_fixture.mock.calls)
 
     def test_run_sfdisk_commands(self):
