@@ -43,6 +43,8 @@ from linaro_media_create import (
     )
 import linaro_media_create
 from linaro_media_create.boards import (
+    align_up,
+    align_partition,
     BoardConfig,
     board_configs,
     make_boot_script,
@@ -281,6 +283,27 @@ class TestBootSteps(TestCaseWithFixtures):
             'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
             'make_boot_script', 'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
+
+
+class TestAlignPartition(TestCase):
+    def test_align_up_none(self):
+        self.assertEqual(1024, align_up(1024, 1))
+
+    def test_align_up_no_rounding(self):
+        self.assertEqual(512, align_up(512, 512))
+
+    def test_align_up_rounding(self):
+        self.assertEqual(512, align_up(1, 512))
+
+    def test_align_partition_4_mib_4_mib(self):
+        expected = (4 * 1024 * 1024, 8 * 1024 * 1024 - 1, 4 * 1024 * 1024)
+        self.assertEqual(expected,
+            align_partition(1, 1, 4 * 1024 * 1024, 4 * 1024 * 1024))
+
+    def test_align_partition_none_4_mib(self):
+        expected = (1, 4 * 1024 * 1024 - 1, 4 * 1024 * 1024 - 1)
+        self.assertEqual(expected,
+            align_partition(1, 1, 1, 4 * 1024 * 1024))
 
 
 class TestFixForBug697824(TestCaseWithFixtures):
