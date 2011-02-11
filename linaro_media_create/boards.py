@@ -93,8 +93,10 @@ class BoardConfig(object):
     serial_tty = None
 
     @classmethod
-    def get_sfdisk_cmd(cls):
+    def get_sfdisk_cmd(cls, should_align_boot_part=False):
         """Return the sfdisk command to partition the media.
+
+        :param should_align_boot_part: Whether to align the boot partition too.
 
         This default implementation returns a boot vfat partition of type FAT16
         or FAT32, followed by a root partition."""
@@ -104,10 +106,16 @@ class BoardConfig(object):
         else:
             partition_type = '0x0E'
 
+        # align on sector 63 for compatibility with broken versions of x-loader
+        # unless align_boot_part is set
+        boot_align = 63
+        if should_align_boot_part:
+            boot_align = PART_ALIGN_S
+
         # can only start on sector 1 (sector 0 is MBR / partition table); align
         # on sector 63 for compatibility with broken versions of x-loader
         boot_start, boot_end, boot_len = align_partition(
-            1, BOOT_MIN_SIZE_S, 63, PART_ALIGN_S)
+            1, BOOT_MIN_SIZE_S, boot_align, PART_ALIGN_S)
         # we ignore _root_end / _root_len and return a sfdisk command to
         # instruct the use of all remaining space; XXX if he we had some root
         # size config, we could do something more sensible
@@ -339,8 +347,10 @@ class Mx51evkConfig(BoardConfig):
     mmc_option = '0:2'
 
     @classmethod
-    def get_sfdisk_cmd(cls):
+    def get_sfdisk_cmd(cls, should_align_boot_part=None):
         """Return the sfdisk command to partition the media.
+
+        :param should_align_boot_part: Ignored.
 
         This i.MX5 implementation returns a non-FS data bootloader partition,
         followed by a FAT32 boot partition, followed by a root partition."""

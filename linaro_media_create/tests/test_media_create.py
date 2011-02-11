@@ -355,7 +355,13 @@ class TestGetSfdiskCmd(TestCase):
 
     def test_default(self):
         self.assertEqual(
-            '63,106433,0x0C,*\n106496,,,-', boards.BoardConfig.get_sfdisk_cmd())
+            '63,106433,0x0C,*\n106496,,,-',
+            boards.BoardConfig.get_sfdisk_cmd())
+
+    def test_default_aligned(self):
+        self.assertEqual(
+            '8192,106496,0x0C,*\n114688,,,-',
+            boards.BoardConfig.get_sfdisk_cmd(should_align_boot_part=True))
 
     def test_mx51evk(self):
         self.assertEqual(
