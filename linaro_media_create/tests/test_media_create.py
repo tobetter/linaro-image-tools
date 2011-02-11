@@ -331,12 +331,12 @@ class TestFixForBug697824(TestCaseWithFixtures):
 class TestGetSfdiskCmd(TestCase):
 
     def test_default(self):
-        self.assertEquals(
-            '16384,112136,0x0C,*\n131072,,,-', boards.BoardConfig.get_sfdisk_cmd())
+        self.assertEqual(
+            '63,106433,0x0C,*\n106496,,,-', boards.BoardConfig.get_sfdisk_cmd())
 
     def test_mx51evk(self):
-        self.assertEquals(
-            '2,16063,0xDA\n16384,112136,0x0C,*\n131072,,,-',
+        self.assertEqual(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             board_configs['mx51evk'].get_sfdisk_cmd())
 
 
@@ -633,7 +633,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('2,16063,0xDA\n16384,112136,0x0C,*\n131072,,,-', 255, 63, '', self.media.path)],
+            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', 255, 63, '', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):
@@ -648,7 +648,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
              ['sync']],
             popen_fixture.mock.calls)
         self.assertEqual(
-            [('16384,112136,0x0C,*\n131072,,,-', 255, 63, '', self.media.path)],
+            [('63,106433,0x0C,*\n106496,,,-', 255, 63, '', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_with_img_file(self):
@@ -665,7 +665,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertEqual([['sync']], popen_fixture.mock.calls)
 
         self.assertEqual(
-            [('16384,112136,0x0C,*\n131072,,,-', 255, 63, '', tempfile)],
+            [('63,106433,0x0C,*\n106496,,,-', 255, 63, '', tempfile)],
             sfdisk_fixture.mock.calls)
 
     def test_run_sfdisk_commands(self):
