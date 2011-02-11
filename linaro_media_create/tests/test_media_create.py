@@ -344,34 +344,34 @@ class TestGetBootCmd(TestCase):
 
     def test_vexpress(self):
         boot_cmd = board_configs['vexpress']._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=None,
+            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
             rootfs_uuid="deadbeef")
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x60008000 uImage; fatload mmc "
             "0:1 0x81000000 uInitrd; bootm 0x60008000 0x81000000'\nsetenv "
-            "bootargs ' console=tty0 console=ttyAMA0,38400n8  "
+            "bootargs 'console=tty0 console=ttyAMA0,38400n8 console=ttyXXX  "
             "root=UUID=deadbeef rootwait ro'\nboot")
         self.assertEqual(expected, boot_cmd)
 
     def test_mx51evk(self):
         boot_cmd = board_configs['mx51evk']._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=None,
+            is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
             "setenv bootcmd 'fatload mmc 0:2 0x90000000 uImage; fatload mmc "
             "0:2 0x90800000 uInitrd; bootm 0x90000000 0x90800000'\nsetenv "
-            "bootargs ' console=tty0 console=ttymxc0,115200n8  "
+            "bootargs 'console=tty0 console=ttymxc0,115200n8  "
             "root=UUID=deadbeef rootwait ro'\nboot")
         self.assertEqual(expected, boot_cmd)
 
     def test_ux500(self):
         boot_cmd = board_configs['ux500']._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=None,
+            is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
             "setenv bootcmd 'fatload mmc 1:1 0x00100000 uImage; fatload mmc "
             "1:1 0x08000000 uInitrd; bootm 0x00100000 0x08000000'\nsetenv "
-            "bootargs ' console=tty0 console=ttyAMA2,115200n8  "
+            "bootargs 'console=tty0 console=ttyAMA2,115200n8  "
             "root=UUID=deadbeef rootwait ro earlyprintk rootdelay=1 fixrtc "
             "nocompcache mem=96M@0 mem_modem=32M@96M mem=44M@128M "
             "pmem=22M@172M mem=30M@194M mem_mali=32M@224M "
@@ -385,12 +385,12 @@ class TestGetBootCmd(TestCase):
         config = board_configs['panda']
         config.serial_tty = config._serial_tty
         boot_cmd = config._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=None,
+            is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x80200000 uImage; fatload mmc "
             "0:1 0x81600000 uInitrd; bootm 0x80200000 0x81600000'\nsetenv "
-            "bootargs ' console=tty0 console=ttyO2,115200n8  "
+            "bootargs 'console=tty0 console=ttyO2,115200n8  "
             "root=UUID=deadbeef rootwait ro earlyprintk fixrtc nocompcache "
             "vram=32M omapfb.vram=0:8M mem=463M "
             "ip=none'\nboot")
@@ -403,12 +403,12 @@ class TestGetBootCmd(TestCase):
         config = board_configs['beagle']
         config.serial_tty = config._serial_tty
         boot_cmd = config._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=None,
+            is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x80000000 uImage; "
             "fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 "
-            "0x81600000'\nsetenv bootargs ' console=tty0 "
+            "0x81600000'\nsetenv bootargs 'console=tty0 "
             "console=ttyO2,115200n8  root=UUID=deadbeef rootwait ro "
             "earlyprintk fixrtc nocompcache vram=12M "
             "omapfb.mode=dvi:1280x720MR-16@60'\nboot")
@@ -421,15 +421,16 @@ class TestGetBootCmd(TestCase):
         config = board_configs['overo']
         config.serial_tty = config._serial_tty
         boot_cmd = config._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=None,
+            is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x80000000 uImage; "
             "fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 "
-            "0x81600000'\nsetenv bootargs ' console=tty0 "
+            "0x81600000'\nsetenv bootargs 'console=tty0 "
             "console=ttyO2,115200n8  root=UUID=deadbeef rootwait ro "
             "earlyprintk'\nboot")
         self.assertEqual(expected, boot_cmd)
+
 
 class TestUnpackBinaryTarball(TestCaseWithFixtures):
 
@@ -718,8 +719,18 @@ class TestPartitionSetup(TestCaseWithFixtures):
         vfat_size, vfat_offset, linux_size, linux_offset = (
             calculate_partition_size_and_offset(tempfile))
         self.assertEqual(
-            [8061952L, 8388608L, 4194304L, 16777216L],
+            [8061952L, 8388608L, 14680064L, 16777216L],
             [vfat_size, vfat_offset, linux_size, linux_offset])
+
+    def test_partition_numbering(self):
+        # another Linux partition at +24 MiB after the boot/root parts
+        tempfile = self._create_qemu_img_with_partitions(
+            '16384,15746,0x0C,*\n32768,15427,,-\n49152,,,-')
+        vfat_size, vfat_offset, linux_size, linux_offset = (
+            calculate_partition_size_and_offset(tempfile))
+        # check that the linux partition offset starts at +16 MiB so that it's
+        # the partition immediately following the vfat one
+        self.assertEqual(linux_offset, 32768 * 512)
 
     def test_get_boot_and_root_partitions_for_media_beagle(self):
         self.useFixture(MockSomethingFixture(
@@ -748,7 +759,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def _create_qemu_img_with_partitions(self, sfdisk_commands):
         tempfile = self.createTempFileAsFixture()
         proc = cmd_runner.run(
-            ['qemu-img', 'create', '-f', 'raw', tempfile, '20M'],
+            ['qemu-img', 'create', '-f', 'raw', tempfile, '30M'],
             stdout=subprocess.PIPE)
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
@@ -787,7 +798,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             [['sudo', 'losetup', '-f', '--show', tempfile, '--offset',
               '8388608', '--sizelimit', '8061952'],
              ['sudo', 'losetup', '-f', '--show', tempfile, '--offset',
-              '16777216', '--sizelimit', '4194304']],
+              '16777216', '--sizelimit', '14680064']],
             popen_fixture.mock.calls)
 
         # get_boot_and_root_loopback_devices will also setup two exit handlers

@@ -119,17 +119,9 @@ class BoardConfig(object):
         boot_args_options = 'rootwait ro'
         if cls.extra_boot_args_options is not None:
             boot_args_options += ' %s' % cls.extra_boot_args_options
-        serial_opts = ''
-        if consoles is not None:
-            for console in consoles:
-                serial_opts += ' console=%s' % console
-
-            # XXX: I think this is not needed as we have board-specific
-            # serial options for when is_live is true.
-            if is_live:
-                serial_opts += ' serialtty=%s' % cls.serial_tty
-
-        serial_opts += ' %s' % cls.extra_serial_opts
+        serial_opts = cls.extra_serial_opts
+        for console in consoles:
+            serial_opts += ' console=%s' % console
 
         lowmem_opt = ''
         boot_snippet = 'root=UUID=%s' % rootfs_uuid
