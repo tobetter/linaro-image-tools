@@ -31,6 +31,54 @@ import re
 import tempfile
 
 from linaro_media_create import cmd_runner
+from linaro_media_create.partitions import SECTOR_SIZE
+
+# Notes:
+# * geometry is currently always 255 heads and 63 sectors due to limitations of
+#   older OMAP3 boot ROMs
+# * apparently some OMAP3 ROMs don't tolerate vfat length of an odd number of
+#   sectors (only sizes rounded to 1 KiB seem to boot)
+# * we want partitions aligned on 4 MiB as to get the best performance and
+#   limit wear-leveling
+# * image_size is passed on the command-line and should preferably be a power
+#   of 2; it should be used as a "don't go over this size" information for a
+#   real device, and a "give me a file exactly this big" requirement for an
+#   image file.  Having exactly a power of 2 helps with QEMU; there seem to be
+#   some truncating issues otherwise. XXX to be researched
+
+# align on 4 MiB
+PART_ALIGN_S = 4 * 1024 * 1024 / SECTOR_SIZE
+
+def align_up(value, align):
+    """Round value to the next multiple of align."""
+    return (value + align - 1) / align * align
+
+# optional bootloader partition; at least 1 MiB; in theory, an i.MX5 bootloader
+# partition could hold RedBoot, FIS table, RedBoot config, kernel, and initrd,
+# but we typically use U-Boot which is about 167 KiB as of 2011/02/11 and
+# currently doesn't even store its environment there, so this should be enough
+LOADER_MIN_SIZE_S = align_up(1 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+# boot partition; at least 50 MiB; XXX this shouldn't be hardcoded
+BOOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+# root partition; at least 50 MiB; XXX this shouldn't be hardcoded
+ROOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+
+
+def align_partition(min_start, min_length, start_alignment, end_alignment):
+    """Compute partition start and end offsets based on specified constraints.
+
+    :param min_start: Minimal start offset of partition
+    :param min_lengh: Minimal length of partition
+    :param start_alignment: Alignment of this partition
+    :param end_alignment: Alignment of the data following this partition
+    :return: start offset, end offset (inclusive), length
+    """
+    start = align_up(min_start, start_alignment)
+    # end offset is inclusive, so substact one
+    end = align_up(start + min_length, end_alignment) - 1
+    # and add one to length
+    length = end - start + 1
+    return start, end, length
 
 
 class BoardConfig(object):
@@ -53,17 +101,41 @@ class BoardConfig(object):
     serial_tty = None
 
     @classmethod
-    def get_sfdisk_cmd(cls):
-        """Return the sfdisk command to partition the media."""
+    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+        """Return the sfdisk command to partition the media.
+
+        :param should_align_boot_part: Whether to align the boot partition too.
+
+        This default implementation returns a boot vfat partition of type FAT16
+        or FAT32, followed by a root partition.
+        """
         if cls.fat_size == 32:
             partition_type = '0x0C'
         else:
             partition_type = '0x0E'
 
-        # This will create a partition of the given type, containing 9
-        # cylinders (74027520 bytes, ~70 MiB), followed by a Linux-type
-        # partition containing the rest of the free space.
-        return ',9,%s,*\n,,,-' % partition_type
+        # align on sector 63 for compatibility with broken versions of x-loader
+        # unless align_boot_part is set
+        boot_align = 63
+        if should_align_boot_part:
+            boot_align = PART_ALIGN_S
+
+        # can only start on sector 1 (sector 0 is MBR / partition table)
+        boot_start, boot_end, boot_len = align_partition(
+            1, BOOT_MIN_SIZE_S, boot_align, PART_ALIGN_S)
+        # apparently OMAP3 ROMs require the vfat length to be an even number
+        # of sectors (multiple of 1 KiB); decrease the length if it's odd,
+        # there should still be enough room
+        boot_len = boot_len - boot_len % 2
+        boot_end = boot_start + boot_len - 1
+        # we ignore _root_end / _root_len and return a sfdisk command to
+        # instruct the use of all remaining space; XXX if we had some root size
+        # config, we could do something more sensible
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return '%s,%s,%s,*\n%s,,,-' % (
+            boot_start, boot_len, partition_type, root_start)
 
     @classmethod
     def _get_boot_cmd(cls, is_live, is_lowmem, consoles, rootfs_uuid):
@@ -287,12 +359,32 @@ class Mx51evkConfig(BoardConfig):
     mmc_option = '0:2'
 
     @classmethod
-    def get_sfdisk_cmd(cls):
-        # Create a one cylinder partition for fixed-offset bootloader data at
-        # the beginning of the image (size is one cylinder, so 8224768 bytes
-        # with the first sector for MBR).
-        sfdisk_cmd = super(Mx51evkConfig, cls).get_sfdisk_cmd()
-        return ',1,0xDA\n%s' % sfdisk_cmd
+    def get_sfdisk_cmd(cls, should_align_boot_part=None):
+        """Return the sfdisk command to partition the media.
+
+        :param should_align_boot_part: Ignored.
+
+        This i.MX5 implementation returns a non-FS data bootloader partition,
+        followed by a FAT32 boot partition, followed by a root partition.
+        """
+        # boot ROM expects bootloader at 0x400 which is sector 2 with the usual
+        # SECTOR_SIZE of 512; we could theoretically leave sector 1 unused, but
+        # older bootloaders like RedBoot might store the environment from 0x0
+        # onwards, so it's safer to just start at the first sector, sector 1
+        # (sector 0 is MBR / partition table)
+        loader_start, loader_end, loader_len = align_partition(
+            1, LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
+
+        boot_start, boot_end, boot_len = align_partition(
+            loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+        # we ignore _root_end / _root_len and return a sfdisk command to
+        # instruct the use of all remaining space; XXX if we had some root size
+        # config, we could do something more sensible
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
+            loader_start, loader_len, boot_start, boot_len, root_start)
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
