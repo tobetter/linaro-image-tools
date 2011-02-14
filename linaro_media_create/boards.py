@@ -49,7 +49,9 @@ from linaro_media_create.partitions import SECTOR_SIZE
 # align on 4 MiB
 PART_ALIGN_S = 4 * 1024 * 1024 / SECTOR_SIZE
 
-align_up = lambda x, a: (x + a - 1) / a * a
+def align_up(value, align):
+    """Round value to the next multiple of align."""
+    return (value + align - 1) / align * align
 
 # optional bootloader partition; at least 1 MiB; in theory, an i.MX5 bootloader
 # partition could hold RedBoot, FIS table, RedBoot config, kernel, and initrd,
@@ -63,6 +65,14 @@ ROOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
 
 
 def align_partition(min_start, min_length, start_alignment, end_alignment):
+    """Compute partition start and end offsets based on specified constraints.
+
+    :param min_start: Minimal start offset of partition
+    :param min_lengh: Minimal length of partition
+    :param start_alignment: Alignment of this partition
+    :param end_alignment: Alignment of the data following this partition
+    :return: start offset, end offset (inclusive), length
+    """
     start = align_up(min_start, start_alignment)
     # end offset is inclusive, so substact one
     end = align_up(start + min_length, end_alignment) - 1
