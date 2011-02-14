@@ -129,8 +129,8 @@ class BoardConfig(object):
         boot_len = boot_len - boot_len % 2
         boot_end = boot_start + boot_len - 1
         # we ignore _root_end / _root_len and return a sfdisk command to
-        # instruct the use of all remaining space; XXX if he we had some root
-        # size config, we could do something more sensible
+        # instruct the use of all remaining space; XXX if we had some root size
+        # config, we could do something more sensible
         root_start, _root_end, _root_len = align_partition(
             boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
@@ -368,7 +368,7 @@ class Mx51evkConfig(BoardConfig):
         followed by a FAT32 boot partition, followed by a root partition.
         """
         # boot ROM expects bootloader at 0x400 which is sector 2 with the usual
-        # SECTOR_SIZE of 512; we could theoritically leave sector 1 unused, but
+        # SECTOR_SIZE of 512; we could theoretically leave sector 1 unused, but
         # older bootloaders like RedBoot might store the environment from 0x0
         # onwards, so it's safer to just start at the first sector, sector 1
         # (sector 0 is MBR / partition table)
@@ -378,8 +378,8 @@ class Mx51evkConfig(BoardConfig):
         boot_start, boot_end, boot_len = align_partition(
             loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
         # we ignore _root_end / _root_len and return a sfdisk command to
-        # instruct the use of all remaining space; XXX if he we had some root
-        # size config, we could do something more sensible
+        # instruct the use of all remaining space; XXX if we had some root size
+        # config, we could do something more sensible
         root_start, _root_end, _root_len = align_partition(
             boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
