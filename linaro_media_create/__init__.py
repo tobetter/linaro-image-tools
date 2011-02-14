@@ -78,7 +78,7 @@ def get_args_parser():
               'only-ubiquity option to allow use of live installer on '
               'boards with 256M memory - like beagle.'))
     parser.add_argument(
-        '--console', action='append', dest='consoles',
+        '--console', action='append', dest='consoles', default=[],
         help=('Add a console to kernel boot parameter; this parameter can be '
               'defined multiple times.'))
     parser.add_argument(
@@ -105,4 +105,8 @@ def get_args_parser():
     parser.add_argument(
         '--no-part', dest='should_create_partitions', action='store_false',
         help='Reuse existing partitions on the given media.')
+    parser.add_argument(
+        '--align-boot-part', dest='should_align_boot_part',
+        action='store_true',
+        help='Align boot partition too (might break older x-loaders).')
     return parser
