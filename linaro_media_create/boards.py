@@ -434,12 +434,21 @@ class SamsungConfig(BoardConfig):
         ]
 
     @classmethod
-    def get_sfdisk_cmd(cls):
+    def get_sfdisk_cmd(cls, should_align_boot_part=False):
         # Create a 14 cylinder partition for fixed-offset bootloader data at
         # the beginning of the image (size is 14 cylinder, so 115,146,752 bytes
         # with the first sector for MBR). And create a linux partition for 
         # the remainder of the disk
-        return ',14,0xDA\n,,,-'
+        loader_start, loader_end, loader_len = align_partition(
+            1, 214081, 1, PART_ALIGN_S)
+
+        # we ignore _root_end / _root_len and return a sfdisk command to
+        # instruct the use of all remaining space; XXX if we had some root size
+        # config, we could do something more sensible
+        root_start, _root_end, _root_len = align_partition(
+            loader_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return '%s,%s,0xDA\n%s,,,-' % (loader_start, loader_len, root_start)
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
