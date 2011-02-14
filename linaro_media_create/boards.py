@@ -107,8 +107,8 @@ class BoardConfig(object):
         :param should_align_boot_part: Whether to align the boot partition too.
 
         This default implementation returns a boot vfat partition of type FAT16
-        or FAT32, followed by a root partition."""
-
+        or FAT32, followed by a root partition.
+        """
         if cls.fat_size == 32:
             partition_type = '0x0C'
         else:
@@ -365,8 +365,8 @@ class Mx51evkConfig(BoardConfig):
         :param should_align_boot_part: Ignored.
 
         This i.MX5 implementation returns a non-FS data bootloader partition,
-        followed by a FAT32 boot partition, followed by a root partition."""
-
+        followed by a FAT32 boot partition, followed by a root partition.
+        """
         # boot ROM expects bootloader at 0x400 which is sector 2 with the usual
         # SECTOR_SIZE of 512; we could theoritically leave sector 1 unused, but
         # older bootloaders like RedBoot might store the environment from 0x0
