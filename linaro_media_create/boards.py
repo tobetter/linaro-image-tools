@@ -424,31 +424,20 @@ class VexpressConfig(BoardConfig):
 
 class SamsungConfig(BoardConfig):
     boot_env = [
-        'baudrate=115200',
         'bootargs=root=/dev/mmcblk0p2 rootwait rw init=/bin/bash console=ttySAC1,115200',
         'bootcmd=movi read kernel 40007000; movi read rootfs 41000000 600000;'
         'bootm 40007000 41000000',
-        'bootdelay=3',
         'ethact=smc911x-0',
         'ethaddr=00:40:5c:26:0a:5b',
         ]
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
-        # Create a 14 cylinder partition for fixed-offset bootloader data at
-        # the beginning of the image (size is 14 cylinder, so 115,146,752 bytes
+        # Create a fixed-offset bootloader data at
+        # the beginning of the image (size is 214080 512 byte sectors
         # with the first sector for MBR). And create a linux partition for 
         # the remainder of the disk
-        loader_start, loader_end, loader_len = align_partition(
-            1, 214081, 1, PART_ALIGN_S)
-
-        # we ignore _root_end / _root_len and return a sfdisk command to
-        # instruct the use of all remaining space; XXX if we had some root size
-        # config, we could do something more sensible
-        root_start, _root_end, _root_len = align_partition(
-            loader_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
-
-        return '%s,%s,0xDA\n%s,,,-' % (loader_start, loader_len, root_start)
+        return '1,214080,0xDA\n214081,,,-'
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
@@ -621,6 +610,7 @@ def make_boot_ini(boot_script, boot_disk):
     return "%s/boot.ini" % boot_disk
 
 def install_smdkv310_uImage(uImage_file, boot_device_or_file):
+    # seek offset of 9281 is the MBR + BL1 + u-boot env + u-bbot
     cmd = [
         "dd",
         "if=%s" % uImage_file,
@@ -634,6 +624,7 @@ def install_smdkv310_uImage(uImage_file, boot_device_or_file):
     proc.wait()
 
 def install_smdkv310_initrd(initrd_file, boot_device_or_file):
+    # seek offset of 9281 is the MBR + BL1 + u-boot env + u-bbot + uImage
     proc = cmd_runner.run([
         "dd",
         "if=%s" % initrd_file,
@@ -644,6 +635,7 @@ def install_smdkv310_initrd(initrd_file, boot_device_or_file):
     proc.wait()
 
 def install_smdkv310_boot_env(env_file, boot_device_or_file):
+    # seek offset of 65 is the MBR + BL1 + u-boot env
     proc = cmd_runner.run([
         "dd",
         "if=%s" % env_file,
@@ -655,6 +647,7 @@ def install_smdkv310_boot_env(env_file, boot_device_or_file):
     proc.wait()
 
 def install_smdkv310_boot_loader(v310_file, boot_device_or_file):
+    # seek offset of 1 preserves the MBR
     proc = cmd_runner.run([
         "dd",
         "if=%s" % v310_file,
@@ -664,6 +657,7 @@ def install_smdkv310_boot_loader(v310_file, boot_device_or_file):
         "count=32",
         "conv=notrunc"], as_root=True)
     proc.wait()
+    # seek offset of 65 is the MBR + BL2 + u-boot env
     proc = cmd_runner.run([
         "dd",
         "if=%s" % v310_file,
