@@ -379,7 +379,7 @@ class TestGetSfdiskCmd(TestCase):
 
     def test_smdkv310(self):
         self.assertEquals(
-            ',14,0xDA\n,,,-',
+            '1,214080,0xDA\n214081,,,-',
             board_configs['smdkv310'].get_sfdisk_cmd())
 
 
