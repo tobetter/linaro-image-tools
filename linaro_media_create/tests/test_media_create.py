@@ -412,12 +412,12 @@ class TestGetBootCmd(TestCase):
         # currently used. I'll keep it for completeness and it env 
         # might get used in the future
         boot_cmd = board_configs['smdkv310']._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=None,
+            is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
             "setenv bootcmd 'fatload mmc 0:1 0x40008000 uImage; fatload mmc "
             "0:1 0x40800000 uInitrd; bootm 0x40008000 0x40800000'\nsetenv "
-            "bootargs ' console=ttySAC1,115200  root=UUID=deadbeef rootwait "
+            "bootargs 'console=ttySAC1,115200  root=UUID=deadbeef rootwait "
             "ro root=/dev/mmcblk0p2 rootwait rw init=/bin/bash'\nboot")
         self.assertEqual(expected, boot_cmd)
 
@@ -709,7 +709,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [(',14,0xDA\n,,,-', 255, 63, '', self.media.path)],
+            [('1,214080,0xDA\n214081,,,-', 255, 63, '', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):
