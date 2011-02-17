@@ -435,12 +435,9 @@ class SamsungConfig(BoardConfig):
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
         # Create a fixed-offset bootloader data at
         # the beginning of the image (size is 214080 512 byte sectors
-        # with the first sector for MBR). And create a linux partition for 
-        # the remainder of the disk
+        # with the first sector for MBR). 
         loader_start, loader_end, loader_len = align_partition(
             1, 214080, 1, PART_ALIGN_S)
-
-        #boot_size = align_up(100 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE;
 
         boot_start, boot_end, boot_len = align_partition(
             loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
@@ -485,7 +482,6 @@ class SMDKV310Config(SamsungConfig):
     boot_script = 'boot.scr'
     extra_boot_args_options = (
         'root=/dev/mmcblk0p2 rootwait rw init=/bin/bash')
-#    uses_fat_boot_partition = False
     mmc_part_offset = 1
 
 board_configs = {
@@ -574,7 +570,6 @@ def make_flashable_env(boot_env, env_size, env_file):
     env = struct.pack('<i', crc) + env
     
     _, tmpfile = tempfile.mkstemp()
-#    atexit.register(os.unlink, tmpfile)
 
     with open(tmpfile, 'w') as fd:
         fd.write(env)
