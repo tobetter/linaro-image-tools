@@ -40,16 +40,14 @@ def populate_boot(board_config, chroot_dir, rootfs_uuid, boot_partition,
         else:
             raise
 
-    # this probably needs refactoring - see bug 716469
-    if board_config.uses_fat_boot_partition:
-        cmd_runner.run(['mount', boot_partition, boot_disk], as_root=True).wait()
+    cmd_runner.run(['mount', boot_partition, boot_disk], as_root=True).wait()
 
-        uboot_flavor = board_config.uboot_flavor
-        if uboot_flavor is not None:
-            uboot_bin = os.path.join(
-                chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor, 'u-boot.bin')
-            cmd_runner.run(
-                ['cp', '-v', uboot_bin, boot_disk], as_root=True).wait()
+    uboot_flavor = board_config.uboot_flavor
+    if uboot_flavor is not None:
+        uboot_bin = os.path.join(
+            chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor, 'u-boot.bin')
+        cmd_runner.run(
+            ['cp', '-v', uboot_bin, boot_disk], as_root=True).wait()
 
     boot_script = "%(boot_disk)s/%(boot_script_name)s" % (
         dict(boot_disk=boot_disk,

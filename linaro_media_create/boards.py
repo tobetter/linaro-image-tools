@@ -424,7 +424,7 @@ class VexpressConfig(BoardConfig):
 
 class SamsungConfig(BoardConfig):
     boot_env = [
-        'bootargs=root=/dev/mmcblk0p2 rootwait rw init=/bin/bash console=ttySAC1,115200',
+        'bootargs=root=/dev/mmcblk0p3 rootwait rw init=/bin/bash console=ttySAC1,115200',
         'bootcmd=movi read kernel 40007000; movi read rootfs 41000000 600000;'
         'bootm 40007000 41000000',
         'ethact=smc911x-0',
@@ -437,7 +437,22 @@ class SamsungConfig(BoardConfig):
         # the beginning of the image (size is 214080 512 byte sectors
         # with the first sector for MBR). And create a linux partition for 
         # the remainder of the disk
-        return '1,214080,0xDA\n214081,,,-'
+        loader_start, loader_end, loader_len = align_partition(
+            1, 214080, 1, PART_ALIGN_S)
+
+        #boot_size = align_up(100 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE;
+
+        boot_start, boot_end, boot_len = align_partition(
+            loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        # we ignore _root_end / _root_len and return a sfdisk command to
+        # instruct the use of all remaining space; XXX if we had some root size
+        # config, we could do something more sensible
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
+            loader_start, loader_len, boot_start, boot_len, root_start)
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
@@ -470,7 +485,8 @@ class SMDKV310Config(SamsungConfig):
     boot_script = 'boot.scr'
     extra_boot_args_options = (
         'root=/dev/mmcblk0p2 rootwait rw init=/bin/bash')
-    uses_fat_boot_partition = False
+#    uses_fat_boot_partition = False
+    mmc_part_offset = 1
 
 board_configs = {
     'beagle': BeagleConfig,
@@ -557,8 +573,17 @@ def make_flashable_env(boot_env, env_size, env_file):
     crc = crc32(env)
     env = struct.pack('<i', crc) + env
     
-    with open(env_file, 'w') as fd:
+    _, tmpfile = tempfile.mkstemp()
+#    atexit.register(os.unlink, tmpfile)
+
+    with open(tmpfile, 'w') as fd:
         fd.write(env)
+
+    proc = cmd_runner.run([
+        "mv",
+        "%s" % tmpfile,
+        "%s" % env_file], as_root=True)
+    proc.wait()
 
 
 def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
