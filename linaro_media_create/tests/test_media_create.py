@@ -248,10 +248,10 @@ class TestBootSteps(TestCaseWithFixtures):
         expected = ['make_uImage', 'make_uInitrd']
         self.assertEqual(expected, self.funcs_calls)
 
-    def test_mx51evk_steps(self):
+    def test_mx5_steps(self):
         self.make_boot_files(boards.Mx51evkConfig)
         expected = [
-            'install_mx51evk_boot_loader', 'make_uImage', 'make_uInitrd',
+            'install_mx5_boot_loader', 'make_uImage', 'make_uInitrd',
             'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
@@ -363,7 +363,8 @@ class TestGetSfdiskCmd(TestCase):
             '8192,106496,0x0C,*\n114688,,,-',
             boards.BoardConfig.get_sfdisk_cmd(should_align_boot_part=True))
 
-    def test_mx51evk(self):
+    def test_mx5(self):
+        # this is really about testing Mx5Config rather than Mx51evkConfig
         self.assertEqual(
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             board_configs['mx51evk'].get_sfdisk_cmd())
@@ -382,7 +383,8 @@ class TestGetBootCmd(TestCase):
             "root=UUID=deadbeef rootwait ro'\nboot")
         self.assertEqual(expected, boot_cmd)
 
-    def test_mx51evk(self):
+    def test_mx5(self):
+        # this is really about testing Mx5Config rather than Mx51evkConfig
         boot_cmd = board_configs['mx51evk']._get_boot_cmd(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
@@ -646,11 +648,12 @@ class TestCreatePartitions(TestCaseWithFixtures):
         super(TestCreatePartitions, self).tearDown()
         time.sleep = self.orig_sleep
 
-    def test_create_partitions_for_mx51evk(self):
+    def test_create_partitions_for_mx5(self):
         # For this board we create a one cylinder partition at the beginning.
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
+        # this is really about testing Mx5Config rather than Mx51evkConfig
         create_partitions(
             board_configs['mx51evk'], self.media, 255, 63, '')
 
@@ -773,13 +776,14 @@ class TestPartitionSetup(TestCaseWithFixtures):
             get_boot_and_root_partitions_for_media(
                 media, board_configs['beagle']))
 
-    def test_get_boot_and_root_partitions_for_media_mx51evk(self):
+    def test_get_boot_and_root_partitions_for_media_mx5(self):
         self.useFixture(MockSomethingFixture(
             partitions, '_get_device_file_for_partition_number',
             lambda dev, partition: '%s%d' % (tempfile, partition)))
         tempfile = self.createTempFileAsFixture()
         media = Media(tempfile)
         media.is_block_device = True
+        # this is really about testing Mx5Config rather than Mx51evkConfig
         self.assertEqual(
             ("%s%d" % (tempfile, 2), "%s%d" % (tempfile, 3)),
             get_boot_and_root_partitions_for_media(

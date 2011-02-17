@@ -346,7 +346,7 @@ class Ux500Config(BoardConfig):
         make_boot_script(boot_cmd, boot_script)
 
 
-class Mx51evkConfig(BoardConfig):
+class Mx5Config(BoardConfig):
     serial_tty = 'ttymxc0'
     extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
     live_serial_opts = 'serialtty=%s' % serial_tty
@@ -390,12 +390,19 @@ class Mx51evkConfig(BoardConfig):
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
         uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', 'mx51evk', 'u-boot.imx')
-        install_mx51evk_boot_loader(uboot_file, boot_device_or_file)
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_name, 'u-boot.imx')
+        install_mx5_boot_loader(uboot_file, boot_device_or_file)
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_boot_script(boot_cmd, boot_script)
+
+
+class EfikamxConfig(Mx5Config):
+    uboot_name = 'efikamx'
+
+class Mx51evkConfig(Mx5Config):
+    uboot_name = 'mx51evk'
 
 
 class VexpressConfig(BoardConfig):
@@ -426,6 +433,7 @@ board_configs = {
     'panda': PandaConfig,
     'vexpress': VexpressConfig,
     'ux500': Ux500Config,
+    'efikamx': EfikamxConfig,
     'mx51evk': Mx51evkConfig,
     'overo': OveroConfig,
     }
@@ -491,7 +499,7 @@ def make_boot_script(boot_script_data, boot_script):
         'script', '0', '0', 'boot script', tmpfile, boot_script)
 
 
-def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
+def install_mx5_boot_loader(imx_file, boot_device_or_file):
     proc = cmd_runner.run([
         "dd",
         "if=%s" % imx_file,
