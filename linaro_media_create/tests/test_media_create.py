@@ -652,7 +652,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
         create_partitions(
-            board_configs['mx51evk'], self.media, 255, 63, '')
+            board_configs['mx51evk'], self.media, 128, 32, '')
 
         self.assertEqual(
             [['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
@@ -662,7 +662,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', 255, 63, '', self.media.path)],
+            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+              128, 32, '', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):
@@ -670,14 +671,14 @@ class TestCreatePartitions(TestCaseWithFixtures):
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
         create_partitions(
-            board_configs['beagle'], self.media, 255, 63, '')
+            board_configs['beagle'], self.media, 128, 32, '')
 
         self.assertEqual(
             [['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
              ['sync']],
             popen_fixture.mock.calls)
         self.assertEqual(
-            [('63,106432,0x0C,*\n106496,,,-', 255, 63, '', self.media.path)],
+            [('63,106432,0x0C,*\n106496,,,-', 128, 32, '', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_with_img_file(self):
@@ -686,7 +687,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
         tempfile = self.createTempFileAsFixture()
         create_partitions(
-            board_configs['beagle'], Media(tempfile), 255, 63, '')
+            board_configs['beagle'], Media(tempfile), 128, 32, '')
 
         # Unlike the test for partitioning of a regular block device, in this
         # case parted was not called as there's no existing partition table
@@ -694,7 +695,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertEqual([['sync']], popen_fixture.mock.calls)
 
         self.assertEqual(
-            [('63,106432,0x0C,*\n106496,,,-', 255, 63, '', tempfile)],
+            [('63,106432,0x0C,*\n106496,,,-', 128, 32, '', tempfile)],
             sfdisk_fixture.mock.calls)
 
     def test_run_sfdisk_commands(self):
@@ -704,7 +705,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
             stdout=subprocess.PIPE)
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
-            '2,16063,0xDA', 255, 63, '', tempfile, as_root=False,
+            '2,16063,0xDA', 128, 32, '', tempfile, as_root=False,
             stderr=subprocess.PIPE)
         self.assertIn('Successfully wrote the new partition table', stdout)
 
@@ -713,7 +714,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertRaises(
             cmd_runner.SubcommandNonZeroReturnValue,
             run_sfdisk_commands,
-            ',1,0xDA', 255, 63, '', tempfile, as_root=False,
+            ',1,0xDA', 128, 32, '', tempfile, as_root=False,
             stderr=subprocess.PIPE)
 
 
@@ -792,7 +793,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             stdout=subprocess.PIPE)
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
-            sfdisk_commands, 255, 63, '', tempfile, as_root=False,
+            sfdisk_commands, 128, 32, '', tempfile, as_root=False,
             # Throw away stderr as sfdisk complains a lot when operating on a
             # qemu image.
             stderr=subprocess.PIPE)
@@ -870,8 +871,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
              # This is the call that would create a 2 GiB image file.
             [['qemu-img', 'create', '-f', 'raw', tempfile, '2147483648'],
              # This call would partition the image file.
-             ['sudo', 'sfdisk', '--force', '-D', '-uS', '-H', '255', '-S',
-              '63', '-C', '261', tempfile],
+             ['sudo', 'sfdisk', '--force', '-D', '-uS', '-H', '128', '-S',
+              '32', '-C', '1024', tempfile],
              # Make sure changes are written to disk.
              ['sync'],
              ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
@@ -897,8 +898,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
             True, True, True)
         self.assertEqual(
             [['sudo', 'parted', '-s', tempfile, 'mklabel', 'msdos'],
-             ['sudo', 'sfdisk', '--force', '-D', '-uS', '-H', '255', '-S',
-              '63', tempfile],
+             ['sudo', 'sfdisk', '--force', '-D', '-uS', '-H', '128', '-S',
+              '32', tempfile],
              ['sync'],
              # Since the partitions are mounted, setup_partitions will umount
              # them before running mkfs.

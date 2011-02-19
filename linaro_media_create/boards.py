@@ -34,8 +34,10 @@ from linaro_media_create import cmd_runner
 from linaro_media_create.partitions import SECTOR_SIZE
 
 # Notes:
-# * geometry is currently always 255 heads and 63 sectors due to limitations of
-#   older OMAP3 boot ROMs
+# * since we align partitions on 4 MiB by default, geometry is currently 128
+#   heads and 32 sectors (2 MiB) as to have CHS-aligned partition start/end
+#   offsets most of the time and hence avoid some warnings with disk
+#   partitioning tools
 # * apparently some OMAP3 ROMs don't tolerate vfat length of an odd number of
 #   sectors (only sizes rounded to 1 KiB seem to boot)
 # * we want partitions aligned on 4 MiB as to get the best performance and

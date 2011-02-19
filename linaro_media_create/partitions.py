@@ -33,8 +33,8 @@ from parted import (
 from linaro_media_create import cmd_runner
 
 
-HEADS = 255
-SECTORS = 63
+HEADS = 128
+SECTORS = 32
 SECTOR_SIZE = 512 # bytes
 CYLINDER_SIZE = HEADS * SECTORS * SECTOR_SIZE
 DBUS_PROPERTIES = 'org.freedesktop.DBus.Properties'
