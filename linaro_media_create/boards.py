@@ -586,8 +586,8 @@ def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
         "dd",
         "if=%s" % imx_file,
         "of=%s" % boot_device_or_file,
-        "bs=1024",
-        "seek=1",
+        "bs=%s" % SECTOR_SIZE,
+        "seek=2",
         "conv=notrunc"], as_root=True)
     proc.wait()
 
