@@ -379,7 +379,7 @@ class TestGetSfdiskCmd(TestCase):
 
     def test_smdkv310(self):
         self.assertEquals(
-            '1,221183,0xDA\n221184,106496,0x0C,*\n327680,,,-',
+            '1,221183,0xDA\n221184,,,-',
             board_configs['smdkv310'].get_sfdisk_cmd())
 
 
@@ -709,7 +709,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('1,221183,0xDA\n221184,106496,0x0C,*\n327680,,,-', 255, 63, '', 
+            [('1,221183,0xDA\n221184,,,-', 255, 63, '', 
               self.media.path)], sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):
