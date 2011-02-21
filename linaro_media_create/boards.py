@@ -633,6 +633,8 @@ def make_flashable_env(boot_env, env_size, env_file):
 
 
 def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
+    # XXX need to check that the length of imx_file is smaller than
+    # LOADER_MIN_SIZE_S
     _dd(imx_file, boot_device_or_file, seek=2)
 
 
@@ -675,11 +677,15 @@ def make_boot_ini(boot_script, boot_disk):
 
 
 def install_smdkv310_uImage(uImage_file, boot_device_or_file):
+    # XXX need to check that the length of uImage_file is smaller than
+    # SAMSUNG_V310_UIMAGE_LEN
     _dd(uImage_file, boot_device_or_file, count=SAMSUNG_V310_UIMAGE_LEN,
         seek=SAMSUNG_V310_UIMAGE_START)
 
 
 def install_smdkv310_initrd(initrd_file, boot_device_or_file):
+    # XXX need to check that the length of initrd_file is smaller than
+    # SAMSUNG_V310_UINITRD_LEN
     _dd(initrd_file, boot_device_or_file, count=SAMSUNG_V310_UINITRD_LEN,
         seek=SAMSUNG_V310_UINITRD_START)
 
