@@ -532,6 +532,21 @@ board_configs = {
     }
 
 
+def _dd(input_file, output_file, block_size=SECTOR_SIZE, count=None, seek=None,
+       skip=None):
+    cmd = [
+        "dd", "if=%s" % input_file, "of=%s" % output_file,
+        "bs=%s" % block_size, "conv=notrunc"]
+    if count is not None:
+        cmd.append("count=%s" % count)
+    if seek is not None:
+        cmd.append("seek=%s" % seek)
+    if skip is not None:
+        cmd.append("skip=%s" % skip)
+    proc = cmd_runner.run(cmd, as_root=True)
+    proc.wait()
+
+
 def _run_mkimage(img_type, load_addr, entry_point, name, img_data, img,
                  stdout=None, as_root=True):
     cmd = ['mkimage',
@@ -618,14 +633,7 @@ def make_flashable_env(boot_env, env_size, env_file):
 
 
 def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
-    proc = cmd_runner.run([
-        "dd",
-        "if=%s" % imx_file,
-        "of=%s" % boot_device_or_file,
-        "bs=%s" % SECTOR_SIZE,
-        "seek=2",
-        "conv=notrunc"], as_root=True)
-    proc.wait()
+    _dd(imx_file, boot_device_or_file, seek=2)
 
 
 def _get_mlo_file(chroot_dir):
@@ -665,42 +673,23 @@ def make_boot_ini(boot_script, boot_disk):
 
     return "%s/boot.ini" % boot_disk
 
-def install_smdkv310_uImage(uImage_file, boot_device_or_file):
-    # seek offset of 9281 is the MBR + BL1 + u-boot env + u-bbot
-    proc = cmd_runner.run([
-        "dd",
-        "if=%s" % uImage_file,
-        "of=%s" % boot_device_or_file,
-        "bs=%s" % SECTOR_SIZE,
-        "seek=%s" % SAMSUNG_V310_UIMAGE_START,
-        "count=%s" % SAMSUNG_V310_UIMAGE_LEN,
-        "conv=notrunc"], as_root=True)
 
-    proc.wait()
+def install_smdkv310_uImage(uImage_file, boot_device_or_file):
+    _dd(uImage_file, boot_device_or_file, count=SAMSUNG_V310_UIMAGE_LEN,
+        seek=SAMSUNG_V310_UIMAGE_START)
+
 
 def install_smdkv310_initrd(initrd_file, boot_device_or_file):
-    proc = cmd_runner.run([
-        "dd",
-        "if=%s" % initrd_file,
-        "of=%s" % boot_device_or_file,
-        "bs=%s" % SECTOR_SIZE,
-        "seek=%s" % SAMSUNG_V310_UINITRD_START,
-        "count=%s" % SAMSUNG_V310_UINITRD_LEN,
-        "conv=notrunc"], as_root=True)
-    proc.wait()
+    _dd(initrd_file, boot_device_or_file, count=SAMSUNG_V310_UINITRD_LEN,
+        seek=SAMSUNG_V310_UINITRD_START)
+
 
 def install_smdkv310_boot_env(env_file, boot_device_or_file):
     # XXX need to check that the length of env_file is smaller than
     # SAMSUNG_V310_ENV_LEN
-    proc = cmd_runner.run([
-        "dd",
-        "if=%s" % env_file,
-        "of=%s" % boot_device_or_file,
-        "bs=%s" % SECTOR_SIZE,
-        "seek=%s" % SAMSUNG_V310_ENV_START,
-        "count=%s" % SAMSUNG_V310_ENV_LEN,
-        "conv=notrunc"], as_root=True)
-    proc.wait()
+    _dd(env_file, boot_device_or_file, count=SAMSUNG_V310_ENV_LEN,
+        seek=SAMSUNG_V310_ENV_START)
+
 
 def install_smdkv310_boot_loader(v310_file, boot_device_or_file):
     # v310_file is a binary with the same layout as BL1 + u-boot environment +
@@ -709,25 +698,11 @@ def install_smdkv310_boot_loader(v310_file, boot_device_or_file):
     # piece (rest of the file starting at +(SAMSUNG_V310_BL1_LEN +
     # SAMSUNG_V310_ENV_LEN)s in the file which is the same as
     # +(SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START)s)
-    proc = cmd_runner.run([
-        "dd",
-        "if=%s" % v310_file,
-        "of=%s" % boot_device_or_file,
-        "bs=%s" % SECTOR_SIZE,
-        "seek=%s" % SAMSUNG_V310_BL1_START,
-        "count=%s" % SAMSUNG_V310_BL1_LEN,
-        "conv=notrunc"], as_root=True)
-    proc.wait()
+    _dd(v310_file, boot_device_or_file, count=SAMSUNG_V310_BL1_LEN,
+        seek=SAMSUNG_V310_BL1_START)
     # XXX need to check that the length of v310_file - 64s is smaller than
     # SAMSUNG_V310_BL2_LEN
-    proc = cmd_runner.run([
-        "dd",
-        "if=%s" % v310_file,
-        "of=%s" % boot_device_or_file,
-        "bs=%s" % SECTOR_SIZE,
-        "seek=%s" % SAMSUNG_V310_BL2_START,
-        "skip=%s" % (SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START),
-        "conv=notrunc"], as_root=True)
-    proc.wait()
+    _dd(v310_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START,
+        skip=(SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START))
 
 
