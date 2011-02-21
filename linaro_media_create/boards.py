@@ -635,7 +635,7 @@ def install_smdkv310_uImage(uImage_file, boot_device_or_file):
         "dd",
         "if=%s" % uImage_file,
         "of=%s" % boot_device_or_file,
-        "bs=512",
+        "bs=%s" % SECTOR_SIZE,
         "seek=1089",
         "conv=notrunc"]
 
@@ -649,7 +649,7 @@ def install_smdkv310_initrd(initrd_file, boot_device_or_file):
         "dd",
         "if=%s" % initrd_file,
         "of=%s" % boot_device_or_file,
-        "bs=512",
+        "bs=%s" % SECTOR_SIZE,
         "seek=9281",
         "conv=notrunc"], as_root=True)
     proc.wait()
@@ -660,7 +660,7 @@ def install_smdkv310_boot_env(env_file, boot_device_or_file):
         "dd",
         "if=%s" % env_file,
         "of=%s" % boot_device_or_file,
-        "bs=512",
+        "bs=%s" % SECTOR_SIZE,
         "seek=33",
         "count=32",
         "conv=notrunc"], as_root=True)
@@ -672,7 +672,7 @@ def install_smdkv310_boot_loader(v310_file, boot_device_or_file):
         "dd",
         "if=%s" % v310_file,
         "of=%s" % boot_device_or_file,
-        "bs=512",
+        "bs=%s" % SECTOR_SIZE,
         "seek=1",
         "count=32",
         "conv=notrunc"], as_root=True)
@@ -682,7 +682,7 @@ def install_smdkv310_boot_loader(v310_file, boot_device_or_file):
         "dd",
         "if=%s" % v310_file,
         "of=%s" % boot_device_or_file,
-        "bs=512",
+        "bs=%s" % SECTOR_SIZE,
         "seek=65",
         "skip=64",
         "conv=notrunc"], as_root=True)
