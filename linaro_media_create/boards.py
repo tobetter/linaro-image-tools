@@ -290,7 +290,8 @@ class OveroConfig(OmapConfig):
     kernel_suffix = 'linaro-omap'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'earlyprintk')
+        'earlyprintk mpurate=500 vram=12M '
+        'omapfb.mode=dvi:1024x768MR-16@60 omapdss.def_disp=dvi')
 
 
 class PandaConfig(OmapConfig):

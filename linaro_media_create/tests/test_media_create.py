@@ -457,7 +457,8 @@ class TestGetBootCmd(TestCase):
             "fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 "
             "0x81600000'\nsetenv bootargs 'console=tty0 "
             "console=ttyO2,115200n8  root=UUID=deadbeef rootwait ro "
-            "earlyprintk'\nboot")
+            "earlyprintk mpurate=500 vram=12M "
+            "omapfb.mode=dvi:1024x768MR-16@60 omapdss.def_disp=dvi'\nboot")
         self.assertEqual(expected, boot_cmd)
 
 
