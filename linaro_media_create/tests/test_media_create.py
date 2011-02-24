@@ -366,10 +366,9 @@ class TestGetSfdiskCmd(TestCase):
             boards.BoardConfig.get_sfdisk_cmd(should_align_boot_part=True))
 
     def test_mx5(self):
-        # this is really about testing Mx5Config rather than Mx51evkConfig
         self.assertEqual(
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
-            board_configs['mx51evk'].get_sfdisk_cmd())
+            boards.Mx5Config().get_sfdisk_cmd())
 
 
 class TestGetBootCmd(TestCase):
@@ -386,8 +385,7 @@ class TestGetBootCmd(TestCase):
         self.assertEqual(expected, boot_cmd)
 
     def test_mx5(self):
-        # this is really about testing Mx5Config rather than Mx51evkConfig
-        boot_cmd = board_configs['mx51evk']._get_boot_cmd(
+        boot_cmd = boards.Mx5Config()._get_boot_cmd(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -655,9 +653,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
-        # this is really about testing Mx5Config rather than Mx51evkConfig
-        create_partitions(
-            board_configs['mx51evk'], self.media, 255, 63, '')
+        create_partitions(boards.Mx5Config(), self.media, 255, 63, '')
 
         self.assertEqual(
             [['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
@@ -785,11 +781,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
         tempfile = self.createTempFileAsFixture()
         media = Media(tempfile)
         media.is_block_device = True
-        # this is really about testing Mx5Config rather than Mx51evkConfig
         self.assertEqual(
             ("%s%d" % (tempfile, 2), "%s%d" % (tempfile, 3)),
-            get_boot_and_root_partitions_for_media(
-                media, board_configs['mx51evk']))
+            get_boot_and_root_partitions_for_media(media, boards.Mx5Config()))
 
     def _create_qemu_img_with_partitions(self, sfdisk_commands):
         tempfile = self.createTempFileAsFixture()
