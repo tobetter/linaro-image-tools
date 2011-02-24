@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
-import errno
 import os
 
 from linaro_media_create import cmd_runner
