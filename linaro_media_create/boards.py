@@ -85,6 +85,8 @@ class BoardConfig(object):
     """The configuration used when building an image for a board."""
     # These attributes may not need to be redefined on some subclasses.
     uboot_flavor = None
+    # whether to copy u-boot to the boot partition
+    uboot_in_boot_part = False
     mmc_option = '0:1'
     mmc_part_offset = 0
     fat_size = 32
@@ -201,6 +203,7 @@ class classproperty(object):
 
 
 class OmapConfig(BoardConfig):
+    uboot_in_boot_part = True
 
     # XXX: Here we define these things as dynamic properties because our
     # temporary hack to fix bug 697824 relies on changing the board's
@@ -390,7 +393,7 @@ class Mx5Config(BoardConfig):
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
         uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_name, 'u-boot.imx')
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
         install_mx5_boot_loader(uboot_file, boot_device_or_file)
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
@@ -399,14 +402,16 @@ class Mx5Config(BoardConfig):
 
 
 class EfikamxConfig(Mx5Config):
-    uboot_name = 'efikamx'
+    uboot_flavor = 'efikamx'
+
 
 class Mx51evkConfig(Mx5Config):
-    uboot_name = 'mx51evk'
+    uboot_flavor = 'mx51evk'
 
 
 class VexpressConfig(BoardConfig):
     uboot_flavor = 'ca9x4_ct_vxp'
+    uboot_in_boot_part = True
     serial_tty = 'ttyAMA0'
     extra_serial_opts = 'console=tty0 console=%s,38400n8' % serial_tty
     live_serial_opts = 'serialtty=%s' % serial_tty
