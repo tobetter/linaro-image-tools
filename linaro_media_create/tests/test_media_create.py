@@ -368,7 +368,7 @@ class TestGetSfdiskCmd(TestCase):
     def test_mx5(self):
         self.assertEqual(
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
-            boards.Mx5Config().get_sfdisk_cmd())
+            boards.Mx5Config.get_sfdisk_cmd())
 
 
 class TestGetBootCmd(TestCase):
@@ -385,7 +385,7 @@ class TestGetBootCmd(TestCase):
         self.assertEqual(expected, boot_cmd)
 
     def test_mx5(self):
-        boot_cmd = boards.Mx5Config()._get_boot_cmd(
+        boot_cmd = boards.Mx5Config._get_boot_cmd(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -653,7 +653,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
-        create_partitions(boards.Mx5Config(), self.media, 255, 63, '')
+        create_partitions(boards.Mx5Config, self.media, 255, 63, '')
 
         self.assertEqual(
             [['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
@@ -783,7 +783,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         media.is_block_device = True
         self.assertEqual(
             ("%s%d" % (tempfile, 2), "%s%d" % (tempfile, 3)),
-            get_boot_and_root_partitions_for_media(media, boards.Mx5Config()))
+            get_boot_and_root_partitions_for_media(media, boards.Mx5Config))
 
     def _create_qemu_img_with_partitions(self, sfdisk_commands):
         tempfile = self.createTempFileAsFixture()
@@ -914,15 +914,15 @@ class TestPopulateBoot(TestCaseWithFixtures):
     def save_args(self, *args):
         self.saved_args = args
 
-    def set_config(self, cls):
-        self.config = cls()
+    def prepare_config(self, config):
+        self.config = config
         self.config.boot_script = 'boot_script'
         self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             self.config, 'make_boot_files', self.save_args))
 
     def test_populate_boot_live(self):
-        self.set_config(boards.BoardConfig)
+        self.prepare_config(boards.BoardConfig)
         populate_boot(
             self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
             'boot_disk', 'boot_device_or_file', True, False, [])
@@ -938,7 +938,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.assertEquals(expected_args, self.saved_args)
 
     def test_populate_boot_regular(self):
-        self.set_config(boards.BoardConfig)
+        self.prepare_config(boards.BoardConfig)
         populate_boot(
             self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
             'boot_disk', 'boot_device_or_file', False, False, [])
@@ -954,7 +954,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.assertEquals(expected_args, self.saved_args)
 
     def test_populate_boot_beagle(self):
-        self.set_config(boards.BeagleConfig)
+        self.prepare_config(boards.BeagleConfig)
         populate_boot(
             self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
             'boot_disk', 'boot_device_or_file', False, False, [])
@@ -972,7 +972,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.assertEquals(expected_args, self.saved_args)
 
     def test_populate_boot_igep(self):
-        self.set_config(boards.IgepConfig)
+        self.prepare_config(boards.IgepConfig)
         populate_boot(
             self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
             'boot_disk', 'boot_device_or_file', False, False, [])
@@ -988,7 +988,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.assertEquals(expected_args, self.saved_args)
 
     def test_populate_boot_mx5(self):
-        self.set_config(boards.Mx5Config)
+        self.prepare_config(boards.Mx5Config)
         populate_boot(
             self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
             'boot_disk', 'boot_device_or_file', False, False, [])
