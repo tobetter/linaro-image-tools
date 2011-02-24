@@ -32,13 +32,7 @@ def populate_boot(board_config, chroot_dir, rootfs_uuid, boot_partition,
         parts_dir = 'casper'
     uboot_parts_dir = os.path.join(chroot_dir, parts_dir)
 
-    try:
-        os.makedirs(boot_disk)
-    except OSError, exc:
-        if exc.errno == errno.EEXIST:
-            pass
-        else:
-            raise
+    cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
     cmd_runner.run(['mount', boot_partition, boot_disk], as_root=True).wait()
 
     uboot_flavor = board_config.uboot_flavor
