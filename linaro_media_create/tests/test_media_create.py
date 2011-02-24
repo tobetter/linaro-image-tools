@@ -45,7 +45,6 @@ import linaro_media_create
 from linaro_media_create.boards import (
     align_up,
     align_partition,
-    BoardConfig,
     board_configs,
     make_boot_script,
     make_uImage,
@@ -323,7 +322,7 @@ class TestFixForBug697824(TestCaseWithFixtures):
         self.set_appropriate_serial_tty_called = False
         self.mock_set_appropriate_serial_tty(board_configs['beagle'])
         self.useFixture(MockSomethingFixture(
-            BoardConfig, 'make_boot_files',
+            boards.BoardConfig, 'make_boot_files',
             classmethod(lambda *args: None)))
         # We don't need to worry about what's passed to make_boot_files()
         # because we mock the method which does the real work above and here
@@ -918,15 +917,15 @@ class TestPopulateBoot(TestCaseWithFixtures):
     def save_args(self, *args):
         self.saved_args = args
 
-    def setUp(self):
-        super(TestPopulateBoot, self).setUp()
-        self.config = BoardConfig()
+    def set_config(self, cls):
+        self.config = cls()
         self.config.boot_script = 'boot_script'
         self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             self.config, 'make_boot_files', self.save_args))
 
     def test_populate_boot_live(self):
+        self.set_config(boards.BoardConfig)
         populate_boot(
             self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
             'boot_disk', 'boot_device_or_file', True, False, [])
@@ -942,6 +941,57 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.assertEquals(expected_args, self.saved_args)
 
     def test_populate_boot_regular(self):
+        self.set_config(boards.BoardConfig)
+        populate_boot(
+            self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
+            'boot_disk', 'boot_device_or_file', False, False, [])
+        expected_calls = [
+            ["mkdir", "-p", "boot_disk"],
+            ["sudo", "mount", "boot_partition", "boot_disk"],
+            ["sync"],
+            ["sudo", "umount", "boot_disk"]]
+        self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
+        expected_args = (
+            'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_uuid',
+            'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+        self.assertEquals(expected_args, self.saved_args)
+
+    def test_populate_boot_beagle(self):
+        self.set_config(boards.BeagleConfig)
+        populate_boot(
+            self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
+            'boot_disk', 'boot_device_or_file', False, False, [])
+        expected_calls = [
+            ["mkdir", "-p", "boot_disk"],
+            ["sudo", "mount", "boot_partition", "boot_disk"],
+            [ "sudo", "cp", "-v",
+              "chroot_dir/usr/lib/u-boot/omap3_beagle/u-boot.bin", "boot_disk"],
+            ["sync"],
+            ["sudo", "umount", "boot_disk"]]
+        self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
+        expected_args = (
+            'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_uuid',
+            'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+        self.assertEquals(expected_args, self.saved_args)
+
+    def test_populate_boot_igep(self):
+        self.set_config(boards.IgepConfig)
+        populate_boot(
+            self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
+            'boot_disk', 'boot_device_or_file', False, False, [])
+        expected_calls = [
+            ["mkdir", "-p", "boot_disk"],
+            ["sudo", "mount", "boot_partition", "boot_disk"],
+            ["sync"],
+            ["sudo", "umount", "boot_disk"]]
+        self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
+        expected_args = (
+            'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_uuid',
+            'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+        self.assertEquals(expected_args, self.saved_args)
+
+    def test_populate_boot_mx5(self):
+        self.set_config(boards.Mx5Config)
         populate_boot(
             self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
             'boot_disk', 'boot_device_or_file', False, False, [])
