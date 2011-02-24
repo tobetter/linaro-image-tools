@@ -553,7 +553,7 @@ class TestCmdRunner(TestCaseWithFixtures):
         self.assertEqual(0, returncode)
 
 
-class TestPopulateBoot(TestCaseWithFixtures):
+class TestBoards(TestCaseWithFixtures):
 
     def _mock_get_file_matching(self):
         self.useFixture(MockSomethingFixture(
