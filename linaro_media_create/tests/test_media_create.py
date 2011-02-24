@@ -46,6 +46,7 @@ from linaro_media_create.boards import (
     align_up,
     align_partition,
     board_configs,
+    install_mx5_boot_loader,
     make_boot_script,
     make_uImage,
     make_uInitrd,
@@ -581,6 +582,14 @@ class TestBoards(TestCaseWithFixtures):
             'sudo', 'mkimage', '-A', 'arm', '-O', 'linux', '-T', 'ramdisk',
             '-C', 'none', '-a', '0', '-e', '0', '-n', 'initramfs',
             '-d', 'parts_dir/initrd.img-*-sub_arch', 'boot_disk/uInitrd']
+        self.assertEqual([expected], fixture.mock.calls)
+
+    def test_install_mx5_boot_loader(self):
+        fixture = self._mock_Popen()
+        install_mx5_boot_loader("imx_file", "boot_device_or_file")
+        expected = [
+            'sudo', 'dd', 'if=imx_file', 'of=boot_device_or_file', 'bs=1024',
+            'seek=1', 'conv=notrunc']
         self.assertEqual([expected], fixture.mock.calls)
 
     def test_make_boot_script(self):
