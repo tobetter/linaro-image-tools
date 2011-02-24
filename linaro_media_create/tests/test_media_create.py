@@ -213,6 +213,7 @@ class TestGetMLOFile(TestCaseWithFixtures):
             AssertionError, _get_mlo_file, tempdir)
 
 class TestBootSteps(TestCaseWithFixtures):
+
     def setUp(self):
         super(TestBootSteps, self).setUp()
         self.funcs_calls = []
@@ -286,6 +287,7 @@ class TestBootSteps(TestCaseWithFixtures):
 
 
 class TestAlignPartition(TestCase):
+
     def test_align_up_none(self):
         self.assertEqual(1024, align_up(1024, 1))
 
@@ -914,6 +916,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
 
 
 class TestPopulateBoot(TestCaseWithFixtures):
+
     def save_args(self, *args):
         self.saved_args = args
 
@@ -1184,7 +1187,9 @@ class TestCheckDevice(TestCaseWithFixtures):
 
 
 class AtExitRegister(object):
+
     funcs = None
+
     def __call__(self, func, *args, **kwargs):
         if self.funcs is None:
             self.funcs = []
@@ -1193,7 +1198,6 @@ class AtExitRegister(object):
     def run_funcs(self):
         for func, args, kwargs in self.funcs:
             func(*args, **kwargs)
-
 
 
 class TestInstallHWPack(TestCaseWithFixtures):
