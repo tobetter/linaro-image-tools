@@ -75,6 +75,7 @@ from linaro_media_create.partitions import (
     get_uuid,
     _parse_blkid_output,
     )
+from linaro_media_create.populate_boot import populate_boot
 from linaro_media_create.rootfs import (
     create_flash_kernel_config,
     has_space_left_for_swap,
@@ -911,6 +912,49 @@ class TestPartitionSetup(TestCaseWithFixtures):
              ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
              ['sudo', 'mkfs.ext3', rootfs_dev, '-L', 'root']],
             popen_fixture.mock.calls)
+
+
+class TestPopulateBoot(TestCaseWithFixtures):
+    def save_args(self, *args):
+        self.saved_args = args
+
+    def setUp(self):
+        super(TestPopulateBoot, self).setUp()
+        self.config = BoardConfig()
+        self.config.boot_script = 'boot_script'
+        self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        self.useFixture(MockSomethingFixture(
+            self.config, 'make_boot_files', self.save_args))
+
+    def test_populate_boot_live(self):
+        populate_boot(
+            self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
+            'boot_disk', 'boot_device_or_file', True, False, [])
+        expected_calls = [
+            ["mkdir", "-p", "boot_disk"],
+            ["sudo", "mount", "boot_partition", "boot_disk"],
+            ["sync"],
+            ["sudo", "umount", "boot_disk"]]
+        self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
+        expected_args = (
+            'chroot_dir/casper', True, False, [], 'chroot_dir', 'rootfs_uuid',
+            'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+        self.assertEquals(expected_args, self.saved_args)
+
+    def test_populate_boot_regular(self):
+        populate_boot(
+            self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
+            'boot_disk', 'boot_device_or_file', False, False, [])
+        expected_calls = [
+            ["mkdir", "-p", "boot_disk"],
+            ["sudo", "mount", "boot_partition", "boot_disk"],
+            ["sync"],
+            ["sudo", "umount", "boot_disk"]]
+        self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
+        expected_args = (
+            'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_uuid',
+            'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+        self.assertEquals(expected_args, self.saved_args)
 
 
 class TestPopulateRootFS(TestCaseWithFixtures):
