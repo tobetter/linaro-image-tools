@@ -971,26 +971,23 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.assertEquals(self.expected_calls, self.popen_fixture.mock.calls)
         self.assertEquals(self.expected_args, self.saved_args)
 
-    def test_populate_boot_beagle(self):
-        self.prepare_config(boards.BeagleConfig)
+    def test_populate_boot_u_boot_flavor(self):
+        self.prepare_config(boards.BoardConfig)
+        self.config.uboot_flavor = "u_boot_flavor"
+        self.call_populate_boot(self.config)
+        self.assertEquals(self.expected_calls, self.popen_fixture.mock.calls)
+        self.assertEquals(self.expected_args, self.saved_args)
+
+    def test_populate_boot_uboot_in_boot_part(self):
+        self.prepare_config(boards.BoardConfig)
+        self.config.uboot_flavor = "u_boot_flavor"
+        self.config.uboot_in_boot_part = True
         self.call_populate_boot(self.config)
         expected_calls = self.expected_calls[:]
         expected_calls.insert(2, [
             "sudo", "cp", "-v",
-            "chroot_dir/usr/lib/u-boot/omap3_beagle/u-boot.bin", "boot_disk"])
+            "chroot_dir/usr/lib/u-boot/u_boot_flavor/u-boot.bin", "boot_disk"])
         self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
-        self.assertEquals(self.expected_args, self.saved_args)
-
-    def test_populate_boot_igep(self):
-        self.prepare_config(boards.IgepConfig)
-        self.call_populate_boot(self.config)
-        self.assertEquals(self.expected_calls, self.popen_fixture.mock.calls)
-        self.assertEquals(self.expected_args, self.saved_args)
-
-    def test_populate_boot_mx5(self):
-        self.prepare_config(boards.Mx5Config)
-        self.call_populate_boot(self.config)
-        self.assertEquals(self.expected_calls, self.popen_fixture.mock.calls)
         self.assertEquals(self.expected_args, self.saved_args)
 
 
