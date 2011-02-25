@@ -938,6 +938,11 @@ class TestPopulateBoot(TestCaseWithFixtures):
     expected_args_live = (
         'chroot_dir/casper', True, False, [], 'chroot_dir', 'rootfs_uuid',
         'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+    expected_calls = [
+            ["mkdir", "-p", "boot_disk"],
+            ["sudo", "mount", "boot_partition", "boot_disk"],
+            ["sync"],
+            ["sudo", "umount", "boot_disk"]]
 
     def save_args(self, *args):
         self.saved_args = args
@@ -957,58 +962,35 @@ class TestPopulateBoot(TestCaseWithFixtures):
     def test_populate_boot_live(self):
         self.prepare_config(boards.BoardConfig)
         self.call_populate_boot(self.config, is_live=True)
-        expected_calls = [
-            ["mkdir", "-p", "boot_disk"],
-            ["sudo", "mount", "boot_partition", "boot_disk"],
-            ["sync"],
-            ["sudo", "umount", "boot_disk"]]
-        self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
+        self.assertEquals(self.expected_calls, self.popen_fixture.mock.calls)
         self.assertEquals(self.expected_args_live, self.saved_args)
 
     def test_populate_boot_regular(self):
         self.prepare_config(boards.BoardConfig)
         self.call_populate_boot(self.config)
-        expected_calls = [
-            ["mkdir", "-p", "boot_disk"],
-            ["sudo", "mount", "boot_partition", "boot_disk"],
-            ["sync"],
-            ["sudo", "umount", "boot_disk"]]
-        self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
+        self.assertEquals(self.expected_calls, self.popen_fixture.mock.calls)
         self.assertEquals(self.expected_args, self.saved_args)
 
     def test_populate_boot_beagle(self):
         self.prepare_config(boards.BeagleConfig)
         self.call_populate_boot(self.config)
-        expected_calls = [
-            ["mkdir", "-p", "boot_disk"],
-            ["sudo", "mount", "boot_partition", "boot_disk"],
-            [ "sudo", "cp", "-v",
-              "chroot_dir/usr/lib/u-boot/omap3_beagle/u-boot.bin", "boot_disk"],
-            ["sync"],
-            ["sudo", "umount", "boot_disk"]]
+        expected_calls = self.expected_calls[:]
+        expected_calls.insert(2, [
+            "sudo", "cp", "-v",
+            "chroot_dir/usr/lib/u-boot/omap3_beagle/u-boot.bin", "boot_disk"])
         self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
         self.assertEquals(self.expected_args, self.saved_args)
 
     def test_populate_boot_igep(self):
         self.prepare_config(boards.IgepConfig)
         self.call_populate_boot(self.config)
-        expected_calls = [
-            ["mkdir", "-p", "boot_disk"],
-            ["sudo", "mount", "boot_partition", "boot_disk"],
-            ["sync"],
-            ["sudo", "umount", "boot_disk"]]
-        self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
+        self.assertEquals(self.expected_calls, self.popen_fixture.mock.calls)
         self.assertEquals(self.expected_args, self.saved_args)
 
     def test_populate_boot_mx5(self):
         self.prepare_config(boards.Mx5Config)
         self.call_populate_boot(self.config)
-        expected_calls = [
-            ["mkdir", "-p", "boot_disk"],
-            ["sudo", "mount", "boot_partition", "boot_disk"],
-            ["sync"],
-            ["sudo", "umount", "boot_disk"]]
-        self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
+        self.assertEquals(self.expected_calls, self.popen_fixture.mock.calls)
         self.assertEquals(self.expected_args, self.saved_args)
 
 
