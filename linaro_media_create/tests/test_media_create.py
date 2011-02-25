@@ -948,7 +948,10 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.saved_args = args
 
     def prepare_config(self, config):
-        self.config = config
+        class c(config):
+            pass
+
+        self.config = c
         self.config.boot_script = 'boot_script'
         self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
