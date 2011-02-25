@@ -34,8 +34,10 @@ def populate_boot(board_config, chroot_dir, rootfs_uuid, boot_partition,
     cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
     cmd_runner.run(['mount', boot_partition, boot_disk], as_root=True).wait()
 
-    uboot_flavor = board_config.uboot_flavor
-    if board_config.uboot_in_boot_part and uboot_flavor is not None:
+    if board_config.uboot_in_boot_part:
+        uboot_flavor = board_config.uboot_flavor
+        assert uboot_flavor is not None, (
+            "uboot_in_boot_part is set but not uboot_flavor")
         uboot_bin = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor, 'u-boot.bin')
         cmd_runner.run(

@@ -993,6 +993,11 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
         self.assertEquals(self.expected_args, self.saved_args)
 
+    def test_populate_boot_no_u_boot_flavor(self):
+        self.prepare_config(boards.BoardConfig)
+        self.config.uboot_in_boot_part = True
+        self.assertRaises(AssertionError, self.call_populate_boot, self.config)
+
 
 class TestPopulateRootFS(TestCaseWithFixtures):
 

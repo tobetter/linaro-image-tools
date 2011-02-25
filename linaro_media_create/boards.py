@@ -312,6 +312,7 @@ class PandaConfig(OmapConfig):
 
 
 class IgepConfig(BeagleConfig):
+    uboot_in_boot_part = False
     uboot_flavor = None
 
     @classmethod
