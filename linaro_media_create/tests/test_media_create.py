@@ -932,6 +932,13 @@ class TestPartitionSetup(TestCaseWithFixtures):
 
 class TestPopulateBoot(TestCaseWithFixtures):
 
+    expected_args = (
+        'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_uuid',
+        'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+    expected_args_live = (
+        'chroot_dir/casper', True, False, [], 'chroot_dir', 'rootfs_uuid',
+        'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+
     def save_args(self, *args):
         self.saved_args = args
 
@@ -956,10 +963,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
             ["sync"],
             ["sudo", "umount", "boot_disk"]]
         self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
-        expected_args = (
-            'chroot_dir/casper', True, False, [], 'chroot_dir', 'rootfs_uuid',
-            'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
-        self.assertEquals(expected_args, self.saved_args)
+        self.assertEquals(self.expected_args_live, self.saved_args)
 
     def test_populate_boot_regular(self):
         self.prepare_config(boards.BoardConfig)
@@ -970,10 +974,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
             ["sync"],
             ["sudo", "umount", "boot_disk"]]
         self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
-        expected_args = (
-            'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_uuid',
-            'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
-        self.assertEquals(expected_args, self.saved_args)
+        self.assertEquals(self.expected_args, self.saved_args)
 
     def test_populate_boot_beagle(self):
         self.prepare_config(boards.BeagleConfig)
@@ -986,10 +987,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
             ["sync"],
             ["sudo", "umount", "boot_disk"]]
         self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
-        expected_args = (
-            'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_uuid',
-            'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
-        self.assertEquals(expected_args, self.saved_args)
+        self.assertEquals(self.expected_args, self.saved_args)
 
     def test_populate_boot_igep(self):
         self.prepare_config(boards.IgepConfig)
@@ -1000,10 +998,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
             ["sync"],
             ["sudo", "umount", "boot_disk"]]
         self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
-        expected_args = (
-            'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_uuid',
-            'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
-        self.assertEquals(expected_args, self.saved_args)
+        self.assertEquals(self.expected_args, self.saved_args)
 
     def test_populate_boot_mx5(self):
         self.prepare_config(boards.Mx5Config)
@@ -1014,10 +1009,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
             ["sync"],
             ["sudo", "umount", "boot_disk"]]
         self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
-        expected_args = (
-            'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_uuid',
-            'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
-        self.assertEquals(expected_args, self.saved_args)
+        self.assertEquals(self.expected_args, self.saved_args)
 
 
 class TestPopulateRootFS(TestCaseWithFixtures):
