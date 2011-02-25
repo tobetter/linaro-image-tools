@@ -942,11 +942,14 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             self.config, 'make_boot_files', self.save_args))
 
+    def call_populate_boot(self, config, is_live=False):
+        populate_boot(
+            config, 'chroot_dir', 'rootfs_uuid', 'boot_partition', 'boot_disk',
+            'boot_device_or_file', is_live, False, [])
+
     def test_populate_boot_live(self):
         self.prepare_config(boards.BoardConfig)
-        populate_boot(
-            self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
-            'boot_disk', 'boot_device_or_file', True, False, [])
+        self.call_populate_boot(self.config, is_live=True)
         expected_calls = [
             ["mkdir", "-p", "boot_disk"],
             ["sudo", "mount", "boot_partition", "boot_disk"],
@@ -960,9 +963,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
     def test_populate_boot_regular(self):
         self.prepare_config(boards.BoardConfig)
-        populate_boot(
-            self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
-            'boot_disk', 'boot_device_or_file', False, False, [])
+        self.call_populate_boot(self.config)
         expected_calls = [
             ["mkdir", "-p", "boot_disk"],
             ["sudo", "mount", "boot_partition", "boot_disk"],
@@ -976,9 +977,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
     def test_populate_boot_beagle(self):
         self.prepare_config(boards.BeagleConfig)
-        populate_boot(
-            self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
-            'boot_disk', 'boot_device_or_file', False, False, [])
+        self.call_populate_boot(self.config)
         expected_calls = [
             ["mkdir", "-p", "boot_disk"],
             ["sudo", "mount", "boot_partition", "boot_disk"],
@@ -994,9 +993,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
     def test_populate_boot_igep(self):
         self.prepare_config(boards.IgepConfig)
-        populate_boot(
-            self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
-            'boot_disk', 'boot_device_or_file', False, False, [])
+        self.call_populate_boot(self.config)
         expected_calls = [
             ["mkdir", "-p", "boot_disk"],
             ["sudo", "mount", "boot_partition", "boot_disk"],
@@ -1010,9 +1007,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
     def test_populate_boot_mx5(self):
         self.prepare_config(boards.Mx5Config)
-        populate_boot(
-            self.config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
-            'boot_disk', 'boot_device_or_file', False, False, [])
+        self.call_populate_boot(self.config)
         expected_calls = [
             ["mkdir", "-p", "boot_disk"],
             ["sudo", "mount", "boot_partition", "boot_disk"],
