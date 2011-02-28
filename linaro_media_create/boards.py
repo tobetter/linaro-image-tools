@@ -65,6 +65,41 @@ BOOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
 # root partition; at least 50 MiB; XXX this shouldn't be hardcoded
 ROOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
 
+# Samsung v310 implementation notes
+# * BL1 (SPL) is expected at offset +1s and is 32s long
+# * BL2 (u-boot) is loaded at a raw MMC offset of +65s by BL1 which currently
+# doesn't support FAT
+# * the u-boot environment is at +33s and is 32s long (16 KiB)
+# * currently, some hardware issues on certain boards causes u-boot to not be
+# able to use FAT to load uImage and uInitrd (or boot.scr); as a temporary
+# workaround, these are loaded from +1089s and +9281s respectively
+# * hence we hardcode all offsets, make sure that the files aren't larger than
+# their reserved spot, and create a bootloader partition from the first
+# sector after MBR up to end of initrd
+SAMSUNG_V310_BL1_START = 1
+SAMSUNG_V310_BL1_LEN = 32
+SAMSUNG_V310_ENV_START = SAMSUNG_V310_BL1_START + SAMSUNG_V310_BL1_LEN
+SAMSUNG_V310_ENV_LEN = 32
+assert SAMSUNG_V310_ENV_START == 33, "BL1 expects u-boot environment at +33s"
+assert SAMSUNG_V310_ENV_LEN * SECTOR_SIZE == 16 * 1024, (
+    "BL1 expects u-boot environment to be 16 KiB")
+SAMSUNG_V310_BL2_START = SAMSUNG_V310_ENV_START + SAMSUNG_V310_ENV_LEN
+SAMSUNG_V310_BL2_LEN = 1024
+assert SAMSUNG_V310_BL2_LEN * SECTOR_SIZE == 512 * 1024, (
+    "BL1 expects BL2 (u-boot) to be 512 KiB")
+SAMSUNG_V310_UIMAGE_START = SAMSUNG_V310_BL2_START + SAMSUNG_V310_BL2_LEN
+SAMSUNG_V310_UIMAGE_LEN = 8192
+assert SAMSUNG_V310_UIMAGE_START == 1089, (
+    "BL2 (u-boot) expects uImage at +1089s")
+assert SAMSUNG_V310_UIMAGE_LEN * SECTOR_SIZE == 4 * 1024 * 1024, (
+    "BL2 (u-boot) expects uImage to be 4 MiB")
+SAMSUNG_V310_UINITRD_START = (
+    SAMSUNG_V310_UIMAGE_START + SAMSUNG_V310_UIMAGE_LEN)
+SAMSUNG_V310_UINITRD_LEN = 204800
+assert SAMSUNG_V310_UINITRD_START == 9281, (
+    "BL2 (u-boot) expects uInitrd at +9281s")
+assert SAMSUNG_V310_UINITRD_LEN * SECTOR_SIZE == 100 * 1024 * 1024, (
+    "BL2 (u-boot) expects uInitrd to be 100 MiB")
 
 def align_partition(min_start, min_length, start_alignment, end_alignment):
     """Compute partition start and end offsets based on specified constraints.
@@ -448,12 +483,17 @@ class SamsungConfig(BoardConfig):
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
-        # Create a fixed-offset bootloader data at
-        # the beginning of the image (size is 214080 512 byte sectors
-        # with the first sector for MBR). 
-        loader_start, loader_end, loader_len = align_partition(
-            1, 214080, PART_ALIGN_S, PART_ALIGN_S)
+        # bootloader partition needs to hold everything from BL1 to uInitrd
+        # inclusive
+        min_len = (
+            SAMSUNG_V310_UINITRD_START + SAMSUNG_V310_UINITRD_LEN -
+            SAMSUNG_V310_BL1_START)
 
+        # bootloader partition
+        loader_start, loader_end, loader_len = align_partition(
+            1, min_len, PART_ALIGN_S, PART_ALIGN_S)
+
+        # FAT boot partition
         boot_start, boot_end, boot_len = align_partition(
             loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
@@ -517,7 +557,7 @@ class SMDKV310Config(SamsungConfig):
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
-    env_size = 16384  # in bytes
+    env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
     boot_env = []
 
 board_configs = {
@@ -531,6 +571,20 @@ board_configs = {
     'smdkv310': SMDKV310Config,
     }
 
+
+def _dd(input_file, output_file, block_size=SECTOR_SIZE, count=None, seek=None,
+        skip=None):
+    cmd = [
+        "dd", "if=%s" % input_file, "of=%s" % output_file,
+        "bs=%s" % block_size, "conv=notrunc"]
+    if count is not None:
+        cmd.append("count=%s" % count)
+    if seek is not None:
+        cmd.append("seek=%s" % seek)
+    if skip is not None:
+        cmd.append("skip=%s" % skip)
+    proc = cmd_runner.run(cmd, as_root=True)
+    proc.wait()
 
 def _run_mkimage(img_type, load_addr, entry_point, name, img_data, img,
                  stdout=None, as_root=True):
@@ -611,16 +665,10 @@ def make_flashable_env(boot_env, env_size):
     return tmpfile
 
 def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
-    proc = cmd_runner.run([
-        "dd",
-        "if=%s" % imx_file,
-        "of=%s" % boot_device_or_file,
-        "bs=1024",
-        "seek=1",
-        "conv=notrunc"], as_root=True)
-    proc.wait()
-
-
+    # XXX need to check that the length of imx_file is smaller than
+    # LOADER_MIN_SIZE_S
+    _dd(imx_file, boot_device_or_file, seek=2)
+    
 def _get_mlo_file(chroot_dir):
     # XXX bug=702645: This is a temporary solution to make sure l-m-c works
     # with any version of x-loader-omap. The proper solution is to have
@@ -659,62 +707,36 @@ def make_boot_ini(boot_script, boot_disk):
     return "%s/boot.ini" % boot_disk
 
 def install_smdkv310_uImage(uImage_file, boot_device_or_file):
-    # seek offset of 9281 is the MBR + BL1 + u-boot env + u-bbot
-    cmd = [
-        "dd",
-        "if=%s" % uImage_file,
-        "of=%s" % boot_device_or_file,
-        "bs=512",
-        "seek=1089",
-        "conv=notrunc"]
+    # XXX need to check that the length of uImage_file is smaller than
+    # SAMSUNG_V310_UIMAGE_LEN
+    _dd(uImage_file, boot_device_or_file, count=SAMSUNG_V310_UIMAGE_LEN,
+        seek=SAMSUNG_V310_UIMAGE_START)
 
-    proc = cmd_runner.run( cmd, as_root=True)
-
-    proc.wait()
 
 def install_smdkv310_initrd(initrd_file, boot_device_or_file):
-    # seek offset of 9281 is the MBR + BL1 + u-boot env + u-bbot + uImage
-    proc = cmd_runner.run([
-        "dd",
-        "if=%s" % initrd_file,
-        "of=%s" % boot_device_or_file,
-        "bs=512",
-        "seek=9281",
-        "conv=notrunc"], as_root=True)
-    proc.wait()
+    # XXX need to check that the length of initrd_file is smaller than
+    # SAMSUNG_V310_UINITRD_LEN
+    _dd(initrd_file, boot_device_or_file, count=SAMSUNG_V310_UINITRD_LEN,
+        seek=SAMSUNG_V310_UINITRD_START)    
+
 
 def install_smdkv310_boot_env(env_file, boot_device_or_file):
-    # seek offset of 65 is the MBR + BL1 + u-boot env
-    proc = cmd_runner.run([
-        "dd",
-        "if=%s" % env_file,
-        "of=%s" % boot_device_or_file,
-        "bs=512",
-        "seek=33",
-        "count=32",
-        "conv=notrunc"], as_root=True)
-    proc.wait()
+    # XXX need to check that the length of env_file is smaller than
+    # SAMSUNG_V310_ENV_LEN
+    _dd(env_file, boot_device_or_file, count=SAMSUNG_V310_ENV_LEN,
+        seek=SAMSUNG_V310_ENV_START)
+
 
 def install_smdkv310_boot_loader(v310_file, boot_device_or_file):
-    # seek offset of 1 preserves the MBR
-    proc = cmd_runner.run([
-        "dd",
-        "if=%s" % v310_file,
-        "of=%s" % boot_device_or_file,
-        "bs=512",
-        "seek=1",
-        "count=32",
-        "conv=notrunc"], as_root=True)
-    proc.wait()
-    # seek offset of 65 is the MBR + BL2 + u-boot env
-    proc = cmd_runner.run([
-        "dd",
-        "if=%s" % v310_file,
-        "of=%s" % boot_device_or_file,
-        "bs=512",
-        "seek=65",
-        "skip=64",
-        "conv=notrunc"], as_root=True)
-    proc.wait()
-
-
+    # v310_file is a binary with the same layout as BL1 + u-boot environment +
+    # BL2; write BL1 (SPL) piece first (SAMSUNG_V310_BL1_LEN sectors at +0s in
+    # the file and +SAMSUNG_V310_BL1_START on disk), then write BL2 (u-boot)
+    # piece (rest of the file starting at +(SAMSUNG_V310_BL1_LEN +
+    # SAMSUNG_V310_ENV_LEN)s in the file which is the same as
+    # +(SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START)s)
+    _dd(v310_file, boot_device_or_file, count=SAMSUNG_V310_BL1_LEN,
+        seek=SAMSUNG_V310_BL1_START)
+    # XXX need to check that the length of v310_file - 64s is smaller than
+    # SAMSUNG_V310_BL2_LEN
+    _dd(v310_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START,
+        skip=(SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START))
