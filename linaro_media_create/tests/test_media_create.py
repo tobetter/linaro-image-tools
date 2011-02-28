@@ -261,7 +261,7 @@ class TestBootSteps(TestCaseWithFixtures):
             'install_smdkv310_boot_loader', 'make_flashable_env',
             'install_smdkv310_boot_env', 'make_uImage', 
             'install_smdkv310_uImage', 'make_uInitrd', 
-            'install_smdkv310_initrd' ]
+            'install_smdkv310_initrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_ux500_steps(self):
@@ -379,7 +379,7 @@ class TestGetSfdiskCmd(TestCase):
 
     def test_smdkv310(self):
         self.assertEquals(
-            '1,221183,0xDA\n221184,106496,0x0C,*\n327680,,,-',
+            '8192,221184,0xDA\n229376,106496,0x0C,*\n335872,,,-',
             board_configs['smdkv310'].get_sfdisk_cmd())
 
 
@@ -415,10 +415,10 @@ class TestGetBootCmd(TestCase):
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
-            "setenv bootcmd 'fatload mmc 0:1 0x40008000 uImage; fatload mmc "
-            "0:1 0x40800000 uInitrd; bootm 0x40008000 0x40800000'\nsetenv "
-            "bootargs 'console=ttySAC1,115200  root=UUID=deadbeef rootwait "
-            "ro root=/dev/mmcblk0p2 rootwait rw init=/bin/bash'\nboot")
+            "setenv bootcmd 'fatload mmc 0:2 0x40007000 uImage; fatload mmc "
+            "0:2 0x41000000 uInitrd; bootm 0x40007000 0x41000000'\nsetenv "
+            "bootargs 'console=ttySAC1,115200n8  root=UUID=deadbeef rootwait "
+            "ro'\nboot")
         self.assertEqual(expected, boot_cmd)
 
     def test_ux500(self):
@@ -709,7 +709,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('1,221183,0xDA\n221184,106496,0x0C,*\n327680,,,-', 255, 63, '', 
+            [('8192,221184,0xDA\n229376,106496,0x0C,*\n335872,,,-', 255, 63, '', 
               self.media.path)], sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):

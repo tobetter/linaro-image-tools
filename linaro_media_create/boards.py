@@ -90,7 +90,6 @@ class BoardConfig(object):
     mmc_option = '0:1'
     mmc_part_offset = 0
     fat_size = 32
-    uses_fat_boot_partition = True
     extra_serial_opts = ''
     live_serial_opts = ''
     extra_boot_args_options = None
@@ -141,8 +140,23 @@ class BoardConfig(object):
             boot_start, boot_len, partition_type, root_start)
 
     @classmethod
-    def _get_boot_cmd(cls, is_live, is_lowmem, consoles, rootfs_uuid):
-        """Get the boot command for this board.
+    def _get_bootcmd(cls):
+        """Get the bootcmd for this board.
+
+        In general subclasses should not have to override this.
+        """
+        replacements = dict(
+            mmc_option=cls.mmc_option, kernel_addr=cls.kernel_addr,
+            initrd_addr=cls.initrd_addr)
+        return (
+            "fatload mmc %(mmc_option)s %(kernel_addr)s "
+                "uImage; fatload mmc %(mmc_option)s %(initrd_addr)s uInitrd; "
+                "bootm %(kernel_addr)s %(initrd_addr)s"
+                % replacements)
+
+    @classmethod
+    def _get_bootargs(cls, is_live, is_lowmem, consoles, rootfs_uuid):
+        """Get the bootargs for this board.
 
         In general subclasses should not have to override this.
         """
@@ -162,17 +176,25 @@ class BoardConfig(object):
                 lowmem_opt = 'only-ubiquity'
 
         replacements = dict(
-            mmc_option=cls.mmc_option, kernel_addr=cls.kernel_addr,
-            initrd_addr=cls.initrd_addr, serial_opts=serial_opts,
+            serial_opts=serial_opts,
             lowmem_opt=lowmem_opt, boot_snippet=boot_snippet,
             boot_args_options=boot_args_options)
         return (
-            "setenv bootcmd 'fatload mmc %(mmc_option)s %(kernel_addr)s "
-                "uImage; fatload mmc %(mmc_option)s %(initrd_addr)s uInitrd; "
-                "bootm %(kernel_addr)s %(initrd_addr)s'\n"
-            "setenv bootargs '%(serial_opts)s %(lowmem_opt)s "
-                "%(boot_snippet)s %(boot_args_options)s'\n"
-            "boot" % replacements)
+            "%(serial_opts)s %(lowmem_opt)s "
+                "%(boot_snippet)s %(boot_args_options)s"
+             % replacements)
+
+    @classmethod
+    def _get_boot_cmd(cls, is_live, is_lowmem, consoles, rootfs_uuid):
+        """Get the boot command for this board.
+
+        In general subclasses should not have to override this.
+        """
+        return (
+            "setenv bootcmd '%s'\n" % cls._get_bootcmd() +
+            "setenv bootargs '%s'\n" 
+            % cls._get_bootargs(is_live, is_lowmem, consoles, rootfs_uuid) +
+            "boot" )
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
@@ -423,13 +445,6 @@ class VexpressConfig(BoardConfig):
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
 
 class SamsungConfig(BoardConfig):
-    boot_env = [
-        'bootargs=root=/dev/mmcblk0p3 rootwait rw init=/bin/bash console=ttySAC1,115200',
-        'bootcmd=movi read kernel 40007000; movi read rootfs 41000000 600000;'
-        'bootm 40007000 41000000',
-        'ethact=smc911x-0',
-        'ethaddr=00:40:5c:26:0a:5b',
-        ]
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
@@ -437,7 +452,7 @@ class SamsungConfig(BoardConfig):
         # the beginning of the image (size is 214080 512 byte sectors
         # with the first sector for MBR). 
         loader_start, loader_end, loader_len = align_partition(
-            1, 214080, 1, PART_ALIGN_S)
+            1, 214080, PART_ALIGN_S, PART_ALIGN_S)
 
         boot_start, boot_end, boot_len = align_partition(
             loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
@@ -452,15 +467,33 @@ class SamsungConfig(BoardConfig):
             loader_start, loader_len, boot_start, boot_len, root_start)
 
     @classmethod
+    def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
+                        root_dir, rootfs_uuid, boot_dir, boot_script,
+                        boot_device_or_file):
+
+        cls.boot_env = [
+            'bootargs=%s' 
+            % cls._get_bootargs(is_live, is_lowmem, consoles, rootfs_uuid),
+            # Once FAT support is fixed in u-boot this is the correct bootcmd
+            #'bootcmd %s' % cls._get_bootcmd(), 
+            'bootcmd=movi read kernel 40007000; movi read rootfs 41000000 600000;'
+            'bootm 40007000 41000000',
+            'ethact=smc911x-0',
+            'ethaddr=00:40:5c:26:0a:5b',
+        ]
+
+        super(SamsungConfig, cls).make_boot_files(
+            uboot_parts_dir, is_live, is_lowmem, consoles, root_dir,
+            rootfs_uuid, boot_dir, boot_script, boot_device_or_file)
+
+    @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.v310')
         install_smdkv310_boot_loader(uboot_file, boot_device_or_file)
 
-        env_file = os.path.join(boot_dir, 'boot_env.flash')
-        # SMDK v310 uses a 16K environment
-        make_flashable_env(cls.boot_env, 16384, env_file)
+        env_file = make_flashable_env(cls.boot_env, cls.env_size)
         install_smdkv310_boot_env(env_file, boot_device_or_file)
 
         uImage_file = make_uImage(
@@ -471,18 +504,21 @@ class SamsungConfig(BoardConfig):
             uboot_parts_dir, cls.kernel_suffix, boot_dir)
         install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
 
+        make_boot_script(boot_cmd, boot_script)
+
 
 class SMDKV310Config(SamsungConfig):
-    extra_serial_opts = 'console=ttySAC1,115200'
-    live_serial_opts = 'serialtty=ttyO2'
-    kernel_addr = '0x40008000'
-    initrd_addr = '0x40800000'
+    serial_tty = 'ttySAC1'
+    extra_serial_opts = 'console=%s,115200n8' % serial_tty
+    kernel_addr = '0x40007000'
+    initrd_addr = '0x41000000'
     load_addr = '0x40008000'
     kernel_suffix = 's5pv310'
     boot_script = 'boot.scr'
-    extra_boot_args_options = (
-        'root=/dev/mmcblk0p2 rootwait rw init=/bin/bash')
     mmc_part_offset = 1
+    mmc_option = '0:2'
+    env_size = 16384  # in bytes
+    boot_env = []
 
 board_configs = {
     'beagle': BeagleConfig,
@@ -557,10 +593,8 @@ def make_boot_script(boot_script_data, boot_script):
         'script', '0', '0', 'boot script', tmpfile, boot_script)
 
 
-def make_flashable_env(boot_env, env_size, env_file):
-    env = ''
-
-    env = struct.pack('B', 0 ).join(boot_env)
+def make_flashable_env(boot_env, env_size):
+    env = struct.pack('B', 0).join(boot_env)
 
     # pad the rest of the env for the CRC calc
     while len(env) < (env_size - 4):
@@ -574,12 +608,7 @@ def make_flashable_env(boot_env, env_size, env_file):
     with open(tmpfile, 'w') as fd:
         fd.write(env)
 
-    proc = cmd_runner.run([
-        "mv",
-        "%s" % tmpfile,
-        "%s" % env_file], as_root=True)
-    proc.wait()
-
+    return tmpfile
 
 def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
     proc = cmd_runner.run([
