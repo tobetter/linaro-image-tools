@@ -386,7 +386,7 @@ class TestGetSfdiskCmd(TestCase):
 class TestGetBootCmd(TestCase):
 
     def test_vexpress(self):
-        boot_cmd = board_configs['vexpress']._get_boot_cmd(
+        boot_cmd = board_configs['vexpress']._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=['ttyXXX'],
             rootfs_uuid="deadbeef")
         expected = (
@@ -397,7 +397,7 @@ class TestGetBootCmd(TestCase):
         self.assertEqual(expected, boot_cmd)
 
     def test_mx51evk(self):
-        boot_cmd = board_configs['mx51evk']._get_boot_cmd(
+        boot_cmd = board_configs['mx51evk']._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -411,7 +411,7 @@ class TestGetBootCmd(TestCase):
         # this is kind of a useless test as this environment isn't
         # currently used. I'll keep it for completeness and it env 
         # might get used in the future
-        boot_cmd = board_configs['smdkv310']._get_boot_cmd(
+        boot_cmd = board_configs['smdkv310']._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -422,7 +422,7 @@ class TestGetBootCmd(TestCase):
         self.assertEqual(expected, boot_cmd)
 
     def test_ux500(self):
-        boot_cmd = board_configs['ux500']._get_boot_cmd(
+        boot_cmd = board_configs['ux500']._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -441,7 +441,7 @@ class TestGetBootCmd(TestCase):
         # don't interfere with us we'll reset that before doing anything.
         config = board_configs['panda']
         config.serial_tty = config._serial_tty
-        boot_cmd = config._get_boot_cmd(
+        boot_cmd = config._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -459,7 +459,7 @@ class TestGetBootCmd(TestCase):
         # don't interfere with us we'll reset that before doing anything.
         config = board_configs['beagle']
         config.serial_tty = config._serial_tty
-        boot_cmd = config._get_boot_cmd(
+        boot_cmd = config._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -477,7 +477,7 @@ class TestGetBootCmd(TestCase):
         # don't interfere with us we'll reset that before doing anything.
         config = board_configs['overo']
         config.serial_tty = config._serial_tty
-        boot_cmd = config._get_boot_cmd(
+        boot_cmd = config._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
