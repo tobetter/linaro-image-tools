@@ -227,11 +227,13 @@ class BoardConfig(object):
 
         In general subclasses should not have to override this.
         """
+        bootcmd = cls._get_bootcmd()
+        bootargs = cls._get_bootargs(is_live, is_lowmem, consoles, rootfs_uuid)
         return (
-            "setenv bootcmd '%s'\n" % cls._get_bootcmd() +
-            "setenv bootargs '%s'\n" 
-            % cls._get_bootargs(is_live, is_lowmem, consoles, rootfs_uuid) +
-            "boot" )
+            "setenv bootcmd '%s'\n"
+            "setenv bootargs '%s'\n"
+            "boot"
+            % (bootcmd, bootargs))
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
