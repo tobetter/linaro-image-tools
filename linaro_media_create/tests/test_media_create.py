@@ -556,7 +556,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self._mock_get_file_matching()
         fixture = self._mock_Popen()
         boot_script_path = os.path.join(tempdir, 'boot.scr')
-        plain_boot_script_path = os.path.join(tempdir, 'boot.script')
+        plain_boot_script_path = os.path.join(tempdir, 'boot.txt')
         make_boot_script('boot script data', boot_script_path)
         expected = [
             'sudo', 'mkimage', '-A', 'arm', '-O', 'linux', '-T', 'script',
