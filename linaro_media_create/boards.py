@@ -491,12 +491,13 @@ class SamsungConfig(BoardConfig):
 
         # bootloader partition
         loader_start, loader_end, loader_len = align_partition(
-            1, min_len, PART_ALIGN_S, PART_ALIGN_S)
+            1, min_len, 1, PART_ALIGN_S)
 
         # FAT boot partition
         boot_start, boot_end, boot_len = align_partition(
             loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
+        # root partition
         # we ignore _root_end / _root_len and return a sfdisk command to
         # instruct the use of all remaining space; XXX if we had some root size
         # config, we could do something more sensible
