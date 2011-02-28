@@ -656,7 +656,7 @@ def make_flashable_env(boot_env, env_size):
 
     crc = crc32(env)
     env = struct.pack('<i', crc) + env
-    
+
     _, tmpfile = tempfile.mkstemp()
 
     with open(tmpfile, 'w') as fd:
@@ -668,7 +668,7 @@ def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
     # XXX need to check that the length of imx_file is smaller than
     # LOADER_MIN_SIZE_S
     _dd(imx_file, boot_device_or_file, seek=2)
-    
+
 def _get_mlo_file(chroot_dir):
     # XXX bug=702645: This is a temporary solution to make sure l-m-c works
     # with any version of x-loader-omap. The proper solution is to have
@@ -717,7 +717,7 @@ def install_smdkv310_initrd(initrd_file, boot_device_or_file):
     # XXX need to check that the length of initrd_file is smaller than
     # SAMSUNG_V310_UINITRD_LEN
     _dd(initrd_file, boot_device_or_file, count=SAMSUNG_V310_UINITRD_LEN,
-        seek=SAMSUNG_V310_UINITRD_START)    
+        seek=SAMSUNG_V310_UINITRD_START)
 
 
 def install_smdkv310_boot_env(env_file, boot_device_or_file):
