@@ -122,6 +122,8 @@ class BoardConfig(object):
     """The configuration used when building an image for a board."""
     # These attributes may not need to be redefined on some subclasses.
     uboot_flavor = None
+    # whether to copy u-boot to the boot partition
+    uboot_in_boot_part = False
     mmc_option = '0:1'
     mmc_part_offset = 0
     fat_size = 32
@@ -261,6 +263,7 @@ class classproperty(object):
 
 
 class OmapConfig(BoardConfig):
+    uboot_in_boot_part = True
 
     # XXX: Here we define these things as dynamic properties because our
     # temporary hack to fix bug 697824 relies on changing the board's
@@ -350,7 +353,8 @@ class OveroConfig(OmapConfig):
     kernel_suffix = 'linaro-omap'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'earlyprintk')
+        'earlyprintk mpurate=500 vram=12M '
+        'omapfb.mode=dvi:1024x768MR-16@60 omapdss.def_disp=dvi')
 
 
 class PandaConfig(OmapConfig):
@@ -369,6 +373,7 @@ class PandaConfig(OmapConfig):
 
 
 class IgepConfig(BeagleConfig):
+    uboot_in_boot_part = False
     uboot_flavor = None
 
     @classmethod
@@ -406,7 +411,7 @@ class Ux500Config(BoardConfig):
         make_boot_script(boot_cmd, boot_script)
 
 
-class Mx51evkConfig(BoardConfig):
+class Mx5Config(BoardConfig):
     serial_tty = 'ttymxc0'
     extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
     live_serial_opts = 'serialtty=%s' % serial_tty
@@ -450,16 +455,25 @@ class Mx51evkConfig(BoardConfig):
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
         uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', 'mx51evk', 'u-boot.imx')
-        install_mx51evk_boot_loader(uboot_file, boot_device_or_file)
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
+        install_mx5_boot_loader(uboot_file, boot_device_or_file)
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_boot_script(boot_cmd, boot_script)
 
 
+class EfikamxConfig(Mx5Config):
+    uboot_flavor = 'efikamx'
+
+
+class Mx51evkConfig(Mx5Config):
+    uboot_flavor = 'mx51evk'
+
+
 class VexpressConfig(BoardConfig):
     uboot_flavor = 'ca9x4_ct_vxp'
+    uboot_in_boot_part = True
     serial_tty = 'ttyAMA0'
     extra_serial_opts = 'console=tty0 console=%s,38400n8' % serial_tty
     live_serial_opts = 'serialtty=%s' % serial_tty
@@ -567,6 +581,7 @@ board_configs = {
     'panda': PandaConfig,
     'vexpress': VexpressConfig,
     'ux500': Ux500Config,
+    'efikamx': EfikamxConfig,
     'mx51evk': Mx51evkConfig,
     'overo': OveroConfig,
     'smdkv310': SMDKV310Config,
@@ -665,7 +680,7 @@ def make_flashable_env(boot_env, env_size):
 
     return tmpfile
 
-def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
+def install_mx5_boot_loader(imx_file, boot_device_or_file):
     # XXX need to check that the length of imx_file is smaller than
     # LOADER_MIN_SIZE_S
     _dd(imx_file, boot_device_or_file, seek=2)

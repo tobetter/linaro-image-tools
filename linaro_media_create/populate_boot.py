@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
-import errno
 import os
 
 from linaro_media_create import cmd_runner
@@ -32,18 +31,13 @@ def populate_boot(board_config, chroot_dir, rootfs_uuid, boot_partition,
         parts_dir = 'casper'
     uboot_parts_dir = os.path.join(chroot_dir, parts_dir)
 
-    try:
-        os.makedirs(boot_disk)
-    except OSError, exc:
-        if exc.errno == errno.EEXIST:
-            pass
-        else:
-            raise
-
+    cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
     cmd_runner.run(['mount', boot_partition, boot_disk], as_root=True).wait()
 
-    uboot_flavor = board_config.uboot_flavor
-    if uboot_flavor is not None:
+    if board_config.uboot_in_boot_part:
+        uboot_flavor = board_config.uboot_flavor
+        assert uboot_flavor is not None, (
+            "uboot_in_boot_part is set but not uboot_flavor")
         uboot_bin = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor, 'u-boot.bin')
         cmd_runner.run(
