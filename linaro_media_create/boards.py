@@ -220,7 +220,7 @@ class BoardConfig(object):
              % replacements)
 
     @classmethod
-    def _get_boot_cmd(cls, is_live, is_lowmem, consoles, rootfs_uuid):
+    def _get_boot_commands(cls, is_live, is_lowmem, consoles, rootfs_uuid):
         """Get the boot command for this board.
 
         In general subclasses should not have to override this.
@@ -235,7 +235,7 @@ class BoardConfig(object):
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         root_dir, rootfs_uuid, boot_dir, boot_script,
                         boot_device_or_file):
-        boot_cmd = cls._get_boot_cmd(
+        boot_cmd = cls._get_boot_commands(
             is_live, is_lowmem, consoles, rootfs_uuid)
         cls._make_boot_files(
             uboot_parts_dir, boot_cmd, root_dir, boot_dir, boot_script,
