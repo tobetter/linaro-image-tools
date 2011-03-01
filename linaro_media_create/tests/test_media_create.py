@@ -423,9 +423,9 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=ttySAC1,115200n8  root=UUID=deadbeef '
                         'rootwait ro',
-             'bootcmd': 'movi read kernel 40007000; '
-                        'movi read rootfs 41000000 600000; '
-                        'bootm 40007000 41000000',
+             'bootcmd': 'movi read kernel 0x40007000; '
+                        'movi read rootfs 0x41000000 600000; '
+                        'bootm 0x40007000 0x41000000',
              'ethact': 'smc911x-0',
              'ethaddr': '00:40:5c:26:0a:5b'}
         self.assertEqual(expected, boot_commands)

@@ -539,9 +539,11 @@ class SMDKV310Config(BoardConfig):
         boot_env["ethaddr"] = "00:40:5c:26:0a:5b"
         # XXX remove me once FAT support is fixed in u-boot
         boot_env["bootcmd"] = (
-            "movi read kernel 40007000; "
-            "movi read rootfs 41000000 600000; "
-            "bootm 40007000 41000000")
+            "movi read kernel %(kernel_addr)s; "
+            "movi read rootfs %(initrd_addr)s 600000; "
+            "bootm %(kernel_addr)s %(initrd_addr)s" % {
+                'kernel_addr': cls.kernel_addr,
+                'initrd_addr': cls.initrd_addr})
 
         return boot_env
 
