@@ -95,11 +95,14 @@ assert SAMSUNG_V310_UIMAGE_LEN * SECTOR_SIZE == 4 * 1024 * 1024, (
     "BL2 (u-boot) expects uImage to be 4 MiB")
 SAMSUNG_V310_UINITRD_START = (
     SAMSUNG_V310_UIMAGE_START + SAMSUNG_V310_UIMAGE_LEN)
-SAMSUNG_V310_UINITRD_LEN = 204800
+SAMSUNG_V310_UINITRD_RESERVED_LEN = 204800
+SAMSUNG_V310_UINITRD_COPY_LEN = 32768 
 assert SAMSUNG_V310_UINITRD_START == 9281, (
     "BL2 (u-boot) expects uInitrd at +9281s")
-assert SAMSUNG_V310_UINITRD_LEN * SECTOR_SIZE == 100 * 1024 * 1024, (
+assert SAMSUNG_V310_UINITRD_RESERVED_LEN * SECTOR_SIZE == 100 * 1024 * 1024, (
     "BL2 (u-boot) expects uInitrd to be 100 MiB")
+assert SAMSUNG_V310_UINITRD_COPY_LEN * SECTOR_SIZE == 16 * 1024 * 1024, (
+    "Only copy 16MiB for a faster boot")
 
 def align_partition(min_start, min_length, start_alignment, end_alignment):
     """Compute partition start and end offsets based on specified constraints.
@@ -500,88 +503,6 @@ class VexpressConfig(BoardConfig):
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
 
-class SamsungConfig(BoardConfig):
-
-    @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False):
-        # bootloader partition needs to hold everything from BL1 to uInitrd
-        # inclusive
-        min_len = (
-            SAMSUNG_V310_UINITRD_START + SAMSUNG_V310_UINITRD_LEN -
-            SAMSUNG_V310_BL1_START)
-
-        # bootloader partition
-        loader_start, loader_end, loader_len = align_partition(
-            1, min_len, 1, PART_ALIGN_S)
-
-        # FAT boot partition
-        boot_start, boot_end, boot_len = align_partition(
-            loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
-
-	# root partition
-        # we ignore _root_end / _root_len and return a sfdisk command to
-        # instruct the use of all remaining space; XXX if we had some root size
-        # config, we could do something more sensible
-        root_start, _root_end, _root_len = align_partition(
-            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
-
-        return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
-            loader_start, loader_len, boot_start, boot_len, root_start)
-
-    @classmethod
-    def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        root_dir, rootfs_uuid, boot_dir, boot_script,
-                        boot_device_or_file):
-
-        cls.boot_env = [
-            'bootargs=%s' 
-            % cls._get_bootargs(is_live, is_lowmem, consoles, rootfs_uuid),
-            # Once FAT support is fixed in u-boot this is the correct bootcmd
-            #'bootcmd %s' % cls._get_bootcmd(), 
-            'bootcmd=movi read kernel 40007000; movi read rootfs 41000000 600000;'
-            'bootm 40007000 41000000',
-            'ethact=smc911x-0',
-            'ethaddr=00:40:5c:26:0a:5b',
-        ]
-
-        super(SamsungConfig, cls).make_boot_files(
-            uboot_parts_dir, is_live, is_lowmem, consoles, root_dir,
-            rootfs_uuid, boot_dir, boot_script, boot_device_or_file)
-
-    @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
-                         boot_dir, boot_script, boot_device_or_file):
-        uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.v310')
-        install_smdkv310_boot_loader(uboot_file, boot_device_or_file)
-
-        env_file = make_flashable_env(cls.boot_env, cls.env_size)
-        install_smdkv310_boot_env(env_file, boot_device_or_file)
-
-        uImage_file = make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        install_smdkv310_uImage(uImage_file, boot_device_or_file)
-
-        uInitrd_file = make_uInitrd(
-            uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
-
-        make_boot_script(boot_cmd, boot_script)
-
-
-class SMDKV310Config(SamsungConfig):
-    serial_tty = 'ttySAC1'
-    extra_serial_opts = 'console=%s,115200n8' % serial_tty
-    kernel_addr = '0x40007000'
-    initrd_addr = '0x41000000'
-    load_addr = '0x40008000'
-    kernel_suffix = 's5pv310'
-    boot_script = 'boot.scr'
-    mmc_part_offset = 1
-    mmc_option = '0:2'
-    env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
-    boot_env = []
-
 class SMDKV310Config(BoardConfig):
     serial_tty = 'ttySAC1'
     extra_serial_opts = 'console=%s,115200n8' % serial_tty
@@ -598,7 +519,7 @@ class SMDKV310Config(BoardConfig):
         # bootloader partition needs to hold everything from BL1 to uInitrd
         # inclusive
         min_len = (
-            SAMSUNG_V310_UINITRD_START + SAMSUNG_V310_UINITRD_LEN -
+            SAMSUNG_V310_UINITRD_START + SAMSUNG_V310_UINITRD_RESERVED_LEN -
             SAMSUNG_V310_BL1_START)
 
         # bootloader partition
@@ -633,7 +554,7 @@ class SMDKV310Config(BoardConfig):
             "bootm %(kernel_addr)s %(initrd_addr)s" % {
                 'kernel_addr': cls.kernel_addr,
                 'initrd_addr': cls.initrd_addr,
-                'rootfs_size': hex(SAMSUNG_V310_UINITRD_LEN * SECTOR_SIZE)})
+                'rootfs_size': hex(SAMSUNG_V310_UINITRD_COPY_LEN * SECTOR_SIZE)})
 
         return boot_env
 
@@ -828,7 +749,8 @@ def install_smdkv310_uImage(uImage_file, boot_device_or_file):
 def install_smdkv310_initrd(initrd_file, boot_device_or_file):
     # XXX need to check that the length of initrd_file is smaller than
     # SAMSUNG_V310_UINITRD_LEN
-    _dd(initrd_file, boot_device_or_file, count=SAMSUNG_V310_UINITRD_LEN,
+    _dd(initrd_file, boot_device_or_file, 
+        count=SAMSUNG_V310_UINITRD_COPY_LEN,
         seek=SAMSUNG_V310_UINITRD_START)
 
 
