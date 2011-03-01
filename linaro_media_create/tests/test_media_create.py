@@ -415,7 +415,7 @@ class TestGetBootCmd(TestCase):
 
     def test_smdkv310(self):
         # this is kind of a useless test as this environment isn't
-        # currently used. I'll keep it for completeness and it env 
+        # currently used. I'll keep it for completeness and it env
         # might get used in the future
         boot_commands = board_configs['smdkv310']._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
@@ -743,7 +743,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('1,221183,0xDA\n221184,106496,0x0C,*\n327680,,,-', 255, 63, '', 
+            [('1,221183,0xDA\n221184,106496,0x0C,*\n327680,,,-', 255, 63, '',
               self.media.path)], sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):
