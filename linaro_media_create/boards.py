@@ -235,15 +235,15 @@ class BoardConfig(object):
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        root_dir, rootfs_uuid, boot_dir, boot_script,
+                        chroot_dir, rootfs_uuid, boot_dir, boot_script,
                         boot_device_or_file):
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid)
         cls._make_boot_files(
-            uboot_parts_dir, boot_env, root_dir, boot_dir, boot_script,
+            uboot_parts_dir, boot_env, chroot_dir, boot_dir, boot_script,
             boot_device_or_file)
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_env, root_dir, boot_dir,
+    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
                          boot_script, boot_device_or_file):
         """Make the necessary boot files for this board.
 
@@ -306,14 +306,14 @@ class OmapConfig(BoardConfig):
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        root_dir, rootfs_uuid, boot_dir, boot_script,
+                        chroot_dir, rootfs_uuid, boot_dir, boot_script,
                         boot_device_or_file):
         # XXX: This is also part of our temporary hack to fix bug 697824; we
         # need to call set_appropriate_serial_tty() before doing anything that
         # may use cls.serial_tty.
-        cls.set_appropriate_serial_tty(root_dir)
+        cls.set_appropriate_serial_tty(chroot_dir)
         super(OmapConfig, cls).make_boot_files(
-            uboot_parts_dir, is_live, is_lowmem, consoles, root_dir,
+            uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
             rootfs_uuid, boot_dir, boot_script, boot_device_or_file)
 
     @classmethod
