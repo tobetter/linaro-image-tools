@@ -222,29 +222,28 @@ class BoardConfig(object):
              % replacements)
 
     @classmethod
-    def _get_boot_cmd(cls, is_live, is_lowmem, consoles, rootfs_uuid):
-        """Get the boot command for this board.
+    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid):
+        """Get the boot environment for this board.
 
         In general subclasses should not have to override this.
         """
-        return (
-            "setenv bootcmd '%s'\n" % cls._get_bootcmd() +
-            "setenv bootargs '%s'\n" 
-            % cls._get_bootargs(is_live, is_lowmem, consoles, rootfs_uuid) +
-            "boot" )
+        boot_env = {}
+        boot_env["bootargs"] = cls._get_bootargs(
+            is_live, is_lowmem, consoles, rootfs_uuid)
+        boot_env["bootcmd"] = cls._get_bootcmd()
+        return boot_env
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        root_dir, rootfs_uuid, boot_dir, boot_script,
+                        chroot_dir, rootfs_uuid, boot_dir, boot_script,
                         boot_device_or_file):
-        boot_cmd = cls._get_boot_cmd(
-            is_live, is_lowmem, consoles, rootfs_uuid)
+        boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid)
         cls._make_boot_files(
-            uboot_parts_dir, boot_cmd, root_dir, boot_dir, boot_script,
+            uboot_parts_dir, boot_env, chroot_dir, boot_dir, boot_script,
             boot_device_or_file)
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, root_dir, boot_dir,
+    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
                          boot_script, boot_device_or_file):
         """Make the necessary boot files for this board.
 
@@ -307,24 +306,24 @@ class OmapConfig(BoardConfig):
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        root_dir, rootfs_uuid, boot_dir, boot_script,
+                        chroot_dir, rootfs_uuid, boot_dir, boot_script,
                         boot_device_or_file):
         # XXX: This is also part of our temporary hack to fix bug 697824; we
         # need to call set_appropriate_serial_tty() before doing anything that
         # may use cls.serial_tty.
-        cls.set_appropriate_serial_tty(root_dir)
+        cls.set_appropriate_serial_tty(chroot_dir)
         super(OmapConfig, cls).make_boot_files(
-            uboot_parts_dir, is_live, is_lowmem, consoles, root_dir,
+            uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
             rootfs_uuid, boot_dir, boot_script, boot_device_or_file)
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
-                         boot_dir, boot_script, boot_device_or_file):
+    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
+                         boot_script, boot_device_or_file):
         install_omap_boot_loader(chroot_dir, boot_dir)
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_boot_script(boot_cmd, boot_script)
+        make_boot_script(boot_env, boot_script)
         make_boot_ini(boot_script, boot_dir)
 
 
@@ -377,12 +376,12 @@ class IgepConfig(BeagleConfig):
     uboot_flavor = None
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
-                         boot_dir, boot_script, boot_device_or_file):
+    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
+                         boot_script, boot_device_or_file):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_boot_script(boot_cmd, boot_script)
+        make_boot_script(boot_env, boot_script)
         make_boot_ini(boot_script, boot_dir)
 
 
@@ -403,12 +402,12 @@ class Ux500Config(BoardConfig):
     mmc_option = '1:1'
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
-                         boot_dir, boot_script, boot_device_or_file):
+    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
+                         boot_script, boot_device_or_file):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_boot_script(boot_cmd, boot_script)
+        make_boot_script(boot_env, boot_script)
 
 
 class Mx5Config(BoardConfig):
@@ -452,15 +451,23 @@ class Mx5Config(BoardConfig):
             loader_start, loader_len, boot_start, boot_len, root_start)
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
-                         boot_dir, boot_script, boot_device_or_file):
+    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
+                         boot_script, boot_device_or_file):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
         install_mx5_boot_loader(uboot_file, boot_device_or_file)
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_boot_script(boot_cmd, boot_script)
+        make_boot_script(boot_env, boot_script)
+
+
+class EfikamxConfig(Mx5Config):
+    uboot_flavor = 'efikamx'
+
+
+class Mx51evkConfig(Mx5Config):
+    uboot_flavor = 'mx51evk'
 
 
 class EfikamxConfig(Mx5Config):
@@ -487,8 +494,8 @@ class VexpressConfig(BoardConfig):
     fat_size = 16
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
-                         boot_dir, boot_script, boot_device_or_file):
+    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
+                         boot_script, boot_device_or_file):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
@@ -505,12 +512,13 @@ class SamsungConfig(BoardConfig):
 
         # bootloader partition
         loader_start, loader_end, loader_len = align_partition(
-            1, min_len, PART_ALIGN_S, PART_ALIGN_S)
+            1, min_len, 1, PART_ALIGN_S)
 
         # FAT boot partition
         boot_start, boot_end, boot_len = align_partition(
             loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
+	# root partition
         # we ignore _root_end / _root_len and return a sfdisk command to
         # instruct the use of all remaining space; XXX if we had some root size
         # config, we could do something more sensible
@@ -574,6 +582,84 @@ class SMDKV310Config(SamsungConfig):
     env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
     boot_env = []
 
+class SMDKV310Config(BoardConfig):
+    serial_tty = 'ttySAC1'
+    extra_serial_opts = 'console=%s,115200n8' % serial_tty
+    kernel_addr = '0x40007000'
+    initrd_addr = '0x41000000'
+    load_addr = '0x40008000'
+    kernel_suffix = 's5pv310'
+    boot_script = 'boot.scr'
+    mmc_part_offset = 1
+    mmc_option = '0:2'
+
+    @classmethod
+    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+        # bootloader partition needs to hold everything from BL1 to uInitrd
+        # inclusive
+        min_len = (
+            SAMSUNG_V310_UINITRD_START + SAMSUNG_V310_UINITRD_LEN -
+            SAMSUNG_V310_BL1_START)
+
+        # bootloader partition
+        loader_start, loader_end, loader_len = align_partition(
+            1, min_len, 1, PART_ALIGN_S)
+
+        # FAT boot partition
+        boot_start, boot_end, boot_len = align_partition(
+            loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        # root partition
+        # we ignore _root_end / _root_len and return a sfdisk command to
+        # instruct the use of all remaining space; XXX if we had some root size
+        # config, we could do something more sensible
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
+            loader_start, loader_len, boot_start, boot_len, root_start)
+
+    @classmethod
+    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid):
+        boot_env = super(SMDKV310Config, cls)._get_boot_env(
+            is_live, is_lowmem, consoles, rootfs_uuid)
+
+        boot_env["ethact"] = "smc911x-0"
+        boot_env["ethaddr"] = "00:40:5c:26:0a:5b"
+        # XXX remove me once FAT support is fixed in u-boot
+        boot_env["bootcmd"] = (
+            "movi read kernel %(kernel_addr)s; "
+            "movi read rootfs %(initrd_addr)s %(rootfs_size)s; "
+            "bootm %(kernel_addr)s %(initrd_addr)s" % {
+                'kernel_addr': cls.kernel_addr,
+                'initrd_addr': cls.initrd_addr,
+                'rootfs_size': hex(SAMSUNG_V310_UINITRD_LEN * SECTOR_SIZE)})
+
+        return boot_env
+
+    @classmethod
+    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
+                         boot_script, boot_device_or_file):
+        uboot_file = os.path.join(
+            chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.v310')
+        install_smdkv310_boot_loader(uboot_file, boot_device_or_file)
+
+        env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
+        env_file = make_flashable_env(boot_env, env_size)
+        install_smdkv310_boot_env(env_file, boot_device_or_file)
+
+        uImage_file = make_uImage(
+            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        install_smdkv310_uImage(uImage_file, boot_device_or_file)
+
+        uInitrd_file = make_uInitrd(
+            uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
+
+        # unused at the moment
+        #make_boot_script(boot_env, boot_script)
+
+
 board_configs = {
     'beagle': BeagleConfig,
     'igep': IgepConfig,
@@ -600,6 +686,7 @@ def _dd(input_file, output_file, block_size=SECTOR_SIZE, count=None, seek=None,
         cmd.append("skip=%s" % skip)
     proc = cmd_runner.run(cmd, as_root=True)
     proc.wait()
+
 
 def _run_mkimage(img_type, load_addr, entry_point, name, img_data, img,
                  stdout=None, as_root=True):
@@ -643,6 +730,7 @@ def make_uImage(load_addr, uboot_parts_dir, suffix, boot_disk):
         'kernel', load_addr, load_addr, 'Linux', img_data, img)
     return img
 
+
 def make_uInitrd(uboot_parts_dir, suffix, boot_disk):
     img_data = _get_file_matching(
         '%s/initrd.img-*-%s' % (uboot_parts_dir, suffix))
@@ -651,7 +739,13 @@ def make_uInitrd(uboot_parts_dir, suffix, boot_disk):
     return img
 
 
-def make_boot_script(boot_script_data, boot_script):
+def make_boot_script(boot_env, boot_script):
+    boot_script_data = (
+            "setenv bootcmd '%(bootcmd)s'\n"
+            "setenv bootargs '%(bootargs)s'\n"
+            "boot"
+            % boot_env)
+
     # Need to save the boot script data into a file that will be passed to
     # mkimage.
     _, tmpfile = tempfile.mkstemp()
@@ -663,7 +757,8 @@ def make_boot_script(boot_script_data, boot_script):
 
 
 def make_flashable_env(boot_env, env_size):
-    env = struct.pack('B', 0).join(boot_env)
+    env_strings = ["%s=%s" % (k, v) for k, v in boot_env.items()]
+    env = struct.pack('B', 0).join(env_strings)
 
     # pad the rest of the env for the CRC calc
     while len(env) < (env_size - 4):
@@ -671,7 +766,7 @@ def make_flashable_env(boot_env, env_size):
 
     crc = crc32(env)
     env = struct.pack('<i', crc) + env
-    
+
     _, tmpfile = tempfile.mkstemp()
 
     with open(tmpfile, 'w') as fd:
@@ -680,12 +775,12 @@ def make_flashable_env(boot_env, env_size):
     return tmpfile
 
 
-def install_mx51evk_boot_loader(imx_file, boot_device_or_file):
+def install_mx5_boot_loader(imx_file, boot_device_or_file):
     # XXX need to check that the length of imx_file is smaller than
     # LOADER_MIN_SIZE_S
     _dd(imx_file, boot_device_or_file, seek=2)
 
-    
+
 def _get_mlo_file(chroot_dir):
     # XXX bug=702645: This is a temporary solution to make sure l-m-c works
     # with any version of x-loader-omap. The proper solution is to have
@@ -734,7 +829,7 @@ def install_smdkv310_initrd(initrd_file, boot_device_or_file):
     # XXX need to check that the length of initrd_file is smaller than
     # SAMSUNG_V310_UINITRD_LEN
     _dd(initrd_file, boot_device_or_file, count=SAMSUNG_V310_UINITRD_LEN,
-        seek=SAMSUNG_V310_UINITRD_START)    
+        seek=SAMSUNG_V310_UINITRD_START)
 
 
 def install_smdkv310_boot_env(env_file, boot_device_or_file):
