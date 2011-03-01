@@ -383,7 +383,7 @@ class TestGetSfdiskCmd(TestCase):
 
     def test_smdkv310(self):
         self.assertEquals(
-            '1,24575,0xDA\n24576,106496,0x0C,*\n131072,,,-',
+            '1,221183,0xDA\n221184,106496,0x0C,*\n327680,,,-',
             board_configs['smdkv310'].get_sfdisk_cmd())
 
 
@@ -414,9 +414,6 @@ class TestGetBootCmd(TestCase):
         self.assertEqual(expected, boot_commands)
 
     def test_smdkv310(self):
-        # this is kind of a useless test as this environment isn't
-        # currently used. I'll keep it for completeness and it env
-        # might get used in the future
         boot_commands = board_configs['smdkv310']._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
@@ -424,25 +421,11 @@ class TestGetBootCmd(TestCase):
             'bootargs': 'console=ttySAC1,115200n8  root=UUID=deadbeef '
                         'rootwait ro',
              'bootcmd': 'movi read kernel 0x40007000; '
-                        'movi read rootfs 0x41000000 0x600000; '
+                        'movi read rootfs 0x41000000 0x1000000; '
                         'bootm 0x40007000 0x41000000',
              'ethact': 'smc911x-0',
              'ethaddr': '00:40:5c:26:0a:5b'}
         self.assertEqual(expected, boot_commands)
-
-    def test_smdkv310(self):
-        # this is kind of a useless test as this environment isn't
-        # currently used. I'll keep it for completeness and it env 
-        # might get used in the future
-        boot_cmd = board_configs['smdkv310']._get_boot_cmd(
-            is_live=False, is_lowmem=False, consoles=[],
-            rootfs_uuid="deadbeef")
-        expected = (
-            "setenv bootcmd 'fatload mmc 0:2 0x40007000 uImage; fatload mmc "
-            "0:2 0x41000000 uInitrd; bootm 0x40007000 0x41000000'\nsetenv "
-            "bootargs 'console=ttySAC1,115200n8  root=UUID=deadbeef rootwait "
-            "ro'\nboot")
-        self.assertEqual(expected, boot_cmd)
 
     def test_ux500(self):
         boot_commands = board_configs['ux500']._get_boot_env(
@@ -757,7 +740,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('1,24575,0xDA\n24576,106496,0x0C,*\n131072,,,-', 255, 63, '',
+            [('1,221183,0xDA\n221184,106496,0x0C,*\n327680,,,-', 255, 63, '',
               self.media.path)], sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):
