@@ -577,6 +577,7 @@ class SMDKV310Config(SamsungConfig):
     env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
     boot_env = []
 
+
 board_configs = {
     'beagle': BeagleConfig,
     'igep': IgepConfig,
@@ -603,6 +604,7 @@ def _dd(input_file, output_file, block_size=SECTOR_SIZE, count=None, seek=None,
         cmd.append("skip=%s" % skip)
     proc = cmd_runner.run(cmd, as_root=True)
     proc.wait()
+
 
 def _run_mkimage(img_type, load_addr, entry_point, name, img_data, img,
                  stdout=None, as_root=True):
@@ -682,10 +684,12 @@ def make_flashable_env(boot_env, env_size):
 
     return tmpfile
 
+
 def install_mx5_boot_loader(imx_file, boot_device_or_file):
     # XXX need to check that the length of imx_file is smaller than
     # LOADER_MIN_SIZE_S
     _dd(imx_file, boot_device_or_file, seek=2)
+
 
 def _get_mlo_file(chroot_dir):
     # XXX bug=702645: This is a temporary solution to make sure l-m-c works
@@ -722,7 +726,6 @@ def make_boot_ini(boot_script, boot_disk):
         ["cp", "-v", boot_script, "%s/boot.ini" % boot_disk], as_root=True)
     proc.wait()
 
-    return "%s/boot.ini" % boot_disk
 
 def install_smdkv310_uImage(uImage_file, boot_device_or_file):
     # XXX need to check that the length of uImage_file is smaller than
