@@ -130,7 +130,7 @@ if __name__ == '__main__':
     boot_partition, root_partition = setup_partitions(
         board_config, media, args.image_size, args.boot_label, args.rfs_label,
         args.rootfs, args.should_create_partitions, args.should_format_bootfs,
-        args.should_format_rootfs)
+        args.should_format_rootfs, args.should_align_boot_part)
 
     rootfs_uuid = get_uuid(root_partition)
 

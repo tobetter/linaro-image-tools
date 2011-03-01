@@ -43,8 +43,11 @@ from linaro_media_create import (
     )
 import linaro_media_create
 from linaro_media_create.boards import (
-    BoardConfig,
+    align_up,
+    align_partition,
     board_configs,
+    install_mx5_boot_loader,
+    install_omap_boot_loader,
     make_boot_script,
     make_uImage,
     make_uInitrd,
@@ -73,6 +76,7 @@ from linaro_media_create.partitions import (
     get_uuid,
     _parse_blkid_output,
     )
+from linaro_media_create.populate_boot import populate_boot
 from linaro_media_create.rootfs import (
     create_flash_kernel_config,
     has_space_left_for_swap,
@@ -211,6 +215,7 @@ class TestGetMLOFile(TestCaseWithFixtures):
             AssertionError, _get_mlo_file, tempdir)
 
 class TestBootSteps(TestCaseWithFixtures):
+
     def setUp(self):
         super(TestBootSteps, self).setUp()
         self.funcs_calls = []
@@ -246,10 +251,10 @@ class TestBootSteps(TestCaseWithFixtures):
         expected = ['make_uImage', 'make_uInitrd']
         self.assertEqual(expected, self.funcs_calls)
 
-    def test_mx51evk_steps(self):
+    def test_mx5_steps(self):
         self.make_boot_files(boards.Mx51evkConfig)
         expected = [
-            'install_mx51evk_boot_loader', 'make_uImage', 'make_uInitrd',
+            'install_mx5_boot_loader', 'make_uImage', 'make_uInitrd',
             'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
@@ -283,6 +288,28 @@ class TestBootSteps(TestCaseWithFixtures):
         self.assertEqual(expected, self.funcs_calls)
 
 
+class TestAlignPartition(TestCase):
+
+    def test_align_up_none(self):
+        self.assertEqual(1024, align_up(1024, 1))
+
+    def test_align_up_no_rounding(self):
+        self.assertEqual(512, align_up(512, 512))
+
+    def test_align_up_rounding(self):
+        self.assertEqual(512, align_up(1, 512))
+
+    def test_align_partition_4_mib_4_mib(self):
+        expected = (4 * 1024 * 1024, 8 * 1024 * 1024 - 1, 4 * 1024 * 1024)
+        self.assertEqual(expected,
+            align_partition(1, 1, 4 * 1024 * 1024, 4 * 1024 * 1024))
+
+    def test_align_partition_none_4_mib(self):
+        expected = (1, 4 * 1024 * 1024 - 1, 4 * 1024 * 1024 - 1)
+        self.assertEqual(expected,
+            align_partition(1, 1, 1, 4 * 1024 * 1024))
+
+
 class TestFixForBug697824(TestCaseWithFixtures):
 
     def mock_set_appropriate_serial_tty(self, config):
@@ -299,7 +326,7 @@ class TestFixForBug697824(TestCaseWithFixtures):
         self.set_appropriate_serial_tty_called = False
         self.mock_set_appropriate_serial_tty(board_configs['beagle'])
         self.useFixture(MockSomethingFixture(
-            BoardConfig, 'make_boot_files',
+            boards.BoardConfig, 'make_boot_files',
             classmethod(lambda *args: None)))
         # We don't need to worry about what's passed to make_boot_files()
         # because we mock the method which does the real work above and here
@@ -331,13 +358,19 @@ class TestFixForBug697824(TestCaseWithFixtures):
 class TestGetSfdiskCmd(TestCase):
 
     def test_default(self):
-        self.assertEquals(
-            ',9,0x0C,*\n,,,-', boards.BoardConfig.get_sfdisk_cmd())
+        self.assertEqual(
+            '63,106432,0x0C,*\n106496,,,-',
+            boards.BoardConfig.get_sfdisk_cmd())
 
-    def test_mx51evk(self):
-        self.assertEquals(
-            ',1,0xDA\n,9,0x0C,*\n,,,-',
-            board_configs['mx51evk'].get_sfdisk_cmd())
+    def test_default_aligned(self):
+        self.assertEqual(
+            '8192,106496,0x0C,*\n114688,,,-',
+            boards.BoardConfig.get_sfdisk_cmd(should_align_boot_part=True))
+
+    def test_mx5(self):
+        self.assertEqual(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            boards.Mx5Config.get_sfdisk_cmd())
 
 
 class TestGetBootCmd(TestCase):
@@ -353,8 +386,8 @@ class TestGetBootCmd(TestCase):
             "root=UUID=deadbeef rootwait ro'\nboot")
         self.assertEqual(expected, boot_cmd)
 
-    def test_mx51evk(self):
-        boot_cmd = board_configs['mx51evk']._get_boot_cmd(
+    def test_mx5(self):
+        boot_cmd = boards.Mx5Config._get_boot_cmd(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -428,7 +461,8 @@ class TestGetBootCmd(TestCase):
             "fatload mmc 0:1 0x81600000 uInitrd; bootm 0x80000000 "
             "0x81600000'\nsetenv bootargs 'console=tty0 "
             "console=ttyO2,115200n8  root=UUID=deadbeef rootwait ro "
-            "earlyprintk'\nboot")
+            "earlyprintk mpurate=500 vram=12M "
+            "omapfb.mode=dvi:1024x768MR-16@60 omapdss.def_disp=dvi'\nboot")
         self.assertEqual(expected, boot_cmd)
 
 
@@ -520,7 +554,7 @@ class TestCmdRunner(TestCaseWithFixtures):
         self.assertEqual(0, returncode)
 
 
-class TestPopulateBoot(TestCaseWithFixtures):
+class TestBoards(TestCaseWithFixtures):
 
     def _mock_get_file_matching(self):
         self.useFixture(MockSomethingFixture(
@@ -551,6 +585,25 @@ class TestPopulateBoot(TestCaseWithFixtures):
             '-C', 'none', '-a', '0', '-e', '0', '-n', 'initramfs',
             '-d', 'parts_dir/initrd.img-*-sub_arch', 'boot_disk/uInitrd']
         self.assertEqual([expected], fixture.mock.calls)
+
+    def test_install_mx5_boot_loader(self):
+        fixture = self._mock_Popen()
+        install_mx5_boot_loader("imx_file", "boot_device_or_file")
+        expected = [
+            'sudo', 'dd', 'if=imx_file', 'of=boot_device_or_file', 'bs=1024',
+            'seek=1', 'conv=notrunc']
+        self.assertEqual([expected], fixture.mock.calls)
+
+    def test_install_omap_boot_loader(self):
+        fixture = self._mock_Popen()
+        self.useFixture(MockSomethingFixture(
+            boards, '_get_mlo_file',
+            lambda chroot_dir: "%s/MLO" % chroot_dir))
+        install_omap_boot_loader("chroot_dir", "boot_disk")
+        expected = [
+            ['sudo', 'cp', '-v', 'chroot_dir/MLO', 'boot_disk'],
+            ['sync']]
+        self.assertEqual(expected, fixture.mock.calls)
 
     def test_make_boot_script(self):
         self.useFixture(MockSomethingFixture(
@@ -617,13 +670,12 @@ class TestCreatePartitions(TestCaseWithFixtures):
         super(TestCreatePartitions, self).tearDown()
         time.sleep = self.orig_sleep
 
-    def test_create_partitions_for_mx51evk(self):
+    def test_create_partitions_for_mx5(self):
         # For this board we create a one cylinder partition at the beginning.
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
-        create_partitions(
-            board_configs['mx51evk'], self.media, 255, 63, '')
+        create_partitions(boards.Mx5Config, self.media, 255, 63, '')
 
         self.assertEqual(
             [['sudo', 'parted', '-s', self.media.path, 'mklabel', 'msdos'],
@@ -633,7 +685,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [(',1,0xDA\n,9,0x0C,*\n,,,-', 255, 63, '', self.media.path)],
+            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', 255, 63, '', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):
@@ -648,7 +700,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
              ['sync']],
             popen_fixture.mock.calls)
         self.assertEqual(
-            [(',9,0x0C,*\n,,,-', 255, 63, '', self.media.path)],
+            [('63,106432,0x0C,*\n106496,,,-', 255, 63, '', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_with_img_file(self):
@@ -665,7 +717,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertEqual([['sync']], popen_fixture.mock.calls)
 
         self.assertEqual(
-            [(',9,0x0C,*\n,,,-', 255, 63, '', tempfile)],
+            [('63,106432,0x0C,*\n106496,,,-', 255, 63, '', tempfile)],
             sfdisk_fixture.mock.calls)
 
     def test_run_sfdisk_commands(self):
@@ -675,7 +727,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
             stdout=subprocess.PIPE)
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
-            ',1,0xDA', 5, 63, '', tempfile, as_root=False,
+            '2,16063,0xDA', 255, 63, '', tempfile, as_root=False,
             stderr=subprocess.PIPE)
         self.assertIn('Successfully wrote the new partition table', stdout)
 
@@ -684,7 +736,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertRaises(
             cmd_runner.SubcommandNonZeroReturnValue,
             run_sfdisk_commands,
-            ',1,0xDA', 5, 63, '', tempfile, as_root=False,
+            ',1,0xDA', 255, 63, '', tempfile, as_root=False,
             stderr=subprocess.PIPE)
 
 
@@ -700,6 +752,11 @@ class TestPartitionSetup(TestCaseWithFixtures):
         super(TestPartitionSetup, self).tearDown()
         time.sleep = self.orig_sleep
 
+    def _create_tempfile(self):
+        # boot part at +8 MiB, root part at +16 MiB
+        return self._create_qemu_img_with_partitions(
+            '16384,15746,0x0C,*\n32768,,,-')
+
     def test_convert_size_in_kbytes_to_bytes(self):
         self.assertEqual(512 * 1024, convert_size_to_bytes('512K'))
 
@@ -709,28 +766,23 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def test_convert_size_in_gbytes_to_bytes(self):
         self.assertEqual(12 * 1024**3, convert_size_to_bytes('12G'))
 
-    def test_convert_size_in_kbytes_to_bytes_rounds_to_256k_multiple(self):
-        # See comment in convert_size_to_bytes as to why we need to do this.
-        self.assertEqual(
-            3891 * (1024 * 256), convert_size_to_bytes('1000537K'))
-
     def test_calculate_partition_size_and_offset(self):
-        tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
+        tempfile = self._create_tempfile()
         vfat_size, vfat_offset, linux_size, linux_offset = (
             calculate_partition_size_and_offset(tempfile))
         self.assertEqual(
-            [129024L, 32256L, 10321920L, 161280L],
+            [8061952L, 8388608L, 14680064L, 16777216L],
             [vfat_size, vfat_offset, linux_size, linux_offset])
 
     def test_partition_numbering(self):
-        # another Linux partition after the boot/root parts
+        # another Linux partition at +24 MiB after the boot/root parts
         tempfile = self._create_qemu_img_with_partitions(
-            ',1,0x0C,*\n,1,,-\n,,,-')
+            '16384,15746,0x0C,*\n32768,15427,,-\n49152,,,-')
         vfat_size, vfat_offset, linux_size, linux_offset = (
             calculate_partition_size_and_offset(tempfile))
-        # check that the linux partition offset starts on second cylinder so
-        # that it's the partition immediately following the vfat one
-        self.assertEqual(linux_offset, 5 * 63 * 512)
+        # check that the linux partition offset starts at +16 MiB so that it's
+        # the partition immediately following the vfat one
+        self.assertEqual(linux_offset, 32768 * 512)
 
     def test_get_boot_and_root_partitions_for_media_beagle(self):
         self.useFixture(MockSomethingFixture(
@@ -744,7 +796,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             get_boot_and_root_partitions_for_media(
                 media, board_configs['beagle']))
 
-    def test_get_boot_and_root_partitions_for_media_mx51evk(self):
+    def test_get_boot_and_root_partitions_for_media_mx5(self):
         self.useFixture(MockSomethingFixture(
             partitions, '_get_device_file_for_partition_number',
             lambda dev, partition: '%s%d' % (tempfile, partition)))
@@ -753,17 +805,16 @@ class TestPartitionSetup(TestCaseWithFixtures):
         media.is_block_device = True
         self.assertEqual(
             ("%s%d" % (tempfile, 2), "%s%d" % (tempfile, 3)),
-            get_boot_and_root_partitions_for_media(
-                media, board_configs['mx51evk']))
+            get_boot_and_root_partitions_for_media(media, boards.Mx5Config))
 
     def _create_qemu_img_with_partitions(self, sfdisk_commands):
         tempfile = self.createTempFileAsFixture()
         proc = cmd_runner.run(
-            ['qemu-img', 'create', '-f', 'raw', tempfile, '10M'],
+            ['qemu-img', 'create', '-f', 'raw', tempfile, '30M'],
             stdout=subprocess.PIPE)
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
-            sfdisk_commands, 5, 63, '', tempfile, as_root=False,
+            sfdisk_commands, 255, 63, '', tempfile, as_root=False,
             # Throw away stderr as sfdisk complains a lot when operating on a
             # qemu image.
             stderr=subprocess.PIPE)
@@ -786,7 +837,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.assertEqual(None, popen_fixture.mock.calls)
 
     def test_get_boot_and_root_loopback_devices(self):
-        tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
+        tempfile = self._create_tempfile()
         atexit_fixture = self.useFixture(MockSomethingFixture(
             atexit, 'register', AtExitRegister()))
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
@@ -796,9 +847,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
         get_boot_and_root_loopback_devices(tempfile)
         self.assertEqual(
             [['sudo', 'losetup', '-f', '--show', tempfile, '--offset',
-              '32256', '--sizelimit', '129024'],
+              '8388608', '--sizelimit', '8061952'],
              ['sudo', 'losetup', '-f', '--show', tempfile, '--offset',
-              '161280', '--sizelimit', '10321920']],
+              '16777216', '--sizelimit', '14680064']],
             popen_fixture.mock.calls)
 
         # get_boot_and_root_loopback_devices will also setup two exit handlers
@@ -818,7 +869,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # but here we mock Popen() and thanks to that the image is not setup
         # (via qemu-img) inside setup_partitions.  That's why we pass an
         # already setup image file.
-        tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
+        tempfile = self._create_tempfile()
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             sys, 'stdout', open('/dev/null', 'w')))
@@ -838,11 +889,11 @@ class TestPartitionSetup(TestCaseWithFixtures):
             board_configs['beagle'], Media(tempfile), '2G', 'boot',
             'root', 'ext3', True, True, True)
         self.assertEqual(
-             # This is the call that would create the image file.
+             # This is the call that would create a 2 GiB image file.
             [['qemu-img', 'create', '-f', 'raw', tempfile, '2147483648'],
              # This call would partition the image file.
-             ['sudo', 'sfdisk', '-D', '-H', '255', '-S', '63', '-C', '261',
-              tempfile],
+             ['sudo', 'sfdisk', '--force', '-D', '-uS', '-H', '255', '-S',
+              '63', '-C', '261', tempfile],
              # Make sure changes are written to disk.
              ['sync'],
              ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
@@ -855,7 +906,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Pretend the partitions are mounted.
         self.useFixture(MockSomethingFixture(
             partitions, 'is_partition_mounted', lambda part: True))
-        tempfile = self._create_qemu_img_with_partitions(',1,0x0C,*\n,,,-')
+        tempfile = self._create_tempfile()
         self.useFixture(MockSomethingFixture(
             partitions, '_get_device_file_for_partition_number',
             lambda dev, partition: '%s%d' % (tempfile, partition)))
@@ -868,7 +919,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
             True, True, True)
         self.assertEqual(
             [['sudo', 'parted', '-s', tempfile, 'mklabel', 'msdos'],
-             ['sudo', 'sfdisk', '-D', '-H', '255', '-S', '63', tempfile],
+             ['sudo', 'sfdisk', '--force', '-D', '-uS', '-H', '255', '-S',
+              '63', tempfile],
              ['sync'],
              # Since the partitions are mounted, setup_partitions will umount
              # them before running mkfs.
@@ -877,6 +929,75 @@ class TestPartitionSetup(TestCaseWithFixtures):
              ['sudo', 'mkfs.vfat', '-F', '32', bootfs_dev, '-n', 'boot'],
              ['sudo', 'mkfs.ext3', rootfs_dev, '-L', 'root']],
             popen_fixture.mock.calls)
+
+
+class TestPopulateBoot(TestCaseWithFixtures):
+
+    expected_args = (
+        'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_uuid',
+        'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+    expected_args_live = (
+        'chroot_dir/casper', True, False, [], 'chroot_dir', 'rootfs_uuid',
+        'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+    expected_calls = [
+            ["mkdir", "-p", "boot_disk"],
+            ["sudo", "mount", "boot_partition", "boot_disk"],
+            ["sync"],
+            ["sudo", "umount", "boot_disk"]]
+
+    def save_args(self, *args):
+        self.saved_args = args
+
+    def prepare_config(self, config):
+        class c(config):
+            pass
+
+        self.config = c
+        self.config.boot_script = 'boot_script'
+        self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        self.useFixture(MockSomethingFixture(
+            self.config, 'make_boot_files', self.save_args))
+
+    def call_populate_boot(self, config, is_live=False):
+        populate_boot(
+            config, 'chroot_dir', 'rootfs_uuid', 'boot_partition', 'boot_disk',
+            'boot_device_or_file', is_live, False, [])
+
+    def test_populate_boot_live(self):
+        self.prepare_config(boards.BoardConfig)
+        self.call_populate_boot(self.config, is_live=True)
+        self.assertEquals(self.expected_calls, self.popen_fixture.mock.calls)
+        self.assertEquals(self.expected_args_live, self.saved_args)
+
+    def test_populate_boot_regular(self):
+        self.prepare_config(boards.BoardConfig)
+        self.call_populate_boot(self.config)
+        self.assertEquals(self.expected_calls, self.popen_fixture.mock.calls)
+        self.assertEquals(self.expected_args, self.saved_args)
+
+    def test_populate_boot_uboot_flavor(self):
+        self.prepare_config(boards.BoardConfig)
+        self.config.uboot_flavor = "uboot_flavor"
+        self.call_populate_boot(self.config)
+        self.assertEquals(self.expected_calls, self.popen_fixture.mock.calls)
+        self.assertEquals(self.expected_args, self.saved_args)
+
+    def test_populate_boot_uboot_in_boot_part(self):
+        self.prepare_config(boards.BoardConfig)
+        self.config.uboot_flavor = "uboot_flavor"
+        self.config.uboot_in_boot_part = True
+        self.call_populate_boot(self.config)
+        expected_calls = self.expected_calls[:]
+        expected_calls.insert(2, [
+            "sudo", "cp", "-v",
+            "chroot_dir/usr/lib/u-boot/uboot_flavor/u-boot.bin", "boot_disk"])
+        self.assertEquals(expected_calls, self.popen_fixture.mock.calls)
+        self.assertEquals(self.expected_args, self.saved_args)
+
+    def test_populate_boot_no_uboot_flavor(self):
+        self.prepare_config(boards.BoardConfig)
+        self.config.uboot_in_boot_part = True
+        self.assertRaises(AssertionError, self.call_populate_boot, self.config)
 
 
 class TestPopulateRootFS(TestCaseWithFixtures):
@@ -1056,7 +1177,9 @@ class TestCheckDevice(TestCaseWithFixtures):
 
 
 class AtExitRegister(object):
+
     funcs = None
+
     def __call__(self, func, *args, **kwargs):
         if self.funcs is None:
             self.funcs = []
@@ -1065,7 +1188,6 @@ class AtExitRegister(object):
     def run_funcs(self):
         for func, args, kwargs in self.funcs:
             func(*args, **kwargs)
-
 
 
 class TestInstallHWPack(TestCaseWithFixtures):

@@ -47,15 +47,24 @@ UDISKS = "org.freedesktop.UDisks"
 # might want to do it.
 def setup_partitions(board_config, media, image_size, bootfs_label,
                      rootfs_label, rootfs_type, should_create_partitions,
-                     should_format_bootfs, should_format_rootfs):
+                     should_format_bootfs, should_format_rootfs,
+                     should_align_boot_part=False):
     """Make sure the given device is partitioned to boot the given board.
 
     :param board_config: A BoardConfig class.
     :param media: The Media we should partition.
     :param image_size: The size of the image file, in case we're setting up a
         QEMU image.
+    :param bootfs_label: Label for the boot partition.
+    :param rootfs_label: Label for the root partition.
+    :param rootfs_type: Filesystem for the root partition.
     :param should_create_partitions: Whether or not we should erase existing
         partitions and create new ones.
+    :param should_format_bootfs: Whether to reuse the filesystem on the boot
+        partition.
+    :param should_format_rootfs: Whether to reuse the filesystem on the root
+        partition.
+    :param should_align_boot_part: Whether to align the boot partition too.
     """
     cylinders = None
     if not media.is_block_device:
@@ -69,7 +78,8 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
 
     if should_create_partitions:
         create_partitions(
-            board_config, media, HEADS, SECTORS, cylinders)
+            board_config, media, HEADS, SECTORS, cylinders,
+            should_align_boot_part=should_align_boot_part)
 
     if media.is_block_device:
         bootfs, rootfs = get_boot_and_root_partitions_for_media(
@@ -264,17 +274,6 @@ def convert_size_to_bytes(size):
         raise ValueError("Unknown size format: %s.  Use K[bytes], M[bytes] "
                          "or G[bytes]" % size)
 
-    # Round the size of the raw disk image up to a multiple of 256K so it is
-    # an exact number of SD card erase blocks in length.  Otherwise Linux
-    # under qemu cannot access the last part of the card and is likely to
-    # complain that the last partition on the disk has been truncated.  This
-    # doesn't appear to work in all cases, though, as can be seen on
-    # https://bugs.launchpad.net/linux-linaro/+bug/673335.
-    if real_size % (1024 * 256):
-        cylinders = real_size / CYLINDER_SIZE
-        real_size = cylinders * CYLINDER_SIZE
-        real_size = ((((real_size - 1) / (1024 * 256)) + 1) * (1024 * 256))
-
     return real_size
 
 
@@ -289,8 +288,13 @@ def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
     :param commands: A string of sfdisk commands; each on a separate line.
     :return: A 2-tuple containing the subprocess' stdout and stderr.
     """
+    # --force is unfortunate, but a consequence of having partitions not
+    # starting on cylinder boundaries: sfdisk will abort with "Warning:
+    # partition 2 does not start at a cylinder boundary"
     args = ['sfdisk',
+            '--force',
             '-D',
+            '-uS',
             '-H', str(heads),
             '-S', str(sectors)]
     if cylinders is not None:
@@ -302,7 +306,8 @@ def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
     return proc.communicate("%s\n" % commands)
 
 
-def create_partitions(board_config, media, heads, sectors, cylinders=None):
+def create_partitions(board_config, media, heads, sectors, cylinders=None,
+                      should_align_boot_part=False):
     """Partition the given media according to the board requirements.
 
     :param board_config: A BoardConfig class.
@@ -313,6 +318,7 @@ def create_partitions(board_config, media, heads, sectors, cylinders=None):
         partitions.
     :param cylinders: The number of cylinders to pass to sfdisk's -C argument.
         If None the -C argument is not passed.
+    :param should_align_boot_part: Whether to align the boot partition too.
     """
     if media.is_block_device:
         # Overwrite any existing partition tables with a fresh one.
@@ -320,7 +326,8 @@ def create_partitions(board_config, media, heads, sectors, cylinders=None):
             ['parted', '-s', media.path, 'mklabel', 'msdos'], as_root=True)
         proc.wait()
 
-    sfdisk_cmd = board_config.get_sfdisk_cmd()
+    sfdisk_cmd = board_config.get_sfdisk_cmd(
+        should_align_boot_part=should_align_boot_part)
     run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
 
     # Sync and sleep to wait for the partition to settle.
