@@ -648,6 +648,7 @@ def make_uImage(load_addr, uboot_parts_dir, suffix, boot_disk):
         'kernel', load_addr, load_addr, 'Linux', img_data, img)
     return img
 
+
 def make_uInitrd(uboot_parts_dir, suffix, boot_disk):
     img_data = _get_file_matching(
         '%s/initrd.img-*-%s' % (uboot_parts_dir, suffix))
