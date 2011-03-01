@@ -606,15 +606,16 @@ class TestBoards(TestCaseWithFixtures):
         self.assertEqual(expected, fixture.mock.calls)
 
     def test_make_boot_script(self):
-        self.useFixture(MockSomethingFixture(
-            tempfile, 'mkstemp', lambda: (-1, '/tmp/random-abxzr')))
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         self._mock_get_file_matching()
         fixture = self._mock_Popen()
-        make_boot_script('boot script data', 'boot_script')
+        boot_script_path = os.path.join(tempdir, 'boot.scr')
+        plain_boot_script_path = os.path.join(tempdir, 'boot.txt')
+        make_boot_script('boot script data', boot_script_path)
         expected = [
             'sudo', 'mkimage', '-A', 'arm', '-O', 'linux', '-T', 'script',
             '-C', 'none', '-a', '0', '-e', '0', '-n', 'boot script',
-            '-d', '/tmp/random-abxzr', 'boot_script']
+            '-d', plain_boot_script_path, boot_script_path]
         self.assertEqual([expected], fixture.mock.calls)
 
     def test_get_file_matching(self):
