@@ -239,15 +239,15 @@ class BoardConfig(object):
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         root_dir, rootfs_uuid, boot_dir, boot_script,
                         boot_device_or_file):
-        boot_cmd = cls._get_boot_commands(
+        boot_commands = cls._get_boot_commands(
             is_live, is_lowmem, consoles, rootfs_uuid)
         cls._make_boot_files(
-            uboot_parts_dir, boot_cmd, root_dir, boot_dir, boot_script,
+            uboot_parts_dir, boot_commands, root_dir, boot_dir, boot_script,
             boot_device_or_file)
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, root_dir, boot_dir,
-                         boot_script, boot_device_or_file):
+    def _make_boot_files(cls, uboot_parts_dir, boot_commands, root_dir,
+                         boot_dir, boot_script, boot_device_or_file):
         """Make the necessary boot files for this board.
 
         This is usually board-specific so ought to be defined in every
@@ -320,13 +320,13 @@ class OmapConfig(BoardConfig):
             rootfs_uuid, boot_dir, boot_script, boot_device_or_file)
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
+    def _make_boot_files(cls, uboot_parts_dir, boot_commands, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
         install_omap_boot_loader(chroot_dir, boot_dir)
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_boot_script(boot_cmd, boot_script)
+        make_boot_script(boot_commands, boot_script)
         make_boot_ini(boot_script, boot_dir)
 
 
@@ -379,12 +379,12 @@ class IgepConfig(BeagleConfig):
     uboot_flavor = None
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
+    def _make_boot_files(cls, uboot_parts_dir, boot_commands, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_boot_script(boot_cmd, boot_script)
+        make_boot_script(boot_commands, boot_script)
         make_boot_ini(boot_script, boot_dir)
 
 
@@ -405,12 +405,12 @@ class Ux500Config(BoardConfig):
     mmc_option = '1:1'
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
+    def _make_boot_files(cls, uboot_parts_dir, boot_commands, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_boot_script(boot_cmd, boot_script)
+        make_boot_script(boot_commands, boot_script)
 
 
 class Mx5Config(BoardConfig):
@@ -454,7 +454,7 @@ class Mx5Config(BoardConfig):
             loader_start, loader_len, boot_start, boot_len, root_start)
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
+    def _make_boot_files(cls, uboot_parts_dir, boot_commands, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
@@ -462,7 +462,7 @@ class Mx5Config(BoardConfig):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_boot_script(boot_cmd, boot_script)
+        make_boot_script(boot_commands, boot_script)
 
 
 class EfikamxConfig(Mx5Config):
@@ -489,7 +489,7 @@ class VexpressConfig(BoardConfig):
     fat_size = 16
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
+    def _make_boot_files(cls, uboot_parts_dir, boot_commands, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
@@ -555,7 +555,7 @@ class SMDKV310Config(BoardConfig):
             rootfs_uuid, boot_dir, boot_script, boot_device_or_file)
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
+    def _make_boot_files(cls, uboot_parts_dir, boot_commands, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.v310')
@@ -573,7 +573,7 @@ class SMDKV310Config(BoardConfig):
             uboot_parts_dir, cls.kernel_suffix, boot_dir)
         install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
 
-        make_boot_script(boot_cmd, boot_script)
+        make_boot_script(boot_commands, boot_script)
 
 
 board_configs = {

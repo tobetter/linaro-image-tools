@@ -390,7 +390,7 @@ class TestGetSfdiskCmd(TestCase):
 class TestGetBootCmd(TestCase):
 
     def test_vexpress(self):
-        boot_cmd = board_configs['vexpress']._get_boot_commands(
+        boot_commands = board_configs['vexpress']._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=['ttyXXX'],
             rootfs_uuid="deadbeef")
         expected = (
@@ -398,10 +398,10 @@ class TestGetBootCmd(TestCase):
             "0:1 0x81000000 uInitrd; bootm 0x60008000 0x81000000'\nsetenv "
             "bootargs 'console=tty0 console=ttyAMA0,38400n8 console=ttyXXX  "
             "root=UUID=deadbeef rootwait ro'\nboot")
-        self.assertEqual(expected, boot_cmd)
+        self.assertEqual(expected, boot_commands)
 
     def test_mx5(self):
-        boot_cmd = boards.Mx5Config._get_boot_commands(
+        boot_commands = boards.Mx5Config._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -409,13 +409,13 @@ class TestGetBootCmd(TestCase):
             "0:2 0x90800000 uInitrd; bootm 0x90000000 0x90800000'\nsetenv "
             "bootargs 'console=tty0 console=ttymxc0,115200n8  "
             "root=UUID=deadbeef rootwait ro'\nboot")
-        self.assertEqual(expected, boot_cmd)
+        self.assertEqual(expected, boot_commands)
 
     def test_smdkv310(self):
         # this is kind of a useless test as this environment isn't
         # currently used. I'll keep it for completeness and it env 
         # might get used in the future
-        boot_cmd = board_configs['smdkv310']._get_boot_commands(
+        boot_commands = board_configs['smdkv310']._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -423,10 +423,10 @@ class TestGetBootCmd(TestCase):
             "0:2 0x41000000 uInitrd; bootm 0x40007000 0x41000000'\nsetenv "
             "bootargs 'console=ttySAC1,115200n8  root=UUID=deadbeef rootwait "
             "ro'\nboot")
-        self.assertEqual(expected, boot_cmd)
+        self.assertEqual(expected, boot_commands)
 
     def test_ux500(self):
-        boot_cmd = board_configs['ux500']._get_boot_commands(
+        boot_commands = board_configs['ux500']._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -437,7 +437,7 @@ class TestGetBootCmd(TestCase):
             "nocompcache mem=96M@0 mem_modem=32M@96M mem=44M@128M "
             "pmem=22M@172M mem=30M@194M mem_mali=32M@224M "
             "pmem_hwb=54M@256M hwmem=48M@302M mem=152M@360M'\nboot")
-        self.assertEqual(expected, boot_cmd)
+        self.assertEqual(expected, boot_commands)
 
     def test_panda(self):
         # XXX: To fix bug 697824 we have to change class attributes of our
@@ -445,7 +445,7 @@ class TestGetBootCmd(TestCase):
         # don't interfere with us we'll reset that before doing anything.
         config = board_configs['panda']
         config.serial_tty = config._serial_tty
-        boot_cmd = config._get_boot_commands(
+        boot_commands = config._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -455,7 +455,7 @@ class TestGetBootCmd(TestCase):
             "root=UUID=deadbeef rootwait ro earlyprintk fixrtc nocompcache "
             "vram=32M omapfb.vram=0:8M mem=463M "
             "ip=none'\nboot")
-        self.assertEqual(expected, boot_cmd)
+        self.assertEqual(expected, boot_commands)
 
     def test_beagle(self):
         # XXX: To fix bug 697824 we have to change class attributes of our
@@ -463,7 +463,7 @@ class TestGetBootCmd(TestCase):
         # don't interfere with us we'll reset that before doing anything.
         config = board_configs['beagle']
         config.serial_tty = config._serial_tty
-        boot_cmd = config._get_boot_commands(
+        boot_commands = config._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -473,7 +473,7 @@ class TestGetBootCmd(TestCase):
             "console=ttyO2,115200n8  root=UUID=deadbeef rootwait ro "
             "earlyprintk fixrtc nocompcache vram=12M "
             "omapfb.mode=dvi:1280x720MR-16@60'\nboot")
-        self.assertEqual(expected, boot_cmd)
+        self.assertEqual(expected, boot_commands)
 
     def test_overo(self):
         # XXX: To fix bug 697824 we have to change class attributes of our
@@ -481,7 +481,7 @@ class TestGetBootCmd(TestCase):
         # don't interfere with us we'll reset that before doing anything.
         config = board_configs['overo']
         config.serial_tty = config._serial_tty
-        boot_cmd = config._get_boot_commands(
+        boot_commands = config._get_boot_commands(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = (
@@ -491,7 +491,7 @@ class TestGetBootCmd(TestCase):
             "console=ttyO2,115200n8  root=UUID=deadbeef rootwait ro "
             "earlyprintk mpurate=500 vram=12M "
             "omapfb.mode=dvi:1024x768MR-16@60 omapdss.def_disp=dvi'\nboot")
-        self.assertEqual(expected, boot_cmd)
+        self.assertEqual(expected, boot_commands)
 
 
 class TestUnpackBinaryTarball(TestCaseWithFixtures):
