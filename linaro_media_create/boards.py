@@ -473,14 +473,6 @@ class Mx51evkConfig(Mx5Config):
     uboot_flavor = 'mx51evk'
 
 
-class EfikamxConfig(Mx5Config):
-    uboot_flavor = 'efikamx'
-
-
-class Mx51evkConfig(Mx5Config):
-    uboot_flavor = 'mx51evk'
-
-
 class VexpressConfig(BoardConfig):
     uboot_flavor = 'ca9x4_ct_vxp'
     uboot_in_boot_part = True
