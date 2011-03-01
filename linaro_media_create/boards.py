@@ -495,6 +495,7 @@ class VexpressConfig(BoardConfig):
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
 
+
 class SMDKV310Config(BoardConfig):
     serial_tty = 'ttySAC1'
     extra_serial_opts = 'console=%s,115200n8' % serial_tty
@@ -505,7 +506,6 @@ class SMDKV310Config(BoardConfig):
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
-    env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
     boot_env = []
 
     @classmethod
@@ -561,7 +561,8 @@ class SMDKV310Config(BoardConfig):
             chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.v310')
         install_smdkv310_boot_loader(uboot_file, boot_device_or_file)
 
-        env_file = make_flashable_env(cls.boot_env, cls.env_size)
+        env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
+        env_file = make_flashable_env(cls.boot_env, env_size)
         install_smdkv310_boot_env(env_file, boot_device_or_file)
 
         uImage_file = make_uImage(
