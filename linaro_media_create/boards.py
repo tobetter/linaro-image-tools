@@ -495,7 +495,18 @@ class VexpressConfig(BoardConfig):
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
 
-class SamsungConfig(BoardConfig):
+class SMDKV310Config(BoardConfig):
+    serial_tty = 'ttySAC1'
+    extra_serial_opts = 'console=%s,115200n8' % serial_tty
+    kernel_addr = '0x40007000'
+    initrd_addr = '0x41000000'
+    load_addr = '0x40008000'
+    kernel_suffix = 's5pv310'
+    boot_script = 'boot.scr'
+    mmc_part_offset = 1
+    mmc_option = '0:2'
+    env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
+    boot_env = []
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
@@ -539,7 +550,7 @@ class SamsungConfig(BoardConfig):
             'ethaddr=00:40:5c:26:0a:5b',
         ]
 
-        super(SamsungConfig, cls).make_boot_files(
+        super(SMDKV310Config, cls).make_boot_files(
             uboot_parts_dir, is_live, is_lowmem, consoles, root_dir,
             rootfs_uuid, boot_dir, boot_script, boot_device_or_file)
 
@@ -562,20 +573,6 @@ class SamsungConfig(BoardConfig):
         install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
 
         make_boot_script(boot_cmd, boot_script)
-
-
-class SMDKV310Config(SamsungConfig):
-    serial_tty = 'ttySAC1'
-    extra_serial_opts = 'console=%s,115200n8' % serial_tty
-    kernel_addr = '0x40007000'
-    initrd_addr = '0x41000000'
-    load_addr = '0x40008000'
-    kernel_suffix = 's5pv310'
-    boot_script = 'boot.scr'
-    mmc_part_offset = 1
-    mmc_option = '0:2'
-    env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
-    boot_env = []
 
 
 board_configs = {
