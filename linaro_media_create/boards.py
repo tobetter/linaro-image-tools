@@ -564,7 +564,8 @@ class SMDKV310Config(BoardConfig):
             uboot_parts_dir, cls.kernel_suffix, boot_dir)
         install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
 
-        make_boot_script(boot_env, boot_script)
+        # unused at the moment
+        #make_boot_script(boot_env, boot_script)
 
 
 board_configs = {
