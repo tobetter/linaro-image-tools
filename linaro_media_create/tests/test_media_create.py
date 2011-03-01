@@ -383,7 +383,7 @@ class TestGetSfdiskCmd(TestCase):
 
     def test_smdkv310(self):
         self.assertEquals(
-            '1,221183,0xDA\n221184,106496,0x0C,*\n327680,,,-',
+            '1,24575,0xDA\n24576,106496,0x0C,*\n131072,,,-',
             board_configs['smdkv310'].get_sfdisk_cmd())
 
 
@@ -424,7 +424,7 @@ class TestGetBootCmd(TestCase):
             'bootargs': 'console=ttySAC1,115200n8  root=UUID=deadbeef '
                         'rootwait ro',
              'bootcmd': 'movi read kernel 0x40007000; '
-                        'movi read rootfs 0x41000000 600000; '
+                        'movi read rootfs 0x41000000 0x600000; '
                         'bootm 0x40007000 0x41000000',
              'ethact': 'smc911x-0',
              'ethaddr': '00:40:5c:26:0a:5b'}
@@ -743,7 +743,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('1,221183,0xDA\n221184,106496,0x0C,*\n327680,,,-', 255, 63, '',
+            [('1,24575,0xDA\n24576,106496,0x0C,*\n131072,,,-', 255, 63, '',
               self.media.path)], sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):

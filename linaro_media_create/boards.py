@@ -95,11 +95,11 @@ assert SAMSUNG_V310_UIMAGE_LEN * SECTOR_SIZE == 4 * 1024 * 1024, (
     "BL2 (u-boot) expects uImage to be 4 MiB")
 SAMSUNG_V310_UINITRD_START = (
     SAMSUNG_V310_UIMAGE_START + SAMSUNG_V310_UIMAGE_LEN)
-SAMSUNG_V310_UINITRD_LEN = 204800
+SAMSUNG_V310_UINITRD_LEN = 12288
 assert SAMSUNG_V310_UINITRD_START == 9281, (
     "BL2 (u-boot) expects uInitrd at +9281s")
-assert SAMSUNG_V310_UINITRD_LEN * SECTOR_SIZE == 100 * 1024 * 1024, (
-    "BL2 (u-boot) expects uInitrd to be 100 MiB")
+assert SAMSUNG_V310_UINITRD_LEN * SECTOR_SIZE == 6 * 1024 * 1024, (
+    "BL2 (u-boot) expects uInitrd to be 6 MiB")
 
 def align_partition(min_start, min_length, start_alignment, end_alignment):
     """Compute partition start and end offsets based on specified constraints.
@@ -540,10 +540,11 @@ class SMDKV310Config(BoardConfig):
         # XXX remove me once FAT support is fixed in u-boot
         boot_env["bootcmd"] = (
             "movi read kernel %(kernel_addr)s; "
-            "movi read rootfs %(initrd_addr)s 600000; "
+            "movi read rootfs %(initrd_addr)s %(rootfs_size)s; "
             "bootm %(kernel_addr)s %(initrd_addr)s" % {
                 'kernel_addr': cls.kernel_addr,
-                'initrd_addr': cls.initrd_addr})
+                'initrd_addr': cls.initrd_addr,
+                'rootfs_size': hex(SAMSUNG_V310_UINITRD_LEN * SECTOR_SIZE)})
 
         return boot_env
 
