@@ -29,10 +29,10 @@ import os
 import re
 import tempfile
 import struct
+from binascii import crc32
 
 from linaro_media_create import cmd_runner
 from linaro_media_create.partitions import SECTOR_SIZE
-from binascii import crc32
 
 # Notes:
 # * geometry is currently always 255 heads and 63 sectors due to limitations of
@@ -538,7 +538,7 @@ class SMDKV310Config(BoardConfig):
 
         boot_env["ethact"] = "smc911x-0"
         boot_env["ethaddr"] = "00:40:5c:26:0a:5b"
-        # XXX remove me once FAT support is fixed in u-boot
+        # XXX fixme once FAT support is fixed in u-boot bug 727978
         boot_env["bootcmd"] = (
             "movi read kernel %(kernel_addr)s; "
             "movi read rootfs %(initrd_addr)s %(rootfs_size)s; "
@@ -568,7 +568,8 @@ class SMDKV310Config(BoardConfig):
             uboot_parts_dir, cls.kernel_suffix, boot_dir)
         install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
 
-        # unused at the moment
+        # unused at the moment once FAT support enabled for the 
+        # Samsung u-boot this can be used bug 727978
         #make_boot_script(boot_env, boot_script)
 
 
@@ -587,6 +588,10 @@ board_configs = {
 
 def _dd(input_file, output_file, block_size=SECTOR_SIZE, count=None, seek=None,
         skip=None):
+    """a generic dd function used to insert blobs into files or devices
+
+    uses the OS dd function
+    """
     cmd = [
         "dd", "if=%s" % input_file, "of=%s" % output_file,
         "bs=%s" % block_size, "conv=notrunc"]
@@ -653,10 +658,10 @@ def make_uInitrd(uboot_parts_dir, suffix, boot_disk):
 
 def make_boot_script(boot_env, boot_script):
     boot_script_data = (
-            "setenv bootcmd '%(bootcmd)s'\n"
-            "setenv bootargs '%(bootargs)s'\n"
-            "boot"
-            % boot_env)
+        "setenv bootcmd '%(bootcmd)s'\n"
+        "setenv bootargs '%(bootargs)s'\n"
+        "boot"
+        % boot_env)
 
     # Need to save the boot script data into a file that will be passed to
     # mkimage.
@@ -728,7 +733,6 @@ def make_boot_ini(boot_script, boot_disk):
         ["cp", "-v", boot_script, "%s/boot.ini" % boot_disk], as_root=True)
     proc.wait()
 
-    return "%s/boot.ini" % boot_disk
 
 def install_smdkv310_uImage(uImage_file, boot_device_or_file):
     # XXX need to check that the length of uImage_file is smaller than
@@ -753,12 +757,16 @@ def install_smdkv310_boot_env(env_file, boot_device_or_file):
 
 
 def install_smdkv310_boot_loader(v310_file, boot_device_or_file):
-    # v310_file is a binary with the same layout as BL1 + u-boot environment +
-    # BL2; write BL1 (SPL) piece first (SAMSUNG_V310_BL1_LEN sectors at +0s in
-    # the file and +SAMSUNG_V310_BL1_START on disk), then write BL2 (u-boot)
-    # piece (rest of the file starting at +(SAMSUNG_V310_BL1_LEN +
-    # SAMSUNG_V310_ENV_LEN)s in the file which is the same as
-    # +(SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START)s)
+    """Samsung specific terminology
+    BL0 is the first stage bootloader,
+    BL1 is the SPL (secondary program loader)
+    v310_file is a binary with the same layout as BL1 + u-boot environment +
+    BL2; write BL1 (SPL) piece first (SAMSUNG_V310_BL1_LEN sectors at +0s in
+    the file and +SAMSUNG_V310_BL1_START on disk), then write BL2 (u-boot)
+    piece (rest of the file starting at +(SAMSUNG_V310_BL1_LEN +
+    SAMSUNG_V310_ENV_LEN)s in the file which is the same as
+    +(SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START)s)
+    """
     _dd(v310_file, boot_device_or_file, count=SAMSUNG_V310_BL1_LEN,
         seek=SAMSUNG_V310_BL1_START)
     # XXX need to check that the length of v310_file - 64s is smaller than
