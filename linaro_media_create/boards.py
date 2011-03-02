@@ -24,7 +24,6 @@ BoardConfig, set appropriate values for its variables and add it to
 board_configs at the bottom of this file.
 """
 
-import atexit
 import glob
 import os
 import re
@@ -661,12 +660,12 @@ def make_boot_script(boot_env, boot_script):
 
     # Need to save the boot script data into a file that will be passed to
     # mkimage.
-    _, tmpfile = tempfile.mkstemp()
-    atexit.register(os.unlink, tmpfile)
-    with open(tmpfile, 'w') as fd:
+    plain_boot_script = os.path.join(
+        os.path.dirname(boot_script), 'boot.txt')
+    with open(plain_boot_script, 'w') as fd:
         fd.write(boot_script_data)
     return _run_mkimage(
-        'script', '0', '0', 'boot script', tmpfile, boot_script)
+        'script', '0', '0', 'boot script', plain_boot_script, boot_script)
 
 
 def make_flashable_env(boot_env, env_size):
