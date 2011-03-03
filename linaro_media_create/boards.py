@@ -24,9 +24,11 @@ BoardConfig, set appropriate values for its variables and add it to
 board_configs at the bottom of this file.
 """
 
+import atexit
 import glob
 import os
 import re
+import tempfile
 
 from linaro_media_create import cmd_runner
 from linaro_media_create.partitions import SECTOR_SIZE
@@ -496,10 +498,13 @@ def make_uInitrd(uboot_parts_dir, suffix, boot_disk):
 def make_boot_script(boot_script_data, boot_script):
     # Need to save the boot script data into a file that will be passed to
     # mkimage.
+    _, tmpfile = tempfile.mkstemp()
+    atexit.register(os.unlink, tmpfile)
     plain_boot_script = os.path.join(
         os.path.dirname(boot_script), 'boot.txt')
-    with open(plain_boot_script, 'w') as fd:
+    with open(tmpfile, 'w') as fd:
         fd.write(boot_script_data)
+    cmd_runner.run(['cp', tmpfile, plain_boot_script], as_root=True).wait()
     return _run_mkimage(
         'script', '0', '0', 'boot script', plain_boot_script, boot_script)
 
