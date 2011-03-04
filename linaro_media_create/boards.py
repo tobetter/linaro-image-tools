@@ -120,6 +120,14 @@ def align_partition(min_start, min_length, start_alignment, end_alignment):
     return start, end, length
 
 
+class classproperty(object):
+    """A descriptor that provides @property behavior on class methods."""
+    def __init__(self, getter):
+        self.getter = getter
+    def __get__(self, instance, cls):
+        return self.getter(cls)
+
+
 class BoardConfig(object):
     """The configuration used when building an image for a board."""
     # These attributes may not need to be redefined on some subclasses.
@@ -178,8 +186,8 @@ class BoardConfig(object):
         return '%s,%s,%s,*\n%s,,,-' % (
             boot_start, boot_len, partition_type, root_start)
 
-    @classmethod
-    def _get_bootcmd(cls):
+    @classproperty
+    def bootcmd(cls):
         """Get the bootcmd for this board.
 
         In general subclasses should not have to override this.
@@ -232,7 +240,7 @@ class BoardConfig(object):
         boot_env = {}
         boot_env["bootargs"] = cls._get_bootargs(
             is_live, is_lowmem, consoles, rootfs_uuid)
-        boot_env["bootcmd"] = cls._get_bootcmd()
+        boot_env["bootcmd"] = cls.bootcmd
         return boot_env
 
     @classmethod
@@ -253,14 +261,6 @@ class BoardConfig(object):
         subclass.
         """
         raise NotImplementedError()
-
-
-class classproperty(object):
-    """A descriptor that provides @property behavior on class methods."""
-    def __init__(self, getter):
-        self.getter = getter
-    def __get__(self, instance, cls):
-        return self.getter(cls)
 
 
 class OmapConfig(BoardConfig):
