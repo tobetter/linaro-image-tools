@@ -693,8 +693,13 @@ def make_flashable_env(boot_env, env_size):
 
 
 def install_mx5_boot_loader(imx_file, boot_device_or_file):
-    # XXX need to check that the length of imx_file is smaller than
-    # LOADER_MIN_SIZE_S
+    # bootloader partition starts at +1s but we write the file at +2s, so we
+    # need to check that the bootloader partition minus 1s is at least as large
+    # as the u-boot binary; note that the real bootloader partition might be
+    # larger than LOADER_MIN_SIZE_S, but if u-boot is larger it's a sign we
+    # need to bump LOADER_MIN_SIZE_S
+    assert os.path.getsize(imx_file) <= (BOOT_MIN_SIZE_S - 1) * SECTOR_SIZE, (
+        "%s is larger than guaranteed bootloader partition size" % imx_file)
     _dd(imx_file, boot_device_or_file, seek=2)
 
 

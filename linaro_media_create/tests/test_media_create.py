@@ -623,10 +623,11 @@ class TestBoards(TestCaseWithFixtures):
 
     def test_install_mx5_boot_loader(self):
         fixture = self._mock_Popen()
-        install_mx5_boot_loader("imx_file", "boot_device_or_file")
+        imx_file = self.createTempFileAsFixture()
+        install_mx5_boot_loader(imx_file, "boot_device_or_file")
         expected = [
-            'sudo', 'dd', 'if=imx_file', 'of=boot_device_or_file', 'bs=512',
-            'conv=notrunc', 'seek=2']
+            'sudo', 'dd', 'if=%s' % imx_file, 'of=boot_device_or_file',
+            'bs=512', 'conv=notrunc', 'seek=2']
         self.assertEqual([expected], fixture.mock.calls)
 
     def test_install_omap_boot_loader(self):
