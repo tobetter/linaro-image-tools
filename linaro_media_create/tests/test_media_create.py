@@ -25,7 +25,6 @@ import stat
 import string
 import subprocess
 import sys
-import tempfile
 import time
 import types
 
