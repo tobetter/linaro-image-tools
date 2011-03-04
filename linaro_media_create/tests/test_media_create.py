@@ -43,6 +43,8 @@ from linaro_media_create import (
     )
 import linaro_media_create
 from linaro_media_create.boards import (
+    LOADER_MIN_SIZE_S,
+    SECTOR_SIZE,
     align_up,
     align_partition,
     board_configs,
@@ -629,6 +631,13 @@ class TestBoards(TestCaseWithFixtures):
             'sudo', 'dd', 'if=%s' % imx_file, 'of=boot_device_or_file',
             'bs=512', 'conv=notrunc', 'seek=2']
         self.assertEqual([expected], fixture.mock.calls)
+
+    def test_install_mx5_boot_loader_too_large(self):
+        self.useFixture(MockSomethingFixture(
+            os.path, "getsize",
+            lambda s: (LOADER_MIN_SIZE_S - 1) * SECTOR_SIZE + 1))
+        self.assertRaises(AssertionError,
+            install_mx5_boot_loader, "imx_file", "boot_device_or_file")
 
     def test_install_omap_boot_loader(self):
         fixture = self._mock_Popen()
