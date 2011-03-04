@@ -588,10 +588,7 @@ board_configs = {
 
 def _dd(input_file, output_file, block_size=SECTOR_SIZE, count=None, seek=None,
         skip=None):
-    """a generic dd function used to insert blobs into files or devices
-
-    uses the OS dd function
-    """
+    """Wrapper around the dd command"""
     cmd = [
         "dd", "if=%s" % input_file, "of=%s" % output_file,
         "bs=%s" % block_size, "conv=notrunc"]
