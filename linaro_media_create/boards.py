@@ -418,16 +418,6 @@ class Mx53LoCoConfig(Mx5Config):
     load_addr = '0x70008000'
     kernel_suffix = 'linaro-imx5'
 
-    @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
-                         boot_dir, boot_script, boot_device_or_file):
-        uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
-        install_mx5_uboot(uboot_file, boot_device_or_file)
-        make_uImage(cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_boot_script(boot_cmd, boot_script)
-
 
 class VexpressConfig(BoardConfig):
     uboot_flavor = 'ca9x4_ct_vxp'
