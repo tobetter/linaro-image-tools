@@ -411,26 +411,12 @@ class Mx51evkConfig(Mx5Config):
     uboot_flavor = 'mx51evk'
 
 
-class Mx53LoCoConfig(BoardConfig):
+class Mx53LoCoConfig(Mx5Config):
     uboot_flavor = 'mx53_loco'
-    serial_tty = 'ttymxc0'
-    extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
-    live_serial_opts = 'serialtty=%s' % serial_tty
     kernel_addr = '0x70800000'
     initrd_addr = '0x71800000'
     load_addr = '0x70008000'
     kernel_suffix = 'linaro-imx5'
-    boot_script = 'boot.scr'
-    mmc_part_offset = 1
-    mmc_option = '0:2'
-
-    @classmethod
-    def get_sfdisk_cmd(cls):
-        # Create a one cylinder partition for fixed-offset bootloader data at
-        # the beginning of the image (size is one cylinder, so 8224768 bytes
-        # with the first sector for MBR).
- 	sfdisk_cmd = super(Mx53LoCoConfig, cls).get_sfdisk_cmd()
-	return ',1,0xDA\n%s' % sfdisk_cmd
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
