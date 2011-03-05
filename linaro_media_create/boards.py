@@ -421,8 +421,10 @@ class Mx53LoCoConfig(Mx5Config):
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
                          boot_dir, boot_script, boot_device_or_file):
-        uboot_imx_file = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot', 'mx53_loco', 'u-boot.imx')
-        uboot_bin_file = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot', 'mx53_loco', 'u-boot.bin')
+        uboot_imx_file = os.path.join(
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
+        uboot_bin_file = os.path.join(
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.bin')
         if os.path.exists(uboot_imx_file):
             uboot_file = uboot_imx_file
             uboot_padded = 0
