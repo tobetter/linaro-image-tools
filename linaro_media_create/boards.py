@@ -526,17 +526,6 @@ def install_mx5_boot_loader(imx_file, boot_device_or_file):
     proc.wait()
 
 
-def install_mx5_uboot(uboot_file, boot_device_or_file):
-    proc = cmd_runner.run([
-        "dd",
-        "if=%s" % uboot_file,
-        "of=%s" % boot_device_or_file,
-        "bs=1024",
-        "seek=1",
-        "conv=notrunc"], as_root=True)
-    proc.wait()
-
-
 def _get_mlo_file(chroot_dir):
     # XXX bug=702645: This is a temporary solution to make sure l-m-c works
     # with any version of x-loader-omap. The proper solution is to have
