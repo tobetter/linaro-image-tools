@@ -95,7 +95,7 @@ assert SAMSUNG_V310_UIMAGE_LEN * SECTOR_SIZE == 4 * 1024 * 1024, (
 SAMSUNG_V310_UINITRD_START = (
     SAMSUNG_V310_UIMAGE_START + SAMSUNG_V310_UIMAGE_LEN)
 SAMSUNG_V310_UINITRD_RESERVED_LEN = 204800
-SAMSUNG_V310_UINITRD_COPY_LEN = 32768 
+SAMSUNG_V310_UINITRD_COPY_LEN = 32768
 assert SAMSUNG_V310_UINITRD_START == 9281, (
     "BL2 (u-boot) expects uInitrd at +9281s")
 assert SAMSUNG_V310_UINITRD_RESERVED_LEN * SECTOR_SIZE == 100 * 1024 * 1024, (
@@ -738,23 +738,32 @@ def make_boot_ini(boot_script, boot_disk):
 
 
 def install_smdkv310_uImage(uImage_file, boot_device_or_file):
-    # XXX need to check that the length of uImage_file is smaller than
-    # SAMSUNG_V310_UIMAGE_LEN
+    # the layout keeps SAMSUNG_V310_UIMAGE_LEN sectors for uImage; make sure
+    # uImage isn't actually larger or it would be truncated
+    max_size = SAMSUNG_V310_UIMAGE_LEN * SECTOR_SIZE
+    assert os.path.getsize(uImage_file) <= max_size, (
+        "%s is larger than the allocated v310 uImage length" % uImage_file)
     _dd(uImage_file, boot_device_or_file, count=SAMSUNG_V310_UIMAGE_LEN,
         seek=SAMSUNG_V310_UIMAGE_START)
 
 
 def install_smdkv310_initrd(initrd_file, boot_device_or_file):
-    # XXX need to check that the length of initrd_file is smaller than
-    # SAMSUNG_V310_UINITRD_LEN
-    _dd(initrd_file, boot_device_or_file, 
+    # the layout keeps SAMSUNG_V310_UINITRD_RESERVED_LEN sectors for uInitrd
+    # but only SAMSUNG_V310_UINITRD_COPY_LEN sectors are loaded into memory;
+    # make sure uInitrd isn't actually larger or it would be truncated in
+    # memory
+    max_size = SAMSUNG_V310_UINITRD_COPY_LEN * SECTOR_SIZE
+    assert os.path.getsize(initrd_file) <= max_size, (
+        "%s is larger than the v310 uInitrd length as used by u-boot"
+            % initrd_file)
+    _dd(initrd_file, boot_device_or_file,
         count=SAMSUNG_V310_UINITRD_COPY_LEN,
         seek=SAMSUNG_V310_UINITRD_START)
 
 
 def install_smdkv310_boot_env(env_file, boot_device_or_file):
-    # XXX need to check that the length of env_file is smaller than
-    # SAMSUNG_V310_ENV_LEN
+    # the environment file is exactly SAMSUNG_V310_ENV_LEN as created by
+    # make_flashable_env(), so we don't need to check the size of env_file
     _dd(env_file, boot_device_or_file, count=SAMSUNG_V310_ENV_LEN,
         seek=SAMSUNG_V310_ENV_START)
 
@@ -776,3 +785,4 @@ def install_smdkv310_boot_loader(v310_file, boot_device_or_file):
     # SAMSUNG_V310_BL2_LEN
     _dd(v310_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START,
         skip=(SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START))
+
