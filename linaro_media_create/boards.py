@@ -675,9 +675,13 @@ def make_flashable_env(boot_env, env_size):
     env_strings.sort()
     env = struct.pack('B', 0).join(env_strings)
 
-    # pad the rest of the env for the CRC calc
-    while len(env) < (env_size - 4):
-        env += struct.pack('B', 0)
+    # we still need to zero-terminate the last string, and 4 bytes for crc
+    assert len(env) + 1 + 4 <= env_size, (
+        "environment doesn't fit in %s bytes" % env_size)
+
+    # pad the rest of the env for the CRC calc; the "s" format will write zero
+    # bytes to pad the (empty) string to repeat count
+    env += struct.pack('%ss' % (env_size - len(env) - 4), '')
 
     crc = crc32(env)
     env = struct.pack('<i', crc) + env

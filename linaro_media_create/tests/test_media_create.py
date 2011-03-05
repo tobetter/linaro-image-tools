@@ -624,6 +624,10 @@ class TestBoards(TestCaseWithFixtures):
             '-d', 'parts_dir/initrd.img-*-sub_arch', 'boot_disk/uInitrd']
         self.assertEqual([expected], fixture.mock.calls)
 
+    def test_make_flashable_env_too_small_env(self):
+        env = {'verylong': 'evenlonger'}
+        self.assertRaises(AssertionError, make_flashable_env, env, 8)
+
     def test_make_flashable_env(self):
         env_file = self.createTempFileAsFixture()
         self.useFixture(MockSomethingFixture(
