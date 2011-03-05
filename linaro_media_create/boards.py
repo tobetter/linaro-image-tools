@@ -672,6 +672,7 @@ def make_boot_script(boot_env, boot_script):
 
 def make_flashable_env(boot_env, env_size):
     env_strings = ["%s=%s" % (k, v) for k, v in boot_env.items()]
+    env_strings.sort()
     env = struct.pack('B', 0).join(env_strings)
 
     # pad the rest of the env for the CRC calc
