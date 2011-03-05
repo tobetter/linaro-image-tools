@@ -95,7 +95,7 @@ assert SAMSUNG_V310_UIMAGE_LEN * SECTOR_SIZE == 4 * 1024 * 1024, (
 SAMSUNG_V310_UINITRD_START = (
     SAMSUNG_V310_UIMAGE_START + SAMSUNG_V310_UIMAGE_LEN)
 SAMSUNG_V310_UINITRD_RESERVED_LEN = 204800
-SAMSUNG_V310_UINITRD_COPY_LEN = 32768 
+SAMSUNG_V310_UINITRD_COPY_LEN = 32768
 assert SAMSUNG_V310_UINITRD_START == 9281, (
     "BL2 (u-boot) expects uInitrd at +9281s")
 assert SAMSUNG_V310_UINITRD_RESERVED_LEN * SECTOR_SIZE == 100 * 1024 * 1024, (
@@ -118,6 +118,14 @@ def align_partition(min_start, min_length, start_alignment, end_alignment):
     # and add one to length
     length = end - start + 1
     return start, end, length
+
+
+class classproperty(object):
+    """A descriptor that provides @property behavior on class methods."""
+    def __init__(self, getter):
+        self.getter = getter
+    def __get__(self, instance, cls):
+        return self.getter(cls)
 
 
 class BoardConfig(object):
@@ -178,8 +186,8 @@ class BoardConfig(object):
         return '%s,%s,%s,*\n%s,,,-' % (
             boot_start, boot_len, partition_type, root_start)
 
-    @classmethod
-    def _get_bootcmd(cls):
+    @classproperty
+    def bootcmd(cls):
         """Get the bootcmd for this board.
 
         In general subclasses should not have to override this.
@@ -232,7 +240,7 @@ class BoardConfig(object):
         boot_env = {}
         boot_env["bootargs"] = cls._get_bootargs(
             is_live, is_lowmem, consoles, rootfs_uuid)
-        boot_env["bootcmd"] = cls._get_bootcmd()
+        boot_env["bootcmd"] = cls.bootcmd
         return boot_env
 
     @classmethod
@@ -253,14 +261,6 @@ class BoardConfig(object):
         subclass.
         """
         raise NotImplementedError()
-
-
-class classproperty(object):
-    """A descriptor that provides @property behavior on class methods."""
-    def __init__(self, getter):
-        self.getter = getter
-    def __get__(self, instance, cls):
-        return self.getter(cls)
 
 
 class OmapConfig(BoardConfig):
@@ -588,10 +588,7 @@ board_configs = {
 
 def _dd(input_file, output_file, block_size=SECTOR_SIZE, count=None, seek=None,
         skip=None):
-    """a generic dd function used to insert blobs into files or devices
-
-    uses the OS dd function
-    """
+    """Wrapper around the dd command"""
     cmd = [
         "dd", "if=%s" % input_file, "of=%s" % output_file,
         "bs=%s" % block_size, "conv=notrunc"]
@@ -675,11 +672,16 @@ def make_boot_script(boot_env, boot_script):
 
 def make_flashable_env(boot_env, env_size):
     env_strings = ["%s=%s" % (k, v) for k, v in boot_env.items()]
+    env_strings.sort()
     env = struct.pack('B', 0).join(env_strings)
 
-    # pad the rest of the env for the CRC calc
-    while len(env) < (env_size - 4):
-        env += struct.pack('B', 0)
+    # we still need to zero-terminate the last string, and 4 bytes for crc
+    assert len(env) + 1 + 4 <= env_size, (
+        "environment doesn't fit in %s bytes" % env_size)
+
+    # pad the rest of the env for the CRC calc; the "s" format will write zero
+    # bytes to pad the (empty) string to repeat count
+    env += struct.pack('%ss' % (env_size - len(env) - 4), '')
 
     crc = crc32(env)
     env = struct.pack('<i', crc) + env
@@ -693,8 +695,14 @@ def make_flashable_env(boot_env, env_size):
 
 
 def install_mx5_boot_loader(imx_file, boot_device_or_file):
-    # XXX need to check that the length of imx_file is smaller than
-    # LOADER_MIN_SIZE_S
+    # bootloader partition starts at +1s but we write the file at +2s, so we
+    # need to check that the bootloader partition minus 1s is at least as large
+    # as the u-boot binary; note that the real bootloader partition might be
+    # larger than LOADER_MIN_SIZE_S, but if u-boot is larger it's a sign we
+    # need to bump LOADER_MIN_SIZE_S
+    max_size = (LOADER_MIN_SIZE_S - 1) * SECTOR_SIZE
+    assert os.path.getsize(imx_file) <= max_size, (
+        "%s is larger than guaranteed bootloader partition size" % imx_file)
     _dd(imx_file, boot_device_or_file, seek=2)
 
 
@@ -735,23 +743,32 @@ def make_boot_ini(boot_script, boot_disk):
 
 
 def install_smdkv310_uImage(uImage_file, boot_device_or_file):
-    # XXX need to check that the length of uImage_file is smaller than
-    # SAMSUNG_V310_UIMAGE_LEN
+    # the layout keeps SAMSUNG_V310_UIMAGE_LEN sectors for uImage; make sure
+    # uImage isn't actually larger or it would be truncated
+    max_size = SAMSUNG_V310_UIMAGE_LEN * SECTOR_SIZE
+    assert os.path.getsize(uImage_file) <= max_size, (
+        "%s is larger than the allocated v310 uImage length" % uImage_file)
     _dd(uImage_file, boot_device_or_file, count=SAMSUNG_V310_UIMAGE_LEN,
         seek=SAMSUNG_V310_UIMAGE_START)
 
 
 def install_smdkv310_initrd(initrd_file, boot_device_or_file):
-    # XXX need to check that the length of initrd_file is smaller than
-    # SAMSUNG_V310_UINITRD_LEN
-    _dd(initrd_file, boot_device_or_file, 
+    # the layout keeps SAMSUNG_V310_UINITRD_RESERVED_LEN sectors for uInitrd
+    # but only SAMSUNG_V310_UINITRD_COPY_LEN sectors are loaded into memory;
+    # make sure uInitrd isn't actually larger or it would be truncated in
+    # memory
+    max_size = SAMSUNG_V310_UINITRD_COPY_LEN * SECTOR_SIZE
+    assert os.path.getsize(initrd_file) <= max_size, (
+        "%s is larger than the v310 uInitrd length as used by u-boot"
+            % initrd_file)
+    _dd(initrd_file, boot_device_or_file,
         count=SAMSUNG_V310_UINITRD_COPY_LEN,
         seek=SAMSUNG_V310_UINITRD_START)
 
 
 def install_smdkv310_boot_env(env_file, boot_device_or_file):
-    # XXX need to check that the length of env_file is smaller than
-    # SAMSUNG_V310_ENV_LEN
+    # the environment file is exactly SAMSUNG_V310_ENV_LEN as created by
+    # make_flashable_env(), so we don't need to check the size of env_file
     _dd(env_file, boot_device_or_file, count=SAMSUNG_V310_ENV_LEN,
         seek=SAMSUNG_V310_ENV_START)
 
@@ -773,3 +790,4 @@ def install_smdkv310_boot_loader(v310_file, boot_device_or_file):
     # SAMSUNG_V310_BL2_LEN
     _dd(v310_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START,
         skip=(SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START))
+
