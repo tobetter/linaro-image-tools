@@ -418,22 +418,6 @@ class Mx53LoCoConfig(Mx5Config):
     load_addr = '0x70008000'
     kernel_suffix = 'linaro-imx5'
 
-    @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_cmd, chroot_dir,
-		    boot_dir, boot_script, boot_device_or_file):
-        uboot_imx_file = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot', 'mx53_loco', 'u-boot.imx')
-	uboot_bin_file = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot', 'mx53_loco', 'u-boot.bin')
-	if os.path.exists(uboot_imx_file):
-	    uboot_file = uboot_imx_file
-	    uboot_padded = 0
-        else:
-	    uboot_file = uboot_bin_file
-	    uboot_padded = 1
-	install_mx5_uboot(uboot_file, uboot_padded, boot_device_or_file)
-	make_uImage(cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
-	make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
-	make_boot_script(boot_cmd, boot_script)
-
 
 class VexpressConfig(BoardConfig):
     uboot_flavor = 'ca9x4_ct_vxp'
@@ -539,18 +523,6 @@ def install_mx5_boot_loader(imx_file, boot_device_or_file):
         "bs=1024",
         "seek=1",
         "conv=notrunc"], as_root=True)
-    proc.wait()
-
-
-def install_mx5_uboot(uboot_file, padded, boot_device_or_file):
-    proc = cmd_runner.run([
-	"dd",
-	"if=%s" % uboot_file,
-	"of=%s" % boot_device_or_file,
-	"bs=1024",
-	"seek=1",
-	"skip=%d" % padded,
-	"conv=notrunc"], as_root=True)
     proc.wait()
 
 
