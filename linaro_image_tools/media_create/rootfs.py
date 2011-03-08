@@ -23,6 +23,13 @@ import tempfile
 
 from linaro_image_tools import cmd_runner
 
+def populate_partition(content_dir, root_disk, partition):
+    os.makedirs(root_disk)
+    cmd_runner.run(['mount', partition, root_disk], as_root=True).wait()
+    move_contents(content_dir, root_disk)
+    cmd_runner.run(['sync']).wait()
+    cmd_runner.run(['umount', root_disk], as_root=True).wait()
+
 
 def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
                     rootfs_uuid, should_create_swap, swap_size,

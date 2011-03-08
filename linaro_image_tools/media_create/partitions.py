@@ -41,6 +41,63 @@ DBUS_PROPERTIES = 'org.freedesktop.DBus.Properties'
 UDISKS = "org.freedesktop.UDisks"
 
 
+def setup_android_partitions(board_config, media, image_size, bootfs_label,
+                     rootfs_label, rootfs_type, should_create_partitions,
+                     should_format_bootfs, should_format_rootfs,
+                     should_align_boot_part=False):
+    cylinders = None
+    create_partitions(
+        board_config, media, HEADS, SECTORS, cylinders,
+        should_align_boot_part=should_align_boot_part)
+
+    if media.is_block_device:
+        bootfs, rootfs, system, cache, data, sdcard = \
+            get_android_partitions_for_media (media, board_config)
+        ensure_partition_is_not_mounted(bootfs)
+        ensure_partition_is_not_mounted(rootfs)
+        ensure_partition_is_not_mounted(system)
+        ensure_partition_is_not_mounted(cache)
+        ensure_partition_is_not_mounted(data)
+        ensure_partition_is_not_mounted(sdcard)
+
+        proc = cmd_runner.run(
+            ['mkfs.vfat', '-F', str(board_config.fat_size), bootfs, '-n',
+             bootfs_label],
+            as_root=True)
+        proc.wait()
+
+        mkfs = 'mkfs.%s' % rootfs_type
+        proc = cmd_runner.run(
+            [mkfs, rootfs, '-L', rootfs_label],
+            as_root=True)
+        proc.wait()
+
+        mkfs = 'mkfs.%s' % "ext4"
+        proc = cmd_runner.run(
+            [mkfs, system, '-L', "system"],
+            as_root=True)
+        proc.wait()
+
+        mkfs = 'mkfs.%s' % "ext4"
+        proc = cmd_runner.run(
+            [mkfs, cache, '-L', "cache"],
+            as_root=True)
+        proc.wait()
+
+        mkfs = 'mkfs.%s' % "ext4"
+        proc = cmd_runner.run(
+            [mkfs, data, '-L', "userdata"],
+            as_root=True)
+        proc.wait()
+
+        mkfs = 'mkfs.%s' % "ext4"
+        proc = cmd_runner.run(
+            [mkfs, sdcard, '-L', "sdcard"],
+            as_root=True)
+        proc.wait()
+
+        return bootfs, rootfs, system, cache, data, sdcard
+
 # I wonder if it'd make sense to convert this into a small shim which calls
 # the appropriate function for the given type of device?  I think it's still
 # small enough that there's not much benefit in doing that, but if it grows we
@@ -212,6 +269,35 @@ def calculate_partition_size_and_offset(image_file):
         "Couldn't find root partition on %s" % image_file)
     return vfat_size, vfat_offset, linux_size, linux_offset
 
+def get_android_partitions_for_media(media, board_config):
+    """Return the device files for all the Android partitions of media.
+
+    For boot we use partition number 1 plus the board's defined partition
+    offset and for root we use partition number 2 plus the board's offset.
+
+    This function must only be used for block devices.
+    """
+    assert media.is_block_device, (
+        "This function must only be used for block devices")
+
+    boot_partition = _get_device_file_for_partition_number(
+        media.path, 1 + board_config.mmc_part_offset)
+    root_partition = _get_device_file_for_partition_number(
+        media.path, 2 + board_config.mmc_part_offset)
+    system_partition = _get_device_file_for_partition_number(
+        media.path, 3 + board_config.mmc_part_offset)
+    cache_partition = _get_device_file_for_partition_number(
+        media.path, 5 + board_config.mmc_part_offset)
+    data_partition = _get_device_file_for_partition_number(
+        media.path, 6 + board_config.mmc_part_offset)
+    sdcard_partition = _get_device_file_for_partition_number(
+        media.path, 7 + board_config.mmc_part_offset)
+
+    assert boot_partition is not None and root_partition is not None, (
+        "Could not find boot/root partition for %s" % media.path)
+
+    return boot_partition, root_partition, system_partition, \
+        cache_partition, data_partition, sdcard_partition
 
 def get_boot_and_root_partitions_for_media(media, board_config):
     """Return the device files for the boot and root partitions of media.
