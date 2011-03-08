@@ -203,6 +203,7 @@ class classproperty(object):
 
 
 class OmapConfig(BoardConfig):
+    kernel_suffix = 'linaro-omap'
     uboot_in_boot_part = True
 
     # XXX: Here we define these things as dynamic properties because our
@@ -276,7 +277,6 @@ class BeagleConfig(OmapConfig):
     kernel_addr = '0x80000000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
-    kernel_suffix = 'linaro-omap'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
         'earlyprintk fixrtc nocompcache vram=12M '
@@ -290,7 +290,6 @@ class OveroConfig(OmapConfig):
     kernel_addr = '0x80000000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
-    kernel_suffix = 'linaro-omap'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
         'earlyprintk mpurate=500 vram=12M '
@@ -305,7 +304,6 @@ class PandaConfig(OmapConfig):
     kernel_addr = '0x80200000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
-    kernel_suffix = 'linaro-omap'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
         'earlyprintk fixrtc nocompcache vram=32M '
