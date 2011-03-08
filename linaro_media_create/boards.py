@@ -411,6 +411,14 @@ class Mx51evkConfig(Mx5Config):
     uboot_flavor = 'mx51evk'
 
 
+class Mx53LoCoConfig(Mx5Config):
+    uboot_flavor = 'mx53loco'
+    kernel_addr = '0x70800000'
+    initrd_addr = '0x71800000'
+    load_addr = '0x70008000'
+    kernel_suffix = 'linaro-lt-mx53'
+
+
 class VexpressConfig(BoardConfig):
     uboot_flavor = 'ca9x4_ct_vxp'
     uboot_in_boot_part = True
@@ -442,6 +450,7 @@ board_configs = {
     'ux500': Ux500Config,
     'efikamx': EfikamxConfig,
     'mx51evk': Mx51evkConfig,
+    'mx53loco' : Mx53LoCoConfig,
     'overo': OveroConfig,
     }
 
