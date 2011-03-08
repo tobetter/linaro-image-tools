@@ -412,11 +412,11 @@ class Mx51evkConfig(Mx5Config):
 
 
 class Mx53LoCoConfig(Mx5Config):
-    uboot_flavor = 'mx53_loco'
+    uboot_flavor = 'mx53loco'
     kernel_addr = '0x70800000'
     initrd_addr = '0x71800000'
     load_addr = '0x70008000'
-    kernel_suffix = 'linaro-imx5'
+    kernel_suffix = 'linaro-lt-mx53'
 
 
 class VexpressConfig(BoardConfig):
