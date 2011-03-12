@@ -295,6 +295,14 @@ class TestBootSteps(TestCaseWithFixtures):
             'make_boot_script', 'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
 
+    def test_igep_steps(self):
+        self.mock_set_appropriate_serial_tty(boards.IgepConfig)
+        self.make_boot_files(boards.IgepConfig)
+        expected = [
+            'make_uImage', 'make_uInitrd', 'make_boot_script',
+            'make_boot_ini']
+        self.assertEqual(expected, self.funcs_calls)
+
     def test_overo_steps(self):
         self.mock_set_appropriate_serial_tty(boards.OveroConfig)
         self.make_boot_files(boards.OveroConfig)
@@ -487,6 +495,25 @@ class TestGetBootCmd(TestCase):
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'bootm 0x80000000 0x81600000'}
         self.assertEqual(expected, boot_commands)
+
+    def test_igep(self):
+        # XXX: To fix bug 697824 we have to change class attributes of our
+        # OMAP board configs, and some tests do that so to make sure they
+        # don't interfere with us we'll reset that before doing anything.
+        config = board_configs['igep']
+        config.serial_tty = config._serial_tty
+        boot_cmd = config._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=[],
+            rootfs_uuid="deadbeef")
+        expected = {
+            'bootargs': 'console=tty0 console=ttyO2,115200n8  '
+                        'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
+                        'nocompcache vram=12M '
+                        'omapfb.mode=dvi:1280x720MR-16@60',
+            'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
+                       'fatload mmc 0:1 0x81600000 uInitrd; '
+                       'bootm 0x80000000 0x81600000'}
+        self.assertEqual(expected, boot_cmd)
 
     def test_overo(self):
         # XXX: To fix bug 697824 we have to change class attributes of our
