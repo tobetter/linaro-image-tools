@@ -56,7 +56,7 @@ def get_args_parser():
         '--dev', required=True, dest='board', choices=KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
     parser.add_argument(
-        '--rootfs', default='ext3', choices=['ext2', 'ext3', 'ext4', 'btrfs'],
+        '--rootfs', default='ext4', choices=['ext2', 'ext3', 'ext4', 'btrfs'],
         help='Type of filesystem to use for the rootfs')
     parser.add_argument(
         '--rfs_label', default='rootfs',
