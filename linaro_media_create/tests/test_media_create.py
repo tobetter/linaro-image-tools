@@ -67,6 +67,8 @@ from linaro_media_create.hwpack import (
     temporarily_overwrite_file_on_dir,
     )
 from linaro_media_create.partitions import (
+    HEADS,
+    SECTORS,
     calculate_partition_size_and_offset,
     convert_size_to_bytes,
     create_partitions,
@@ -770,7 +772,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
-        create_partitions(boards.Mx5Config, self.media, 128, 32, '')
+        create_partitions(boards.Mx5Config, self.media, HEADS, SECTORS, '')
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
@@ -780,8 +782,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', 128, 32, '',
-              self.media.path)],
+            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', HEADS, SECTORS,
+              '', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_smdkv310(self):
@@ -790,7 +792,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
         create_partitions(
-            board_configs['smdkv310'], self.media, 128, 32, '')
+            board_configs['smdkv310'], self.media, HEADS, SECTORS, '')
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
@@ -800,22 +802,23 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('1,221183,0xDA\n221184,106496,0x0C,*\n327680,,,-', 128, 32, '',
-              self.media.path)], sfdisk_fixture.mock.calls)
+            [('1,221183,0xDA\n221184,106496,0x0C,*\n327680,,,-', HEADS,
+              SECTORS, '', self.media.path)], sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
         create_partitions(
-            board_configs['beagle'], self.media, 128, 32, '')
+            board_configs['beagle'], self.media, HEADS, SECTORS, '')
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
              'sync'],
             popen_fixture.mock.commands_executed)
         self.assertEqual(
-            [('63,106432,0x0C,*\n106496,,,-', 128, 32, '', self.media.path)],
+            [('63,106432,0x0C,*\n106496,,,-', HEADS, SECTORS, '',
+              self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_with_img_file(self):
@@ -824,7 +827,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
         tmpfile = self.createTempFileAsFixture()
         create_partitions(
-            board_configs['beagle'], Media(tmpfile), 128, 32, '')
+            board_configs['beagle'], Media(tmpfile), HEADS, SECTORS, '')
 
         # Unlike the test for partitioning of a regular block device, in this
         # case parted was not called as there's no existing partition table
@@ -832,7 +835,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertEqual(['sync'], popen_fixture.mock.commands_executed)
 
         self.assertEqual(
-            [('63,106432,0x0C,*\n106496,,,-', 128, 32, '', tmpfile)],
+            [('63,106432,0x0C,*\n106496,,,-', HEADS, SECTORS, '', tmpfile)],
             sfdisk_fixture.mock.calls)
 
     def test_run_sfdisk_commands(self):
@@ -842,7 +845,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
             stdout=subprocess.PIPE)
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
-            '2,16063,0xDA', 128, 32, '', tmpfile, as_root=False,
+            '2,16063,0xDA', HEADS, SECTORS, '', tmpfile, as_root=False,
             stderr=subprocess.PIPE)
         self.assertIn('Successfully wrote the new partition table', stdout)
 
@@ -851,7 +854,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertRaises(
             cmd_runner.SubcommandNonZeroReturnValue,
             run_sfdisk_commands,
-            ',1,0xDA', 128, 32, '', tmpfile, as_root=False,
+            ',1,0xDA', HEADS, SECTORS, '', tmpfile, as_root=False,
             stderr=subprocess.PIPE)
 
 
@@ -929,7 +932,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             stdout=subprocess.PIPE)
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
-            sfdisk_commands, 128, 32, '', tmpfile, as_root=False,
+            sfdisk_commands, HEADS, SECTORS, '', tmpfile, as_root=False,
             # Throw away stderr as sfdisk complains a lot when operating on a
             # qemu image.
             stderr=subprocess.PIPE)
@@ -1009,8 +1012,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
              # This is the call that would create a 2 GiB image file.
             ['qemu-img create -f raw %s 2147483648' % tmpfile,
              # This call would partition the image file.
-             '%s sfdisk --force -D -uS -H 128 -S 32 -C 1024 %s' % (
-                 sudo_args, tmpfile),
+             '%s sfdisk --force -D -uS -H %s -S %s -C 1024 %s' % (
+                 sudo_args, HEADS, SECTORS, tmpfile),
              # Make sure changes are written to disk.
              'sync',
              '%s mkfs.vfat -F 32 %s -n boot' % (sudo_args, bootfs_dev),
@@ -1036,8 +1039,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
             True, True, True)
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, tmpfile),
-             '%s sfdisk --force -D -uS -H 128 -S 32 %s' % (
-                 sudo_args, tmpfile),
+             '%s sfdisk --force -D -uS -H %s -S %s %s' % (
+                 sudo_args, HEADS, SECTORS, tmpfile),
              'sync',
              # Since the partitions are mounted, setup_partitions will umount
              # them before running mkfs.
