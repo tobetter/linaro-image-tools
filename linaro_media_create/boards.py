@@ -469,6 +469,10 @@ class EfikamxConfig(Mx5Config):
     uboot_flavor = 'efikamx'
 
 
+class EfikasbConfig(Mx5Config):
+    uboot_flavor = 'efikasb'
+
+
 class Mx51evkConfig(Mx5Config):
     uboot_flavor = 'mx51evk'
 
@@ -589,6 +593,7 @@ board_configs = {
     'vexpress': VexpressConfig,
     'ux500': Ux500Config,
     'efikamx': EfikamxConfig,
+    'efikasb': EfikasbConfig,
     'mx51evk': Mx51evkConfig,
     'mx53loco' : Mx53LoCoConfig,
     'overo': OveroConfig,
