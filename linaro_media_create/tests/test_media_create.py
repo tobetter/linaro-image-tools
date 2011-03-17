@@ -259,7 +259,9 @@ class TestBootSteps(TestCaseWithFixtures):
         self.assertEqual(expected, self.funcs_calls)
 
     def test_mx5_steps(self):
-        self.make_boot_files(boards.Mx51evkConfig)
+        class SomeMx5Config(boards.Mx5Config):
+            uboot_flavor = 'uboot_flavor'
+        self.make_boot_files(SomeMx5Config)
         expected = [
             'install_mx5_boot_loader', 'make_uImage', 'make_uInitrd',
             'make_boot_script']
