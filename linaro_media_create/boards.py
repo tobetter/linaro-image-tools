@@ -418,10 +418,6 @@ class Mx5Config(BoardConfig):
     serial_tty = 'ttymxc0'
     extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
     live_serial_opts = 'serialtty=%s' % serial_tty
-    kernel_addr = '0x90000000'
-    initrd_addr = '0x90800000'
-    load_addr = '0x90008000'
-    kernel_suffix = 'linaro-mx51'
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
@@ -466,24 +462,34 @@ class Mx5Config(BoardConfig):
         make_boot_script(boot_env, boot_script)
 
 
-class EfikamxConfig(Mx5Config):
-    uboot_flavor = 'efikamx'
+class Mx51Config(Mx5Config):
+    kernel_addr = '0x90000000'
+    initrd_addr = '0x90800000'
+    load_addr = '0x90008000'
+    kernel_suffix = 'linaro-mx51'
 
 
-class EfikasbConfig(Mx5Config):
-    uboot_flavor = 'efikasb'
-
-
-class Mx51evkConfig(Mx5Config):
-    uboot_flavor = 'mx51evk'
-
-
-class Mx53LoCoConfig(Mx5Config):
-    uboot_flavor = 'mx53loco'
+class Mx53Config(Mx5Config):
     kernel_addr = '0x70800000'
     initrd_addr = '0x71800000'
     load_addr = '0x70008000'
     kernel_suffix = 'linaro-lt-mx53'
+
+
+class EfikamxConfig(Mx51Config):
+    uboot_flavor = 'efikamx'
+
+
+class EfikasbConfig(Mx51Config):
+    uboot_flavor = 'efikasb'
+
+
+class Mx51evkConfig(Mx51Config):
+    uboot_flavor = 'mx51evk'
+
+
+class Mx53LoCoConfig(Mx53Config):
+    uboot_flavor = 'mx53loco'
 
 
 class VexpressConfig(BoardConfig):

@@ -418,8 +418,8 @@ class TestGetBootCmd(TestCase):
                        'bootm 0x60008000 0x81000000'}
         self.assertEqual(expected, boot_commands)
 
-    def test_mx5(self):
-        boot_commands = boards.Mx5Config._get_boot_env(
+    def test_mx51(self):
+        boot_commands = boards.Mx51Config._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = {
