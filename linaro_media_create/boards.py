@@ -57,10 +57,11 @@ def align_up(value, align):
     """Round value to the next multiple of align."""
     return (value + align - 1) / align * align
 
-# optional bootloader partition; at least 1 MiB; in theory, an i.MX5 bootloader
-# partition could hold RedBoot, FIS table, RedBoot config, kernel, and initrd,
-# but we typically use U-Boot which is about 167 KiB as of 2011/02/11 and
-# currently doesn't even store its environment there, so this should be enough
+# optional bootloader partition; at least 1 MiB; in theory, an i.MX5x
+# bootloader partition could hold RedBoot, FIS table, RedBoot config, kernel,
+# and initrd, but we typically use U-Boot which is about 167 KiB as of
+# 2011/02/11 and currently doesn't even store its environment there, so this
+# should be enough
 LOADER_MIN_SIZE_S = align_up(1 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
 # boot partition; at least 50 MiB; XXX this shouldn't be hardcoded
 BOOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
