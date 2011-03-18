@@ -418,7 +418,7 @@ class Mx5Config(BoardConfig):
     extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
     live_serial_opts = 'serialtty=%s' % serial_tty
     kernel_addr = '0x90000000'
-    initrd_addr = '0x90800000'
+    initrd_addr = '0x98000000'
     load_addr = '0x90008000'
     kernel_suffix = 'linaro-mx51'
     boot_script = 'boot.scr'
