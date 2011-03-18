@@ -57,10 +57,11 @@ def align_up(value, align):
     """Round value to the next multiple of align."""
     return (value + align - 1) / align * align
 
-# optional bootloader partition; at least 1 MiB; in theory, an i.MX5 bootloader
-# partition could hold RedBoot, FIS table, RedBoot config, kernel, and initrd,
-# but we typically use U-Boot which is about 167 KiB as of 2011/02/11 and
-# currently doesn't even store its environment there, so this should be enough
+# optional bootloader partition; at least 1 MiB; in theory, an i.MX5x
+# bootloader partition could hold RedBoot, FIS table, RedBoot config, kernel,
+# and initrd, but we typically use U-Boot which is about 167 KiB as of
+# 2011/02/11 and currently doesn't even store its environment there, so this
+# should be enough
 LOADER_MIN_SIZE_S = align_up(1 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
 # boot partition; at least 50 MiB; XXX this shouldn't be hardcoded
 BOOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
@@ -417,10 +418,6 @@ class Mx5Config(BoardConfig):
     serial_tty = 'ttymxc0'
     extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
     live_serial_opts = 'serialtty=%s' % serial_tty
-    kernel_addr = '0x90000000'
-    initrd_addr = '0x90800000'
-    load_addr = '0x90008000'
-    kernel_suffix = 'linaro-mx51'
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
@@ -465,20 +462,34 @@ class Mx5Config(BoardConfig):
         make_boot_script(boot_env, boot_script)
 
 
-class EfikamxConfig(Mx5Config):
-    uboot_flavor = 'efikamx'
+class Mx51Config(Mx5Config):
+    kernel_addr = '0x90000000'
+    initrd_addr = '0x90800000'
+    load_addr = '0x90008000'
+    kernel_suffix = 'linaro-mx51'
 
 
-class Mx51evkConfig(Mx5Config):
-    uboot_flavor = 'mx51evk'
-
-
-class Mx53LoCoConfig(Mx5Config):
-    uboot_flavor = 'mx53loco'
+class Mx53Config(Mx5Config):
     kernel_addr = '0x70800000'
     initrd_addr = '0x71800000'
     load_addr = '0x70008000'
     kernel_suffix = 'linaro-lt-mx53'
+
+
+class EfikamxConfig(Mx51Config):
+    uboot_flavor = 'efikamx'
+
+
+class EfikasbConfig(Mx51Config):
+    uboot_flavor = 'efikasb'
+
+
+class Mx51evkConfig(Mx51Config):
+    uboot_flavor = 'mx51evk'
+
+
+class Mx53LoCoConfig(Mx53Config):
+    uboot_flavor = 'mx53loco'
 
 
 class VexpressConfig(BoardConfig):
@@ -589,6 +600,7 @@ board_configs = {
     'vexpress': VexpressConfig,
     'ux500': Ux500Config,
     'efikamx': EfikamxConfig,
+    'efikasb': EfikasbConfig,
     'mx51evk': Mx51evkConfig,
     'mx53loco' : Mx53LoCoConfig,
     'overo': OveroConfig,

@@ -261,7 +261,9 @@ class TestBootSteps(TestCaseWithFixtures):
         self.assertEqual(expected, self.funcs_calls)
 
     def test_mx5_steps(self):
-        self.make_boot_files(boards.Mx51evkConfig)
+        class SomeMx5Config(boards.Mx5Config):
+            uboot_flavor = 'uboot_flavor'
+        self.make_boot_files(SomeMx5Config)
         expected = [
             'install_mx5_boot_loader', 'make_uImage', 'make_uInitrd',
             'make_boot_script']
@@ -418,8 +420,8 @@ class TestGetBootCmd(TestCase):
                        'bootm 0x60008000 0x81000000'}
         self.assertEqual(expected, boot_commands)
 
-    def test_mx5(self):
-        boot_commands = boards.Mx5Config._get_boot_env(
+    def test_mx51(self):
+        boot_commands = boards.Mx51Config._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef")
         expected = {
