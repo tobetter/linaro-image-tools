@@ -23,25 +23,25 @@ import os
 import sys
 import tempfile
 
-from linaro_media_create.boards import (
-    board_configs,
-    )
-from linaro_media_create.check_device import (
+from linaro_image_tools.media_create.boards import board_configs
+from linaro_image_tools.media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
-from linaro_media_create.hwpack import install_hwpacks
-from linaro_media_create.partitions import (
+from linaro_image_tools.media_create.hwpack import install_hwpacks
+from linaro_image_tools.media_create.partitions import (
     Media,
     setup_partitions,
     get_uuid,
     )
-from linaro_media_create.populate_boot import populate_boot
-from linaro_media_create.rootfs import populate_rootfs
-from linaro_media_create.unpack_binary_tarball import unpack_binary_tarball
-from linaro_media_create.utils import (
+from linaro_image_tools.media_create.populate_boot import populate_boot
+from linaro_image_tools.media_create.rootfs import populate_rootfs
+from linaro_image_tools.media_create.unpack_binary_tarball import (
+    unpack_binary_tarball,
+    )
+from linaro_image_tools.media_create.utils import (
     ensure_command,
     is_arm_host,
     )
-from linaro_media_create import (
+from linaro_image_tools.media_create import (
     cmd_runner,
     get_args_parser
     )
