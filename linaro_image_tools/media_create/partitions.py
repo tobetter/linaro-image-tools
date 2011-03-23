@@ -90,9 +90,9 @@ def setup_android_partitions(board_config, media, image_size, bootfs_label,
             as_root=True)
         proc.wait()
 
-        mkfs = 'mkfs.%s' % "ext4"
         proc = cmd_runner.run(
-            [mkfs, sdcard, '-L', "sdcard"],
+            ['mkfs.vfat', '-F', str(board_config.fat_size), sdcard, '-n',
+             "sdcard"],
             as_root=True)
         proc.wait()
 
