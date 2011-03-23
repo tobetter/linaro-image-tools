@@ -266,6 +266,39 @@ class BoardConfig(object):
         """
         raise NotImplementedError()
 
+    @classmethod
+    def populate_boot(cls, chroot_dir, rootfs_uuid, boot_partition, boot_disk,
+                      boot_device_or_file, is_live, is_lowmem, consoles):
+        parts_dir = 'boot'
+        if is_live:
+            parts_dir = 'casper'
+        uboot_parts_dir = os.path.join(chroot_dir, parts_dir)
+
+        cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
+        cmd_runner.run(['mount', boot_partition, boot_disk],
+            as_root=True).wait()
+
+        if cls.uboot_in_boot_part:
+            assert cls.uboot_flavor is not None, (
+                "uboot_in_boot_part is set but not uboot_flavor")
+            uboot_bin = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot',
+                cls.uboot_flavor, 'u-boot.bin')
+            cmd_runner.run(
+                ['cp', '-v', uboot_bin, boot_disk], as_root=True).wait()
+
+        boot_script_path = "%(boot_disk)s/%(boot_script_name)s" % (
+            dict(boot_disk=boot_disk, boot_script_name=cls.boot_script))
+
+        cls.make_boot_files(
+            uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
+            rootfs_uuid, boot_disk, boot_script_path, boot_device_or_file)
+
+        cmd_runner.run(['sync']).wait()
+        try:
+            cmd_runner.run(['umount', boot_disk], as_root=True).wait()
+        except cmd_runner.SubcommandNonZeroReturnValue:
+            pass
+
 
 class OmapConfig(BoardConfig):
     kernel_suffix = 'linaro-omap'

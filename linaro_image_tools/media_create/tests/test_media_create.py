@@ -81,7 +81,6 @@ from linaro_image_tools.media_create.partitions import (
     get_uuid,
     _parse_blkid_output,
     )
-from linaro_image_tools.media_create.populate_boot import populate_boot
 from linaro_image_tools.media_create.rootfs import (
     create_flash_kernel_config,
     has_space_left_for_swap,
@@ -1083,9 +1082,9 @@ class TestPopulateBoot(TestCaseWithFixtures):
             self.config, 'make_boot_files', self.save_args))
 
     def call_populate_boot(self, config, is_live=False):
-        populate_boot(
-            config, 'chroot_dir', 'rootfs_uuid', 'boot_partition',
-            'boot_disk', 'boot_device_or_file', is_live, False, [])
+        config.populate_boot(
+            'chroot_dir', 'rootfs_uuid', 'boot_partition', 'boot_disk',
+            'boot_device_or_file', is_live, False, [])
 
     def test_populate_boot_live(self):
         self.prepare_config(boards.BoardConfig)
