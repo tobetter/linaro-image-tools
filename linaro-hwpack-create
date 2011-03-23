@@ -24,7 +24,8 @@ import argparse
 import logging
 import sys
 
-from hwpack.builder import ConfigFileMissing, HardwarePackBuilder
+from linaro_image_tools.hwpack.builder import (
+    ConfigFileMissing, HardwarePackBuilder)
 
 
 if __name__ == '__main__':
