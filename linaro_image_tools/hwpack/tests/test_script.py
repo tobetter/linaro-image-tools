@@ -31,6 +31,7 @@ from linaro_image_tools.hwpack.testing import (
     IsHardwarePack,
     TestCaseWithFixtures,
     )
+from linaro_image_tools.media_create.utils import find_command
 
 
 class ScriptTests(TestCaseWithFixtures):
@@ -38,25 +39,8 @@ class ScriptTests(TestCaseWithFixtures):
 
     def setUp(self):
         super(ScriptTests, self).setUp()
-        self.script_path = self.find_script()
+        self.script_path = find_command("linaro-hwpack-create")
         self.useFixture(ChdirToTempdirFixture())
-
-    def find_script(self):
-        script_name = "linaro-hwpack-create"
-        this_path = os.path.abspath(__file__)
-        parent_path = this_path
-        for i in range(4):
-            parent_path = os.path.dirname(parent_path)
-        possible_paths = [
-            os.path.join(parent_path, script_name),
-            os.path.join("usr", "local", "bin", script_name),
-            os.path.join("usr", "bin", script_name),
-        ]
-        for script_path in possible_paths:
-            if os.path.exists(script_path):
-                return script_path
-        raise AssertionError(
-            "Could not find linaro-hwpack-create script to test.")
 
     def run_script(self, args, expected_returncode=0):
         cmdline = [self.script_path] + args
