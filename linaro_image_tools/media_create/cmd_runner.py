@@ -24,7 +24,7 @@ def sanitize_path(env):
     """Makes sure PATH is set and has important directories"""
     default = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
     # ensure PATH is set
-    if 'PATH' not in env or env['PATH'] == '':
+    if 'PATH' not in env:
         env['PATH'] = default
         return
     dirs = env['PATH'].split(os.pathsep)
