@@ -96,11 +96,14 @@ from linaro_image_tools.media_create.unpack_binary_tarball import (
 from linaro_image_tools.utils import find_command
 
 from linaro_image_tools.media_create.tests.fixtures import (
-    CreateTempDirFixture,
     CreateTarballFixture,
+    MockRunSfdiskCommandsFixture,
+    )
+
+from linaro_image_tools.tests.fixtures import (
+    CreateTempDirFixture,
     MockCmdRunnerPopenFixture,
     MockSomethingFixture,
-    MockRunSfdiskCommandsFixture,
     )
 
 

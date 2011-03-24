@@ -30,7 +30,7 @@ from linaro_image_tools.hwpack.testing import TestCaseWithFixtures
 
 from linaro_image_tools import cmd_runner
 
-from linaro_image_tools.media_create.tests.fixtures import (
+from linaro_image_tools.tests.fixtures import (
     CreateTempDirFixture,
     MockCmdRunnerPopenFixture,
     MockSomethingFixture,
