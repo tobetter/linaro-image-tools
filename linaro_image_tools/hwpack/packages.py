@@ -34,6 +34,8 @@ import apt_pkg
 
 from debian.debfile import DebFile
 
+from linaro_image_tools import cmd_runner
+
 
 logger = logging.getLogger(__name__)
 
@@ -191,12 +193,12 @@ class LocalArchiveMaker(TemporaryDirectoryManager):
         with open(os.path.join(tmpdir, 'Packages'), 'w') as packages_file:
             packages_file.write(get_packages_file(local_debs, rel_to=tmpdir))
         if label:
-            subprocess.check_call(
+            proc = cmd_runner.run(
                 ['apt-ftparchive',
                  '-oAPT::FTPArchive::Release::Label=%s' % label,
                  'release',
                  tmpdir],
-                stdout=open(os.path.join(tmpdir, 'Release'), 'w'))
+                stdout=open(os.path.join(tmpdir, 'Release'), 'w')).wait()
         return 'file://%s ./' % (tmpdir, )
 
 
@@ -245,7 +247,7 @@ Description: Dummy package to install a hwpack
         env = os.environ
         env['LC_ALL'] = 'C'
         env['NO_PKG_MANGLE'] = '1'
-        proc = subprocess.Popen(
+        proc = cmd_runner.Popen(
             ['dpkg-deb', '-b', packaging_dir],
             env=env,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)

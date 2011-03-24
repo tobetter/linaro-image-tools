@@ -21,7 +21,17 @@ import os
 import subprocess
 
 
+DEFAULT_PATH = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
 SUDO_ARGS = ['sudo', '-E']
+
+
+def sanitize_path(env):
+    """Makes sure PATH is set and has important directories"""
+    dirs = env.get('PATH', DEFAULT_PATH).split(os.pathsep)
+    for d in DEFAULT_PATH.split(os.pathsep):
+        if d not in dirs:
+            dirs.append(d)
+    env['PATH'] = os.pathsep.join(dirs)
 
 
 def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
@@ -59,6 +69,10 @@ class Popen(subprocess.Popen):
         if env is None:
             env = os.environ.copy()
         env['LC_ALL'] = 'C'
+        # ensure a proper PATH before calling Popen
+        sanitize_path(os.environ)
+        # and for subcommands
+        sanitize_path(env)
         super(Popen, self).__init__(args, env=env, **kwargs)
 
     def wait(self):

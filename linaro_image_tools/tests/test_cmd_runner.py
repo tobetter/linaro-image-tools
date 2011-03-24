@@ -30,6 +30,27 @@ from linaro_image_tools.tests.fixtures import (
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
 
 
+class TestSanitizePath(TestCaseWithFixtures):
+    def setUp(self):
+        super(TestSanitizePath, self).setUp()
+        self.env = {}
+
+    def test_path_unset(self):
+        cmd_runner.sanitize_path(self.env)
+        self.assertEqual(cmd_runner.DEFAULT_PATH, self.env['PATH'])
+
+    def test_path_missing_dirs(self):
+        path = '/bin:/sbin:/foo:/usr/local/sbin'
+        self.env['PATH'] = path
+        cmd_runner.sanitize_path(self.env)
+        expected = '%s:/usr/local/bin:/usr/sbin:/usr/bin' % path
+        self.assertEqual(expected, self.env['PATH'])
+
+    def test_idempotent(self):
+        self.env['PATH'] = cmd_runner.DEFAULT_PATH
+        cmd_runner.sanitize_path(self.env)
+        self.assertEqual(cmd_runner.DEFAULT_PATH, self.env['PATH'])
+
 class TestCmdRunner(TestCaseWithFixtures):
 
     def test_run(self):
