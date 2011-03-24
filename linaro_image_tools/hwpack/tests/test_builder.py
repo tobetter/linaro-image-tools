@@ -48,8 +48,8 @@ from linaro_image_tools.hwpack.testing import (
     IsHardwarePack,
     MatchesStructure,
     Not,
-    TestCaseWithFixtures,
     )
+from linaro_image_tools.testing import TestCaseWithFixtures
 
 
 class ConfigFileMissingTests(TestCase):

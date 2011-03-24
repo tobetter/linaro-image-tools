@@ -22,13 +22,11 @@ import stat
 import subprocess
 import sys
 
-from linaro_image_tools import utils
+from linaro_image_tools import cmd_runner, utils
 
 from linaro_image_tools.cmd_runner import SUDO_ARGS
 
-from linaro_image_tools.hwpack.testing import TestCaseWithFixtures
-
-from linaro_image_tools import cmd_runner
+from linaro_image_tools.testing import TestCaseWithFixtures
 
 from linaro_image_tools.tests.fixtures import (
     CreateTempDirFixture,

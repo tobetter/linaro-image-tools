@@ -34,15 +34,13 @@ from linaro_image_tools import cmd_runner
 
 from linaro_image_tools.cmd_runner import SUDO_ARGS
 
-from linaro_image_tools.hwpack.testing import TestCaseWithFixtures
-
+import linaro_image_tools.media_create
 from linaro_image_tools.media_create import (
     check_device,
     boards,
     partitions,
     rootfs,
     )
-import linaro_image_tools.media_create
 from linaro_image_tools.media_create.boards import (
     LOADER_MIN_SIZE_S,
     SECTOR_SIZE,
@@ -90,21 +88,23 @@ from linaro_image_tools.media_create.rootfs import (
     populate_rootfs,
     write_data_to_protected_file,
     )
-from linaro_image_tools.media_create.unpack_binary_tarball import (
-    unpack_binary_tarball,
-    )
-from linaro_image_tools.utils import find_command
-
 from linaro_image_tools.media_create.tests.fixtures import (
     CreateTarballFixture,
     MockRunSfdiskCommandsFixture,
     )
+from linaro_image_tools.media_create.unpack_binary_tarball import (
+    unpack_binary_tarball,
+    )
+
+from linaro_image_tools.testing import TestCaseWithFixtures
 
 from linaro_image_tools.tests.fixtures import (
     CreateTempDirFixture,
     MockCmdRunnerPopenFixture,
     MockSomethingFixture,
     )
+
+from linaro_image_tools.utils import find_command
 
 
 sudo_args = " ".join(SUDO_ARGS)

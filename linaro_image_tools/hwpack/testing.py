@@ -32,7 +32,6 @@ import time
 
 from debian.deb822 import Packages
 
-from testtools import TestCase
 from testtools.matchers import Annotate, Equals, Matcher, Mismatch
 
 from linaro_image_tools.hwpack.better_tarfile import writeable_tarfile
@@ -171,39 +170,6 @@ class AptSourceFixture(object):
     @property
     def sources_entry(self):
         return "file:" + os.path.abspath(self.rootdir) +" ./"
-
-
-class TestCaseWithFixtures(TestCase):
-    """A TestCase with the ability to easily add 'fixtures'.
-
-    A fixture is an object which can be created and cleaned up, and
-    this test case knows how to manage them to ensure that they will
-    always be cleaned up at the end of the test.
-    """
-
-    def useFixture(self, fixture):
-        """Make use of a fixture, ensuring that it will be cleaned up.
-
-        Given a fixture, this method will run the `setUp` method of
-        the fixture, and ensure that its `tearDown` method will be
-        called at the end of the test, regardless of success or failure.
-
-        :param fixture: the fixture to use.
-        :type fixture: an object with setUp and tearDown methods.
-        :return: the fixture that was passed in.
-        """
-        self.addCleanup(fixture.tearDown)
-        fixture.setUp()
-        return fixture
-
-    def createTempFileAsFixture(self, prefix='tmp', dir=None):
-        """Create a temp file and make sure it is removed on tearDown.
-
-        :return: The filename of the file created.
-        """
-        _, filename = tempfile.mkstemp(prefix=prefix, dir=dir)
-        self.addCleanup(os.unlink, filename)
-        return filename
 
 
 class ConfigFileFixture(object):

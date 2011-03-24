@@ -28,8 +28,8 @@ from linaro_image_tools.hwpack.testing import (
     ConfigFileFixture,
     DummyFetchedPackage,
     IsHardwarePack,
-    TestCaseWithFixtures,
     )
+from linaro_image_tools.testing import TestCaseWithFixtures
 from linaro_image_tools.utils import find_command
 
 
