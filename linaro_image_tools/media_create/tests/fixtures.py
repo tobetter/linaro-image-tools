@@ -18,11 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import shutil
 import subprocess
-import tempfile
-
-from linaro_image_tools import cmd_runner
 
 from linaro_image_tools.media_create import partitions
 
