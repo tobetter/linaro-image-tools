@@ -25,7 +25,7 @@ try:
 except ImportError:
     CommandNotFound = None
 
-from linaro_image_tools.media_create import cmd_runner
+from linaro_image_tools import cmd_runner
 
 
 def install_package_providing(command):
@@ -48,7 +48,8 @@ def install_package_providing(command):
     package, _ = packages[0]
     print ("Installing required command %s from package %s"
            % (command, package))
-    cmd_runner.run(['apt-get', 'install', package], as_root=True).wait()
+    cmd_runner.run(
+        ['apt-get', '--yes', 'install', package], as_root=True).wait()
 
 
 def ensure_command(command):
@@ -95,6 +96,14 @@ def find_command(name, prefer_dir=None):
 
 def is_arm_host():
     return platform.machine().startswith('arm')
+
+
+def preferred_tools_dir():
+    prefer_dir = None
+    # running from bzr checkout?
+    if not os.path.isabs(__file__):
+        prefer_dir = os.getcwd()
+    return prefer_dir
 
 
 class UnableToFindPackageProvidingCommand(Exception):

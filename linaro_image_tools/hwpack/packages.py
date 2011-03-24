@@ -34,7 +34,7 @@ import apt_pkg
 
 from debian.debfile import DebFile
 
-from linaro_image_tools.media_create import cmd_runner
+from linaro_image_tools import cmd_runner
 
 
 logger = logging.getLogger(__name__)

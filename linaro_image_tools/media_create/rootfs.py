@@ -21,7 +21,7 @@ import glob
 import os
 import tempfile
 
-from linaro_image_tools.media_create import cmd_runner
+from linaro_image_tools import cmd_runner
 
 
 def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
