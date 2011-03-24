@@ -37,14 +37,11 @@ from linaro_image_tools.media_create.rootfs import populate_rootfs
 from linaro_image_tools.media_create.unpack_binary_tarball import (
     unpack_binary_tarball,
     )
-from linaro_image_tools.media_create.utils import (
-    ensure_command,
-    is_arm_host,
-    )
 from linaro_image_tools.media_create import (
     cmd_runner,
     get_args_parser
     )
+from linaro_image_tools.utils import ensure_command, is_arm_host
 
 # Just define the global variables
 TMP_DIR = None
