@@ -21,15 +21,14 @@ import os
 
 from linaro_image_tools import cmd_runner
 
+from linaro_image_tools.cmd_runner import SUDO_ARGS
+
 from linaro_image_tools.hwpack.testing import TestCaseWithFixtures
 
 from linaro_image_tools.media_create.tests.fixtures import (
     MockCmdRunnerPopenFixture,
     MockSomethingFixture,
     )
-
-
-sudo_args = 'sudo -E'
 
 
 class TestCmdRunner(TestCaseWithFixtures):
@@ -47,8 +46,7 @@ class TestCmdRunner(TestCaseWithFixtures):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(os, 'getuid', lambda: 1000))
         cmd_runner.run(['foo', 'bar'], as_root=True).wait()
-        self.assertEqual(
-            ['%s foo bar' % sudo_args], fixture.mock.commands_executed)
+        self.assertEqual([SUDO_ARGS + ['foo', 'bar']], fixture.mock.calls)
 
     def test_run_as_root_as_root(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
@@ -60,7 +58,7 @@ class TestCmdRunner(TestCaseWithFixtures):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(os, 'getuid', lambda: 1000))
         cmd_runner.run(('foo', 'bar',), as_root=True).wait()
-        self.assertEqual([['sudo', '-E', 'foo', 'bar']], fixture.mock.calls)
+        self.assertEqual([SUDO_ARGS + ['foo', 'bar']], fixture.mock.calls)
 
     def test_run_succeeds_on_zero_return_code(self):
         proc = cmd_runner.run(['true'])
