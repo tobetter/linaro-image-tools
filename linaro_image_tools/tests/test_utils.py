@@ -38,16 +38,9 @@ from linaro_image_tools.utils import (
     ensure_command,
     find_command,
     install_package_providing,
+    preferred_tools_dir,
     UnableToFindPackageProvidingCommand,
     )
-
-
-def preferred_tools_dir():
-    prefer_dir = None
-    # running from bzr checkout?
-    if not os.path.isabs(__file__):
-        prefer_dir = os.getcwd()
-    return prefer_dir
 
 
 class TestEnsureCommand(TestCaseWithFixtures):

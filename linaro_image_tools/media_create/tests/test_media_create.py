@@ -104,18 +104,10 @@ from linaro_image_tools.tests.fixtures import (
     MockSomethingFixture,
     )
 
-from linaro_image_tools.utils import find_command
+from linaro_image_tools.utils import find_command, preferred_tools_dir
 
 
 sudo_args = " ".join(SUDO_ARGS)
-
-
-def preferred_tools_dir():
-    prefer_dir = None
-    # running from bzr checkout?
-    if not os.path.isabs(__file__):
-        prefer_dir = os.getcwd()
-    return prefer_dir
 
 
 class TestGetMLOFile(TestCaseWithFixtures):
