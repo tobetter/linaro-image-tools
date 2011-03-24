@@ -19,7 +19,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
 # USA.
 
-import os
 import subprocess
 
 from linaro_image_tools.hwpack.hardwarepack import Metadata
