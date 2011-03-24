@@ -20,6 +20,14 @@
 import os
 import subprocess
 
+# this is crude, but it's a good way to ensure that PATH is set before calling
+# Popen (and not just in Popen's env argument); see LP #709517
+if 'PATH' not in os.environ or os.environ['PATH'] == '':
+    os.environ['PATH'] = (
+        '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin')
+# and this one makes sure /sbin is in the PATH
+if 'sbin' not in os.environ["PATH"].split(os.pathsep):
+    os.environ['PATH'] = os.pathsep.join((os.environ['PATH'], '/sbin'))
 
 def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
     """Run the given command as a sub process.
