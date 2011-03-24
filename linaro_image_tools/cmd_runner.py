@@ -20,16 +20,18 @@
 import os
 import subprocess
 
+
+DEFAULT_PATH = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+SUDO_ARGS = ['sudo', '-E']
+
+
 def sanitize_path(env):
     """Makes sure PATH is set and has important directories"""
-    default = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
-    dirs = env.get('PATH', default).split(os.pathsep)
-    for d in default.split(os.pathsep):
+    dirs = env.get('PATH', DEFAULT_PATH).split(os.pathsep)
+    for d in DEFAULT_PATH.split(os.pathsep):
         if d not in dirs:
             dirs.append(d)
     env['PATH'] = os.pathsep.join(dirs)
-
-SUDO_ARGS = ['sudo', '-E']
 
 
 def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
