@@ -19,7 +19,7 @@
 
 import os
 
-from linaro_image_tools.media_create import cmd_runner
+from linaro_image_tools import cmd_runner
 
 
 def populate_boot(board_config, chroot_dir, rootfs_uuid, boot_partition,

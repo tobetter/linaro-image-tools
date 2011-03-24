@@ -32,7 +32,8 @@ import tempfile
 import struct
 from binascii import crc32
 
-from linaro_image_tools.media_create import cmd_runner
+from linaro_image_tools import cmd_runner
+
 from linaro_image_tools.media_create.partitions import SECTOR_SIZE
 
 # Notes:

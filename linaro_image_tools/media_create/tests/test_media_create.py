@@ -30,11 +30,12 @@ import types
 
 from testtools import TestCase
 
+from linaro_image_tools import cmd_runner
+
 from linaro_image_tools.hwpack.testing import TestCaseWithFixtures
 
 from linaro_image_tools.media_create import (
     check_device,
-    cmd_runner,
     boards,
     partitions,
     rootfs,

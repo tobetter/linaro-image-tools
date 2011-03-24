@@ -30,7 +30,7 @@ from parted import (
     PARTITION_NORMAL,
     )
 
-from linaro_image_tools.media_create import cmd_runner
+from linaro_image_tools import cmd_runner
 
 
 HEADS = 128

@@ -25,7 +25,7 @@ try:
 except ImportError:
     CommandNotFound = None
 
-from linaro_image_tools.media_create import cmd_runner
+from linaro_image_tools import cmd_runner
 
 
 def install_package_providing(command):

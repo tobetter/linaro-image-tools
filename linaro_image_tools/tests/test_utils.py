@@ -26,7 +26,7 @@ from linaro_image_tools import utils
 
 from linaro_image_tools.hwpack.testing import TestCaseWithFixtures
 
-from linaro_image_tools.media_create import cmd_runner
+from linaro_image_tools import cmd_runner
 
 from linaro_image_tools.media_create.tests.fixtures import (
     CreateTempDirFixture,
