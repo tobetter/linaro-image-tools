@@ -23,11 +23,7 @@ import subprocess
 def sanitize_path(env):
     """Makes sure PATH is set and has important directories"""
     default = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
-    # ensure PATH is set
-    if 'PATH' not in env:
-        env['PATH'] = default
-        return
-    dirs = env['PATH'].split(os.pathsep)
+    dirs = env.get('PATH', default).split(os.pathsep)
     for d in default.split(os.pathsep):
         if d not in dirs:
             dirs.append(d)
