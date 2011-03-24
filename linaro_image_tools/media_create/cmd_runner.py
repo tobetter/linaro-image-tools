@@ -22,14 +22,16 @@ import subprocess
 
 def sanitize_path(env):
     """Makes sure PATH is set and has important directories"""
+    default = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
     # ensure PATH is set
     if 'PATH' not in env or env['PATH'] == '':
-        env['PATH'] = (
-            '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin')
+        env['PATH'] = default
         return
-    # and this one makes sure /sbin is in the PATH
-    if 'sbin' not in env["PATH"].split(os.pathsep):
-        env['PATH'] = os.pathsep.join((env['PATH'], '/sbin'))
+    dirs = env['PATH'].split(os.pathsep)
+    for d in default.split(os.pathsep):
+        if d not in dirs:
+            dirs.append(d)
+    env['PATH'] = os.pathsep.join(dirs)
 
 def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
     """Run the given command as a sub process.
