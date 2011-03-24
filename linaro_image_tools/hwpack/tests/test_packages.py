@@ -50,8 +50,8 @@ from linaro_image_tools.hwpack.testing import (
     ContextManagerFixture,
     DummyFetchedPackage,
     MatchesPackage,
-    TestCaseWithFixtures,
     )
+from linaro_image_tools.testing import TestCaseWithFixtures
 
 
 class GetPackagesFileTests(TestCase):

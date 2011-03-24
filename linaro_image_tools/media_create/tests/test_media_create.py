@@ -21,7 +21,6 @@ import atexit
 import glob
 import os
 import random
-import stat
 import string
 import subprocess
 import sys
@@ -31,17 +30,14 @@ import types
 
 from testtools import TestCase
 
-from linaro_image_tools.hwpack.testing import TestCaseWithFixtures
-
+from linaro_image_tools import cmd_runner
+import linaro_image_tools.media_create
 from linaro_image_tools.media_create import (
     check_device,
-    cmd_runner,
     boards,
     partitions,
     rootfs,
-    utils,
     )
-import linaro_image_tools.media_create
 from linaro_image_tools.media_create.boards import (
     LOADER_MIN_SIZE_S,
     SECTOR_SIZE,
@@ -88,103 +84,23 @@ from linaro_image_tools.media_create.rootfs import (
     populate_rootfs,
     write_data_to_protected_file,
     )
+from linaro_image_tools.media_create.tests.fixtures import (
+    CreateTarballFixture,
+    MockRunSfdiskCommandsFixture,
+    )
 from linaro_image_tools.media_create.unpack_binary_tarball import (
     unpack_binary_tarball,
     )
-from linaro_image_tools.media_create.utils import (
-    ensure_command,
-    find_command,
-    install_package_providing,
-    UnableToFindPackageProvidingCommand,
-    )
-
-from linaro_image_tools.media_create.tests.fixtures import (
+from linaro_image_tools.testing import TestCaseWithFixtures
+from linaro_image_tools.tests.fixtures import (
     CreateTempDirFixture,
-    CreateTarballFixture,
     MockCmdRunnerPopenFixture,
     MockSomethingFixture,
-    MockRunSfdiskCommandsFixture,
     )
+from linaro_image_tools.utils import find_command, preferred_tools_dir
 
 
-sudo_args = 'sudo -E'
-
-
-def preferred_tools_dir():
-    prefer_dir = None
-    # running from bzr checkout?
-    if not os.path.isabs(__file__):
-        prefer_dir = os.getcwd()
-    return prefer_dir
-
-
-class TestEnsureCommand(TestCaseWithFixtures):
-
-    install_pkg_providing_called = False
-
-    def setUp(self):
-        super(TestEnsureCommand, self).setUp()
-        self.useFixture(MockSomethingFixture(
-            sys, 'stdout', open('/dev/null', 'w')))
-
-    def test_command_already_present(self):
-        self.mock_install_package_providing()
-        ensure_command('apt-get')
-        self.assertFalse(self.install_pkg_providing_called)
-
-    def test_command_not_present(self):
-        self.mock_install_package_providing()
-        ensure_command('apt-get-two-o')
-        self.assertTrue(self.install_pkg_providing_called)
-
-    def mock_install_package_providing(self):
-        def mock_func(command):
-            self.install_pkg_providing_called = True
-        self.useFixture(MockSomethingFixture(
-            utils, 'install_package_providing', mock_func))
-
-
-class TestFindCommand(TestCaseWithFixtures):
-
-    def test_preferred_dir(self):
-        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
-        lmc = 'linaro-media-create'
-        path = os.path.join(tempdir, lmc)
-        open(path, 'w').close()
-        os.chmod(path, stat.S_IXUSR)
-        self.assertEquals(path, find_command(lmc, tempdir))
-
-    def test_existing_command(self):
-        lmc = 'linaro-media-create'
-        prefer_dir = preferred_tools_dir()
-        if prefer_dir is None:
-            expected, _ = cmd_runner.run(
-                ['which', lmc, ],
-                stdout=subprocess.PIPE).communicate()
-            expected = expected.strip()
-        else:
-            expected = os.path.join(prefer_dir, lmc)
-        self.assertEquals(expected, find_command(lmc))
-
-    def test_nonexisting_command(self):
-        self.assertEquals(find_command('linaro-moo'), None)
-
-
-class TestInstallPackageProviding(TestCaseWithFixtures):
-
-    def test_found_package(self):
-        self.useFixture(MockSomethingFixture(
-            sys, 'stdout', open('/dev/null', 'w')))
-        fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        install_package_providing('mkfs.vfat')
-        self.assertEqual(
-            ['%s apt-get --yes install dosfstools' % sudo_args],
-            fixture.mock.commands_executed)
-
-    def test_not_found_package(self):
-        self.assertRaises(
-            UnableToFindPackageProvidingCommand,
-            install_package_providing, 'mkfs.lean')
+sudo_args = " ".join(cmd_runner.SUDO_ARGS)
 
 
 class TestGetMLOFile(TestCaseWithFixtures):
@@ -580,52 +496,6 @@ class TestGetUuid(TestCaseWithFixtures):
             "ID_FS_TYPE=ext4\n")
         uuid = _parse_blkid_output(output)
         self.assertEquals("67d641db-ea7d-4acf-9f46-5f1f8275dce2", uuid)
-
-
-class TestCmdRunner(TestCaseWithFixtures):
-
-    def test_run(self):
-        fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        proc = cmd_runner.run(['foo', 'bar', 'baz'])
-        # Call wait or else MockCmdRunnerPopenFixture() raises an
-        # AssertionError().
-        proc.wait()
-        self.assertEqual(0, proc.returncode)
-        self.assertEqual([['foo', 'bar', 'baz']], fixture.mock.calls)
-
-    def test_run_as_root_with_sudo(self):
-        fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        self.useFixture(MockSomethingFixture(os, 'getuid', lambda: 1000))
-        cmd_runner.run(['foo', 'bar'], as_root=True).wait()
-        self.assertEqual(
-            ['%s foo bar' % sudo_args], fixture.mock.commands_executed)
-
-    def test_run_as_root_as_root(self):
-        fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        self.useFixture(MockSomethingFixture(os, 'getuid', lambda: 0))
-        cmd_runner.run(['foo', 'bar'], as_root=True).wait()
-        self.assertEqual([['foo', 'bar']], fixture.mock.calls)
-
-    def test_run_succeeds_on_zero_return_code(self):
-        proc = cmd_runner.run(['true'])
-        # Need to wait() here as we're using the real Popen.
-        proc.wait()
-        self.assertEqual(0, proc.returncode)
-
-    def test_run_raises_exception_on_non_zero_return_code(self):
-        def run_and_wait():
-            proc = cmd_runner.run(['false'])
-            proc.wait()
-        self.assertRaises(
-            cmd_runner.SubcommandNonZeroReturnValue, run_and_wait)
-
-    def test_run_must_be_given_list_as_args(self):
-        self.assertRaises(AssertionError, cmd_runner.run, 'true')
-
-    def test_Popen(self):
-        proc = cmd_runner.Popen('true')
-        returncode = proc.wait()
-        self.assertEqual(0, returncode)
 
 
 class TestBoards(TestCaseWithFixtures):

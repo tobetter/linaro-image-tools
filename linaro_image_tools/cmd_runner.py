@@ -21,6 +21,9 @@ import os
 import subprocess
 
 
+SUDO_ARGS = ['sudo', '-E']
+
+
 def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
     """Run the given command as a sub process.
 
@@ -37,8 +40,10 @@ def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
     """
     assert isinstance(args, (list, tuple)), (
         "The command to run must be a list or tuple, found: %s" % type(args))
+    if isinstance(args, tuple):
+        args = list(args)
     if as_root and os.getuid() != 0:
-        args = ['sudo', '-E'] + args
+        args = SUDO_ARGS + args
     return Popen(args, stdin=stdin, stdout=stdout, stderr=stderr)
 
 
