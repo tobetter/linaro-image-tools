@@ -72,8 +72,7 @@ def find_command(name, prefer_dir=None):
     assert name != ""
     assert os.path.dirname(name) == ""
 
-    if not os.environ.has_key("PATH"):
-        os.environ["PATH"] = "/bin:usr/bin"
+    cmd_runner.sanitize_path(os.environ)
 
     # default to searching in current directory when running from a bzr
     # checkout
