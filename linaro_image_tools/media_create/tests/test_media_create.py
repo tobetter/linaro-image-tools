@@ -179,7 +179,7 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         install_package_providing('mkfs.vfat')
         self.assertEqual(
-            ['%s apt-get install dosfstools' % sudo_args],
+            ['%s apt-get --yes install dosfstools' % sudo_args],
             fixture.mock.commands_executed)
 
     def test_not_found_package(self):
