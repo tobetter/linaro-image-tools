@@ -33,13 +33,14 @@ from testtools import TestCase
 
 from linaro_image_tools.hwpack.testing import TestCaseWithFixtures
 
+from linaro_image_tools import utils
+
 from linaro_image_tools.media_create import (
     check_device,
     cmd_runner,
     boards,
     partitions,
     rootfs,
-    utils,
     )
 import linaro_image_tools.media_create
 from linaro_image_tools.media_create.boards import (
@@ -92,7 +93,7 @@ from linaro_image_tools.media_create.rootfs import (
 from linaro_image_tools.media_create.unpack_binary_tarball import (
     unpack_binary_tarball,
     )
-from linaro_image_tools.media_create.utils import (
+from linaro_image_tools.utils import (
     ensure_command,
     find_command,
     install_package_providing,

@@ -31,7 +31,7 @@ from linaro_image_tools.hwpack.testing import (
     IsHardwarePack,
     TestCaseWithFixtures,
     )
-from linaro_image_tools.media_create.utils import find_command
+from linaro_image_tools.utils import find_command
 
 
 class ScriptTests(TestCaseWithFixtures):

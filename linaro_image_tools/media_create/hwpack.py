@@ -21,7 +21,7 @@ import os
 import sys
 
 from linaro_image_tools.media_create import cmd_runner
-from linaro_image_tools.media_create.utils import (
+from linaro_image_tools.utils import (
     is_arm_host,
     find_command,
     )
