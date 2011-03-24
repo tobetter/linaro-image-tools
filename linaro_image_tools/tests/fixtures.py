@@ -64,7 +64,7 @@ class MockCmdRunnerPopen(object):
     """A mock for cmd_runner.Popen() which stores the args given to it."""
     calls = None
     # A variable that is set to False in __call__() and only set back to True
-    # when wait() is called, to indicate that tht subprocess has finished. Is
+    # when wait() is called, to indicate that the subprocess has finished. Is
     # used in tests to make sure all callsites wait for their child.
     child_finished = True
 
