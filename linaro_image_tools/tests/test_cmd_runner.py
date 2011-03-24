@@ -20,18 +20,14 @@
 import os
 
 from linaro_image_tools import cmd_runner
-
-from linaro_image_tools.cmd_runner import SUDO_ARGS
-
 from linaro_image_tools.testing import TestCaseWithFixtures
-
 from linaro_image_tools.tests.fixtures import (
     MockCmdRunnerPopenFixture,
     MockSomethingFixture,
     )
 
 
-sudo_args = " ".join(SUDO_ARGS)
+sudo_args = " ".join(cmd_runner.SUDO_ARGS)
 
 
 class TestCmdRunner(TestCaseWithFixtures):

@@ -31,9 +31,6 @@ import types
 from testtools import TestCase
 
 from linaro_image_tools import cmd_runner
-
-from linaro_image_tools.cmd_runner import SUDO_ARGS
-
 import linaro_image_tools.media_create
 from linaro_image_tools.media_create import (
     check_device,
@@ -95,19 +92,16 @@ from linaro_image_tools.media_create.tests.fixtures import (
 from linaro_image_tools.media_create.unpack_binary_tarball import (
     unpack_binary_tarball,
     )
-
 from linaro_image_tools.testing import TestCaseWithFixtures
-
 from linaro_image_tools.tests.fixtures import (
     CreateTempDirFixture,
     MockCmdRunnerPopenFixture,
     MockSomethingFixture,
     )
-
 from linaro_image_tools.utils import find_command, preferred_tools_dir
 
 
-sudo_args = " ".join(SUDO_ARGS)
+sudo_args = " ".join(cmd_runner.SUDO_ARGS)
 
 
 class TestGetMLOFile(TestCaseWithFixtures):

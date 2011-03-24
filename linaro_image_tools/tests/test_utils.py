@@ -23,17 +23,12 @@ import subprocess
 import sys
 
 from linaro_image_tools import cmd_runner, utils
-
-from linaro_image_tools.cmd_runner import SUDO_ARGS
-
 from linaro_image_tools.testing import TestCaseWithFixtures
-
 from linaro_image_tools.tests.fixtures import (
     CreateTempDirFixture,
     MockCmdRunnerPopenFixture,
     MockSomethingFixture,
     )
-
 from linaro_image_tools.utils import (
     ensure_command,
     find_command,
@@ -43,7 +38,7 @@ from linaro_image_tools.utils import (
     )
 
 
-sudo_args = " ".join(SUDO_ARGS)
+sudo_args = " ".join(cmd_runner.SUDO_ARGS)
 
 
 class TestEnsureCommand(TestCaseWithFixtures):
