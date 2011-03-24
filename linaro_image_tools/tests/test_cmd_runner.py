@@ -56,6 +56,12 @@ class TestCmdRunner(TestCaseWithFixtures):
         cmd_runner.run(['foo', 'bar'], as_root=True).wait()
         self.assertEqual([['foo', 'bar']], fixture.mock.calls)
 
+    def test_tuple_with_sudo(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        self.useFixture(MockSomethingFixture(os, 'getuid', lambda: 1000))
+        cmd_runner.run(('foo', 'bar',), as_root=True).wait()
+        self.assertEqual([['sudo', '-E', 'foo', 'bar']], fixture.mock.calls)
+
     def test_run_succeeds_on_zero_return_code(self):
         proc = cmd_runner.run(['true'])
         # Need to wait() here as we're using the real Popen.
