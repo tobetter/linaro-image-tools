@@ -508,52 +508,6 @@ class TestGetUuid(TestCaseWithFixtures):
         self.assertEquals("67d641db-ea7d-4acf-9f46-5f1f8275dce2", uuid)
 
 
-class TestCmdRunner(TestCaseWithFixtures):
-
-    def test_run(self):
-        fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        proc = cmd_runner.run(['foo', 'bar', 'baz'])
-        # Call wait or else MockCmdRunnerPopenFixture() raises an
-        # AssertionError().
-        proc.wait()
-        self.assertEqual(0, proc.returncode)
-        self.assertEqual([['foo', 'bar', 'baz']], fixture.mock.calls)
-
-    def test_run_as_root_with_sudo(self):
-        fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        self.useFixture(MockSomethingFixture(os, 'getuid', lambda: 1000))
-        cmd_runner.run(['foo', 'bar'], as_root=True).wait()
-        self.assertEqual(
-            ['%s foo bar' % sudo_args], fixture.mock.commands_executed)
-
-    def test_run_as_root_as_root(self):
-        fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        self.useFixture(MockSomethingFixture(os, 'getuid', lambda: 0))
-        cmd_runner.run(['foo', 'bar'], as_root=True).wait()
-        self.assertEqual([['foo', 'bar']], fixture.mock.calls)
-
-    def test_run_succeeds_on_zero_return_code(self):
-        proc = cmd_runner.run(['true'])
-        # Need to wait() here as we're using the real Popen.
-        proc.wait()
-        self.assertEqual(0, proc.returncode)
-
-    def test_run_raises_exception_on_non_zero_return_code(self):
-        def run_and_wait():
-            proc = cmd_runner.run(['false'])
-            proc.wait()
-        self.assertRaises(
-            cmd_runner.SubcommandNonZeroReturnValue, run_and_wait)
-
-    def test_run_must_be_given_list_as_args(self):
-        self.assertRaises(AssertionError, cmd_runner.run, 'true')
-
-    def test_Popen(self):
-        proc = cmd_runner.Popen('true')
-        returncode = proc.wait()
-        self.assertEqual(0, returncode)
-
-
 class TestBoards(TestCaseWithFixtures):
 
     def _mock_get_file_matching(self):

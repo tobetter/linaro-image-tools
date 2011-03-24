@@ -7,6 +7,7 @@ from linaro_image_tools.media_create.tests import (
 
 def test_suite():
     module_names = [
+        'linaro_image_tools.tests.test_cmd_runner',
         'linaro_image_tools.tests.test_utils',
         ]
     loader = unittest.TestLoader()
