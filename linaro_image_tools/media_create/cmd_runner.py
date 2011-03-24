@@ -20,14 +20,16 @@
 import os
 import subprocess
 
-# this is crude, but it's a good way to ensure that PATH is set before calling
-# Popen (and not just in Popen's env argument); see LP #709517
-if 'PATH' not in os.environ or os.environ['PATH'] == '':
-    os.environ['PATH'] = (
-        '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin')
-# and this one makes sure /sbin is in the PATH
-if 'sbin' not in os.environ["PATH"].split(os.pathsep):
-    os.environ['PATH'] = os.pathsep.join((os.environ['PATH'], '/sbin'))
+def sanitize_path(env):
+    """Makes sure PATH is set and has important directories"""
+    # ensure PATH is set
+    if 'PATH' not in env or env['PATH'] == '':
+        env['PATH'] = (
+            '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin')
+        return
+    # and this one makes sure /sbin is in the PATH
+    if 'sbin' not in env["PATH"].split(os.pathsep):
+        env['PATH'] = os.pathsep.join((env['PATH'], '/sbin'))
 
 def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
     """Run the given command as a sub process.
@@ -62,6 +64,10 @@ class Popen(subprocess.Popen):
         if env is None:
             env = os.environ.copy()
         env['LC_ALL'] = 'C'
+        # ensure a proper PATH before calling Popen
+        sanitize_path(os.environ)
+        # and for subcommands
+        sanitize_path(env)
         super(Popen, self).__init__(args, env=env, **kwargs)
 
     def wait(self):
