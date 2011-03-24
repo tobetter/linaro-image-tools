@@ -493,9 +493,8 @@ class TestGetUuid(TestCaseWithFixtures):
         self.useFixture(fixture)
         get_uuid("/dev/rootfs")
         self.assertEquals(
-            [SUDO_ARGS + ['blkid', '-o', 'udev', '-p', '-c', '/dev/null',
-                          '/dev/rootfs']],
-            fixture.mock.calls)
+            ["%s blkid -o udev -p -c /dev/null /dev/rootfs" % sudo_args],
+            fixture.mock.commands_executed)
 
     def test_parse_blkid_output(self):
         output = (
@@ -523,22 +522,20 @@ class TestBoards(TestCaseWithFixtures):
         fixture = self._mock_Popen()
         make_uImage('load_addr', 'parts_dir', 'sub_arch', 'boot_disk')
         expected = [
-            SUDO_ARGS + ['mkimage', '-A', 'arm', '-O', 'linux', '-T', 'kernel',
-                         '-C', 'none', '-a', 'load_addr', '-e', 'load_addr',
-                         '-n', 'Linux', '-d', 'parts_dir/vmlinuz-*-sub_arch',
-                         'boot_disk/uImage']]
-        self.assertEqual(expected, fixture.mock.calls)
+            '%s mkimage -A arm -O linux -T kernel -C none -a load_addr '
+            '-e load_addr -n Linux -d parts_dir/vmlinuz-*-sub_arch '
+            'boot_disk/uImage' % sudo_args]
+        self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_make_uInitrd(self):
         self._mock_get_file_matching()
         fixture = self._mock_Popen()
         make_uInitrd('parts_dir', 'sub_arch', 'boot_disk')
         expected = [
-            SUDO_ARGS + ['mkimage', '-A', 'arm', '-O', 'linux', '-T',
-                         'ramdisk', '-C', 'none', '-a', '0', '-e', '0', '-n',
-                         'initramfs', '-d', 'parts_dir/initrd.img-*-sub_arch',
-                         'boot_disk/uInitrd']]
-        self.assertEqual(expected, fixture.mock.calls)
+            '%s mkimage -A arm -O linux -T ramdisk -C none -a 0 -e 0 '
+            '-n initramfs -d parts_dir/initrd.img-*-sub_arch '
+            'boot_disk/uInitrd' % sudo_args]
+        self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_make_flashable_env_too_small_env(self):
         env = {'verylong': 'evenlonger'}
@@ -558,9 +555,9 @@ class TestBoards(TestCaseWithFixtures):
         imx_file = self.createTempFileAsFixture()
         install_mx5_boot_loader(imx_file, "boot_device_or_file")
         expected = [
-            SUDO_ARGS + ['dd', 'if=%s' % imx_file, 'of=boot_device_or_file',
-                         'bs=512', 'conv=notrunc', 'seek=2']]
-        self.assertEqual(expected, fixture.mock.calls)
+            '%s dd if=%s of=boot_device_or_file bs=512 '
+            'conv=notrunc seek=2' % (sudo_args, imx_file)]
+        self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_install_mx5_boot_loader_too_large(self):
         self.useFixture(MockSomethingFixture(
@@ -576,8 +573,8 @@ class TestBoards(TestCaseWithFixtures):
             lambda chroot_dir: "%s/MLO" % chroot_dir))
         install_omap_boot_loader("chroot_dir", "boot_disk")
         expected = [
-            SUDO_ARGS + ['cp', '-v', 'chroot_dir/MLO', 'boot_disk'], ['sync']]
-        self.assertEqual(expected, fixture.mock.calls)
+            '%s cp -v chroot_dir/MLO boot_disk' % sudo_args, 'sync']
+        self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_make_boot_script(self):
         self.useFixture(MockSomethingFixture(
@@ -590,13 +587,12 @@ class TestBoards(TestCaseWithFixtures):
         boot_env = {'bootargs': 'mybootargs', 'bootcmd': 'mybootcmd'}
         make_boot_script(boot_env, boot_script_path)
         expected = [
-            SUDO_ARGS + ['cp', '/tmp/random-abxzr',
-                         '%s' % plain_boot_script_path],
-            SUDO_ARGS + ['mkimage', '-A', 'arm', '-O', 'linux', '-T', 'script',
-                         '-C', 'none', '-a', '0', '-e', '0', '-n',
-                         'boot script', '-d', plain_boot_script_path,
-                         boot_script_path]]
-        self.assertEqual(expected, fixture.mock.calls)
+            '%s cp /tmp/random-abxzr %s' % (
+                sudo_args, plain_boot_script_path),
+            '%s mkimage -A arm -O linux -T script -C none -a 0 -e 0 '
+            '-n boot script -d %s %s' % (
+                sudo_args, plain_boot_script_path, boot_script_path)]
+        self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_get_file_matching(self):
         prefix = ''.join(
@@ -659,9 +655,9 @@ class TestCreatePartitions(TestCaseWithFixtures):
         create_partitions(boards.Mx5Config, self.media, HEADS, SECTORS, '')
 
         self.assertEqual(
-            [SUDO_ARGS + ['parted', '-s', self.media.path, 'mklabel', 'msdos'],
-             ['sync']],
-            popen_fixture.mock.calls)
+            ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
+             'sync'],
+            popen_fixture.mock.commands_executed)
         # Notice that we create all partitions in a single sfdisk run because
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
@@ -679,9 +675,9 @@ class TestCreatePartitions(TestCaseWithFixtures):
             board_configs['smdkv310'], self.media, HEADS, SECTORS, '')
 
         self.assertEqual(
-            [SUDO_ARGS + ['parted', '-s', self.media.path, 'mklabel', 'msdos'],
-             ['sync']],
-            popen_fixture.mock.calls)
+            ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
+             'sync'],
+            popen_fixture.mock.commands_executed)
         # Notice that we create all partitions in a single sfdisk run because
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
@@ -696,10 +692,10 @@ class TestCreatePartitions(TestCaseWithFixtures):
         create_partitions(
             board_configs['beagle'], self.media, HEADS, SECTORS, '')
 
-        self.assertEqual([
-            SUDO_ARGS + ['parted', '-s', self.media.path, 'mklabel', 'msdos'],
-             ['sync']],
-            popen_fixture.mock.calls)
+        self.assertEqual(
+            ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
+             'sync'],
+            popen_fixture.mock.commands_executed)
         self.assertEqual(
             [('63,106432,0x0C,*\n106496,,,-', HEADS, SECTORS, '',
               self.media.path)],

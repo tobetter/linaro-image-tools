@@ -43,6 +43,9 @@ from linaro_image_tools.utils import (
     )
 
 
+sudo_args = " ".join(SUDO_ARGS)
+
+
 class TestEnsureCommand(TestCaseWithFixtures):
 
     install_pkg_providing_called = False
@@ -103,8 +106,8 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         install_package_providing('mkfs.vfat')
         self.assertEqual(
-            [SUDO_ARGS + ['apt-get', 'install', 'dosfstools']],
-            fixture.mock.calls)
+            ['%s apt-get install dosfstools' % sudo_args],
+            fixture.mock.commands_executed)
 
     def test_not_found_package(self):
         self.assertRaises(

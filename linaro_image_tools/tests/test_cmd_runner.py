@@ -31,6 +31,9 @@ from linaro_image_tools.tests.fixtures import (
     )
 
 
+sudo_args = " ".join(SUDO_ARGS)
+
+
 class TestCmdRunner(TestCaseWithFixtures):
 
     def test_run(self):
@@ -40,25 +43,27 @@ class TestCmdRunner(TestCaseWithFixtures):
         # AssertionError().
         proc.wait()
         self.assertEqual(0, proc.returncode)
-        self.assertEqual([['foo', 'bar', 'baz']], fixture.mock.calls)
+        self.assertEqual(['foo bar baz'], fixture.mock.commands_executed)
 
     def test_run_as_root_with_sudo(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(os, 'getuid', lambda: 1000))
         cmd_runner.run(['foo', 'bar'], as_root=True).wait()
-        self.assertEqual([SUDO_ARGS + ['foo', 'bar']], fixture.mock.calls)
+        self.assertEqual(
+            ['%s foo bar' % sudo_args], fixture.mock.commands_executed)
 
     def test_run_as_root_as_root(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(os, 'getuid', lambda: 0))
         cmd_runner.run(['foo', 'bar'], as_root=True).wait()
-        self.assertEqual([['foo', 'bar']], fixture.mock.calls)
+        self.assertEqual(['foo bar'], fixture.mock.commands_executed)
 
     def test_tuple_with_sudo(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(os, 'getuid', lambda: 1000))
         cmd_runner.run(('foo', 'bar',), as_root=True).wait()
-        self.assertEqual([SUDO_ARGS + ['foo', 'bar']], fixture.mock.calls)
+        self.assertEqual(
+            ['%s foo bar' % sudo_args], fixture.mock.commands_executed)
 
     def test_run_succeeds_on_zero_return_code(self):
         proc = cmd_runner.run(['true'])
