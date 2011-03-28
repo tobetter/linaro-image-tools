@@ -497,7 +497,7 @@ class Mx5Config(BoardConfig):
 
 class Mx51Config(Mx5Config):
     kernel_addr = '0x90000000'
-    initrd_addr = '0x90800000'
+    initrd_addr = '0x92000000'
     load_addr = '0x90008000'
     kernel_suffix = 'linaro-mx51'
 
