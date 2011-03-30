@@ -136,7 +136,7 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
     if should_create_partitions:
         create_partitions(
             board_config, media, HEADS, SECTORS, cylinders,
-            should_align_boot_part=should_align_boot_part, image_type=None)
+            should_align_boot_part=should_align_boot_part)
 
     if media.is_block_device:
         bootfs, rootfs = get_boot_and_root_partitions_for_media(
