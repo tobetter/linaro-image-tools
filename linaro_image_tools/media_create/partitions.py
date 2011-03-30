@@ -41,62 +41,67 @@ DBUS_PROPERTIES = 'org.freedesktop.DBus.Properties'
 UDISKS = "org.freedesktop.UDisks"
 
 
-def setup_android_partitions(board_config, media, image_size, bootfs_label,
+def setup_android_partitions(board_config, media, bootfs_label,
                      rootfs_label, rootfs_type, should_create_partitions,
                      should_format_bootfs, should_format_rootfs,
                      should_align_boot_part=False):
     cylinders = None
-    create_partitions(
-        board_config, media, HEADS, SECTORS, cylinders,
-        should_align_boot_part=should_align_boot_part, image_type="ANDROID")
 
-    if media.is_block_device:
-        bootfs, rootfs, system, cache, data, sdcard = \
-            get_android_partitions_for_media (media, board_config)
-        ensure_partition_is_not_mounted(bootfs)
-        ensure_partition_is_not_mounted(rootfs)
-        ensure_partition_is_not_mounted(system)
-        ensure_partition_is_not_mounted(cache)
-        ensure_partition_is_not_mounted(data)
-        ensure_partition_is_not_mounted(sdcard)
+    if should_create_partitions:
+        create_partitions(
+            board_config, media, HEADS, SECTORS, cylinders,
+            should_align_boot_part=should_align_boot_part, image_type="ANDROID")
 
+    bootfs, rootfs, system, cache, data, sdcard = \
+        get_android_partitions_for_media (media, board_config)
+    ensure_partition_is_not_mounted(bootfs)
+    ensure_partition_is_not_mounted(rootfs)
+    ensure_partition_is_not_mounted(system)
+    ensure_partition_is_not_mounted(cache)
+    ensure_partition_is_not_mounted(data)
+    ensure_partition_is_not_mounted(sdcard)
+
+    if should_format_bootfs:
+        print "\nFormating boot partition\n"
         proc = cmd_runner.run(
             ['mkfs.vfat', '-F', str(board_config.fat_size), bootfs, '-n',
              bootfs_label],
             as_root=True)
         proc.wait()
 
+    if should_format_rootfs:
+        print "\nFormating root partition\n"
         mkfs = 'mkfs.%s' % rootfs_type
         proc = cmd_runner.run(
             [mkfs, rootfs, '-L', rootfs_label],
             as_root=True)
         proc.wait()
 
-        mkfs = 'mkfs.%s' % "ext4"
-        proc = cmd_runner.run(
-            [mkfs, system, '-L', "system"],
-            as_root=True)
-        proc.wait()
+    mkfs = 'mkfs.%s' % "ext4"
+    proc = cmd_runner.run(
+        [mkfs, system, '-L', "system"],
+        as_root=True)
+    proc.wait()
 
-        mkfs = 'mkfs.%s' % "ext4"
-        proc = cmd_runner.run(
-            [mkfs, cache, '-L', "cache"],
-            as_root=True)
-        proc.wait()
+    mkfs = 'mkfs.%s' % "ext4"
+    proc = cmd_runner.run(
+        [mkfs, cache, '-L', "cache"],
+        as_root=True)
+    proc.wait()
 
-        mkfs = 'mkfs.%s' % "ext4"
-        proc = cmd_runner.run(
-            [mkfs, data, '-L', "userdata"],
-            as_root=True)
-        proc.wait()
+    mkfs = 'mkfs.%s' % "ext4"
+    proc = cmd_runner.run(
+        [mkfs, data, '-L', "userdata"],
+        as_root=True)
+    proc.wait()
 
-        proc = cmd_runner.run(
-            ['mkfs.vfat', '-F', str(board_config.fat_size), sdcard, '-n',
-             "sdcard"],
-            as_root=True)
-        proc.wait()
+    proc = cmd_runner.run(
+        ['mkfs.vfat', '-F', str(board_config.fat_size), sdcard, '-n',
+         "sdcard"],
+        as_root=True)
+    proc.wait()
 
-        return bootfs, rootfs, system, cache, data, sdcard
+    return bootfs, rootfs, system, cache, data, sdcard
 
 # I wonder if it'd make sense to convert this into a small shim which calls
 # the appropriate function for the given type of device?  I think it's still

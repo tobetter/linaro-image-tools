@@ -92,6 +92,13 @@ def ensure_required_commands(args):
 
 if __name__ == '__main__':
     parser = get_android_args_parser()
+    print "===================================================================="
+    print "            linaro-android-media-create is EXPERIMENTAL             "
+    print "                                                                    "
+    print " The command line parameters as well as the distribution format will" 
+    print " be changed and we will not keep backward compatibility for the     " 
+    print " current version here.                                              "
+    print "===================================================================="
     args = parser.parse_args()
 
     # If --help was specified this won't execute.
@@ -136,7 +143,7 @@ if __name__ == '__main__':
     # Create partitions    
     boot_partition, root_partition, system_partition, cache_partition, \
         data_partition, sdcard_partition = setup_android_partitions( \
-        board_config, media, args.image_size, args.boot_label, args.rfs_label,
+        board_config, media, args.boot_label, args.rfs_label,
         args.rootfs, args.should_create_partitions, args.should_format_bootfs,
         args.should_format_rootfs, args.should_align_boot_part)
 

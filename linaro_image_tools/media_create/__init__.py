@@ -114,17 +114,13 @@ def get_args_parser():
 def get_android_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
     parser = argparse.ArgumentParser()
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-        '--mmc', dest='device', help='The storage device to use.')
-    group.add_argument(
-        '--image_file', dest='device',
-        help='File where we should write the QEMU image.')
+    parser.add_argument(
+        '--mmc', required=True, dest='device', help='The storage device to use.')
     parser.add_argument(
         '--dev', required=True, dest='board', choices=KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
     parser.add_argument(
-        '--rootfs', default='ext4', choices=['ext2', 'ext3', 'ext4', 'btrfs'],
+        '--rootfs', default='ext4', choices=['ext3', 'ext4'],
         help='Type of filesystem to use for the rootfs')
     parser.add_argument(
         '--rfs_label', default='rootfs',
@@ -132,27 +128,6 @@ def get_android_args_parser():
     parser.add_argument(
         '--boot_label', default='boot',
         help='Label to use for the boot filesystem.')
-    parser.add_argument(
-        '--swap_file', type=int,
-        help='Create a swap file of the given size (in MBs).')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument(
-        '--live', dest='is_live', action='store_true',
-        help=('Create boot command for casper/live images; if this is not '
-              'provided the UUID for the rootfs is used as the root= option'))
-    group.add_argument(
-        '--live-256m', dest='is_lowmem', action=Live256MegsAction,
-        help=('Create boot command for casper/live images; adds '
-              'only-ubiquity option to allow use of live installer on '
-              'boards with 256M memory - like beagle.'))
-    parser.add_argument(
-        '--console', action='append', dest='consoles', default=[],
-        help=('Add a console to kernel boot parameter; this parameter can be '
-              'defined multiple times.'))
-    parser.add_argument(
-        '--image_size', default='2G',
-        help=('The image size, specified in mega/giga bytes (e.g. 3000M or '
-              '3G); use with --image_file only'))
 
     parser.add_argument(
         '--system', default='system.tar.bz2', required=True,
