@@ -155,7 +155,7 @@ class BoardConfig(object):
     serial_tty = None
 
     @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+    def get_sfdisk_cmd(cls, should_align_boot_part=False, image_type=None):
         """Return the sfdisk command to partition the media.
 
         :param should_align_boot_part: Whether to align the boot partition too.
@@ -167,6 +167,15 @@ class BoardConfig(object):
             partition_type = '0x0C'
         else:
             partition_type = '0x0E'
+
+        if image_type == "ANDROID":
+            LOADER_MIN_SIZE_S = align_up(1 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+            BOOT_MIN_SIZE_S = align_up(128 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+            ROOT_MIN_SIZE_S = align_up(128 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+            SYSTEM_MIN_SIZE_S = align_up(256 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+            CACHE_MIN_SIZE_S = align_up(256 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+            USERDATA_MIN_SIZE_S = align_up(512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+            SDCARD_MIN_SIZE_S = align_up(512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
 
         # align on sector 63 for compatibility with broken versions of x-loader
         # unless align_boot_part is set
@@ -182,14 +191,32 @@ class BoardConfig(object):
         # there should still be enough room
         boot_len = boot_len - boot_len % 2
         boot_end = boot_start + boot_len - 1
-        # we ignore _root_end / _root_len and return a sfdisk command to
-        # instruct the use of all remaining space; XXX if we had some root size
-        # config, we could do something more sensible
-        root_start, _root_end, _root_len = align_partition(
-            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
-        return '%s,%s,%s,*\n%s,,,-' % (
-            boot_start, boot_len, partition_type, root_start)
+        if image_type == "ANDROID":
+            root_start, _root_end, _root_len = align_partition(
+                boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+            system_start, _system_end, _system_len = align_partition(
+                _root_end + 1, SYSTEM_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+            cache_start, _cache_end, _cache_len = align_partition(
+                _system_end + 1, CACHE_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+            userdata_start, _userdata_end, _userdata_len = align_partition(
+                _cache_end + 1, USERDATA_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+            sdcard_start, _sdcard_end, _sdcard_len = align_partition(
+                _userdata_end + 1, SDCARD_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+     
+            return '%s,%s,%s,*\n%s,%s,L\n%s,%s,L\n%s,-,E\n%s,%s,L\n%s,%s,L\n%s,,,-' % (
+                boot_start, boot_len, partition_type, root_start, _root_len, 
+                system_start, _system_len, cache_start, cache_start, _cache_len,
+                userdata_start, _userdata_len, sdcard_start)
+        else:
+            # we ignore _root_end / _root_len and return a sfdisk command to
+            # instruct the use of all remaining space; XXX if we had some root size
+            # config, we could do something more sensible
+            root_start, _root_end, _root_len = align_partition(
+                boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+            return '%s,%s,%s,*\n%s,,,-' % (
+                boot_start, boot_len, partition_type, root_start)
 
     @classproperty
     def bootcmd(cls):

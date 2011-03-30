@@ -48,7 +48,7 @@ def setup_android_partitions(board_config, media, image_size, bootfs_label,
     cylinders = None
     create_partitions(
         board_config, media, HEADS, SECTORS, cylinders,
-        should_align_boot_part=should_align_boot_part)
+        should_align_boot_part=should_align_boot_part, image_type="ANDROID")
 
     if media.is_block_device:
         bootfs, rootfs, system, cache, data, sdcard = \
@@ -136,7 +136,7 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
     if should_create_partitions:
         create_partitions(
             board_config, media, HEADS, SECTORS, cylinders,
-            should_align_boot_part=should_align_boot_part)
+            should_align_boot_part=should_align_boot_part, image_type=None)
 
     if media.is_block_device:
         bootfs, rootfs = get_boot_and_root_partitions_for_media(
@@ -393,7 +393,7 @@ def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
 
 
 def create_partitions(board_config, media, heads, sectors, cylinders=None,
-                      should_align_boot_part=False):
+                      should_align_boot_part=False, image_type=None):
     """Partition the given media according to the board requirements.
 
     :param board_config: A BoardConfig class.
@@ -413,7 +413,7 @@ def create_partitions(board_config, media, heads, sectors, cylinders=None,
         proc.wait()
 
     sfdisk_cmd = board_config.get_sfdisk_cmd(
-        should_align_boot_part=should_align_boot_part)
+        should_align_boot_part=should_align_boot_part, image_type=image_type)
     run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
 
     # Sync and sleep to wait for the partition to settle.
