@@ -77,23 +77,13 @@ def setup_android_partitions(board_config, media, bootfs_label,
             as_root=True)
         proc.wait()
 
-    mkfs = 'mkfs.%s' % "ext4"
-    proc = cmd_runner.run(
-        [mkfs, system, '-L', "system"],
-        as_root=True)
-    proc.wait()
-
-    mkfs = 'mkfs.%s' % "ext4"
-    proc = cmd_runner.run(
-        [mkfs, cache, '-L', "cache"],
-        as_root=True)
-    proc.wait()
-
-    mkfs = 'mkfs.%s' % "ext4"
-    proc = cmd_runner.run(
-        [mkfs, data, '-L', "userdata"],
-        as_root=True)
-    proc.wait()
+    ext4_partitions = {"system": system, "cache": cache, "userdata": data}
+    for label, dev in ext4_partitions.iteritems():
+        mkfs = 'mkfs.%s' % "ext4"
+        proc = cmd_runner.run(
+            [mkfs, dev, '-L', label],
+            as_root=True)
+        proc.wait()
 
     proc = cmd_runner.run(
         ['mkfs.vfat', '-F', str(board_config.fat_size), sdcard, '-n',
