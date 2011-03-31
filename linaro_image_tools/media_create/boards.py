@@ -605,9 +605,6 @@ class SMDKV310Config(BoardConfig):
             chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.bin')
         install_smdkv310_uboot(uboot_file, boot_device_or_file)
 
-        print "spl_file", spl_file
-        print "uboot_file", uboot_file
-
         env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
         install_smdkv310_boot_env(env_file, boot_device_or_file)
