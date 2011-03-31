@@ -407,8 +407,13 @@ def create_partitions(board_config, media, heads, sectors, cylinders=None,
             ['parted', '-s', media.path, 'mklabel', 'msdos'], as_root=True)
         proc.wait()
 
-    sfdisk_cmd = board_config.get_sfdisk_cmd(
-        should_align_boot_part=should_align_boot_part, image_type=image_type)
+    if image_type == "ANDROID":
+        sfdisk_cmd = board_config.get_android_sfdisk_cmd(
+            should_align_boot_part=should_align_boot_part)
+    else:
+        sfdisk_cmd = board_config.get_sfdisk_cmd(
+            should_align_boot_part=should_align_boot_part)
+
     run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
 
     # Sync and sleep to wait for the partition to settle.
