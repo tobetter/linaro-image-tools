@@ -689,6 +689,11 @@ board_configs = {
     'smdkv310': SMDKV310Config,
     }
 
+android_board_configs = {
+    'beagle': BeagleConfig,
+    'panda': PandaConfig,
+    }
+
 
 def _dd(input_file, output_file, block_size=SECTOR_SIZE, count=None, seek=None,
         skip=None):

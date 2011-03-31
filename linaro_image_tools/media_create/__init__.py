@@ -20,9 +20,11 @@
 import argparse
 
 from linaro_image_tools.media_create.boards import board_configs
+from linaro_image_tools.media_create.boards import android_board_configs
 
 
 KNOWN_BOARDS = board_configs.keys()
+ANDROID_KNOWN_BOARDS = android_board_configs.keys()
 
 
 class Live256MegsAction(argparse.Action):
@@ -117,7 +119,7 @@ def get_android_args_parser():
     parser.add_argument(
         '--mmc', required=True, dest='device', help='The storage device to use.')
     parser.add_argument(
-        '--dev', required=True, dest='board', choices=KNOWN_BOARDS,
+        '--dev', required=True, dest='board', choices=ANDROID_KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
     parser.add_argument(
         '--rootfs', default='ext4', choices=['ext3', 'ext4'],

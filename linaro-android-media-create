@@ -25,7 +25,7 @@ import tempfile
 
 from linaro_image_tools import cmd_runner
 
-from linaro_image_tools.media_create.boards import board_configs
+from linaro_image_tools.media_create.boards import android_board_configs
 from linaro_image_tools.media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
 from linaro_image_tools.media_create.hwpack import install_hwpacks
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     DATA_DISK = os.path.join(TMP_DIR, 'userdata-disc')
     SDCARD_DISK = os.path.join(TMP_DIR, 'sdcard-disc')
 
-    board_config = board_configs[args.board]
+    board_config = android_board_configs[args.board]
 
     ensure_required_commands(args)
 
