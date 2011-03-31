@@ -833,29 +833,16 @@ def install_smdkv310_boot_env(env_file, boot_device_or_file):
 
 def install_smdkv310_spl(v310_spl, boot_device_or_file):
     """Samsung specific terminology
-    BL0 is the first stage bootloader,
-    BL1 is the SPL (secondary program loader)
-    v310_file is a binary with the same layout as BL1 + u-boot environment +
-    BL2; write BL1 (SPL) piece first (SAMSUNG_V310_BL1_LEN sectors at +0s in
-    the file and +SAMSUNG_V310_BL1_START on disk), then write BL2 (u-boot)
-    piece (rest of the file starting at +(SAMSUNG_V310_BL1_LEN +
-    SAMSUNG_V310_ENV_LEN)s in the file which is the same as
-    +(SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START)s)
+    BL0 is the first stage bootloader that is located in rom.
+    BL1 is the SPL (secondary program loader) which is a small ( < 14k )
+    version of u-boot ( v310_mmc_spl.bin ) with a chacksum. BL0
+    reads BL1 from sector 1 of the MMC card and runs it. BL1
+    then loads u-boot to DRAM and runs it
     """
     _dd(v310_spl, boot_device_or_file, count=SAMSUNG_V310_BL1_LEN,
         seek=SAMSUNG_V310_BL1_START)
 
 def install_smdkv310_uboot(v310_uboot, boot_device_or_file):
-    """Samsung specific terminology
-    BL0 is the first stage bootloader,
-    BL1 is the SPL (secondary program loader)
-    v310_file is a binary with the same layout as BL1 + u-boot environment +
-    BL2; write BL1 (SPL) piece first (SAMSUNG_V310_BL1_LEN sectors at +0s in
-    the file and +SAMSUNG_V310_BL1_START on disk), then write BL2 (u-boot)
-    piece (rest of the file starting at +(SAMSUNG_V310_BL1_LEN +
-    SAMSUNG_V310_ENV_LEN)s in the file which is the same as
-    +(SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START)s)
-    """
     # XXX need to check that the length of v310_file - 64s is smaller than
     # SAMSUNG_V310_BL2_LEN
     _dd(v310_uboot, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
