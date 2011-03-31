@@ -50,6 +50,10 @@ TMP_DIR = None
 ROOTFS_DIR = None
 BOOT_DISK = None
 ROOT_DISK = None
+SYSTEM_DISK = None
+CACHE_DISK = None
+DATA_DISK = None
+SDCARD_DISK = None
 
 
 # Registered as the first atexit handler as we want this to be the last
@@ -62,7 +66,8 @@ def cleanup_tempdir():
     """
     devnull = open('/dev/null', 'w')
     # ignore non-zero return codes
-    for disk in BOOT_DISK, ROOT_DISK:
+    for disk in BOOT_DISK, ROOT_DISK, SYSTEM_DISK, CACHE_DISK, DATA_DISK, \
+                SDCARD_DISK:
         if disk is not None:
             try:
                 cmd_runner.run(['umount', disk],
