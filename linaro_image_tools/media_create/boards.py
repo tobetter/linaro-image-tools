@@ -591,23 +591,22 @@ class SMDKV310Config(BoardConfig):
 
         boot_env["ethact"] = "smc911x-0"
         boot_env["ethaddr"] = "00:40:5c:26:0a:5b"
-        # XXX fixme once FAT support is fixed in u-boot bug 727978
-        boot_env["bootcmd"] = (
-            "movi read kernel %(kernel_addr)s; "
-            "movi read rootfs %(initrd_addr)s %(rootfs_size)s; "
-            "bootm %(kernel_addr)s %(initrd_addr)s" % {
-                'kernel_addr': cls.kernel_addr,
-                'initrd_addr': cls.initrd_addr,
-                'rootfs_size': hex(SAMSUNG_V310_UINITRD_COPY_LEN * SECTOR_SIZE)})
+        boot_env["bootcmd"] = super(SMDKV310Config, cls).bootcmd
 
         return boot_env
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
                          boot_script_path, boot_device_or_file):
+        spl_file = os.path.join(
+            chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'v310_mmc_spl.bin')
+        install_smdkv310_spl(spl_file, boot_device_or_file)
         uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.v310')
-        install_smdkv310_boot_loader(uboot_file, boot_device_or_file)
+            chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.bin')
+        install_smdkv310_uboot(uboot_file, boot_device_or_file)
+
+        print "spl_file", spl_file
+        print "uboot_file", uboot_file
 
         env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
@@ -832,7 +831,7 @@ def install_smdkv310_boot_env(env_file, boot_device_or_file):
         seek=SAMSUNG_V310_ENV_START)
 
 
-def install_smdkv310_boot_loader(v310_file, boot_device_or_file):
+def install_smdkv310_spl(v310_spl, boot_device_or_file):
     """Samsung specific terminology
     BL0 is the first stage bootloader,
     BL1 is the SPL (secondary program loader)
@@ -843,10 +842,21 @@ def install_smdkv310_boot_loader(v310_file, boot_device_or_file):
     SAMSUNG_V310_ENV_LEN)s in the file which is the same as
     +(SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START)s)
     """
-    _dd(v310_file, boot_device_or_file, count=SAMSUNG_V310_BL1_LEN,
+    _dd(v310_spl, boot_device_or_file, count=SAMSUNG_V310_BL1_LEN,
         seek=SAMSUNG_V310_BL1_START)
+
+def install_smdkv310_uboot(v310_uboot, boot_device_or_file):
+    """Samsung specific terminology
+    BL0 is the first stage bootloader,
+    BL1 is the SPL (secondary program loader)
+    v310_file is a binary with the same layout as BL1 + u-boot environment +
+    BL2; write BL1 (SPL) piece first (SAMSUNG_V310_BL1_LEN sectors at +0s in
+    the file and +SAMSUNG_V310_BL1_START on disk), then write BL2 (u-boot)
+    piece (rest of the file starting at +(SAMSUNG_V310_BL1_LEN +
+    SAMSUNG_V310_ENV_LEN)s in the file which is the same as
+    +(SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START)s)
+    """
     # XXX need to check that the length of v310_file - 64s is smaller than
     # SAMSUNG_V310_BL2_LEN
-    _dd(v310_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START,
-        skip=(SAMSUNG_V310_BL2_START - SAMSUNG_V310_BL1_START))
+    _dd(v310_uboot, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
 

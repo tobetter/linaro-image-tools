@@ -189,9 +189,9 @@ class TestBootSteps(TestCaseWithFixtures):
     def test_smdkv310_steps(self):
         self.make_boot_files(boards.SMDKV310Config)
         expected = [
-            'install_smdkv310_boot_loader', 'make_flashable_env',
-            'install_smdkv310_boot_env', 'make_uImage',
-            'install_smdkv310_uImage', 'make_uInitrd',
+            'install_smdkv310_spl', 'install_smdkv310_uboot', 
+            'make_flashable_env', 'install_smdkv310_boot_env', 
+            'make_uImage', 'install_smdkv310_uImage', 'make_uInitrd',
             'install_smdkv310_initrd']
         self.assertEqual(expected, self.funcs_calls)
 
@@ -356,8 +356,8 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=ttySAC1,115200n8  root=UUID=deadbeef '
                         'rootwait ro',
-             'bootcmd': 'movi read kernel 0x40007000; '
-                        'movi read rootfs 0x41000000 0x1000000; '
+             'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
+                        'fatload mmc 0:2 0x41000000 uInitrd; '
                         'bootm 0x40007000 0x41000000',
              'ethact': 'smc911x-0',
              'ethaddr': '00:40:5c:26:0a:5b'}
