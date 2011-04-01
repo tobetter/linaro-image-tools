@@ -429,7 +429,7 @@ class Ux500Config(BoardConfig):
     kernel_addr = '0x00100000'
     initrd_addr = '0x08000000'
     load_addr = '0x00008000'
-    kernel_suffix = 'ux500'
+    kernel_suffix = 'u?500'
     boot_script = 'flash.scr'
     extra_boot_args_options = (
         'earlyprintk rootdelay=1 fixrtc nocompcache '
