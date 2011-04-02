@@ -287,7 +287,10 @@ class BoardConfig(object):
             cmd_runner.run(
                 ['cp', '-v', uboot_bin, boot_disk], as_root=True).wait()
 
-        boot_script_path = os.path.join(boot_disk, cls.boot_script)
+        if cls.boot_script:
+            boot_script_path = os.path.join(boot_disk, cls.boot_script)
+        else:
+            boot_script_path = ''
 
         cls.make_boot_files(
             uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
