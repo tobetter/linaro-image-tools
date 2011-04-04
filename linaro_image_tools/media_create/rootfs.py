@@ -57,7 +57,7 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
     move_contents(content_dir, root_disk)
 
     mount_options = rootfs_mount_options(rootfs_type)
-    fstab_additions = ["UUID=%s / %s  %s 0 1 " % (
+    fstab_additions = ["UUID=%s / %s  %s 0 1" % (
             rootfs_uuid, rootfs_type, mount_options)]
     if should_create_swap:
         print "\nCreating SWAP File\n"
@@ -125,7 +125,7 @@ def has_space_left_for_swap(root_disk, swap_size_in_mega_bytes):
 
 def append_to_fstab(root_disk, fstab_additions):
     fstab = os.path.join(root_disk, 'etc', 'fstab')
-    data = open(fstab).read() + '\n' + '\n'.join(fstab_additions)
+    data = open(fstab).read() + '\n' + '\n'.join(fstab_additions) + '\n'
     write_data_to_protected_file(fstab, data)
 
 

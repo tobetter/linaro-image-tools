@@ -80,6 +80,7 @@ from linaro_image_tools.media_create.partitions import (
     _parse_blkid_output,
     )
 from linaro_image_tools.media_create.rootfs import (
+    append_to_fstab,
     create_flash_kernel_config,
     has_space_left_for_swap,
     move_contents,
@@ -1039,7 +1040,7 @@ class TestPopulateRootFS(TestCaseWithFixtures):
             swap_size=100, partition_offset=0)
 
         self.assertEqual(
-            ['UUID=uuid / ext3  errors=remount-ro 0 1 ',
+            ['UUID=uuid / ext3  errors=remount-ro 0 1',
              '/SWAP.swap  none  swap  sw  0 0'],
             self.lines_added_to_fstab)
         self.assertEqual(True, self.create_flash_kernel_config_called)
@@ -1123,6 +1124,18 @@ class TestPopulateRootFS(TestCaseWithFixtures):
 
     def test_rootfs_mount_options_for_unknown(self):
         self.assertRaises(ValueError, rootfs_mount_options, 'unknown')
+
+    def test_append_to_fstab(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        etc = os.path.join(tempdir, 'etc')
+        os.mkdir(etc)
+        fstab = os.path.join(etc, 'fstab')
+        open(fstab, "w").close()
+        append_to_fstab(tempdir, ['foo', 'bar'])
+        f = open(fstab)
+        contents = f.read()
+        f.close()
+        self.assertEquals("\nfoo\nbar\n", contents)
 
 
 class TestCheckDevice(TestCaseWithFixtures):
