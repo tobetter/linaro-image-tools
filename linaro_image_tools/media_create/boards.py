@@ -150,7 +150,7 @@ class BoardConfig(object):
     kernel_addr = None
     initrd_addr = None
     load_addr = None
-    kernel_suffix = None
+    kernel_flavors = None
     boot_script = None
     serial_tty = None
 
@@ -301,7 +301,7 @@ class BoardConfig(object):
 
 
 class OmapConfig(BoardConfig):
-    kernel_suffix = 'linaro-omap'
+    kernel_flavors = ['linaro-omap4', 'linaro-omap']
     uboot_in_boot_part = True
 
     # XXX: Here we define these things as dynamic properties because our
@@ -361,8 +361,8 @@ class OmapConfig(BoardConfig):
                          boot_script_path, boot_device_or_file):
         install_omap_boot_loader(chroot_dir, boot_dir)
         make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+            cls.load_addr, uboot_parts_dir, cls.kernel_flavors, boot_dir)
+        make_uInitrd(uboot_parts_dir, cls.kernel_flavors, boot_dir)
         make_boot_script(boot_env, boot_script_path)
         make_boot_ini(boot_script_path, boot_dir)
 
@@ -416,8 +416,8 @@ class IgepConfig(BeagleConfig):
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
                          boot_script_path, boot_device_or_file):
         make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+            cls.load_addr, uboot_parts_dir, cls.kernel_flavors, boot_dir)
+        make_uInitrd(uboot_parts_dir, cls.kernel_flavors, boot_dir)
         make_boot_script(boot_env, boot_script_path)
         make_boot_ini(boot_script_path, boot_dir)
 
@@ -429,7 +429,7 @@ class Ux500Config(BoardConfig):
     kernel_addr = '0x00100000'
     initrd_addr = '0x08000000'
     load_addr = '0x00008000'
-    kernel_suffix = 'u?500'
+    kernel_flavors = ['u8500', 'ux500']
     boot_script = 'flash.scr'
     extra_boot_args_options = (
         'earlyprintk rootdelay=1 fixrtc nocompcache '
@@ -442,8 +442,8 @@ class Ux500Config(BoardConfig):
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
                          boot_script_path, boot_device_or_file):
         make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+            cls.load_addr, uboot_parts_dir, cls.kernel_flavors, boot_dir)
+        make_uInitrd(uboot_parts_dir, cls.kernel_flavors, boot_dir)
         make_boot_script(boot_env, boot_script_path)
 
 
@@ -490,8 +490,8 @@ class Mx5Config(BoardConfig):
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
         install_mx5_boot_loader(uboot_file, boot_device_or_file)
         make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+            cls.load_addr, uboot_parts_dir, cls.kernel_flavors, boot_dir)
+        make_uInitrd(uboot_parts_dir, cls.kernel_flavors, boot_dir)
         make_boot_script(boot_env, boot_script_path)
 
 
@@ -499,14 +499,14 @@ class Mx51Config(Mx5Config):
     kernel_addr = '0x90000000'
     initrd_addr = '0x92000000'
     load_addr = '0x90008000'
-    kernel_suffix = 'linaro-mx51'
+    kernel_flavors = ['linaro-lt-mx5', 'linaro-mx51']
 
 
 class Mx53Config(Mx5Config):
     kernel_addr = '0x70800000'
     initrd_addr = '0x71800000'
     load_addr = '0x70008000'
-    kernel_suffix = 'linaro-lt-mx53'
+    kernel_flavors = ['linaro-lt-mx5', 'linaro-lt-mx53']
 
 
 class EfikamxConfig(Mx51Config):
@@ -534,7 +534,7 @@ class VexpressConfig(BoardConfig):
     kernel_addr = '0x60008000'
     initrd_addr = '0x81000000'
     load_addr = kernel_addr
-    kernel_suffix = 'linaro-vexpress'
+    kernel_flavors = ['linaro-vexpress']
     boot_script = None
     # ARM Boot Monitor is used to load u-boot, uImage etc. into flash and
     # only allows for FAT16
@@ -544,8 +544,8 @@ class VexpressConfig(BoardConfig):
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
                          boot_script_path, boot_device_or_file):
         make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+            cls.load_addr, uboot_parts_dir, cls.kernel_flavors, boot_dir)
+        make_uInitrd(uboot_parts_dir, cls.kernel_flavors, boot_dir)
 
 class SMDKV310Config(BoardConfig):
     serial_tty = 'ttySAC1'
@@ -553,7 +553,7 @@ class SMDKV310Config(BoardConfig):
     kernel_addr = '0x40007000'
     initrd_addr = '0x41000000'
     load_addr = '0x40008000'
-    kernel_suffix = 's5pv310'
+    kernel_flavors = ['s5pv310']
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
@@ -614,11 +614,11 @@ class SMDKV310Config(BoardConfig):
         install_smdkv310_boot_env(env_file, boot_device_or_file)
 
         uImage_file = make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
+            cls.load_addr, uboot_parts_dir, cls.kernel_flavors, boot_dir)
         install_smdkv310_uImage(uImage_file, boot_device_or_file)
 
         uInitrd_file = make_uInitrd(
-            uboot_parts_dir, cls.kernel_suffix, boot_dir)
+            uboot_parts_dir, cls.kernel_flavors, boot_dir)
         install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
 
         # unused at the moment once FAT support enabled for the
