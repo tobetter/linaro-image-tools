@@ -71,11 +71,11 @@ def install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes):
     copy_file(hwpack_file, chroot_dir)
     print "-" * 60
     print "Installing (apt-get) %s in target rootfs." % hwpack_basename
-    args = ['chroot', chroot_dir, 'linaro-hwpack-install']
+    args = ['linaro-hwpack-install']
     if hwpack_force_yes:
         args.append('--force-yes')
     args.append('/%s' % hwpack_basename)
-    cmd_runner.run(args, as_root=True).wait()
+    cmd_runner.run(args, as_root=True, chroot=chroot_dir).wait()
     print "-" * 60
 
 
