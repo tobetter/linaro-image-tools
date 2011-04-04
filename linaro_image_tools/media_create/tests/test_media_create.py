@@ -1127,6 +1127,9 @@ class TestPopulateRootFS(TestCaseWithFixtures):
 
     def test_append_to_fstab(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        # we don't really need root (sudo) as we're not writing to a real
+        # root owned /etc
+        self.useFixture(MockSomethingFixture(os, 'getuid', lambda: 0))
         etc = os.path.join(tempdir, 'etc')
         os.mkdir(etc)
         fstab = os.path.join(etc, 'fstab')
