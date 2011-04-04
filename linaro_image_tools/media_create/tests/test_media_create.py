@@ -58,6 +58,7 @@ from linaro_image_tools.media_create.hwpack import (
     copy_file,
     install_hwpack,
     install_hwpacks,
+    install_packages,
     mount_chroot_proc,
     prepare_chroot,
     run_local_atexit_funcs,
@@ -1293,6 +1294,24 @@ class TestInstallHWPack(TestCaseWithFixtures):
         keywords = dict(
             chroot_dir=chroot_dir, tmp_dir=tmp_dir, chroot_args=chroot_args,
             linaro_hwpack_install=linaro_hwpack_install)
+        expected = [
+            "%s %s" % (sudo_args, line % keywords) for line in expected]
+        self.assertEquals(expected, fixture.mock.commands_executed)
+
+    def test_install_packages(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        chroot_dir = 'chroot_dir'
+        tmp_dir = 'tmp_dir'
+        self.mock_prepare_chroot(chroot_dir, tmp_dir)
+
+        install_packages(chroot_dir, tmp_dir, 'pkg1', 'pkg2')
+        expected = [
+            'prepare_chroot %(chroot_dir)s %(tmp_dir)s',
+            'mount proc %(chroot_dir)s/proc -t proc',
+            '%(chroot_args)s %(chroot_dir)s apt-get --yes install pkg1 pkg2',
+            'umount -v %(chroot_dir)s/proc']
+        keywords = dict(
+            chroot_dir=chroot_dir, tmp_dir=tmp_dir, chroot_args=chroot_args)
         expected = [
             "%s %s" % (sudo_args, line % keywords) for line in expected]
         self.assertEquals(expected, fixture.mock.commands_executed)

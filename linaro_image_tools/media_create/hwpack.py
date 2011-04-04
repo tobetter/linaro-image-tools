@@ -90,7 +90,7 @@ def install_packages(chroot_dir, tmp_dir, *packages):
 
     try:
         mount_chroot_proc(chroot_dir)
-        args = ["apt-get", "--yes", "install"] + packages
+        args = ("apt-get", "--yes", "install") + packages
         cmd_runner.run(args, as_root=True, chroot=chroot_dir).wait()
     finally:
         run_local_atexit_funcs()
