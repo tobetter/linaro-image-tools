@@ -1309,6 +1309,8 @@ class TestInstallHWPack(TestCaseWithFixtures):
         self.assertEquals(expected, fixture.mock.commands_executed)
 
     def test_install_packages(self):
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         chroot_dir = 'chroot_dir'
         tmp_dir = 'tmp_dir'
