@@ -250,16 +250,15 @@ class BoardConfig(object):
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        chroot_dir, rootfs_uuid, boot_dir, boot_script_path,
-                        boot_device_or_file):
+                        chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid)
         cls._make_boot_files(
-            uboot_parts_dir, boot_env, chroot_dir, boot_dir, boot_script_path,
+            uboot_parts_dir, boot_env, chroot_dir, boot_dir, 
             boot_device_or_file)
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         """Make the necessary boot files for this board.
 
         This is usually board-specific so ought to be defined in every
@@ -287,11 +286,9 @@ class BoardConfig(object):
             cmd_runner.run(
                 ['cp', '-v', uboot_bin, boot_disk], as_root=True).wait()
 
-        boot_script_path = os.path.join(boot_disk, cls.boot_script)
-
         cls.make_boot_files(
             uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
-            rootfs_uuid, boot_disk, boot_script_path, boot_device_or_file)
+            rootfs_uuid, boot_disk, boot_device_or_file)
 
         cmd_runner.run(['sync']).wait()
         try:
@@ -346,23 +343,23 @@ class OmapConfig(BoardConfig):
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        chroot_dir, rootfs_uuid, boot_dir, boot_script_path,
-                        boot_device_or_file):
+                        chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
         # XXX: This is also part of our temporary hack to fix bug 697824; we
         # need to call set_appropriate_serial_tty() before doing anything that
         # may use cls.serial_tty.
         cls.set_appropriate_serial_tty(chroot_dir)
         super(OmapConfig, cls).make_boot_files(
             uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
-            rootfs_uuid, boot_dir, boot_script_path, boot_device_or_file)
+            rootfs_uuid, boot_dir, boot_device_or_file)
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         install_omap_boot_loader(chroot_dir, boot_dir)
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
         make_boot_ini(boot_script_path, boot_dir)
 
@@ -414,10 +411,11 @@ class IgepConfig(BeagleConfig):
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
         make_boot_ini(boot_script_path, boot_dir)
 
@@ -440,10 +438,11 @@ class Ux500Config(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
 
 
@@ -485,13 +484,14 @@ class Mx5Config(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
         install_mx5_boot_loader(uboot_file, boot_device_or_file)
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
 
 
@@ -542,7 +542,7 @@ class VexpressConfig(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
@@ -604,7 +604,7 @@ class SMDKV310Config(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.v310')
         install_smdkv310_boot_loader(uboot_file, boot_device_or_file)
@@ -623,6 +623,7 @@ class SMDKV310Config(BoardConfig):
 
         # unused at the moment once FAT support enabled for the
         # Samsung u-boot this can be used bug 727978
+        #boot_script_path = os.path.join(boot_dir, cls.boot_script)
         #make_boot_script(boot_env, boot_script_path)
 
 

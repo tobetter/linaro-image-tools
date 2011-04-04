@@ -170,7 +170,7 @@ class TestBootSteps(TestCaseWithFixtures):
             classmethod(set_appropriate_serial_tty_mock)))
 
     def make_boot_files(self, config):
-        config.make_boot_files('', False, False, [], '', '', '', '', '')
+        config.make_boot_files('', False, False, [], '', '', '', '')
 
     def test_vexpress_steps(self):
         self.make_boot_files(boards.VexpressConfig)
@@ -278,7 +278,7 @@ class TestFixForBug697824(TestCaseWithFixtures):
         # we're only interested in ensuring that OmapConfig.make_boot_files()
         # calls set_appropriate_serial_tty().
         board_configs['beagle'].make_boot_files(
-            None, None, None, None, None, None, None, None, None)
+            None, None, None, None, None, None, None, None)
         self.assertTrue(
             self.set_appropriate_serial_tty_called,
             "make_boot_files didn't call set_appropriate_serial_tty")
@@ -928,10 +928,10 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
     expected_args = (
         'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_uuid',
-        'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+        'boot_disk', 'boot_device_or_file')
     expected_args_live = (
         'chroot_dir/casper', True, False, [], 'chroot_dir', 'rootfs_uuid',
-        'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+        'boot_disk', 'boot_device_or_file')
     expected_calls = [
         'mkdir -p boot_disk',
         '%s mount boot_partition boot_disk' % sudo_args,
