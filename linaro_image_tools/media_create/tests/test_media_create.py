@@ -84,6 +84,7 @@ from linaro_image_tools.media_create.rootfs import (
     has_space_left_for_swap,
     move_contents,
     populate_rootfs,
+    rootfs_mount_options,
     write_data_to_protected_file,
     )
 from linaro_image_tools.media_create.tests.fixtures import (
@@ -1113,6 +1114,15 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         self.assertEqual(['%s mv -f %s %s' % (sudo_args, tmpfile, path)],
                          fixture.mock.commands_executed)
         self.assertEqual(data, open(tmpfile).read())
+
+    def test_rootfs_mount_options_for_btrfs(self):
+        self.assertEqual("defaults", rootfs_mount_options('btrfs'))
+
+    def test_rootfs_mount_options_for_ext4(self):
+        self.assertEqual("errors=remount-ro", rootfs_mount_options('ext4'))
+
+    def test_rootfs_mount_options_for_unknown(self):
+        self.assertRaises(ValueError, rootfs_mount_options, 'unknown')
 
 
 class TestCheckDevice(TestCaseWithFixtures):
