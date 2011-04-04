@@ -54,7 +54,7 @@ from linaro_image_tools.media_create.boards import (
     _get_mlo_file,
     _run_mkimage,
     )
-from linaro_image_tools.media_create.hwpack import (
+from linaro_image_tools.media_create.chroot_utils import (
     copy_file,
     install_hwpack,
     install_hwpacks,
@@ -1199,7 +1199,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             cmd_runner.run(['prepare_chroot %s %s' % (chroot_dir, tmp_dir)],
                 as_root=True).wait()
         self.useFixture(MockSomethingFixture(
-            linaro_image_tools.media_create.hwpack, 'prepare_chroot',
+            linaro_image_tools.media_create.chroot_utils, 'prepare_chroot',
             fake_prepare_chroot))
 
     def test_temporarily_overwrite_file_on_dir(self):
@@ -1351,13 +1351,12 @@ class TestInstallHWPack(TestCaseWithFixtures):
         # run_local_atexit_funcs() runs the atexit handlers in LIFO order, but
         # even though the first function called (raising_func) will raise
         # an exception, the second one will still be called after it.
-        linaro_image_tools.media_create.hwpack.local_atexit = [
+        linaro_image_tools.media_create.chroot_utils.local_atexit = [
             behaving_func, raising_func]
         # run_local_atexit_funcs() also propagates the last exception raised
         # by one of the functions.
-        self.assertRaises(
-            TestException,
-            linaro_image_tools.media_create.hwpack.run_local_atexit_funcs)
+        chroot_utils = linaro_image_tools.media_create.chroot_utils
+        self.assertRaises(TestException, chroot_utils.run_local_atexit_funcs)
         self.assertEquals(
             ['raising_func', 'behaving_func'], self.call_order)
 
@@ -1374,10 +1373,11 @@ class TestInstallHWPack(TestCaseWithFixtures):
             sys, 'stdout', open('/dev/null', 'w')))
         self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
-            linaro_image_tools.media_create.hwpack, 'install_hwpack',
+            linaro_image_tools.media_create.chroot_utils, 'install_hwpack',
             mock_install_hwpack))
         self.useFixture(MockSomethingFixture(
-            linaro_image_tools.media_create.hwpack, 'run_local_atexit_funcs',
+            linaro_image_tools.media_create.chroot_utils,
+            'run_local_atexit_funcs',
             mock_run_local_atexit_functions))
 
         force_yes = True
@@ -1396,5 +1396,5 @@ class TestInstallHWPack(TestCaseWithFixtures):
         # Ensure the list of cleanup functions gets cleared to make sure tests
         # don't interfere with one another.
         def clear_atexits():
-            linaro_image_tools.media_create.hwpack.local_atexit = []
+            linaro_image_tools.media_create.chroot_utils.local_atexit = []
         self.addCleanup(clear_atexits)
