@@ -28,7 +28,10 @@ from linaro_image_tools import cmd_runner
 from linaro_image_tools.media_create.boards import board_configs
 from linaro_image_tools.media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
-from linaro_image_tools.media_create.hwpack import install_hwpacks
+from linaro_image_tools.media_create.hwpack import (
+    install_hwpacks,
+    install_packages,
+    )
 from linaro_image_tools.media_create.partitions import (
     Media,
     setup_partitions,
@@ -121,6 +124,9 @@ if __name__ == '__main__':
         lmc_dir = None
     install_hwpacks(
         ROOTFS_DIR, TMP_DIR, lmc_dir, args.hwpack_force_yes, *hwpacks)
+
+    if args.rootfs == 'btrfs':
+        install_packages(ROOTFS_DIR, TMP_DIR, "btrfs-tools")
 
     boot_partition, root_partition = setup_partitions(
         board_config, media, args.image_size, args.boot_label, args.rfs_label,
