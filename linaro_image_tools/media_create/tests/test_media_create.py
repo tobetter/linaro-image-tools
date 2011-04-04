@@ -604,9 +604,31 @@ class TestBoards(TestCaseWithFixtures):
         self.assertRaises(
             ValueError, _get_file_matching, '%s/%s*' % (directory, prefix))
 
+    def test_get_kflavor_file_more_specific(self):
+        config = boards.BoardConfig()
+        config.kernel_base = self.getUniqueString()
+        flavor1 = 'flavorX'
+        flavor2 = 'flavorXY'
+        kernel_flavors = [flavor2, flavor1]
+        file1 = self.createTempFileAsFixture(config.kernel_base+flavor1)
+        file2 = self.createTempFileAsFixture(config.kernel_base+flavor2)
+        directory = os.path.dirname(file1)
+        self.assertEqual(
+            (file2, flavor2), config._get_kflavor_file(directory, config.kernel_base+'%(kernel_flavor)*', kernel_flavors))
+
+    def test_get_kflavor_file_later_in_flavors(self):
+        config = boards.BoardConfig()
+        config.kernel_base = self.getUniqueString()
+        flavor1 = 'flavorXY'
+        flavor2 = 'flavorAA'
+        kernel_flavors = [flavor2, flavor1]
+        file1 = self.createTempFileAsFixture(config.kernel_base+flavor1)
+        directory = os.path.dirname(file1)
+        self.assertEqual(
+            (file1, flavor1), config._get_kflavor_file(directory, config.kernel_base+'%(kernel_flavor)*', kernel_flavors))
+
     def test_get_file_matching_no_files_found(self):
-        self.assertRaises(
-            ValueError, _get_file_matching, '/foo/bar/baz/*non-existent')
+        self.assertEqual(None, _get_file_matching('/foo/bar/baz/*non-existent'))
 
     def test_run_mkimage(self):
         # Create a fake boot script.

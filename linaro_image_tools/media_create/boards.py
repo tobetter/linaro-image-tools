@@ -145,6 +145,8 @@ class BoardConfig(object):
     extra_serial_opts = ''
     live_serial_opts = ''
     extra_boot_args_options = None
+    kernel_base = 'vmlinuz-*-'
+    initrd_base = 'initrd.img-*-'
 
     # These attributes must be defined on all subclasses.
     kernel_addr = None
@@ -298,6 +300,16 @@ class BoardConfig(object):
             cmd_runner.run(['umount', boot_disk], as_root=True).wait()
         except cmd_runner.SubcommandNonZeroReturnValue:
             pass
+
+    @classmethod
+    def _get_kflavor_file(cls, dir, base, flavors):
+        for flavor in flavors:
+            regex = '%s/%s' % (dir, re.sub('%\(kernel_flavor\)', flavor, base))
+            file_name = _get_file_matching(regex)
+            if file_name is not None:
+                return (file_name, flavor)
+        raise ValueError(
+            "No files found matching '%s'; can't continue" % regex)
 
 
 class OmapConfig(BoardConfig):
@@ -683,8 +695,7 @@ def _get_file_matching(regex):
     if len(files) == 1:
         return files[0]
     elif len(files) == 0:
-        raise ValueError(
-            "No files found matching '%s'; can't continue" % regex)
+        return None
     else:
         # TODO: Could ask the user to chosse which file to use instead of
         # raising an exception.
