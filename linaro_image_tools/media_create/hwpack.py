@@ -82,6 +82,20 @@ def install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes):
     print "-" * 60
 
 
+def install_packages(chroot_dir, tmp_dir, *packages):
+    """Install packages in the given chroot.
+
+    This does not run apt-get update before hand."""
+    prepare_chroot(chroot_dir, tmp_dir)
+
+    try:
+        mount_chroot_proc(chroot_dir)
+        args = ["apt-get", "--yes", "install"] + packages
+        cmd_runner.run(args, as_root=True, chroot=chroot_dir).wait()
+    finally:
+        run_local_atexit_funcs()
+
+
 def mount_chroot_proc(chroot_dir):
     """Mount a /proc filesystem on the given chroot.
 
