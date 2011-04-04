@@ -81,10 +81,10 @@ def ensure_required_commands(args):
     if not is_arm_host():
         required_commands.append('qemu-arm-static')
         required_commands.append('qemu-img')
-    if args.rootfs in ['ext2', 'ext3', 'ext4']:
+    if args.rootfs in ['btrfs', 'ext2', 'ext3', 'ext4']:
         required_commands.append('mkfs.%s' % args.rootfs)
     else:
-        required_commands.append('mkfs.btrfs')
+        raise AssertionError('Unsupported rootfs type %s' % args.rootfs)
     for command in required_commands:
         ensure_command(command)
 
