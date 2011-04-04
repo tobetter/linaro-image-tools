@@ -1334,6 +1334,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             'prepare_chroot %(chroot_dir)s %(tmp_dir)s',
             'mount proc %(chroot_dir)s/proc -t proc',
             '%(chroot_args)s %(chroot_dir)s apt-get --yes install pkg1 pkg2',
+            '%(chroot_args)s %(chroot_dir)s apt-get clean',
             'umount -v %(chroot_dir)s/proc']
         keywords = dict(
             chroot_dir=chroot_dir, tmp_dir=tmp_dir, chroot_args=chroot_args)

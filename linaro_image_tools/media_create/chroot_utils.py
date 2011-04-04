@@ -95,6 +95,9 @@ def install_packages(chroot_dir, tmp_dir, *packages):
         print "Installing (apt-get) %s in target rootfs." % " ".join(packages)
         args = ("apt-get", "--yes", "install") + packages
         cmd_runner.run(args, as_root=True, chroot=chroot_dir).wait()
+        print "Cleaning up downloaded packages."
+        args = ("apt-get", "clean")
+        cmd_runner.run(args, as_root=True, chroot=chroot_dir).wait()
         print "-" * 60
     finally:
         run_local_atexit_funcs()
