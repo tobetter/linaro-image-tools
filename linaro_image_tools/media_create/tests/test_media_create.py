@@ -59,6 +59,7 @@ from linaro_image_tools.media_create.hwpack import (
     install_hwpack,
     install_hwpacks,
     mount_chroot_proc,
+    prepare_chroot,
     run_local_atexit_funcs,
     temporarily_overwrite_file_on_dir,
     )
@@ -1279,6 +1280,26 @@ class TestInstallHWPack(TestCaseWithFixtures):
             'rm -f chroot/hwpack1.tgz',
             'umount -v chroot/proc',
             'rm -f chroot/usr/bin/linaro-hwpack-install',
+            'rm -f chroot/usr/bin/qemu-arm-static',
+            'mv -f /tmp/dir/hosts chroot/etc',
+            'mv -f /tmp/dir/resolv.conf chroot/etc']
+        expected = [
+            "%s %s" % (sudo_args, line) for line in expected]
+        self.assertEquals(expected, fixture.mock.commands_executed)
+
+    def test_prepare_chroot(self):
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+
+        prepare_chroot('chroot', '/tmp/dir')
+        run_local_atexit_funcs()
+        expected = [
+            'mv -f chroot/etc/resolv.conf /tmp/dir/resolv.conf',
+            'cp /etc/resolv.conf chroot/etc',
+            'mv -f chroot/etc/hosts /tmp/dir/hosts',
+            'cp /etc/hosts chroot/etc',
+            'cp /usr/bin/qemu-arm-static chroot/usr/bin',
             'rm -f chroot/usr/bin/qemu-arm-static',
             'mv -f /tmp/dir/hosts chroot/etc',
             'mv -f /tmp/dir/resolv.conf chroot/etc']

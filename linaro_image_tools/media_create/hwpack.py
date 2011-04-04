@@ -32,10 +32,8 @@ from linaro_image_tools.utils import (
 # functions would only be called after l-m-c.py exits.
 local_atexit = []
 
-def install_hwpacks(
-    chroot_dir, tmp_dir, tools_dir, hwpack_force_yes, *hwpack_files):
-    """Install the given hwpacks onto the given chroot."""
-
+def prepare_chroot(chroot_dir, tmp_dir):
+    """Prepares a chroot to run commands in it (networking and QEMU setup)."""
     chroot_etc = os.path.join(chroot_dir, 'etc')
     temporarily_overwrite_file_on_dir('/etc/resolv.conf', chroot_etc, tmp_dir)
     temporarily_overwrite_file_on_dir('/etc/hosts', chroot_etc, tmp_dir)
@@ -43,6 +41,11 @@ def install_hwpacks(
     if not is_arm_host():
         copy_file('/usr/bin/qemu-arm-static',
                   os.path.join(chroot_dir, 'usr', 'bin'))
+
+def install_hwpacks(
+    chroot_dir, tmp_dir, tools_dir, hwpack_force_yes, *hwpack_files):
+    """Install the given hwpacks onto the given chroot."""
+    prepare_chroot(chroot_dir, tmp_dir)
 
     linaro_hwpack_install_path = find_command(
         'linaro-hwpack-install', prefer_dir=tools_dir)
