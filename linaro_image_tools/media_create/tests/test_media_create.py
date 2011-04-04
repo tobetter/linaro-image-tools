@@ -1246,7 +1246,6 @@ class TestInstallHWPack(TestCaseWithFixtures):
             sys, 'stdout', open('/dev/null', 'w')))
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         chroot_dir = 'chroot_dir'
-        tmp_dir = 'tmp_dir'
         force_yes = False
         install_hwpack(chroot_dir, 'hwpack.tgz', force_yes)
         self.assertEquals(

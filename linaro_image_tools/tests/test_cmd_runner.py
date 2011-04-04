@@ -85,7 +85,7 @@ class TestCmdRunner(TestCaseWithFixtures):
 
     def test_chrooted(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        proc = cmd_runner.run(['foo', 'bar'], chroot='chroot_dir').wait()
+        cmd_runner.run(['foo', 'bar'], chroot='chroot_dir').wait()
         self.assertEqual(
             ['%s %s chroot_dir foo bar' % (sudo_args, chroot_args)],
             fixture.mock.commands_executed)
