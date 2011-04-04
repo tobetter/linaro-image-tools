@@ -28,6 +28,7 @@ from linaro_image_tools.tests.fixtures import (
 
 
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
+chroot_args = " ".join(cmd_runner.CHROOT_ARGS)
 
 
 class TestSanitizePath(TestCaseWithFixtures):
@@ -81,6 +82,13 @@ class TestCmdRunner(TestCaseWithFixtures):
         cmd_runner.run(('foo', 'bar',), as_root=True).wait()
         self.assertEqual(
             ['%s foo bar' % sudo_args], fixture.mock.commands_executed)
+
+    def test_chrooted(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        cmd_runner.run(['foo', 'bar'], chroot='chroot_dir').wait()
+        self.assertEqual(
+            ['%s %s chroot_dir foo bar' % (sudo_args, chroot_args)],
+            fixture.mock.commands_executed)
 
     def test_run_succeeds_on_zero_return_code(self):
         proc = cmd_runner.run(['true'])

@@ -22,6 +22,7 @@ import subprocess
 
 
 DEFAULT_PATH = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+CHROOT_ARGS = ['chroot']
 SUDO_ARGS = ['sudo', '-E']
 
 
@@ -34,7 +35,8 @@ def sanitize_path(env):
     env['PATH'] = os.pathsep.join(dirs)
 
 
-def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
+def run(args, as_root=False, chroot=None, stdin=None, stdout=None,
+        stderr=None):
     """Run the given command as a sub process.
 
     Return a Popen instance.
@@ -44,6 +46,7 @@ def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
     :param command: A list or tuple containing the command to run and the
                     arguments that should be passed to it.
     :param as_root: Should the given command be run as root (with sudo)?
+    :param chroot: A directory to chroot into (implies as_root).
     :param stdin: Same as in subprocess.Popen().
     :param stdout: Same as in subprocess.Popen().
     :param stderr: Same as in subprocess.Popen().
@@ -52,6 +55,9 @@ def run(args, as_root=False, stdin=None, stdout=None, stderr=None):
         "The command to run must be a list or tuple, found: %s" % type(args))
     if isinstance(args, tuple):
         args = list(args)
+    if chroot is not None:
+        args = CHROOT_ARGS + [chroot] + args
+        as_root = True
     if as_root and os.getuid() != 0:
         args = SUDO_ARGS + args
     return Popen(args, stdin=stdin, stdout=stdout, stderr=stderr)
