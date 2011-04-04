@@ -101,6 +101,7 @@ from linaro_image_tools.tests.fixtures import (
 from linaro_image_tools.utils import find_command, preferred_tools_dir
 
 
+chroot_args = " ".join(cmd_runner.CHROOT_ARGS)
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
 
 
@@ -1192,6 +1193,13 @@ class AtExitRegister(object):
 
 
 class TestInstallHWPack(TestCaseWithFixtures):
+    def mock_prepare_chroot(self, chroot_dir, tmp_dir):
+        def fake_prepare_chroot(chroot_dir, tmp_dir):
+            cmd_runner.run(['prepare_chroot %s %s' % (chroot_dir, tmp_dir)],
+                as_root=True).wait()
+        self.useFixture(MockSomethingFixture(
+            linaro_image_tools.media_create.hwpack, 'prepare_chroot',
+            fake_prepare_chroot))
 
     def test_temporarily_overwrite_file_on_dir(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
@@ -1237,54 +1245,57 @@ class TestInstallHWPack(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             sys, 'stdout', open('/dev/null', 'w')))
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        chroot_dir = 'chroot_dir'
+        tmp_dir = 'tmp_dir'
         force_yes = False
-        install_hwpack('chroot', 'hwpack.tgz', force_yes)
+        install_hwpack(chroot_dir, 'hwpack.tgz', force_yes)
         self.assertEquals(
-            ['%s cp hwpack.tgz chroot' % sudo_args,
-             '%s chroot chroot linaro-hwpack-install /hwpack.tgz'
-                % sudo_args],
+            ['%s cp hwpack.tgz %s' % (sudo_args, chroot_dir),
+             '%s %s %s linaro-hwpack-install /hwpack.tgz'
+                % (sudo_args, chroot_args, chroot_dir)],
             fixture.mock.commands_executed)
 
         fixture.mock.calls = []
         run_local_atexit_funcs()
         self.assertEquals(
-            ['%s rm -f chroot/hwpack.tgz' % sudo_args],
+            ['%s rm -f %s/hwpack.tgz' % (sudo_args, chroot_dir)],
             fixture.mock.commands_executed)
 
     def test_install_hwpacks(self):
         self.useFixture(MockSomethingFixture(
             sys, 'stdout', open('/dev/null', 'w')))
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        chroot_dir = 'chroot_dir'
+        tmp_dir = 'tmp_dir'
+        self.mock_prepare_chroot(chroot_dir, tmp_dir)
         force_yes = True
 
         prefer_dir = preferred_tools_dir()
 
         install_hwpacks(
-            'chroot', '/tmp/dir', prefer_dir, force_yes, 'hwpack1.tgz',
+            chroot_dir, tmp_dir, prefer_dir, force_yes, 'hwpack1.tgz',
             'hwpack2.tgz')
         linaro_hwpack_install = find_command(
             'linaro-hwpack-install', prefer_dir=prefer_dir)
         expected = [
-            'mv -f chroot/etc/resolv.conf /tmp/dir/resolv.conf',
-            'cp /etc/resolv.conf chroot/etc',
-            'mv -f chroot/etc/hosts /tmp/dir/hosts',
-            'cp /etc/hosts chroot/etc',
-            'cp /usr/bin/qemu-arm-static chroot/usr/bin',
-            'cp %s chroot/usr/bin' % linaro_hwpack_install,
-            'mount proc chroot/proc -t proc',
-            'cp hwpack1.tgz chroot',
-            'chroot chroot linaro-hwpack-install --force-yes /hwpack1.tgz',
-            'cp hwpack2.tgz chroot',
-            'chroot chroot linaro-hwpack-install --force-yes /hwpack2.tgz',
-            'rm -f chroot/hwpack2.tgz',
-            'rm -f chroot/hwpack1.tgz',
-            'umount -v chroot/proc',
-            'rm -f chroot/usr/bin/linaro-hwpack-install',
-            'rm -f chroot/usr/bin/qemu-arm-static',
-            'mv -f /tmp/dir/hosts chroot/etc',
-            'mv -f /tmp/dir/resolv.conf chroot/etc']
+            'prepare_chroot %(chroot_dir)s %(tmp_dir)s',
+            'cp %(linaro_hwpack_install)s %(chroot_dir)s/usr/bin',
+            'mount proc %(chroot_dir)s/proc -t proc',
+            'cp hwpack1.tgz %(chroot_dir)s',
+            ('%(chroot_args)s %(chroot_dir)s linaro-hwpack-install '
+             '--force-yes /hwpack1.tgz'),
+            'cp hwpack2.tgz %(chroot_dir)s',
+            ('%(chroot_args)s %(chroot_dir)s linaro-hwpack-install '
+             '--force-yes /hwpack2.tgz'),
+            'rm -f %(chroot_dir)s/hwpack2.tgz',
+            'rm -f %(chroot_dir)s/hwpack1.tgz',
+            'umount -v %(chroot_dir)s/proc',
+            'rm -f %(chroot_dir)s/usr/bin/linaro-hwpack-install']
+        keywords = dict(
+            chroot_dir=chroot_dir, tmp_dir=tmp_dir, chroot_args=chroot_args,
+            linaro_hwpack_install=linaro_hwpack_install)
         expected = [
-            "%s %s" % (sudo_args, line) for line in expected]
+            "%s %s" % (sudo_args, line % keywords) for line in expected]
         self.assertEquals(expected, fixture.mock.commands_executed)
 
     def test_prepare_chroot(self):
