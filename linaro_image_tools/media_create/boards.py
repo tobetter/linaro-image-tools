@@ -643,13 +643,12 @@ class SMDKV310Config(BoardConfig):
 
         boot_env["ethact"] = "smc911x-0"
         boot_env["ethaddr"] = "00:40:5c:26:0a:5b"
-        boot_env["bootcmd"] = super(SMDKV310Config, cls).bootcmd
 
         return boot_env
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         spl_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'v310_mmc_spl.bin')
         install_smdkv310_spl(spl_file, boot_device_or_file)
