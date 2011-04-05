@@ -160,6 +160,7 @@ class TestBootSteps(TestCaseWithFixtures):
                     linaro_image_tools.media_create.boards, name,
                     mock_func_creator(name)))
 
+
     def mock_set_appropriate_serial_tty(self, config):
 
         def set_appropriate_serial_tty_mock(cls, chroot_dir):
@@ -513,7 +514,7 @@ class TestBoards(TestCaseWithFixtures):
     def test_make_uImage(self):
         self._mock_get_file_matching()
         fixture = self._mock_Popen()
-        make_uImage('load_addr', 'parts_dir', 'sub_arch', 'boot_disk')
+        make_uImage('load_addr', 'parts_dir/vmlinuz-*-sub_arch', 'boot_disk')
         expected = [
             '%s mkimage -A arm -O linux -T kernel -C none -a load_addr '
             '-e load_addr -n Linux -d parts_dir/vmlinuz-*-sub_arch '
@@ -523,7 +524,7 @@ class TestBoards(TestCaseWithFixtures):
     def test_make_uInitrd(self):
         self._mock_get_file_matching()
         fixture = self._mock_Popen()
-        make_uInitrd('parts_dir', 'sub_arch', 'boot_disk')
+        make_uInitrd('parts_dir/initrd.img-*-sub_arch', 'boot_disk')
         expected = [
             '%s mkimage -A arm -O linux -T ramdisk -C none -a 0 -e 0 '
             '-n initramfs -d parts_dir/initrd.img-*-sub_arch '
@@ -613,8 +614,9 @@ class TestBoards(TestCaseWithFixtures):
         file1 = self.createTempFileAsFixture(config.kernel_base+flavor1)
         file2 = self.createTempFileAsFixture(config.kernel_base+flavor2)
         directory = os.path.dirname(file1)
-        self.assertEqual(
-            (file2, flavor2), config._get_kflavor_file(directory, config.kernel_base+'%(kernel_flavor)*', kernel_flavors))
+        base = '%s/%s%s*' % (directory, config.kernel_base, '%(kernel_flavor)s')
+        self.assertEqual((file2, flavor2),
+                         config._get_kflavor_file(base, kernel_flavors))
 
     def test_get_kflavor_file_later_in_flavors(self):
         config = boards.BoardConfig()
@@ -624,8 +626,9 @@ class TestBoards(TestCaseWithFixtures):
         kernel_flavors = [flavor2, flavor1]
         file1 = self.createTempFileAsFixture(config.kernel_base+flavor1)
         directory = os.path.dirname(file1)
-        self.assertEqual(
-            (file1, flavor1), config._get_kflavor_file(directory, config.kernel_base+'%(kernel_flavor)*', kernel_flavors))
+        base = '%s/%s%s*' % (directory, config.kernel_base, '%(kernel_flavor)s')
+        self.assertEqual((file1, flavor1),
+                         config._get_kflavor_file(base, kernel_flavors))
 
     def test_get_file_matching_no_files_found(self):
         self.assertEqual(None, _get_file_matching('/foo/bar/baz/*non-existent'))

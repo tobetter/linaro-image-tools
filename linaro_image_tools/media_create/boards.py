@@ -145,8 +145,8 @@ class BoardConfig(object):
     extra_serial_opts = ''
     live_serial_opts = ''
     extra_boot_args_options = None
-    kernel_base = 'vmlinuz-*-'
-    initrd_base = 'initrd.img-*-'
+    kernel_base = 'vmlinuz-*-%(kernel_flavor)s'
+    initrd_base = 'initrd.img-*-%(kernel_flavor)s'
 
     # These attributes must be defined on all subclasses.
     kernel_addr = None
@@ -302,9 +302,9 @@ class BoardConfig(object):
             pass
 
     @classmethod
-    def _get_kflavor_file(cls, dir, base, flavors):
+    def _get_kflavor_file(cls, base, flavors):
         for flavor in flavors:
-            regex = '%s/%s' % (dir, re.sub('%\(kernel_flavor\)', flavor, base))
+            regex = base % {'kernel_flavor' : flavor}
             file_name = _get_file_matching(regex)
             if file_name is not None:
                 return (file_name, flavor)
@@ -372,9 +372,12 @@ class OmapConfig(BoardConfig):
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
                          boot_script_path, boot_device_or_file):
         install_omap_boot_loader(chroot_dir, boot_dir)
-        make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_flavors, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.kernel_flavors, boot_dir)
+        (k_img_data, kflavor) = cls._get_kflavor_file(
+            '%s/%s' % (uboot_parts_dir, cls.kernel_base), cls.kernel_flavors)
+        make_uImage(cls.load_addr, k_img_data, boot_dir)
+        (i_img_data, _) = cls._get_kflavor_file(
+            '%s/%s' % (uboot_parts_dir, cls.kernel_base), [kflavor])
+        make_uInitrd(i_img_data, boot_dir)
         make_boot_script(boot_env, boot_script_path)
         make_boot_ini(boot_script_path, boot_dir)
 
@@ -427,9 +430,12 @@ class IgepConfig(BeagleConfig):
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
                          boot_script_path, boot_device_or_file):
-        make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_flavors, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.kernel_flavors, boot_dir)
+        (k_img_data, kflavor) = cls._get_kflavor_file(
+            '%s/%s' % (uboot_parts_dir, cls.kernel_base), cls.kernel_flavors)
+        make_uImage(cls.load_addr, k_img_data, boot_dir)
+        (i_img_data, _) = cls._get_kflavor_file(
+            '%s/%s' % (uboot_parts_dir, cls.kernel_base), [kflavor])
+        make_uInitrd(i_img_data, boot_dir)
         make_boot_script(boot_env, boot_script_path)
         make_boot_ini(boot_script_path, boot_dir)
 
@@ -453,9 +459,12 @@ class Ux500Config(BoardConfig):
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
                          boot_script_path, boot_device_or_file):
-        make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_flavors, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.kernel_flavors, boot_dir)
+        (k_img_data, kflavor) = cls._get_kflavor_file(
+            '%s/%s' % (uboot_parts_dir, cls.kernel_base), cls.kernel_flavors)
+        make_uImage(cls.load_addr, k_img_data, boot_dir)
+        (i_img_data, _) = cls._get_kflavor_file(
+            '%s/%s' % (uboot_parts_dir, cls.kernel_base), [kflavor])
+        make_uInitrd(i_img_data, boot_dir)
         make_boot_script(boot_env, boot_script_path)
 
 
@@ -501,9 +510,12 @@ class Mx5Config(BoardConfig):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
         install_mx5_boot_loader(uboot_file, boot_device_or_file)
-        make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_flavors, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.kernel_flavors, boot_dir)
+        (k_img_data, kflavor) = cls._get_kflavor_file(
+            '%s/%s' % (uboot_parts_dir, cls.kernel_base), cls.kernel_flavors)
+        make_uImage(cls.load_addr, k_img_data, boot_dir)
+        (i_img_data, _) = cls._get_kflavor_file(
+            '%s/%s' % (uboot_parts_dir, cls.kernel_base), [kflavor])
+        make_uInitrd(i_img_data, boot_dir)
         make_boot_script(boot_env, boot_script_path)
 
 
@@ -555,9 +567,12 @@ class VexpressConfig(BoardConfig):
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
                          boot_script_path, boot_device_or_file):
-        make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_flavors, boot_dir)
-        make_uInitrd(uboot_parts_dir, cls.kernel_flavors, boot_dir)
+        (k_img_data, kflavor) = cls._get_kflavor_file(
+            '%s/%s' % (uboot_parts_dir, cls.kernel_base), cls.kernel_flavors)
+        make_uImage(cls.load_addr, k_img_data, boot_dir)
+        (i_img_data, _) = cls._get_kflavor_file(
+            '%s/%s' % (uboot_parts_dir, cls.kernel_base), [kflavor])
+        make_uInitrd(i_img_data, boot_dir)
 
 class SMDKV310Config(BoardConfig):
     serial_tty = 'ttySAC1'
@@ -625,12 +640,14 @@ class SMDKV310Config(BoardConfig):
         env_file = make_flashable_env(boot_env, env_size)
         install_smdkv310_boot_env(env_file, boot_device_or_file)
 
-        uImage_file = make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_flavors, boot_dir)
+        (k_img_data, kflavor) = cls._get_kflavor_file(
+            '%s/%s' % (uboot_parts_dir, cls.kernel_base), cls.kernel_flavors)
+        make_uImage(cls.load_addr, k_img_data, boot_dir)
         install_smdkv310_uImage(uImage_file, boot_device_or_file)
 
-        uInitrd_file = make_uInitrd(
-            uboot_parts_dir, cls.kernel_flavors, boot_dir)
+        (i_img_data, _) = cls._get_kflavor_file(
+            '%s/%s' % (uboot_parts_dir, cls.kernel_base), [kflavor])
+        make_uInitrd(i_img_data, boot_dir)
         install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
 
         # unused at the moment once FAT support enabled for the
@@ -702,18 +719,14 @@ def _get_file_matching(regex):
         raise ValueError("Too many files matching '%s' found." % regex)
 
 
-def make_uImage(load_addr, uboot_parts_dir, suffix, boot_disk):
-    img_data = _get_file_matching(
-        '%s/vmlinuz-*-%s' % (uboot_parts_dir, suffix))
+def make_uImage(load_addr, img_data, boot_disk):
     img = '%s/uImage' % boot_disk
     _run_mkimage(
         'kernel', load_addr, load_addr, 'Linux', img_data, img)
     return img
 
 
-def make_uInitrd(uboot_parts_dir, suffix, boot_disk):
-    img_data = _get_file_matching(
-        '%s/initrd.img-*-%s' % (uboot_parts_dir, suffix))
+def make_uInitrd(img_data, boot_disk):
     img = '%s/uInitrd' % boot_disk
     _run_mkimage('ramdisk', '0', '0', 'initramfs', img_data, img)
     return img
