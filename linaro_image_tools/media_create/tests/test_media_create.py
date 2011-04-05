@@ -171,6 +171,13 @@ class TestBootSteps(TestCaseWithFixtures):
             classmethod(set_appropriate_serial_tty_mock)))
 
     def make_boot_files(self, config):
+        def _get_kflavor_files_mock(cls, path):
+            return (path, path)
+
+        self.useFixture(MockSomethingFixture(
+            config, '_get_kflavor_files',
+            classmethod(_get_kflavor_files_mock)))
+
         config.make_boot_files('', False, False, [], '', '', '', '', '')
 
     def test_vexpress_steps(self):
