@@ -605,30 +605,30 @@ class TestBoards(TestCaseWithFixtures):
         self.assertRaises(
             ValueError, _get_file_matching, '%s/%s*' % (directory, prefix))
 
-    def test_get_kflavor_file_more_specific(self):
-        config = boards.BoardConfig()
-        config.kernel_base = self.getUniqueString()
-        flavor1 = 'flavorX'
-        flavor2 = 'flavorXY'
-        kernel_flavors = [flavor2, flavor1]
-        file1 = self.createTempFileAsFixture(config.kernel_base+flavor1)
-        file2 = self.createTempFileAsFixture(config.kernel_base+flavor2)
-        directory = os.path.dirname(file1)
-        base = '%s/%s%s*' % (directory, config.kernel_base, '%(kernel_flavor)s')
-        self.assertEqual((file2, flavor2),
-                         config._get_kflavor_file(base, kernel_flavors))
+    def test_get_kflavor_files_more_specific(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        flavorx = 'flavorX'
+        flavorxy = 'flavorXY'
+        class config(boards.BoardConfig):
+            kernel_flavors = [flavorx, flavorxy]
+        for f in reversed(config.kernel_flavors):
+            kfile = os.path.join(tempdir, 'vmlinuz-1-%s' % f)
+            ifile = os.path.join(tempdir, 'initrd.img-1-%s' % f)
+            open(kfile, "w").close()
+            open(ifile, "w").close()
+        self.assertEqual((kfile, ifile), config._get_kflavor_files(tempdir))
 
-    def test_get_kflavor_file_later_in_flavors(self):
-        config = boards.BoardConfig()
-        config.kernel_base = self.getUniqueString()
+    def test_get_kflavor_files_later_in_flavors(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         flavor1 = 'flavorXY'
         flavor2 = 'flavorAA'
-        kernel_flavors = [flavor2, flavor1]
-        file1 = self.createTempFileAsFixture(config.kernel_base+flavor1)
-        directory = os.path.dirname(file1)
-        base = '%s/%s%s*' % (directory, config.kernel_base, '%(kernel_flavor)s')
-        self.assertEqual((file1, flavor1),
-                         config._get_kflavor_file(base, kernel_flavors))
+        class config(boards.BoardConfig):
+            kernel_flavors = [flavor1, flavor2]
+        kfile = os.path.join(tempdir, 'vmlinuz-1-%s' % flavor1)
+        ifile = os.path.join(tempdir, 'initrd.img-1-%s' % flavor1)
+        open(kfile, "w").close()
+        open(ifile, "w").close()
+        self.assertEqual((kfile, ifile), config._get_kflavor_files(tempdir))
 
     def test_get_file_matching_no_files_found(self):
         self.assertEqual(None, _get_file_matching('/foo/bar/baz/*non-existent'))
