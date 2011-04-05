@@ -376,7 +376,7 @@ class OmapConfig(BoardConfig):
             '%s/%s' % (uboot_parts_dir, cls.kernel_base), cls.kernel_flavors)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         (i_img_data, _) = cls._get_kflavor_file(
-            '%s/%s' % (uboot_parts_dir, cls.kernel_base), [kflavor])
+            '%s/%s' % (uboot_parts_dir, cls.initrd_base), [kflavor])
         make_uInitrd(i_img_data, boot_dir)
         make_boot_script(boot_env, boot_script_path)
         make_boot_ini(boot_script_path, boot_dir)
@@ -434,7 +434,7 @@ class IgepConfig(BeagleConfig):
             '%s/%s' % (uboot_parts_dir, cls.kernel_base), cls.kernel_flavors)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         (i_img_data, _) = cls._get_kflavor_file(
-            '%s/%s' % (uboot_parts_dir, cls.kernel_base), [kflavor])
+            '%s/%s' % (uboot_parts_dir, cls.initrd_base), [kflavor])
         make_uInitrd(i_img_data, boot_dir)
         make_boot_script(boot_env, boot_script_path)
         make_boot_ini(boot_script_path, boot_dir)
@@ -463,7 +463,7 @@ class Ux500Config(BoardConfig):
             '%s/%s' % (uboot_parts_dir, cls.kernel_base), cls.kernel_flavors)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         (i_img_data, _) = cls._get_kflavor_file(
-            '%s/%s' % (uboot_parts_dir, cls.kernel_base), [kflavor])
+            '%s/%s' % (uboot_parts_dir, cls.initrd_base), [kflavor])
         make_uInitrd(i_img_data, boot_dir)
         make_boot_script(boot_env, boot_script_path)
 
@@ -514,7 +514,7 @@ class Mx5Config(BoardConfig):
             '%s/%s' % (uboot_parts_dir, cls.kernel_base), cls.kernel_flavors)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         (i_img_data, _) = cls._get_kflavor_file(
-            '%s/%s' % (uboot_parts_dir, cls.kernel_base), [kflavor])
+            '%s/%s' % (uboot_parts_dir, cls.initrd_base), [kflavor])
         make_uInitrd(i_img_data, boot_dir)
         make_boot_script(boot_env, boot_script_path)
 
@@ -571,7 +571,7 @@ class VexpressConfig(BoardConfig):
             '%s/%s' % (uboot_parts_dir, cls.kernel_base), cls.kernel_flavors)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         (i_img_data, _) = cls._get_kflavor_file(
-            '%s/%s' % (uboot_parts_dir, cls.kernel_base), [kflavor])
+            '%s/%s' % (uboot_parts_dir, cls.initrd_base), [kflavor])
         make_uInitrd(i_img_data, boot_dir)
 
 class SMDKV310Config(BoardConfig):
@@ -646,7 +646,7 @@ class SMDKV310Config(BoardConfig):
         install_smdkv310_uImage(uImage_file, boot_device_or_file)
 
         (i_img_data, _) = cls._get_kflavor_file(
-            '%s/%s' % (uboot_parts_dir, cls.kernel_base), [kflavor])
+            '%s/%s' % (uboot_parts_dir, cls.initrd_base), [kflavor])
         make_uInitrd(i_img_data, boot_dir)
         install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
 
