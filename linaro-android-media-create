@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-# Copyright (C) 2010, 2011 Linaro
+# Copyright (C) 2011 Linaro
 #
-# Author: Guilherme Salgado <guilherme.salgado@linaro.org>
+# Author: Jeremy Chang <jeremy.chang@linaro.org>
 #
 # This file is part of Linaro Image Tools.
 #
@@ -25,30 +25,35 @@ import tempfile
 
 from linaro_image_tools import cmd_runner
 
-from linaro_image_tools.media_create.boards import board_configs
+from linaro_image_tools.media_create.boards import android_board_configs
 from linaro_image_tools.media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
-from linaro_image_tools.media_create.chroot_utils import (
-    install_hwpacks,
-    install_packages,
-    )
+from linaro_image_tools.media_create.hwpack import install_hwpacks
 from linaro_image_tools.media_create.partitions import (
     Media,
     setup_partitions,
+    setup_android_partitions,
     get_uuid,
     )
-from linaro_image_tools.media_create.rootfs import populate_rootfs
+from linaro_image_tools.media_create.populate_boot import populate_boot
+from linaro_image_tools.media_create.rootfs import populate_partition
 from linaro_image_tools.media_create.unpack_binary_tarball import (
-    unpack_binary_tarball,
+    unpack_android_binary_tarball
     )
-from linaro_image_tools.media_create import get_args_parser
+from linaro_image_tools.media_create import get_android_args_parser
 from linaro_image_tools.utils import ensure_command, is_arm_host
+
+
 
 # Just define the global variables
 TMP_DIR = None
 ROOTFS_DIR = None
 BOOT_DISK = None
 ROOT_DISK = None
+SYSTEM_DISK = None
+CACHE_DISK = None
+DATA_DISK = None
+SDCARD_DISK = None
 
 
 # Registered as the first atexit handler as we want this to be the last
@@ -61,7 +66,8 @@ def cleanup_tempdir():
     """
     devnull = open('/dev/null', 'w')
     # ignore non-zero return codes
-    for disk in BOOT_DISK, ROOT_DISK:
+    for disk in BOOT_DISK, ROOT_DISK, SYSTEM_DISK, CACHE_DISK, DATA_DISK, \
+                SDCARD_DISK:
         if disk is not None:
             try:
                 cmd_runner.run(['umount', disk],
@@ -81,26 +87,40 @@ def ensure_required_commands(args):
     if not is_arm_host():
         required_commands.append('qemu-arm-static')
         required_commands.append('qemu-img')
-    if args.rootfs in ['btrfs', 'ext2', 'ext3', 'ext4']:
+    if args.rootfs in ['ext2', 'ext3', 'ext4']:
         required_commands.append('mkfs.%s' % args.rootfs)
     else:
-        raise AssertionError('Unsupported rootfs type %s' % args.rootfs)
+        required_commands.append('mkfs.btrfs')
     for command in required_commands:
         ensure_command(command)
 
 
 if __name__ == '__main__':
-    parser = get_args_parser()
+    parser = get_android_args_parser()
+    print "===================================================================="
+    print "            linaro-android-media-create is EXPERIMENTAL             "
+    print "                                                                    "
+    print " The command line parameters as well as the distribution format will" 
+    print " be changed and we will not keep backward compatibility for the     " 
+    print " current version here.                                              "
+    print "===================================================================="
     args = parser.parse_args()
 
     # If --help was specified this won't execute.
     # Create temp dir and initialize rest of path vars.
     TMP_DIR = tempfile.mkdtemp()
-    ROOTFS_DIR = os.path.join(TMP_DIR, 'binary')
+    ROOT_DIR = os.path.join(TMP_DIR, 'root')
+    SYSTEM_DIR = os.path.join(TMP_DIR, 'system')
+    DATA_DIR = os.path.join(TMP_DIR, 'data')
+
     BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
     ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
+    SYSTEM_DISK = os.path.join(TMP_DIR, 'system-disc')
+    CACHE_DISK = os.path.join(TMP_DIR, 'cache-disc')
+    DATA_DISK = os.path.join(TMP_DIR, 'userdata-disc')
+    SDCARD_DISK = os.path.join(TMP_DIR, 'sdcard-disc')
 
-    board_config = board_configs[args.board]
+    board_config = android_board_configs[args.board]
 
     ensure_required_commands(args)
 
@@ -116,36 +136,23 @@ if __name__ == '__main__':
         # All good, move on.
         pass
 
-    unpack_binary_tarball(args.binary, TMP_DIR)
 
-    hwpacks = args.hwpacks
-    lmc_dir = os.path.dirname(__file__)
-    if lmc_dir == '':
-        lmc_dir = None
-    install_hwpacks(
-        ROOTFS_DIR, TMP_DIR, lmc_dir, args.hwpack_force_yes, *hwpacks)
+    cmd_runner.run(['mkdir', '-p', ROOT_DIR]).wait()
+    cmd_runner.run(['mkdir', '-p', SYSTEM_DIR]).wait()
+    cmd_runner.run(['mkdir', '-p', DATA_DIR]).wait()
 
-    if args.rootfs == 'btrfs':
-        install_packages(ROOTFS_DIR, TMP_DIR, "btrfs-tools")
+    unpack_android_binary_tarball(args.root, ROOT_DIR)
+    unpack_android_binary_tarball(args.system, SYSTEM_DIR)
+    unpack_android_binary_tarball(args.userdata, DATA_DIR)
 
-    boot_partition, root_partition = setup_partitions(
-        board_config, media, args.image_size, args.boot_label, args.rfs_label,
+    # Create partitions    
+    boot_partition, root_partition, system_partition, cache_partition, \
+        data_partition, sdcard_partition = setup_android_partitions( \
+        board_config, media, args.boot_label, args.rfs_label,
         args.rootfs, args.should_create_partitions, args.should_format_bootfs,
         args.should_format_rootfs, args.should_align_boot_part)
 
-    rootfs_uuid = get_uuid(root_partition)
-
-    if args.should_format_bootfs:
-        board_config.populate_boot(
-            ROOTFS_DIR, rootfs_uuid, boot_partition, BOOT_DISK, args.device,
-            args.is_live, args.is_lowmem, args.consoles)
-
-    if args.should_format_rootfs:
-        create_swap = False
-        if args.swap_file is not None:
-            create_swap = True
-        populate_rootfs(ROOTFS_DIR, ROOT_DISK, root_partition, args.rootfs,
-            rootfs_uuid, create_swap, str(args.swap_file),
-            board_config.mmc_part_offset)
-
-    print "Done creating Linaro image on %s" % args.device
+    populate_partition(ROOT_DIR, ROOT_DISK, root_partition)
+    populate_partition(SYSTEM_DIR + "/system", SYSTEM_DISK, system_partition)
+    populate_partition(DATA_DIR + "/data", DATA_DISK, data_partition)
+    print "Done creating Linaro Android image on %s" % args.device

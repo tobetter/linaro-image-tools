@@ -32,10 +32,8 @@ from linaro_image_tools.utils import (
 # functions would only be called after l-m-c.py exits.
 local_atexit = []
 
-def install_hwpacks(
-    chroot_dir, tmp_dir, tools_dir, hwpack_force_yes, *hwpack_files):
-    """Install the given hwpacks onto the given chroot."""
-
+def prepare_chroot(chroot_dir, tmp_dir):
+    """Prepares a chroot to run commands in it (networking and QEMU setup)."""
     chroot_etc = os.path.join(chroot_dir, 'etc')
     temporarily_overwrite_file_on_dir('/etc/resolv.conf', chroot_etc, tmp_dir)
     temporarily_overwrite_file_on_dir('/etc/hosts', chroot_etc, tmp_dir)
@@ -43,6 +41,11 @@ def install_hwpacks(
     if not is_arm_host():
         copy_file('/usr/bin/qemu-arm-static',
                   os.path.join(chroot_dir, 'usr', 'bin'))
+
+def install_hwpacks(
+    chroot_dir, tmp_dir, tools_dir, hwpack_force_yes, *hwpack_files):
+    """Install the given hwpacks onto the given chroot."""
+    prepare_chroot(chroot_dir, tmp_dir)
 
     linaro_hwpack_install_path = find_command(
         'linaro-hwpack-install', prefer_dir=tools_dir)
@@ -70,13 +73,34 @@ def install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes):
     hwpack_basename = os.path.basename(hwpack_file)
     copy_file(hwpack_file, chroot_dir)
     print "-" * 60
-    print "Installing (apt-get) %s in target rootfs." % hwpack_basename
-    args = ['chroot', chroot_dir, 'linaro-hwpack-install']
+    print "Installing (linaro-hwpack-install) %s in target rootfs." % (
+        hwpack_basename)
+    args = ['linaro-hwpack-install']
     if hwpack_force_yes:
         args.append('--force-yes')
     args.append('/%s' % hwpack_basename)
-    cmd_runner.run(args, as_root=True).wait()
+    cmd_runner.run(args, as_root=True, chroot=chroot_dir).wait()
     print "-" * 60
+
+
+def install_packages(chroot_dir, tmp_dir, *packages):
+    """Install packages in the given chroot.
+
+    This does not run apt-get update before hand."""
+    prepare_chroot(chroot_dir, tmp_dir)
+
+    try:
+        mount_chroot_proc(chroot_dir)
+        print "-" * 60
+        print "Installing (apt-get) %s in target rootfs." % " ".join(packages)
+        args = ("apt-get", "--yes", "install") + packages
+        cmd_runner.run(args, as_root=True, chroot=chroot_dir).wait()
+        print "Cleaning up downloaded packages."
+        args = ("apt-get", "clean")
+        cmd_runner.run(args, as_root=True, chroot=chroot_dir).wait()
+        print "-" * 60
+    finally:
+        run_local_atexit_funcs()
 
 
 def mount_chroot_proc(chroot_dir):

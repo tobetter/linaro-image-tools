@@ -23,6 +23,22 @@ import tempfile
 
 from linaro_image_tools import cmd_runner
 
+def populate_partition(content_dir, root_disk, partition):
+    os.makedirs(root_disk)
+    cmd_runner.run(['mount', partition, root_disk], as_root=True).wait()
+    move_contents(content_dir, root_disk)
+    cmd_runner.run(['sync']).wait()
+    cmd_runner.run(['umount', root_disk], as_root=True).wait()
+
+
+def rootfs_mount_options(rootfs_type):
+    """Return mount options for the specific rootfs type."""
+    if rootfs_type == "btrfs":
+        return "defaults"
+    if rootfs_type in ('ext2', 'ext3', 'ext4'):
+        return "errors=remount-ro"
+    raise ValueError('Unsupported rootfs type')
+
 
 def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
                     rootfs_uuid, should_create_swap, swap_size,
@@ -47,8 +63,9 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
 
     move_contents(content_dir, root_disk)
 
-    fstab_additions = ["UUID=%s / %s  errors=remount-ro 0 1 " % (
-            rootfs_uuid, rootfs_type)]
+    mount_options = rootfs_mount_options(rootfs_type)
+    fstab_additions = ["UUID=%s / %s  %s 0 1" % (
+            rootfs_uuid, rootfs_type, mount_options)]
     if should_create_swap:
         print "\nCreating SWAP File\n"
         if has_space_left_for_swap(root_disk, swap_size):
@@ -115,7 +132,7 @@ def has_space_left_for_swap(root_disk, swap_size_in_mega_bytes):
 
 def append_to_fstab(root_disk, fstab_additions):
     fstab = os.path.join(root_disk, 'etc', 'fstab')
-    data = open(fstab).read() + '\n' + '\n'.join(fstab_additions)
+    data = open(fstab).read() + '\n' + '\n'.join(fstab_additions) + '\n'
     write_data_to_protected_file(fstab, data)
 
 

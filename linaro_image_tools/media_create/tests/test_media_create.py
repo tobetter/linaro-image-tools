@@ -54,11 +54,13 @@ from linaro_image_tools.media_create.boards import (
     _get_mlo_file,
     _run_mkimage,
     )
-from linaro_image_tools.media_create.hwpack import (
+from linaro_image_tools.media_create.chroot_utils import (
     copy_file,
     install_hwpack,
     install_hwpacks,
+    install_packages,
     mount_chroot_proc,
+    prepare_chroot,
     run_local_atexit_funcs,
     temporarily_overwrite_file_on_dir,
     )
@@ -78,10 +80,12 @@ from linaro_image_tools.media_create.partitions import (
     _parse_blkid_output,
     )
 from linaro_image_tools.media_create.rootfs import (
+    append_to_fstab,
     create_flash_kernel_config,
     has_space_left_for_swap,
     move_contents,
     populate_rootfs,
+    rootfs_mount_options,
     write_data_to_protected_file,
     )
 from linaro_image_tools.media_create.tests.fixtures import (
@@ -100,6 +104,7 @@ from linaro_image_tools.tests.fixtures import (
 from linaro_image_tools.utils import find_command, preferred_tools_dir
 
 
+chroot_args = " ".join(cmd_runner.CHROOT_ARGS)
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
 
 
@@ -178,7 +183,7 @@ class TestBootSteps(TestCaseWithFixtures):
             config, '_get_kflavor_files',
             classmethod(_get_kflavor_files_mock)))
 
-        config.make_boot_files('', False, False, [], '', '', '', '', '')
+        config.make_boot_files('', False, False, [], '', '', '', '')
 
     def test_vexpress_steps(self):
         self.make_boot_files(boards.VexpressConfig)
@@ -286,7 +291,7 @@ class TestFixForBug697824(TestCaseWithFixtures):
         # we're only interested in ensuring that OmapConfig.make_boot_files()
         # calls set_appropriate_serial_tty().
         board_configs['beagle'].make_boot_files(
-            None, None, None, None, None, None, None, None, None)
+            None, None, None, None, None, None, None, None)
         self.assertTrue(
             self.set_appropriate_serial_tty_called,
             "make_boot_files didn't call set_appropriate_serial_tty")
@@ -960,10 +965,10 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
     expected_args = (
         'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_uuid',
-        'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+        'boot_disk', 'boot_device_or_file')
     expected_args_live = (
         'chroot_dir/casper', True, False, [], 'chroot_dir', 'rootfs_uuid',
-        'boot_disk', 'boot_disk/boot_script', 'boot_device_or_file')
+        'boot_disk', 'boot_device_or_file')
     expected_calls = [
         'mkdir -p boot_disk',
         '%s mount boot_partition boot_disk' % sudo_args,
@@ -1067,7 +1072,7 @@ class TestPopulateRootFS(TestCaseWithFixtures):
             swap_size=100, partition_offset=0)
 
         self.assertEqual(
-            ['UUID=uuid / ext3  errors=remount-ro 0 1 ',
+            ['UUID=uuid / ext3  errors=remount-ro 0 1',
              '/SWAP.swap  none  swap  sw  0 0'],
             self.lines_added_to_fstab)
         self.assertEqual(True, self.create_flash_kernel_config_called)
@@ -1142,6 +1147,30 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         self.assertEqual(['%s mv -f %s %s' % (sudo_args, tmpfile, path)],
                          fixture.mock.commands_executed)
         self.assertEqual(data, open(tmpfile).read())
+
+    def test_rootfs_mount_options_for_btrfs(self):
+        self.assertEqual("defaults", rootfs_mount_options('btrfs'))
+
+    def test_rootfs_mount_options_for_ext4(self):
+        self.assertEqual("errors=remount-ro", rootfs_mount_options('ext4'))
+
+    def test_rootfs_mount_options_for_unknown(self):
+        self.assertRaises(ValueError, rootfs_mount_options, 'unknown')
+
+    def test_append_to_fstab(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        # we don't really need root (sudo) as we're not writing to a real
+        # root owned /etc
+        self.useFixture(MockSomethingFixture(os, 'getuid', lambda: 0))
+        etc = os.path.join(tempdir, 'etc')
+        os.mkdir(etc)
+        fstab = os.path.join(etc, 'fstab')
+        open(fstab, "w").close()
+        append_to_fstab(tempdir, ['foo', 'bar'])
+        f = open(fstab)
+        contents = f.read()
+        f.close()
+        self.assertEquals("\nfoo\nbar\n", contents)
 
 
 class TestCheckDevice(TestCaseWithFixtures):
@@ -1223,6 +1252,13 @@ class AtExitRegister(object):
 
 
 class TestInstallHWPack(TestCaseWithFixtures):
+    def mock_prepare_chroot(self, chroot_dir, tmp_dir):
+        def fake_prepare_chroot(chroot_dir, tmp_dir):
+            cmd_runner.run(['prepare_chroot %s %s' % (chroot_dir, tmp_dir)],
+                as_root=True).wait()
+        self.useFixture(MockSomethingFixture(
+            linaro_image_tools.media_create.chroot_utils, 'prepare_chroot',
+            fake_prepare_chroot))
 
     def test_temporarily_overwrite_file_on_dir(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
@@ -1268,49 +1304,92 @@ class TestInstallHWPack(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             sys, 'stdout', open('/dev/null', 'w')))
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        chroot_dir = 'chroot_dir'
         force_yes = False
-        install_hwpack('chroot', 'hwpack.tgz', force_yes)
+        install_hwpack(chroot_dir, 'hwpack.tgz', force_yes)
         self.assertEquals(
-            ['%s cp hwpack.tgz chroot' % sudo_args,
-             '%s chroot chroot linaro-hwpack-install /hwpack.tgz'
-                % sudo_args],
+            ['%s cp hwpack.tgz %s' % (sudo_args, chroot_dir),
+             '%s %s %s linaro-hwpack-install /hwpack.tgz'
+                % (sudo_args, chroot_args, chroot_dir)],
             fixture.mock.commands_executed)
 
         fixture.mock.calls = []
         run_local_atexit_funcs()
         self.assertEquals(
-            ['%s rm -f chroot/hwpack.tgz' % sudo_args],
+            ['%s rm -f %s/hwpack.tgz' % (sudo_args, chroot_dir)],
             fixture.mock.commands_executed)
 
     def test_install_hwpacks(self):
         self.useFixture(MockSomethingFixture(
             sys, 'stdout', open('/dev/null', 'w')))
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        chroot_dir = 'chroot_dir'
+        tmp_dir = 'tmp_dir'
+        self.mock_prepare_chroot(chroot_dir, tmp_dir)
         force_yes = True
 
         prefer_dir = preferred_tools_dir()
 
         install_hwpacks(
-            'chroot', '/tmp/dir', prefer_dir, force_yes, 'hwpack1.tgz',
+            chroot_dir, tmp_dir, prefer_dir, force_yes, 'hwpack1.tgz',
             'hwpack2.tgz')
         linaro_hwpack_install = find_command(
             'linaro-hwpack-install', prefer_dir=prefer_dir)
+        expected = [
+            'prepare_chroot %(chroot_dir)s %(tmp_dir)s',
+            'cp %(linaro_hwpack_install)s %(chroot_dir)s/usr/bin',
+            'mount proc %(chroot_dir)s/proc -t proc',
+            'cp hwpack1.tgz %(chroot_dir)s',
+            ('%(chroot_args)s %(chroot_dir)s linaro-hwpack-install '
+             '--force-yes /hwpack1.tgz'),
+            'cp hwpack2.tgz %(chroot_dir)s',
+            ('%(chroot_args)s %(chroot_dir)s linaro-hwpack-install '
+             '--force-yes /hwpack2.tgz'),
+            'rm -f %(chroot_dir)s/hwpack2.tgz',
+            'rm -f %(chroot_dir)s/hwpack1.tgz',
+            'umount -v %(chroot_dir)s/proc',
+            'rm -f %(chroot_dir)s/usr/bin/linaro-hwpack-install']
+        keywords = dict(
+            chroot_dir=chroot_dir, tmp_dir=tmp_dir, chroot_args=chroot_args,
+            linaro_hwpack_install=linaro_hwpack_install)
+        expected = [
+            "%s %s" % (sudo_args, line % keywords) for line in expected]
+        self.assertEquals(expected, fixture.mock.commands_executed)
+
+    def test_install_packages(self):
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        chroot_dir = 'chroot_dir'
+        tmp_dir = 'tmp_dir'
+        self.mock_prepare_chroot(chroot_dir, tmp_dir)
+
+        install_packages(chroot_dir, tmp_dir, 'pkg1', 'pkg2')
+        expected = [
+            'prepare_chroot %(chroot_dir)s %(tmp_dir)s',
+            'mount proc %(chroot_dir)s/proc -t proc',
+            '%(chroot_args)s %(chroot_dir)s apt-get --yes install pkg1 pkg2',
+            '%(chroot_args)s %(chroot_dir)s apt-get clean',
+            'umount -v %(chroot_dir)s/proc']
+        keywords = dict(
+            chroot_dir=chroot_dir, tmp_dir=tmp_dir, chroot_args=chroot_args)
+        expected = [
+            "%s %s" % (sudo_args, line % keywords) for line in expected]
+        self.assertEquals(expected, fixture.mock.commands_executed)
+
+    def test_prepare_chroot(self):
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+
+        prepare_chroot('chroot', '/tmp/dir')
+        run_local_atexit_funcs()
         expected = [
             'mv -f chroot/etc/resolv.conf /tmp/dir/resolv.conf',
             'cp /etc/resolv.conf chroot/etc',
             'mv -f chroot/etc/hosts /tmp/dir/hosts',
             'cp /etc/hosts chroot/etc',
             'cp /usr/bin/qemu-arm-static chroot/usr/bin',
-            'cp %s chroot/usr/bin' % linaro_hwpack_install,
-            'mount proc chroot/proc -t proc',
-            'cp hwpack1.tgz chroot',
-            'chroot chroot linaro-hwpack-install --force-yes /hwpack1.tgz',
-            'cp hwpack2.tgz chroot',
-            'chroot chroot linaro-hwpack-install --force-yes /hwpack2.tgz',
-            'rm -f chroot/hwpack2.tgz',
-            'rm -f chroot/hwpack1.tgz',
-            'umount -v chroot/proc',
-            'rm -f chroot/usr/bin/linaro-hwpack-install',
             'rm -f chroot/usr/bin/qemu-arm-static',
             'mv -f /tmp/dir/hosts chroot/etc',
             'mv -f /tmp/dir/resolv.conf chroot/etc']
@@ -1333,13 +1412,12 @@ class TestInstallHWPack(TestCaseWithFixtures):
         # run_local_atexit_funcs() runs the atexit handlers in LIFO order, but
         # even though the first function called (raising_func) will raise
         # an exception, the second one will still be called after it.
-        linaro_image_tools.media_create.hwpack.local_atexit = [
+        linaro_image_tools.media_create.chroot_utils.local_atexit = [
             behaving_func, raising_func]
         # run_local_atexit_funcs() also propagates the last exception raised
         # by one of the functions.
-        self.assertRaises(
-            TestException,
-            linaro_image_tools.media_create.hwpack.run_local_atexit_funcs)
+        chroot_utils = linaro_image_tools.media_create.chroot_utils
+        self.assertRaises(TestException, chroot_utils.run_local_atexit_funcs)
         self.assertEquals(
             ['raising_func', 'behaving_func'], self.call_order)
 
@@ -1356,10 +1434,11 @@ class TestInstallHWPack(TestCaseWithFixtures):
             sys, 'stdout', open('/dev/null', 'w')))
         self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
-            linaro_image_tools.media_create.hwpack, 'install_hwpack',
+            linaro_image_tools.media_create.chroot_utils, 'install_hwpack',
             mock_install_hwpack))
         self.useFixture(MockSomethingFixture(
-            linaro_image_tools.media_create.hwpack, 'run_local_atexit_funcs',
+            linaro_image_tools.media_create.chroot_utils,
+            'run_local_atexit_funcs',
             mock_run_local_atexit_functions))
 
         force_yes = True
@@ -1378,5 +1457,5 @@ class TestInstallHWPack(TestCaseWithFixtures):
         # Ensure the list of cleanup functions gets cleared to make sure tests
         # don't interfere with one another.
         def clear_atexits():
-            linaro_image_tools.media_create.hwpack.local_atexit = []
+            linaro_image_tools.media_create.chroot_utils.local_atexit = []
         self.addCleanup(clear_atexits)
