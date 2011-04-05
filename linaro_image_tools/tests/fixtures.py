@@ -69,6 +69,10 @@ class MockCmdRunnerPopen(object):
     child_finished = True
 
     def __call__(self, cmd, *args, **kwargs):
+        if not self.child_finished:
+            raise AssertionError(
+                "You should call wait() or communicate() to ensure "
+                "the subprocess is finished before proceeding.")
         self.child_finished = False
         if self.calls is None:
             self.calls = []

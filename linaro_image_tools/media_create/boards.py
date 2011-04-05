@@ -168,6 +168,9 @@ class BoardConfig(object):
         else:
             partition_type = '0x0E'
 
+        BOOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+        ROOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+            
         # align on sector 63 for compatibility with broken versions of x-loader
         # unless align_boot_part is set
         boot_align = 63
@@ -182,6 +185,7 @@ class BoardConfig(object):
         # there should still be enough room
         boot_len = boot_len - boot_len % 2
         boot_end = boot_start + boot_len - 1
+
         # we ignore _root_end / _root_len and return a sfdisk command to
         # instruct the use of all remaining space; XXX if we had some root size
         # config, we could do something more sensible
@@ -190,6 +194,54 @@ class BoardConfig(object):
 
         return '%s,%s,%s,*\n%s,,,-' % (
             boot_start, boot_len, partition_type, root_start)
+
+    # TODO: Create separate config classes for android and move this method
+    # into them, also renaming it to get_sfdisk_cmd() so that we don't need
+    # the image_type check in partitions.py.
+    @classmethod
+    def get_android_sfdisk_cmd(cls, should_align_boot_part=False):
+        if cls.fat_size == 32:
+            partition_type = '0x0C'
+        else:
+            partition_type = '0x0E'
+
+        BOOT_MIN_SIZE_S = align_up(128 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+        ROOT_MIN_SIZE_S = align_up(128 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+        SYSTEM_MIN_SIZE_S = align_up(256 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+        CACHE_MIN_SIZE_S = align_up(256 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+        USERDATA_MIN_SIZE_S = align_up(512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+        SDCARD_MIN_SIZE_S = align_up(512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+
+        # align on sector 63 for compatibility with broken versions of x-loader
+        # unless align_boot_part is set
+        boot_align = 63
+        if should_align_boot_part:
+            boot_align = PART_ALIGN_S
+
+        # can only start on sector 1 (sector 0 is MBR / partition table)
+        boot_start, boot_end, boot_len = align_partition(
+            1, BOOT_MIN_SIZE_S, boot_align, PART_ALIGN_S)
+        # apparently OMAP3 ROMs require the vfat length to be an even number
+        # of sectors (multiple of 1 KiB); decrease the length if it's odd,
+        # there should still be enough room
+        boot_len = boot_len - boot_len % 2
+        boot_end = boot_start + boot_len - 1
+
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+        system_start, _system_end, _system_len = align_partition(
+            _root_end + 1, SYSTEM_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+        cache_start, _cache_end, _cache_len = align_partition(
+            _system_end + 1, CACHE_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+        userdata_start, _userdata_end, _userdata_len = align_partition(
+            _cache_end + 1, USERDATA_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+        sdcard_start, _sdcard_end, _sdcard_len = align_partition(
+            _userdata_end + 1, SDCARD_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+ 
+        return '%s,%s,%s,*\n%s,%s,L\n%s,%s,L\n%s,-,E\n%s,%s,L\n%s,%s,L\n%s,,,-' % (
+            boot_start, boot_len, partition_type, root_start, _root_len, 
+            system_start, _system_len, cache_start, cache_start, _cache_len,
+            userdata_start, _userdata_len, sdcard_start)
 
     @classproperty
     def bootcmd(cls):
@@ -250,16 +302,15 @@ class BoardConfig(object):
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        chroot_dir, rootfs_uuid, boot_dir, boot_script_path,
-                        boot_device_or_file):
+                        chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid)
         cls._make_boot_files(
-            uboot_parts_dir, boot_env, chroot_dir, boot_dir, boot_script_path,
+            uboot_parts_dir, boot_env, chroot_dir, boot_dir, 
             boot_device_or_file)
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         """Make the necessary boot files for this board.
 
         This is usually board-specific so ought to be defined in every
@@ -287,11 +338,9 @@ class BoardConfig(object):
             cmd_runner.run(
                 ['cp', '-v', uboot_bin, boot_disk], as_root=True).wait()
 
-        boot_script_path = os.path.join(boot_disk, cls.boot_script)
-
         cls.make_boot_files(
             uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
-            rootfs_uuid, boot_disk, boot_script_path, boot_device_or_file)
+            rootfs_uuid, boot_disk, boot_device_or_file)
 
         cmd_runner.run(['sync']).wait()
         try:
@@ -346,23 +395,23 @@ class OmapConfig(BoardConfig):
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        chroot_dir, rootfs_uuid, boot_dir, boot_script_path,
-                        boot_device_or_file):
+                        chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
         # XXX: This is also part of our temporary hack to fix bug 697824; we
         # need to call set_appropriate_serial_tty() before doing anything that
         # may use cls.serial_tty.
         cls.set_appropriate_serial_tty(chroot_dir)
         super(OmapConfig, cls).make_boot_files(
             uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
-            rootfs_uuid, boot_dir, boot_script_path, boot_device_or_file)
+            rootfs_uuid, boot_dir, boot_device_or_file)
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         install_omap_boot_loader(chroot_dir, boot_dir)
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
         make_boot_ini(boot_script_path, boot_dir)
 
@@ -414,10 +463,11 @@ class IgepConfig(BeagleConfig):
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
         make_boot_ini(boot_script_path, boot_dir)
 
@@ -429,7 +479,7 @@ class Ux500Config(BoardConfig):
     kernel_addr = '0x00100000'
     initrd_addr = '0x08000000'
     load_addr = '0x00008000'
-    kernel_suffix = 'ux500'
+    kernel_suffix = 'u?500'
     boot_script = 'flash.scr'
     extra_boot_args_options = (
         'earlyprintk rootdelay=1 fixrtc nocompcache '
@@ -440,10 +490,11 @@ class Ux500Config(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
 
 
@@ -485,13 +536,14 @@ class Mx5Config(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
         install_mx5_boot_loader(uboot_file, boot_device_or_file)
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
 
 
@@ -542,7 +594,7 @@ class VexpressConfig(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_script_path, boot_device_or_file):
+                         boot_device_or_file):
         make_uImage(
             cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
@@ -619,6 +671,7 @@ class SMDKV310Config(BoardConfig):
 
         # unused at the moment once FAT support enabled for the
         # Samsung u-boot this can be used bug 727978
+        #boot_script_path = os.path.join(boot_dir, cls.boot_script)
         #make_boot_script(boot_env, boot_script_path)
 
 
@@ -634,6 +687,11 @@ board_configs = {
     'mx53loco' : Mx53LoCoConfig,
     'overo': OveroConfig,
     'smdkv310': SMDKV310Config,
+    }
+
+android_board_configs = {
+    'beagle': BeagleConfig,
+    'panda': PandaConfig,
     }
 
 

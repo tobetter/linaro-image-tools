@@ -20,6 +20,13 @@
 from linaro_image_tools import cmd_runner
 
 
+def unpack_android_binary_tarball(tarball, unpack_dir, as_root=True):
+    proc = cmd_runner.run(
+        ['tar', '--numeric-owner', '-C', unpack_dir, '-jxf', tarball],
+        as_root=as_root)
+    proc.wait()
+    return proc.returncode
+
 def unpack_binary_tarball(tarball, unpack_dir, as_root=True):
     proc = cmd_runner.run(
         ['tar', '--numeric-owner', '-C', unpack_dir, '-xf', tarball],

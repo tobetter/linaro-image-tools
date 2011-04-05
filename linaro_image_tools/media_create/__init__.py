@@ -20,9 +20,11 @@
 import argparse
 
 from linaro_image_tools.media_create.boards import board_configs
+from linaro_image_tools.media_create.boards import android_board_configs
 
 
 KNOWN_BOARDS = board_configs.keys()
+ANDROID_KNOWN_BOARDS = android_board_configs.keys()
 
 
 class Live256MegsAction(argparse.Action):
@@ -96,6 +98,49 @@ def get_args_parser():
         '--binary', default='binary-tar.tar.gz', required=True,
         help=('The tarball containing the rootfs used to create the bootable '
               'system.'))
+    parser.add_argument(
+        '--no-rootfs', dest='should_format_rootfs', action='store_false',
+        help='Do not deploy the root filesystem.')
+    parser.add_argument(
+        '--no-bootfs', dest='should_format_bootfs', action='store_false',
+        help='Do not deploy the boot filesystem.')
+    parser.add_argument(
+        '--no-part', dest='should_create_partitions', action='store_false',
+        help='Reuse existing partitions on the given media.')
+    parser.add_argument(
+        '--align-boot-part', dest='should_align_boot_part',
+        action='store_true',
+        help='Align boot partition too (might break older x-loaders).')
+    return parser
+
+def get_android_args_parser():
+    """Get the ArgumentParser for the arguments given on the command line."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--mmc', required=True, dest='device', help='The storage device to use.')
+    parser.add_argument(
+        '--dev', required=True, dest='board', choices=ANDROID_KNOWN_BOARDS,
+        help='Generate an SD card or image for the given board.')
+    parser.add_argument(
+        '--rootfs', default='ext4', choices=['ext3', 'ext4'],
+        help='Type of filesystem to use for the rootfs')
+    parser.add_argument(
+        '--rfs_label', default='rootfs',
+        help='Label to use for the root filesystem.')
+    parser.add_argument(
+        '--boot_label', default='boot',
+        help='Label to use for the boot filesystem.')
+
+    parser.add_argument(
+        '--system', default='system.tar.bz2', required=True,
+        help=('The tarball containing the Android system paritition'))
+    parser.add_argument(
+        '--userdata', default='userdata.tar.bz2', required=True,
+        help=('The tarball containing the Android data paritition'))
+    parser.add_argument(
+        '--root', default='root.tar.bz2', required=True,
+        help=('The tarball containing the Android root partition'))
+
     parser.add_argument(
         '--no-rootfs', dest='should_format_rootfs', action='store_false',
         help='Do not deploy the root filesystem.')
