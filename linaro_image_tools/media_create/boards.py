@@ -635,9 +635,9 @@ class SMDKV310Config(BoardConfig):
         install_smdkv310_boot_env(env_file, boot_device_or_file)
 
         (k_img_data, i_img_data) = cls._get_kflavor_files(uboot_parts_dir)
-        make_uImage(cls.load_addr, k_img_data, boot_dir)
+        uImage_file = make_uImage(cls.load_addr, k_img_data, boot_dir)
         install_smdkv310_uImage(uImage_file, boot_device_or_file)
-        make_uInitrd(i_img_data, boot_dir)
+        uInitrd_file = make_uInitrd(i_img_data, boot_dir)
         install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
 
         # unused at the moment once FAT support enabled for the
