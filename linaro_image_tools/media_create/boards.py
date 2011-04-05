@@ -195,6 +195,9 @@ class BoardConfig(object):
         return '%s,%s,%s,*\n%s,,,-' % (
             boot_start, boot_len, partition_type, root_start)
 
+    # TODO: Create separate config classes for android and move this method
+    # into them, also renaming it to get_sfdisk_cmd() so that we don't need
+    # the image_type check in partitions.py.
     @classmethod
     def get_android_sfdisk_cmd(cls, should_align_boot_part=False):
         if cls.fat_size == 32:

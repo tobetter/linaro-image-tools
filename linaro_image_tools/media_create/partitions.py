@@ -407,6 +407,8 @@ def create_partitions(board_config, media, heads, sectors, cylinders=None,
             ['parted', '-s', media.path, 'mklabel', 'msdos'], as_root=True)
         proc.wait()
 
+    # XXX: We should get rid of this by using separate config classes for
+    # android -- see comment in get_android_sfdisk_cmd() for more details.
     if image_type == "ANDROID":
         sfdisk_cmd = board_config.get_android_sfdisk_cmd(
             should_align_boot_part=should_align_boot_part)
