@@ -307,13 +307,14 @@ class BoardConfig(object):
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid)
+        (k_img_data, i_img_data) = cls._get_kflavor_files(uboot_parts_dir)
         cls._make_boot_files(
-            uboot_parts_dir, boot_env, chroot_dir, boot_dir, 
-            boot_device_or_file)
+            boot_env, chroot_dir, boot_dir, 
+            boot_device_or_file, k_img_data, i_img_data)
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file):
+    def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data):
         """Make the necessary boot files for this board.
 
         This is usually board-specific so ought to be defined in every
@@ -426,10 +427,9 @@ class OmapConfig(BoardConfig):
             rootfs_uuid, boot_dir, boot_device_or_file)
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file):
+    def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data):
         install_omap_boot_loader(chroot_dir, boot_dir)
-        (k_img_data, i_img_data) = cls._get_kflavor_files(uboot_parts_dir)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
@@ -483,9 +483,8 @@ class IgepConfig(BeagleConfig):
     uboot_flavor = None
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file):
-        (k_img_data, i_img_data) = cls._get_kflavor_files(uboot_parts_dir)
+    def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
@@ -510,9 +509,8 @@ class Ux500Config(BoardConfig):
     mmc_option = '1:1'
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file):
-        (k_img_data, i_img_data) = cls._get_kflavor_files(uboot_parts_dir)
+    def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
@@ -556,12 +554,11 @@ class Mx5Config(BoardConfig):
             loader_start, loader_len, boot_start, boot_len, root_start)
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file):
+    def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
         install_mx5_boot_loader(uboot_file, boot_device_or_file)
-        (k_img_data, i_img_data) = cls._get_kflavor_files(uboot_parts_dir)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
@@ -614,9 +611,8 @@ class VexpressConfig(BoardConfig):
     fat_size = 16
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file):
-        (k_img_data, i_img_data) = cls._get_kflavor_files(uboot_parts_dir)
+    def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
 
@@ -676,8 +672,8 @@ class SMDKV310Config(BoardConfig):
         return boot_env
 
     @classmethod
-    def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file):
+    def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.v310')
         install_smdkv310_boot_loader(uboot_file, boot_device_or_file)
@@ -686,7 +682,6 @@ class SMDKV310Config(BoardConfig):
         env_file = make_flashable_env(boot_env, env_size)
         install_smdkv310_boot_env(env_file, boot_device_or_file)
 
-        (k_img_data, i_img_data) = cls._get_kflavor_files(uboot_parts_dir)
         uImage_file = make_uImage(cls.load_addr, k_img_data, boot_dir)
         install_smdkv310_uImage(uImage_file, boot_device_or_file)
         uInitrd_file = make_uInitrd(i_img_data, boot_dir)
