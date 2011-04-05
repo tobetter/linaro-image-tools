@@ -1189,7 +1189,7 @@ class PackageFetcherTests(TestCaseWithFixtures):
         self.assertEqual(
             [], fetcher.fetch_packages(["foo"], download_content=False))
 
-    def test_ignore_is_cumalative(self):
+    def test_ignore_is_cumulative(self):
         package1 = DummyFetchedPackage("foo", "1.0")
         package2 = DummyFetchedPackage("bar", "1.0")
         source = self.useFixture(
