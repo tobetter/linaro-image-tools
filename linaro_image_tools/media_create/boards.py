@@ -600,10 +600,11 @@ class VexpressConfig(BoardConfig):
         make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
 
 class SMDKV310Config(BoardConfig):
+    uboot_flavor = 'smdkv310'
     serial_tty = 'ttySAC1'
     extra_serial_opts = 'console=%s,115200n8' % serial_tty
     kernel_addr = '0x40007000'
-    initrd_addr = '0x41000000'
+    initrd_addr = '0x42000000'
     load_addr = '0x40008000'
     kernel_suffix = 's5pv310'
     boot_script = 'boot.scr'
@@ -650,28 +651,24 @@ class SMDKV310Config(BoardConfig):
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file):
         spl_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'v310_mmc_spl.bin')
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'v310_mmc_spl.bin')
         install_smdkv310_spl(spl_file, boot_device_or_file)
         uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.bin')
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.bin')
         install_smdkv310_uboot(uboot_file, boot_device_or_file)
 
         env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
         install_smdkv310_boot_env(env_file, boot_device_or_file)
 
-        uImage_file = make_uImage(
-            cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        install_smdkv310_uImage(uImage_file, boot_device_or_file)
+        make_uImage(cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
 
-        uInitrd_file = make_uInitrd(
-            uboot_parts_dir, cls.kernel_suffix, boot_dir)
-        install_smdkv310_initrd(uInitrd_file, boot_device_or_file)
+        make_uInitrd(uboot_parts_dir, cls.kernel_suffix, boot_dir)
 
         # unused at the moment once FAT support enabled for the
         # Samsung u-boot this can be used bug 727978
-        #boot_script_path = os.path.join(boot_dir, cls.boot_script)
-        #make_boot_script(boot_env, boot_script_path)
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
+        make_boot_script(boot_env, boot_script_path)
 
 
 board_configs = {
@@ -854,30 +851,6 @@ def make_boot_ini(boot_script_path, boot_disk):
     proc.wait()
 
 
-def install_smdkv310_uImage(uImage_file, boot_device_or_file):
-    # the layout keeps SAMSUNG_V310_UIMAGE_LEN sectors for uImage; make sure
-    # uImage isn't actually larger or it would be truncated
-    max_size = SAMSUNG_V310_UIMAGE_LEN * SECTOR_SIZE
-    assert os.path.getsize(uImage_file) <= max_size, (
-        "%s is larger than the allocated v310 uImage length" % uImage_file)
-    _dd(uImage_file, boot_device_or_file, count=SAMSUNG_V310_UIMAGE_LEN,
-        seek=SAMSUNG_V310_UIMAGE_START)
-
-
-def install_smdkv310_initrd(initrd_file, boot_device_or_file):
-    # the layout keeps SAMSUNG_V310_UINITRD_RESERVED_LEN sectors for uInitrd
-    # but only SAMSUNG_V310_UINITRD_COPY_LEN sectors are loaded into memory;
-    # make sure uInitrd isn't actually larger or it would be truncated in
-    # memory
-    max_size = SAMSUNG_V310_UINITRD_COPY_LEN * SECTOR_SIZE
-    assert os.path.getsize(initrd_file) <= max_size, (
-        "%s is larger than the v310 uInitrd length as used by u-boot"
-            % initrd_file)
-    _dd(initrd_file, boot_device_or_file,
-        count=SAMSUNG_V310_UINITRD_COPY_LEN,
-        seek=SAMSUNG_V310_UINITRD_START)
-
-
 def install_smdkv310_boot_env(env_file, boot_device_or_file):
     # the environment file is exactly SAMSUNG_V310_ENV_LEN as created by
     # make_flashable_env(), so we don't need to check the size of env_file
@@ -895,6 +868,7 @@ def install_smdkv310_spl(v310_spl, boot_device_or_file):
     """
     _dd(v310_spl, boot_device_or_file, count=SAMSUNG_V310_BL1_LEN,
         seek=SAMSUNG_V310_BL1_START)
+
 
 def install_smdkv310_uboot(v310_uboot, boot_device_or_file):
     # XXX need to check that the length of v310_file - 64s is smaller than
