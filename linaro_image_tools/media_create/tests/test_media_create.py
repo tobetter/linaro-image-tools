@@ -196,8 +196,7 @@ class TestBootSteps(TestCaseWithFixtures):
         expected = [
             'install_smdkv310_spl', 'install_smdkv310_uboot', 
             'make_flashable_env', 'install_smdkv310_boot_env', 
-            'make_uImage', 'install_smdkv310_uImage', 'make_uInitrd',
-            'install_smdkv310_initrd']
+            'make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_ux500_steps(self):
@@ -362,8 +361,8 @@ class TestGetBootCmd(TestCase):
             'bootargs': 'console=ttySAC1,115200n8  root=UUID=deadbeef '
                         'rootwait ro',
              'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
-                        'fatload mmc 0:2 0x41000000 uInitrd; '
-                        'bootm 0x40007000 0x41000000',
+                        'fatload mmc 0:2 0x42000000 uInitrd; '
+                        'bootm 0x40007000 0x42000000',
              'ethact': 'smc911x-0',
              'ethaddr': '00:40:5c:26:0a:5b'}
         self.assertEqual(expected, boot_commands)
