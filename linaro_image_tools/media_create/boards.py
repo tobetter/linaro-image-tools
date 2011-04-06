@@ -569,14 +569,14 @@ class Mx51Config(Mx5Config):
     kernel_addr = '0x90000000'
     initrd_addr = '0x92000000'
     load_addr = '0x90008000'
-    kernel_flavors = ['linaro-lt-mx5', 'linaro-mx51']
+    kernel_flavors = ['linaro-mx51', 'linaro-lt-mx5']
 
 
 class Mx53Config(Mx5Config):
     kernel_addr = '0x70800000'
     initrd_addr = '0x71800000'
     load_addr = '0x70008000'
-    kernel_flavors = ['linaro-lt-mx5', 'linaro-lt-mx53']
+    kernel_flavors = ['linaro-lt-mx53', 'linaro-lt-mx5']
 
 
 class EfikamxConfig(Mx51Config):

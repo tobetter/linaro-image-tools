@@ -165,7 +165,6 @@ class TestBootSteps(TestCaseWithFixtures):
                     linaro_image_tools.media_create.boards, name,
                     mock_func_creator(name)))
 
-
     def mock_set_appropriate_serial_tty(self, config):
 
         def set_appropriate_serial_tty_mock(cls, chroot_dir):
@@ -641,6 +640,14 @@ class TestBoards(TestCaseWithFixtures):
         open(kfile, "w").close()
         open(ifile, "w").close()
         self.assertEqual((kfile, ifile), config._get_kflavor_files(tempdir))
+
+    def test_get_kflavor_files_raises_when_no_match(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        flavor1 = 'flavorXY'
+        flavor2 = 'flavorAA'
+        class config(boards.BoardConfig):
+            kernel_flavors = [flavor1, flavor2]
+        self.assertRaises(ValueError, config._get_kflavor_files, tempdir)
 
     def test_get_file_matching_no_files_found(self):
         self.assertEqual(None, _get_file_matching('/foo/bar/baz/*non-existent'))
