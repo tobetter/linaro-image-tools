@@ -404,7 +404,7 @@ class TestGetBootCmd(TestCase):
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
                         'nocompcache vram=32M omapfb.vram=0:8M '
-                        'mem=463M@0x80000000 mem=512M@0xA0000000 ip=none',
+                        'mem=463M@0x80000000 mem=512M@0xA0000000',
             'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'bootm 0x80200000 0x81600000'}
