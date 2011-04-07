@@ -175,6 +175,13 @@ class TestBootSteps(TestCaseWithFixtures):
             classmethod(set_appropriate_serial_tty_mock)))
 
     def make_boot_files(self, config):
+        def _get_kflavor_files_mock(cls, path):
+            return (path, path)
+
+        self.useFixture(MockSomethingFixture(
+            config, '_get_kflavor_files',
+            classmethod(_get_kflavor_files_mock)))
+
         config.make_boot_files('', False, False, [], '', '', '', '')
 
     def test_vexpress_steps(self):
@@ -518,7 +525,7 @@ class TestBoards(TestCaseWithFixtures):
     def test_make_uImage(self):
         self._mock_get_file_matching()
         fixture = self._mock_Popen()
-        make_uImage('load_addr', 'parts_dir', 'sub_arch', 'boot_disk')
+        make_uImage('load_addr', 'parts_dir/vmlinuz-*-sub_arch', 'boot_disk')
         expected = [
             '%s mkimage -A arm -O linux -T kernel -C none -a load_addr '
             '-e load_addr -n Linux -d parts_dir/vmlinuz-*-sub_arch '
@@ -528,7 +535,7 @@ class TestBoards(TestCaseWithFixtures):
     def test_make_uInitrd(self):
         self._mock_get_file_matching()
         fixture = self._mock_Popen()
-        make_uInitrd('parts_dir', 'sub_arch', 'boot_disk')
+        make_uInitrd('parts_dir/initrd.img-*-sub_arch', 'boot_disk')
         expected = [
             '%s mkimage -A arm -O linux -T ramdisk -C none -a 0 -e 0 '
             '-n initramfs -d parts_dir/initrd.img-*-sub_arch '
@@ -609,9 +616,41 @@ class TestBoards(TestCaseWithFixtures):
         self.assertRaises(
             ValueError, _get_file_matching, '%s/%s*' % (directory, prefix))
 
+    def test_get_kflavor_files_more_specific(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        flavorx = 'flavorX'
+        flavorxy = 'flavorXY'
+        class config(boards.BoardConfig):
+            kernel_flavors = [flavorx, flavorxy]
+        for f in reversed(config.kernel_flavors):
+            kfile = os.path.join(tempdir, 'vmlinuz-1-%s' % f)
+            ifile = os.path.join(tempdir, 'initrd.img-1-%s' % f)
+            open(kfile, "w").close()
+            open(ifile, "w").close()
+        self.assertEqual((kfile, ifile), config._get_kflavor_files(tempdir))
+
+    def test_get_kflavor_files_later_in_flavors(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        flavor1 = 'flavorXY'
+        flavor2 = 'flavorAA'
+        class config(boards.BoardConfig):
+            kernel_flavors = [flavor1, flavor2]
+        kfile = os.path.join(tempdir, 'vmlinuz-1-%s' % flavor1)
+        ifile = os.path.join(tempdir, 'initrd.img-1-%s' % flavor1)
+        open(kfile, "w").close()
+        open(ifile, "w").close()
+        self.assertEqual((kfile, ifile), config._get_kflavor_files(tempdir))
+
+    def test_get_kflavor_files_raises_when_no_match(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        flavor1 = 'flavorXY'
+        flavor2 = 'flavorAA'
+        class config(boards.BoardConfig):
+            kernel_flavors = [flavor1, flavor2]
+        self.assertRaises(ValueError, config._get_kflavor_files, tempdir)
+
     def test_get_file_matching_no_files_found(self):
-        self.assertRaises(
-            ValueError, _get_file_matching, '/foo/bar/baz/*non-existent')
+        self.assertEqual(None, _get_file_matching('/foo/bar/baz/*non-existent'))
 
     def test_run_mkimage(self):
         # Create a fake boot script.

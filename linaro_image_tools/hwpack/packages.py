@@ -617,7 +617,7 @@ class PackageFetcher(object):
             base = os.path.basename(candidate.filename)
             installed.append(FetchedPackage.from_apt(candidate, base))
         for package in self.cache.cache:
-            if not package.isInstalled:
+            if not package.is_installed:
                 continue
             candidate = package.installed
             base = os.path.basename(candidate.filename)
