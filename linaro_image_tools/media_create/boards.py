@@ -870,8 +870,7 @@ def install_smdkv310_boot_env(env_file, boot_device_or_file):
 def install_smdkv310_spl(v310_spl, boot_device_or_file):
     # XXX need to check that the length of v310_spl is smaller than
     # SAMSUNG_V310_BL1_LEN
-    _dd(v310_spl, boot_device_or_file, count=SAMSUNG_V310_BL1_LEN,
-        seek=SAMSUNG_V310_BL1_START)
+    _dd(v310_spl, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
 
 
 def install_smdkv310_uboot(v310_uboot, boot_device_or_file):
