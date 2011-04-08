@@ -69,17 +69,25 @@ BOOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
 # root partition; at least 50 MiB; XXX this shouldn't be hardcoded
 ROOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
 
-# Samsung v310 implementation notes
-# * BL1 (SPL) is expected at offset +1s and is 32s long
-# * BL2 (u-boot) is loaded at a raw MMC offset of +65s by BL1 which currently
-# doesn't support FAT
-# * the u-boot environment is at +33s and is 32s long (16 KiB)
-# * currently, some hardware issues on certain boards causes u-boot to not be
-# able to use FAT to load uImage and uInitrd (or boot.scr); as a temporary
-# workaround, these are loaded from +1089s and +9281s respectively
-# * hence we hardcode all offsets, make sure that the files aren't larger than
-# their reserved spot, and create a bootloader partition from the first
-# sector after MBR up to end of initrd
+# Samsung v310 implementation notes and terminology
+#
+# * BL0, BL1 etc. are the various bootloaders in order of execution
+# * BL0 is the first stage bootloader, located in ROM; it loads a 32s long BL1
+#   from MMC offset +1s and runs it
+# * BL1 is the secondary program loader (SPL), a small (< 14k) version of
+#   U-Boot with a checksum; it inits DRAM and loads a 1024s long BL2 to DRAM
+#   from MMC offset +65s
+# * BL2 is U-Boot; it loads its 32s (16 KiB) long environment from MMC offset
+#   +33s which tells it to load a boot.scr from the first FAT partition of the
+#   MMC
+#
+# Layout:
+# +0s: part table / MBR, 1s long
+# +1s: BL1/SPL, 32s long
+# +33s: U-Boot environment, 32s long
+# +65s: U-Boot, 1024s long
+# >= +1089s: FAT partition with boot script (boot.scr), kernel (uImage) and
+#            initrd (uInitrd)
 SAMSUNG_V310_BL1_START = 1
 SAMSUNG_V310_BL1_LEN = 32
 SAMSUNG_V310_ENV_START = SAMSUNG_V310_BL1_START + SAMSUNG_V310_BL1_LEN
@@ -651,7 +659,8 @@ class SMDKV310Config(BoardConfig):
     def _make_boot_files(cls, uboot_parts_dir, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file):
         spl_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'v310_mmc_spl.bin')
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+            'v310_mmc_spl.bin')
         install_smdkv310_spl(spl_file, boot_device_or_file)
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.bin')
@@ -859,19 +868,14 @@ def install_smdkv310_boot_env(env_file, boot_device_or_file):
 
 
 def install_smdkv310_spl(v310_spl, boot_device_or_file):
-    """Samsung specific terminology
-    BL0 is the first stage bootloader that is located in rom.
-    BL1 is the SPL (secondary program loader) which is a small ( < 14k )
-    version of u-boot ( v310_mmc_spl.bin ) with a chacksum. BL0
-    reads BL1 from sector 1 of the MMC card and runs it. BL1
-    then loads u-boot to DRAM and runs it
-    """
+    # XXX need to check that the length of v310_spl is smaller than
+    # SAMSUNG_V310_BL1_LEN
     _dd(v310_spl, boot_device_or_file, count=SAMSUNG_V310_BL1_LEN,
         seek=SAMSUNG_V310_BL1_START)
 
 
 def install_smdkv310_uboot(v310_uboot, boot_device_or_file):
-    # XXX need to check that the length of v310_file - 64s is smaller than
+    # XXX need to check that the length of v310_uboot is smaller than
     # SAMSUNG_V310_BL2_LEN
     _dd(v310_uboot, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
 
