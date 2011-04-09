@@ -194,9 +194,8 @@ class TestBootSteps(TestCaseWithFixtures):
     def test_smdkv310_steps(self):
         self.make_boot_files(boards.SMDKV310Config)
         expected = [
-            'install_smdkv310_spl', 'install_smdkv310_uboot', 
-            'make_flashable_env', 'install_smdkv310_boot_env', 
-            'make_uImage', 'make_uInitrd', 'make_boot_script']
+            '_dd', '_dd', 'make_flashable_env', '_dd', 'make_uImage',
+            'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_ux500_steps(self):

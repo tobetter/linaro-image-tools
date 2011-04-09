@@ -644,14 +644,19 @@ class SMDKV310Config(BoardConfig):
         spl_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
             'v310_mmc_spl.bin')
-        install_smdkv310_spl(spl_file, boot_device_or_file)
+        # XXX need to check that the length of spl_file is smaller than
+        # SAMSUNG_V310_BL1_LEN
+        _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
+
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.bin')
-        install_smdkv310_uboot(uboot_file, boot_device_or_file)
+        # XXX need to check that the length of uboot_file is smaller than
+        # SAMSUNG_V310_BL2_LEN
+        _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
 
         env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
-        install_smdkv310_boot_env(env_file, boot_device_or_file)
+        _dd(env_file, boot_device_or_file, seek=SAMSUNG_V310_ENV_START)
 
         make_uImage(cls.load_addr, uboot_parts_dir, cls.kernel_suffix, boot_dir)
 
@@ -838,22 +843,4 @@ def make_boot_ini(boot_script_path, boot_disk):
         ["cp", "-v", boot_script_path, "%s/boot.ini" % boot_disk],
         as_root=True)
     proc.wait()
-
-
-def install_smdkv310_boot_env(env_file, boot_device_or_file):
-    # the environment file is exactly SAMSUNG_V310_ENV_LEN as created by
-    # make_flashable_env(), so we don't need to check the size of env_file
-    _dd(env_file, boot_device_or_file, seek=SAMSUNG_V310_ENV_START)
-
-
-def install_smdkv310_spl(v310_spl, boot_device_or_file):
-    # XXX need to check that the length of v310_spl is smaller than
-    # SAMSUNG_V310_BL1_LEN
-    _dd(v310_spl, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
-
-
-def install_smdkv310_uboot(v310_uboot, boot_device_or_file):
-    # XXX need to check that the length of v310_uboot is smaller than
-    # SAMSUNG_V310_BL2_LEN
-    _dd(v310_uboot, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
 
