@@ -737,17 +737,14 @@ def make_uImage(load_addr, uboot_parts_dir, suffix, boot_disk):
     img_data = _get_file_matching(
         '%s/vmlinuz-*-%s' % (uboot_parts_dir, suffix))
     img = '%s/uImage' % boot_disk
-    _run_mkimage(
-        'kernel', load_addr, load_addr, 'Linux', img_data, img)
-    return img
+    return _run_mkimage('kernel', load_addr, load_addr, 'Linux', img_data, img)
 
 
 def make_uInitrd(uboot_parts_dir, suffix, boot_disk):
     img_data = _get_file_matching(
         '%s/initrd.img-*-%s' % (uboot_parts_dir, suffix))
     img = '%s/uInitrd' % boot_disk
-    _run_mkimage('ramdisk', '0', '0', 'initramfs', img_data, img)
-    return img
+    return _run_mkimage('ramdisk', '0', '0', 'initramfs', img_data, img)
 
 
 def make_boot_script(boot_env, boot_script_path):
