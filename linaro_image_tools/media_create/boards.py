@@ -99,22 +99,6 @@ SAMSUNG_V310_BL2_START = SAMSUNG_V310_ENV_START + SAMSUNG_V310_ENV_LEN
 SAMSUNG_V310_BL2_LEN = 1024
 assert SAMSUNG_V310_BL2_LEN * SECTOR_SIZE == 512 * 1024, (
     "BL1 expects BL2 (u-boot) to be 512 KiB")
-SAMSUNG_V310_UIMAGE_START = SAMSUNG_V310_BL2_START + SAMSUNG_V310_BL2_LEN
-SAMSUNG_V310_UIMAGE_LEN = 8192
-assert SAMSUNG_V310_UIMAGE_START == 1089, (
-    "BL2 (u-boot) expects uImage at +1089s")
-assert SAMSUNG_V310_UIMAGE_LEN * SECTOR_SIZE == 4 * 1024 * 1024, (
-    "BL2 (u-boot) expects uImage to be 4 MiB")
-SAMSUNG_V310_UINITRD_START = (
-    SAMSUNG_V310_UIMAGE_START + SAMSUNG_V310_UIMAGE_LEN)
-SAMSUNG_V310_UINITRD_RESERVED_LEN = 204800
-SAMSUNG_V310_UINITRD_COPY_LEN = 32768
-assert SAMSUNG_V310_UINITRD_START == 9281, (
-    "BL2 (u-boot) expects uInitrd at +9281s")
-assert SAMSUNG_V310_UINITRD_RESERVED_LEN * SECTOR_SIZE == 100 * 1024 * 1024, (
-    "BL2 (u-boot) expects uInitrd to be 100 MiB")
-assert SAMSUNG_V310_UINITRD_COPY_LEN * SECTOR_SIZE == 16 * 1024 * 1024, (
-    "Only copy 16MiB for a faster boot")
 
 def align_partition(min_start, min_length, start_alignment, end_alignment):
     """Compute partition start and end offsets based on specified constraints.
@@ -178,7 +162,7 @@ class BoardConfig(object):
 
         BOOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
         ROOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-            
+
         # align on sector 63 for compatibility with broken versions of x-loader
         # unless align_boot_part is set
         boot_align = 63
@@ -245,9 +229,9 @@ class BoardConfig(object):
             _cache_end + 1, USERDATA_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
         sdcard_start, _sdcard_end, _sdcard_len = align_partition(
             _userdata_end + 1, SDCARD_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
- 
+
         return '%s,%s,%s,*\n%s,%s,L\n%s,%s,L\n%s,-,E\n%s,%s,L\n%s,%s,L\n%s,,,-' % (
-            boot_start, boot_len, partition_type, root_start, _root_len, 
+            boot_start, boot_len, partition_type, root_start, _root_len,
             system_start, _system_len, cache_start, cache_start, _cache_len,
             userdata_start, _userdata_len, sdcard_start)
 
@@ -313,7 +297,7 @@ class BoardConfig(object):
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid)
         cls._make_boot_files(
-            uboot_parts_dir, boot_env, chroot_dir, boot_dir, 
+            uboot_parts_dir, boot_env, chroot_dir, boot_dir,
             boot_device_or_file)
 
     @classmethod
@@ -621,19 +605,18 @@ class SMDKV310Config(BoardConfig):
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
-        # bootloader partition needs to hold everything from BL1 to uInitrd
-        # inclusive
-        min_len = (
-            SAMSUNG_V310_UINITRD_START + SAMSUNG_V310_UINITRD_RESERVED_LEN -
+        # bootloaders partition needs to hold BL1, U-Boot environment, and BL2
+        loaders_min_len = (
+            SAMSUNG_V310_BL2_START + SAMSUNG_V310_BL2_LEN -
             SAMSUNG_V310_BL1_START)
 
-        # bootloader partition
-        loader_start, loader_end, loader_len = align_partition(
-            1, min_len, 1, PART_ALIGN_S)
+        # bootloaders partition
+        loaders_start, loaders_end, loaders_len = align_partition(
+            1, loaders_min_len, 1, PART_ALIGN_S)
 
         # FAT boot partition
         boot_start, boot_end, boot_len = align_partition(
-            loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+            loaders_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
         # root partition
         # we ignore _root_end / _root_len and return a sfdisk command to
@@ -643,7 +626,7 @@ class SMDKV310Config(BoardConfig):
             boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
         return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
-            loader_start, loader_len, boot_start, boot_len, root_start)
+            loaders_start, loaders_len, boot_start, boot_len, root_start)
 
     @classmethod
     def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid):
