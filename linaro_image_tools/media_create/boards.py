@@ -846,8 +846,7 @@ def make_boot_ini(boot_script_path, boot_disk):
 def install_smdkv310_boot_env(env_file, boot_device_or_file):
     # the environment file is exactly SAMSUNG_V310_ENV_LEN as created by
     # make_flashable_env(), so we don't need to check the size of env_file
-    _dd(env_file, boot_device_or_file, count=SAMSUNG_V310_ENV_LEN,
-        seek=SAMSUNG_V310_ENV_START)
+    _dd(env_file, boot_device_or_file, seek=SAMSUNG_V310_ENV_START)
 
 
 def install_smdkv310_spl(v310_spl, boot_device_or_file):
