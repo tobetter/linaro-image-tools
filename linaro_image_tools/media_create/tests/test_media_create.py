@@ -356,9 +356,9 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=tty0 console=ttymxc0,115200n8  '
                         'root=UUID=deadbeef rootwait ro',
-            'bootcmd': 'fatload mmc 0:2 0x90000000 uImage; '
-                       'fatload mmc 0:2 0x92000000 uInitrd; '
-                       'bootm 0x90000000 0x92000000'}
+            'bootcmd': 'fatload mmc 0:2 0x90800000 uImage; '
+                       'fatload mmc 0:2 0x91800000 uInitrd; '
+                       'bootm 0x90800000 0x91800000'}
         self.assertEqual(expected, boot_commands)
 
     def test_smdkv310(self):
