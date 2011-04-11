@@ -38,6 +38,7 @@ from linaro_image_tools.media_create.partitions import SECTOR_SIZE
 
 KERNEL_GLOB = 'vmlinuz-*-%(kernel_flavor)s'
 INITRD_GLOB = 'initrd.img-*-%(kernel_flavor)s'
+DT_GLOB = 'dt-*-%(kernel_flavor)s'
 
 # Notes:
 # * since we align partitions on 4 MiB by default, geometry is currently 128
@@ -153,6 +154,8 @@ class BoardConfig(object):
     kernel_addr = None
     initrd_addr = None
     load_addr = None
+    dtb_addr = None
+    dtb_name = None
     kernel_flavors = None
     boot_script = None
     serial_tty = None
@@ -252,14 +255,25 @@ class BoardConfig(object):
 
         In general subclasses should not have to override this.
         """
-        replacements = dict(
-            mmc_option=cls.mmc_option, kernel_addr=cls.kernel_addr,
-            initrd_addr=cls.initrd_addr)
-        return (
-            "fatload mmc %(mmc_option)s %(kernel_addr)s "
-                "uImage; fatload mmc %(mmc_option)s %(initrd_addr)s uInitrd; "
-                "bootm %(kernel_addr)s %(initrd_addr)s"
-                % replacements)
+        if cls.dtb_addr is not None:
+            replacements = dict(
+                mmc_option=cls.mmc_option, kernel_addr=cls.kernel_addr,
+                initrd_addr=cls.initrd_addr, dtb_addr=cls.dtb_addr)
+            return (
+                "fatload mmc %(mmc_option)s %(kernel_addr)s uImage; "
+                    "fatload mmc %(mmc_option)s %(initrd_addr)s uInitrd; "
+                    "fatload mmc %(mmc_option)s %(dtb_addr)s board.dtb; "
+                    "bootm %(kernel_addr)s %(initrd_addr)s %(dtb_addr)s"
+                    % replacements)
+        else:
+            replacements = dict(
+                mmc_option=cls.mmc_option, kernel_addr=cls.kernel_addr,
+                initrd_addr=cls.initrd_addr)
+            return (
+                "fatload mmc %(mmc_option)s %(kernel_addr)s uImage; "
+                    "fatload mmc %(mmc_option)s %(initrd_addr)s uInitrd; "
+                    "bootm %(kernel_addr)s %(initrd_addr)s"
+                    % replacements)
 
     @classmethod
     def _get_bootargs(cls, is_live, is_lowmem, consoles, rootfs_uuid):
@@ -307,14 +321,14 @@ class BoardConfig(object):
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid)
-        (k_img_data, i_img_data) = cls._get_kflavor_files(uboot_parts_dir)
+        (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(uboot_parts_dir)
         cls._make_boot_files(
             boot_env, chroot_dir, boot_dir, 
-            boot_device_or_file, k_img_data, i_img_data)
+            boot_device_or_file, k_img_data, i_img_data, d_img_data)
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data):
+                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
         """Make the necessary boot files for this board.
 
         This is usually board-specific so ought to be defined in every
@@ -354,15 +368,19 @@ class BoardConfig(object):
 
     @classmethod
     def _get_kflavor_files(cls, path):
-        """Search for kernel and initrd in path."""
+        """Search for kernel, initrd and dtb in path."""
         for flavor in cls.kernel_flavors:
             kregex = KERNEL_GLOB % {'kernel_flavor' : flavor}
             iregex = INITRD_GLOB % {'kernel_flavor' : flavor}
+            dregex = DT_GLOB % {'kernel_flavor' : flavor}
             kernel = _get_file_matching(os.path.join(path, kregex))
             if kernel is not None:
                 initrd = _get_file_matching(os.path.join(path, iregex))
                 if initrd is not None:
-                    return (kernel, initrd)
+                    dtb = cls.dtb_name
+                    if dtb is not None:
+                        dtb = _get_file_matching(os.path.join(path, dregex, dtb))
+                    return (kernel, initrd, dtb)
                 raise ValueError(
                     "Found kernel for flavor %s but no initrd matching %s" % (
                         flavor, iregex))
@@ -428,10 +446,11 @@ class OmapConfig(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data):
+                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
         install_omap_boot_loader(chroot_dir, boot_dir)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
+        make_dtb(d_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
         make_boot_ini(boot_script_path, boot_dir)
@@ -439,10 +458,12 @@ class OmapConfig(BoardConfig):
 
 class BeagleConfig(OmapConfig):
     uboot_flavor = 'omap3_beagle'
+    dtb_name = 'omap3-beagle.dtb'
     _serial_tty = 'ttyO2'
     _extra_serial_opts = 'console=tty0 console=%s,115200n8'
     _live_serial_opts = 'serialtty=%s'
     kernel_addr = '0x80000000'
+    dtb_addr = '0x815f0000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
     boot_script = 'boot.scr'
@@ -453,9 +474,11 @@ class BeagleConfig(OmapConfig):
 
 class OveroConfig(OmapConfig):
     uboot_flavor = 'omap3_overo'
+    dtb_name = 'omap3-overo.dtb'
     _serial_tty = 'ttyO2'
     _extra_serial_opts = 'console=tty0 console=%s,115200n8'
     kernel_addr = '0x80000000'
+    dtb_addr = '0x815f0000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
     boot_script = 'boot.scr'
@@ -466,10 +489,12 @@ class OveroConfig(OmapConfig):
 
 class PandaConfig(OmapConfig):
     uboot_flavor = 'omap4_panda'
+    dtb_name = 'omap4-panda.dtb'
     _serial_tty = 'ttyO2'
     _extra_serial_opts = 'console=tty0 console=%s,115200n8'
     _live_serial_opts = 'serialtty=%s'
     kernel_addr = '0x80200000'
+    dtb_addr = '0x815f0000'
     initrd_addr = '0x81600000'
     load_addr = '0x80008000'
     boot_script = 'boot.scr'
@@ -484,12 +509,21 @@ class IgepConfig(BeagleConfig):
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data):
+                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
+        make_dtb(d_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
         make_boot_ini(boot_script_path, boot_dir)
+
+
+class Igepv2Config(IgepConfig):
+    dtb_name = 'isee-igep-v2.dtb'
+
+
+class Igepv3Config(IgepConfig):
+    dtb_name = 'isee-igep-v3.dtb'
 
 
 class Ux500Config(BoardConfig):
@@ -510,7 +544,7 @@ class Ux500Config(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data):
+                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
@@ -555,18 +589,20 @@ class Mx5Config(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data):
+                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
         install_mx5_boot_loader(uboot_file, boot_device_or_file)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
+        make_dtb(d_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
 
 
 class Mx51Config(Mx5Config):
     kernel_addr = '0x90800000'
+    dtb_addr = '0x917f0000'
     initrd_addr = '0x91800000'
     load_addr = '0x90008000'
     kernel_flavors = ['linaro-mx51', 'linaro-lt-mx5']
@@ -574,6 +610,7 @@ class Mx51Config(Mx5Config):
 
 class Mx53Config(Mx5Config):
     kernel_addr = '0x70800000'
+    dtb_addr = '0x717f0000'
     initrd_addr = '0x71800000'
     load_addr = '0x70008000'
     kernel_flavors = ['linaro-lt-mx53', 'linaro-lt-mx5']
@@ -581,18 +618,22 @@ class Mx53Config(Mx5Config):
 
 class EfikamxConfig(Mx51Config):
     uboot_flavor = 'efikamx'
+    dtb_name = 'genesi-efikamx.dtb'
 
 
 class EfikasbConfig(Mx51Config):
     uboot_flavor = 'efikasb'
+    dtb_name = 'genesi-efikasb.dtb'
 
 
 class Mx51evkConfig(Mx51Config):
     uboot_flavor = 'mx51evk'
+    dtb_name = 'mx51-babbage.dtb'
 
 
 class Mx53LoCoConfig(Mx53Config):
     uboot_flavor = 'mx53loco'
+    dtb_name = 'mx53-loco.dtb'
 
 
 class VexpressConfig(BoardConfig):
@@ -612,7 +653,7 @@ class VexpressConfig(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data):
+                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
 
@@ -673,7 +714,7 @@ class SMDKV310Config(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data):
+                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.v310')
         install_smdkv310_boot_loader(uboot_file, boot_device_or_file)
@@ -695,7 +736,8 @@ class SMDKV310Config(BoardConfig):
 
 board_configs = {
     'beagle': BeagleConfig,
-    'igep': IgepConfig,
+    'igepv2': Igepv2Config,
+    'igepv3': Igepv3Config,
     'panda': PandaConfig,
     'vexpress': VexpressConfig,
     'ux500': Ux500Config,
@@ -772,6 +814,14 @@ def make_uImage(load_addr, img_data, boot_disk):
 def make_uInitrd(img_data, boot_disk):
     img = '%s/uInitrd' % boot_disk
     _run_mkimage('ramdisk', '0', '0', 'initramfs', img_data, img)
+    return img
+
+
+def make_dtb(img_data, boot_disk):
+    img = None
+    if img_data is not None:
+        img = '%s/board.dtb' % boot_disk
+        cmd_runner.run(['cp', img_data, img], as_root=True).wait()
     return img
 
 

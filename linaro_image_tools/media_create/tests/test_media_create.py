@@ -176,7 +176,7 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def make_boot_files(self, config):
         def _get_kflavor_files_mock(cls, path):
-            return (path, path)
+            return (path, path, path)
 
         self.useFixture(MockSomethingFixture(
             config, '_get_kflavor_files',
@@ -195,7 +195,7 @@ class TestBootSteps(TestCaseWithFixtures):
         self.make_boot_files(SomeMx5Config)
         expected = [
             'install_mx5_boot_loader', 'make_uImage', 'make_uInitrd',
-            'make_boot_script']
+            'make_dtb', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_smdkv310_steps(self):
@@ -217,7 +217,7 @@ class TestBootSteps(TestCaseWithFixtures):
         self.make_boot_files(boards.PandaConfig)
         expected = [
             'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
-            'make_boot_script', 'make_boot_ini']
+            'make_dtb', 'make_boot_script', 'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_beagle_steps(self):
@@ -225,14 +225,14 @@ class TestBootSteps(TestCaseWithFixtures):
         self.make_boot_files(boards.BeagleConfig)
         expected = [
             'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
-            'make_boot_script', 'make_boot_ini']
+            'make_dtb', 'make_boot_script', 'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_igep_steps(self):
         self.mock_set_appropriate_serial_tty(boards.IgepConfig)
         self.make_boot_files(boards.IgepConfig)
         expected = [
-            'make_uImage', 'make_uInitrd', 'make_boot_script',
+            'make_uImage', 'make_uInitrd', 'make_dtb', 'make_boot_script',
             'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
 
@@ -241,7 +241,7 @@ class TestBootSteps(TestCaseWithFixtures):
         self.make_boot_files(boards.OveroConfig)
         expected = [
             'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
-            'make_boot_script', 'make_boot_ini']
+            'make_dtb', 'make_boot_script', 'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
 
 
@@ -358,7 +358,8 @@ class TestGetBootCmd(TestCase):
                         'root=UUID=deadbeef rootwait ro',
             'bootcmd': 'fatload mmc 0:2 0x90800000 uImage; '
                        'fatload mmc 0:2 0x91800000 uInitrd; '
-                       'bootm 0x90800000 0x91800000'}
+                       'fatload mmc 0:2 0x917f0000 board.dtb; '
+                       'bootm 0x90800000 0x91800000 0x917f0000'}
         self.assertEqual(expected, boot_commands)
 
     def test_smdkv310(self):
@@ -407,7 +408,8 @@ class TestGetBootCmd(TestCase):
                         'mem=463M@0x80000000 mem=512M@0xA0000000',
             'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
-                       'bootm 0x80200000 0x81600000'}
+                       'fatload mmc 0:1 0x815f0000 board.dtb; '
+                       'bootm 0x80200000 0x81600000 0x815f0000'}
         self.assertEqual(expected, boot_commands)
 
     def test_beagle(self):
@@ -426,14 +428,15 @@ class TestGetBootCmd(TestCase):
                         'omapfb.mode=dvi:1280x720MR-16@60',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
-                       'bootm 0x80000000 0x81600000'}
+                       'fatload mmc 0:1 0x815f0000 board.dtb; '
+                       'bootm 0x80000000 0x81600000 0x815f0000'}
         self.assertEqual(expected, boot_commands)
 
     def test_igep(self):
         # XXX: To fix bug 697824 we have to change class attributes of our
         # OMAP board configs, and some tests do that so to make sure they
         # don't interfere with us we'll reset that before doing anything.
-        config = board_configs['igep']
+        config = boards.IgepConfig
         config.serial_tty = config._serial_tty
         boot_cmd = config._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
@@ -445,7 +448,8 @@ class TestGetBootCmd(TestCase):
                         'omapfb.mode=dvi:1280x720MR-16@60',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
-                       'bootm 0x80000000 0x81600000'}
+                       'fatload mmc 0:1 0x815f0000 board.dtb; '
+                       'bootm 0x80000000 0x81600000 0x815f0000'}
         self.assertEqual(expected, boot_cmd)
 
     def test_overo(self):
@@ -465,7 +469,8 @@ class TestGetBootCmd(TestCase):
                         'omapdss.def_disp=dvi',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
-                       'bootm 0x80000000 0x81600000'}
+                       'fatload mmc 0:1 0x815f0000 board.dtb; '
+                       'bootm 0x80000000 0x81600000 0x815f0000'}
         self.assertEqual(expected, boot_commands)
 
 
@@ -622,12 +627,17 @@ class TestBoards(TestCaseWithFixtures):
         flavorxy = 'flavorXY'
         class config(boards.BoardConfig):
             kernel_flavors = [flavorx, flavorxy]
+            dtb_name = 'board_name.dtb'
         for f in reversed(config.kernel_flavors):
             kfile = os.path.join(tempdir, 'vmlinuz-1-%s' % f)
             ifile = os.path.join(tempdir, 'initrd.img-1-%s' % f)
+            dt = os.path.join(tempdir, 'dt-1-%s' % f)
+            os.mkdir(dt)
+            dfile = os.path.join(dt, config.dtb_name)
             open(kfile, "w").close()
             open(ifile, "w").close()
-        self.assertEqual((kfile, ifile), config._get_kflavor_files(tempdir))
+            open(dfile, "w").close()
+        self.assertEqual((kfile, ifile, dfile), config._get_kflavor_files(tempdir))
 
     def test_get_kflavor_files_later_in_flavors(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
@@ -635,11 +645,16 @@ class TestBoards(TestCaseWithFixtures):
         flavor2 = 'flavorAA'
         class config(boards.BoardConfig):
             kernel_flavors = [flavor1, flavor2]
+            dtb_name = 'board_name.dtb'
         kfile = os.path.join(tempdir, 'vmlinuz-1-%s' % flavor1)
         ifile = os.path.join(tempdir, 'initrd.img-1-%s' % flavor1)
+        dt = os.path.join(tempdir, 'dt-1-%s' % flavor1)
+        os.mkdir(dt)
+        dfile = os.path.join(dt, config.dtb_name)
         open(kfile, "w").close()
         open(ifile, "w").close()
-        self.assertEqual((kfile, ifile), config._get_kflavor_files(tempdir))
+        open(dfile, "w").close()
+        self.assertEqual((kfile, ifile, dfile), config._get_kflavor_files(tempdir))
 
     def test_get_kflavor_files_raises_when_no_match(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
