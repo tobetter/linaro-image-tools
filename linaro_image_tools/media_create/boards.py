@@ -475,7 +475,7 @@ class PandaConfig(OmapConfig):
     boot_script = 'boot.scr'
     extra_boot_args_options = (
         'earlyprintk fixrtc nocompcache vram=32M '
-        'omapfb.vram=0:8M mem=463M@0x80000000 mem=512M@0xA0000000')
+        'omapfb.vram=0:8M mem=456M@0x80000000 mem=512M@0xA0000000')
 
 
 class IgepConfig(BeagleConfig):
