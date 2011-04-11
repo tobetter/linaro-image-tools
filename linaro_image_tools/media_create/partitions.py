@@ -48,7 +48,7 @@ def setup_android_partitions(board_config, media, bootfs_label,
     if should_create_partitions:
         create_partitions(
             board_config, media, HEADS, SECTORS, cylinders,
-            should_align_boot_part=should_align_boot_part, image_type="ANDROID")
+            should_align_boot_part=should_align_boot_part)
 
     bootfs, system, cache, data, sdcard = \
         get_android_partitions_for_media (media, board_config)
@@ -374,7 +374,7 @@ def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
 
 
 def create_partitions(board_config, media, heads, sectors, cylinders=None,
-                      should_align_boot_part=False, image_type=None):
+                      should_align_boot_part=False):
     """Partition the given media according to the board requirements.
 
     :param board_config: A BoardConfig class.
@@ -393,14 +393,8 @@ def create_partitions(board_config, media, heads, sectors, cylinders=None,
             ['parted', '-s', media.path, 'mklabel', 'msdos'], as_root=True)
         proc.wait()
 
-    # XXX: We should get rid of this by using separate config classes for
-    # android -- see comment in get_android_sfdisk_cmd() for more details.
-    if image_type == "ANDROID":
-        sfdisk_cmd = board_config.get_android_sfdisk_cmd(
-            should_align_boot_part=should_align_boot_part)
-    else:
-        sfdisk_cmd = board_config.get_sfdisk_cmd(
-            should_align_boot_part=should_align_boot_part)
+    sfdisk_cmd = board_config.get_sfdisk_cmd(
+        should_align_boot_part=should_align_boot_part)
 
     run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
 

@@ -20,7 +20,7 @@
 import argparse
 
 from linaro_image_tools.media_create.boards import board_configs
-from linaro_image_tools.media_create.boards import android_board_configs
+from linaro_image_tools.media_create.android_boards import android_board_configs
 
 
 KNOWN_BOARDS = board_configs.keys()

@@ -25,7 +25,7 @@ import tempfile
 
 from linaro_image_tools import cmd_runner
 
-from linaro_image_tools.media_create.boards import android_board_configs
+from linaro_image_tools.media_create.android_boards import android_board_configs
 from linaro_image_tools.media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
 from linaro_image_tools.media_create.hwpack import install_hwpacks
