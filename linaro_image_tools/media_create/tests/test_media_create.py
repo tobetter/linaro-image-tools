@@ -50,6 +50,7 @@ from linaro_image_tools.media_create.boards import (
     make_boot_script,
     make_uImage,
     make_uInitrd,
+    make_dtb,
     _get_file_matching,
     _get_mlo_file,
     _run_mkimage,
@@ -356,10 +357,10 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=tty0 console=ttymxc0,115200n8  '
                         'root=UUID=deadbeef rootwait ro',
-            'bootcmd': 'fatload mmc 0:2 0x90800000 uImage; '
-                       'fatload mmc 0:2 0x91800000 uInitrd; '
-                       'fatload mmc 0:2 0x917f0000 board.dtb; '
-                       'bootm 0x90800000 0x91800000 0x917f0000'}
+            'bootcmd': 'fatload mmc 0:2 0x90000000 uImage; '
+                       'fatload mmc 0:2 0x92000000 uInitrd; '
+                       'fatload mmc 0:2 0x91ff0000 board.dtb; '
+                       'bootm 0x90000000 0x92000000 0x91ff0000'}
         self.assertEqual(expected, boot_commands)
 
     def test_smdkv310(self):
@@ -547,6 +548,15 @@ class TestBoards(TestCaseWithFixtures):
             'boot_disk/uInitrd' % sudo_args]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
+    def test_make_dtb(self):
+        self._mock_get_file_matching()
+        fixture = self._mock_Popen()
+        make_dtb('parts_dir/dt-*-sub_arch/board_name.dtb', 'boot_disk')
+        expected = [
+            '%s cp parts_dir/dt-*-sub_arch/board_name.dtb '
+            'boot_disk/board.dtb' % sudo_args]
+        self.assertEqual(expected, fixture.mock.commands_executed)
+
     def test_make_flashable_env_too_small_env(self):
         env = {'verylong': 'evenlonger'}
         self.assertRaises(AssertionError, make_flashable_env, env, 8)
@@ -627,6 +637,19 @@ class TestBoards(TestCaseWithFixtures):
         flavorxy = 'flavorXY'
         class config(boards.BoardConfig):
             kernel_flavors = [flavorx, flavorxy]
+        for f in reversed(config.kernel_flavors):
+            kfile = os.path.join(tempdir, 'vmlinuz-1-%s' % f)
+            ifile = os.path.join(tempdir, 'initrd.img-1-%s' % f)
+            open(kfile, "w").close()
+            open(ifile, "w").close()
+        self.assertEqual((kfile, ifile, None), config._get_kflavor_files(tempdir))
+
+    def test_get_dt_kflavor_files_more_specific(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        flavorx = 'flavorX'
+        flavorxy = 'flavorXY'
+        class config(boards.BoardConfig):
+            kernel_flavors = [flavorx, flavorxy]
             dtb_name = 'board_name.dtb'
         for f in reversed(config.kernel_flavors):
             kfile = os.path.join(tempdir, 'vmlinuz-1-%s' % f)
@@ -640,6 +663,18 @@ class TestBoards(TestCaseWithFixtures):
         self.assertEqual((kfile, ifile, dfile), config._get_kflavor_files(tempdir))
 
     def test_get_kflavor_files_later_in_flavors(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        flavor1 = 'flavorXY'
+        flavor2 = 'flavorAA'
+        class config(boards.BoardConfig):
+            kernel_flavors = [flavor1, flavor2]
+        kfile = os.path.join(tempdir, 'vmlinuz-1-%s' % flavor1)
+        ifile = os.path.join(tempdir, 'initrd.img-1-%s' % flavor1)
+        open(kfile, "w").close()
+        open(ifile, "w").close()
+        self.assertEqual((kfile, ifile, None), config._get_kflavor_files(tempdir))
+
+    def test_get_dt_kflavor_files_later_in_flavors(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         flavor1 = 'flavorXY'
         flavor2 = 'flavorAA'

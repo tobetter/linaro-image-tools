@@ -255,25 +255,21 @@ class BoardConfig(object):
 
         In general subclasses should not have to override this.
         """
+        replacements = dict(
+            mmc_option=cls.mmc_option, kernel_addr=cls.kernel_addr,
+            initrd_addr=cls.initrd_addr, dtb_addr=cls.dtb_addr)
+        boot_script = (
+            "fatload mmc %(mmc_option)s %(kernel_addr)s uImage; "
+            "fatload mmc %(mmc_option)s %(initrd_addr)s uInitrd; "
+            % replacements)
         if cls.dtb_addr is not None:
-            replacements = dict(
-                mmc_option=cls.mmc_option, kernel_addr=cls.kernel_addr,
-                initrd_addr=cls.initrd_addr, dtb_addr=cls.dtb_addr)
-            return (
-                "fatload mmc %(mmc_option)s %(kernel_addr)s uImage; "
-                    "fatload mmc %(mmc_option)s %(initrd_addr)s uInitrd; "
-                    "fatload mmc %(mmc_option)s %(dtb_addr)s board.dtb; "
-                    "bootm %(kernel_addr)s %(initrd_addr)s %(dtb_addr)s"
-                    % replacements)
+            boot_script += (
+                "fatload mmc %(mmc_option)s %(dtb_addr)s board.dtb; "
+                "bootm %(kernel_addr)s %(initrd_addr)s %(dtb_addr)s"
+                % replacements)
         else:
-            replacements = dict(
-                mmc_option=cls.mmc_option, kernel_addr=cls.kernel_addr,
-                initrd_addr=cls.initrd_addr)
-            return (
-                "fatload mmc %(mmc_option)s %(kernel_addr)s uImage; "
-                    "fatload mmc %(mmc_option)s %(initrd_addr)s uInitrd; "
-                    "bootm %(kernel_addr)s %(initrd_addr)s"
-                    % replacements)
+            boot_script += "bootm %(kernel_addr)s %(initrd_addr)s" % replacements
+        return boot_script
 
     @classmethod
     def _get_bootargs(cls, is_live, is_lowmem, consoles, rootfs_uuid):
@@ -320,8 +316,8 @@ class BoardConfig(object):
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
-        boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid)
         (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(uboot_parts_dir)
+        boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid)
         cls._make_boot_files(
             boot_env, chroot_dir, boot_dir, 
             boot_device_or_file, k_img_data, i_img_data, d_img_data)
@@ -380,6 +376,8 @@ class BoardConfig(object):
                     dtb = cls.dtb_name
                     if dtb is not None:
                         dtb = _get_file_matching(os.path.join(path, dregex, dtb))
+                        if dtb is None:
+                            cls.dtb_name = cls.dtb_addr = None
                     return (kernel, initrd, dtb)
                 raise ValueError(
                     "Found kernel for flavor %s but no initrd matching %s" % (
@@ -506,6 +504,7 @@ class PandaConfig(OmapConfig):
 class IgepConfig(BeagleConfig):
     uboot_in_boot_part = False
     uboot_flavor = None
+    dtb_name = 'isee-igep-v2.dtb'
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
@@ -516,14 +515,6 @@ class IgepConfig(BeagleConfig):
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
         make_boot_ini(boot_script_path, boot_dir)
-
-
-class Igepv2Config(IgepConfig):
-    dtb_name = 'isee-igep-v2.dtb'
-
-
-class Igepv3Config(IgepConfig):
-    dtb_name = 'isee-igep-v3.dtb'
 
 
 class Ux500Config(BoardConfig):
@@ -601,17 +592,17 @@ class Mx5Config(BoardConfig):
 
 
 class Mx51Config(Mx5Config):
-    kernel_addr = '0x90800000'
-    dtb_addr = '0x917f0000'
-    initrd_addr = '0x91800000'
+    kernel_addr = '0x90000000'
+    dtb_addr = '0x91ff0000'
+    initrd_addr = '0x92000000'
     load_addr = '0x90008000'
     kernel_flavors = ['linaro-mx51', 'linaro-lt-mx5']
 
 
 class Mx53Config(Mx5Config):
-    kernel_addr = '0x70800000'
-    dtb_addr = '0x717f0000'
-    initrd_addr = '0x71800000'
+    kernel_addr = '0x70000000'
+    dtb_addr = '0x71ff0000'
+    initrd_addr = '0x72000000'
     load_addr = '0x70008000'
     kernel_flavors = ['linaro-lt-mx53', 'linaro-lt-mx5']
 
@@ -736,8 +727,7 @@ class SMDKV310Config(BoardConfig):
 
 board_configs = {
     'beagle': BeagleConfig,
-    'igepv2': Igepv2Config,
-    'igepv3': Igepv3Config,
+    'igep': IgepConfig,
     'panda': PandaConfig,
     'vexpress': VexpressConfig,
     'ux500': Ux500Config,
