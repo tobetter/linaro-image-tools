@@ -364,7 +364,7 @@ class BoardConfig(object):
 
     @classmethod
     def _get_kflavor_files(cls, path):
-        """Search for kernel, initrd and dtb in path."""
+        """Search for kernel, initrd and optional dtb in path."""
         for flavor in cls.kernel_flavors:
             kregex = KERNEL_GLOB % {'kernel_flavor' : flavor}
             iregex = INITRD_GLOB % {'kernel_flavor' : flavor}
