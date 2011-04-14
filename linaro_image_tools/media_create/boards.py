@@ -38,7 +38,7 @@ from linaro_image_tools.media_create.partitions import SECTOR_SIZE
 
 KERNEL_GLOB = 'vmlinuz-*-%(kernel_flavor)s'
 INITRD_GLOB = 'initrd.img-*-%(kernel_flavor)s'
-DT_GLOB = 'dt-*-%(kernel_flavor)s'
+DTB_GLOB = 'dt-*-%(kernel_flavor)s/%(dtb_name)s'
 
 # Notes:
 # * since we align partitions on 4 MiB by default, geometry is currently 128
@@ -368,14 +368,14 @@ class BoardConfig(object):
         for flavor in cls.kernel_flavors:
             kregex = KERNEL_GLOB % {'kernel_flavor' : flavor}
             iregex = INITRD_GLOB % {'kernel_flavor' : flavor}
-            dregex = DT_GLOB % {'kernel_flavor' : flavor}
+            dregex = DTB_GLOB % {'kernel_flavor' : flavor, 'dtb_name' : cls.dtb_name}
             kernel = _get_file_matching(os.path.join(path, kregex))
             if kernel is not None:
                 initrd = _get_file_matching(os.path.join(path, iregex))
                 if initrd is not None:
-                    dtb = cls.dtb_name
-                    if dtb is not None:
-                        dtb = _get_file_matching(os.path.join(path, dregex, dtb))
+                    dtb = None
+                    if cls.dtb_name is not None:
+                        dtb = _get_file_matching(os.path.join(path, dregex))
                         if dtb is None:
                             cls.dtb_name = cls.dtb_addr = None
                     return (kernel, initrd, dtb)
