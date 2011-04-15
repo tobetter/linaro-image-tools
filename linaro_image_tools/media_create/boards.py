@@ -268,7 +268,8 @@ class BoardConfig(object):
                 "bootm %(kernel_addr)s %(initrd_addr)s %(dtb_addr)s"
                 % replacements)
         else:
-            boot_script += "bootm %(kernel_addr)s %(initrd_addr)s" % replacements
+            boot_script += (
+                "bootm %(kernel_addr)s %(initrd_addr)s" % replacements)
         return boot_script
 
     @classmethod
@@ -302,7 +303,8 @@ class BoardConfig(object):
              % replacements)
 
     @classmethod
-    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid, d_img_data):
+    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid,
+                      d_img_data):
         """Get the boot environment for this board.
 
         In general subclasses should not have to override this.
@@ -316,15 +318,18 @@ class BoardConfig(object):
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
-        (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(uboot_parts_dir)
-        boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid, d_img_data)
+        (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
+                                                   uboot_parts_dir)
+        boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
+                                     d_img_data)
         cls._make_boot_files(
             boot_env, chroot_dir, boot_dir, 
             boot_device_or_file, k_img_data, i_img_data, d_img_data)
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
         """Make the necessary boot files for this board.
 
         This is usually board-specific so ought to be defined in every
@@ -368,7 +373,8 @@ class BoardConfig(object):
         for flavor in cls.kernel_flavors:
             kregex = KERNEL_GLOB % {'kernel_flavor' : flavor}
             iregex = INITRD_GLOB % {'kernel_flavor' : flavor}
-            dregex = DTB_GLOB % {'kernel_flavor' : flavor, 'dtb_name' : cls.dtb_name}
+            dregex = DTB_GLOB % {'kernel_flavor' : flavor,
+                                 'dtb_name' : cls.dtb_name}
             kernel = _get_file_matching(os.path.join(path, kregex))
             if kernel is not None:
                 initrd = _get_file_matching(os.path.join(path, iregex))
@@ -442,7 +448,8 @@ class OmapConfig(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
         install_omap_boot_loader(chroot_dir, boot_dir)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
@@ -506,7 +513,8 @@ class IgepConfig(BeagleConfig):
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         make_dtb(d_img_data, boot_dir)
@@ -533,7 +541,8 @@ class Ux500Config(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
@@ -578,7 +587,8 @@ class Mx5Config(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
         install_mx5_boot_loader(uboot_file, boot_device_or_file)
@@ -642,7 +652,8 @@ class VexpressConfig(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
 
@@ -684,7 +695,8 @@ class SMDKV310Config(BoardConfig):
             loader_start, loader_len, boot_start, boot_len, root_start)
 
     @classmethod
-    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid, d_img_data):
+    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid,
+                      d_img_data):
         boot_env = super(SMDKV310Config, cls)._get_boot_env(
             is_live, is_lowmem, consoles, rootfs_uuid, d_img_data)
 
@@ -703,7 +715,8 @@ class SMDKV310Config(BoardConfig):
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data, d_img_data):
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', 'smdkv310', 'u-boot.v310')
         install_smdkv310_boot_loader(uboot_file, boot_device_or_file)

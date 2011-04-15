@@ -642,7 +642,8 @@ class TestBoards(TestCaseWithFixtures):
             ifile = os.path.join(tempdir, 'initrd.img-1-%s' % f)
             open(kfile, "w").close()
             open(ifile, "w").close()
-        self.assertEqual((kfile, ifile, None), config._get_kflavor_files(tempdir))
+        self.assertEqual(
+            (kfile, ifile, None), config._get_kflavor_files(tempdir))
 
     def test_get_dt_kflavor_files_more_specific(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
@@ -660,7 +661,8 @@ class TestBoards(TestCaseWithFixtures):
             open(kfile, "w").close()
             open(ifile, "w").close()
             open(dfile, "w").close()
-        self.assertEqual((kfile, ifile, dfile), config._get_kflavor_files(tempdir))
+        self.assertEqual(
+            (kfile, ifile, dfile), config._get_kflavor_files(tempdir))
 
     def test_get_kflavor_files_later_in_flavors(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
@@ -672,7 +674,8 @@ class TestBoards(TestCaseWithFixtures):
         ifile = os.path.join(tempdir, 'initrd.img-1-%s' % flavor1)
         open(kfile, "w").close()
         open(ifile, "w").close()
-        self.assertEqual((kfile, ifile, None), config._get_kflavor_files(tempdir))
+        self.assertEqual(
+            (kfile, ifile, None), config._get_kflavor_files(tempdir))
 
     def test_get_dt_kflavor_files_later_in_flavors(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
@@ -689,7 +692,8 @@ class TestBoards(TestCaseWithFixtures):
         open(kfile, "w").close()
         open(ifile, "w").close()
         open(dfile, "w").close()
-        self.assertEqual((kfile, ifile, dfile), config._get_kflavor_files(tempdir))
+        self.assertEqual(
+            (kfile, ifile, dfile), config._get_kflavor_files(tempdir))
 
     def test_get_kflavor_files_raises_when_no_match(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
