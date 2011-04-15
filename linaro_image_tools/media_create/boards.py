@@ -249,8 +249,8 @@ class BoardConfig(object):
             system_start, _system_len, cache_start, cache_start, _cache_len,
             userdata_start, _userdata_len, sdcard_start)
 
-    @classproperty
-    def bootcmd(cls):
+    @classmethod
+    def _get_bootcmd(cls, d_img_data):
         """Get the bootcmd for this board.
 
         In general subclasses should not have to override this.
@@ -262,7 +262,7 @@ class BoardConfig(object):
             "fatload mmc %(mmc_option)s %(kernel_addr)s uImage; "
             "fatload mmc %(mmc_option)s %(initrd_addr)s uInitrd; "
             % replacements)
-        if cls.dtb_addr is not None:
+        if d_img_data is not None:
             boot_script += (
                 "fatload mmc %(mmc_option)s %(dtb_addr)s board.dtb; "
                 "bootm %(kernel_addr)s %(initrd_addr)s %(dtb_addr)s"
@@ -302,7 +302,7 @@ class BoardConfig(object):
              % replacements)
 
     @classmethod
-    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid):
+    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid, d_img_data):
         """Get the boot environment for this board.
 
         In general subclasses should not have to override this.
@@ -310,14 +310,14 @@ class BoardConfig(object):
         boot_env = {}
         boot_env["bootargs"] = cls._get_bootargs(
             is_live, is_lowmem, consoles, rootfs_uuid)
-        boot_env["bootcmd"] = cls.bootcmd
+        boot_env["bootcmd"] = cls._get_bootcmd(d_img_data)
         return boot_env
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
         (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(uboot_parts_dir)
-        boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid)
+        boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid, d_img_data)
         cls._make_boot_files(
             boot_env, chroot_dir, boot_dir, 
             boot_device_or_file, k_img_data, i_img_data, d_img_data)
@@ -376,8 +376,6 @@ class BoardConfig(object):
                     dtb = None
                     if cls.dtb_name is not None:
                         dtb = _get_file_matching(os.path.join(path, dregex))
-                        if dtb is None:
-                            cls.dtb_name = cls.dtb_addr = None
                     return (kernel, initrd, dtb)
                 raise ValueError(
                     "Found kernel for flavor %s but no initrd matching %s" % (
@@ -686,9 +684,9 @@ class SMDKV310Config(BoardConfig):
             loader_start, loader_len, boot_start, boot_len, root_start)
 
     @classmethod
-    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid):
+    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid, d_img_data):
         boot_env = super(SMDKV310Config, cls)._get_boot_env(
-            is_live, is_lowmem, consoles, rootfs_uuid)
+            is_live, is_lowmem, consoles, rootfs_uuid, d_img_data)
 
         boot_env["ethact"] = "smc911x-0"
         boot_env["ethaddr"] = "00:40:5c:26:0a:5b"
