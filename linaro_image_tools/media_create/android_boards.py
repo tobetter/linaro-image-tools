@@ -20,13 +20,16 @@
 """Configuration for boards supported by linaro-android-media-create.
 
 To add support for a new board, you need to create a subclass of
-BoardConfig, set appropriate values for its variables and add it to
+AndroidBoardConfig, set appropriate values for its variables and add it to
 android_board_configs at the bottom of this file.
 """
 
 from linaro_image_tools.media_create.partitions import SECTOR_SIZE
 from linaro_image_tools.media_create.boards import BeagleConfig
 from linaro_image_tools.media_create.boards import PandaConfig
+from linaro_image_tools.media_create.boards import make_boot_script
+from linaro_image_tools import cmd_runner
+import os
 
 
 # align on 4 MiB
@@ -52,7 +55,40 @@ def align_partition(min_start, min_length, start_alignment, end_alignment):
     length = end - start + 1
     return start, end, length
 
+
 class AndroidBoardConfig(object):
+    @classmethod
+    def _get_bootargs(cls, consoles):
+        """Get the bootargs for this board.
+
+        In general subclasses should not have to override this.
+        """
+        boot_args_options = 'rootwait ro'
+        if cls.extra_boot_args_options is not None:
+            boot_args_options += ' %s' % cls.extra_boot_args_options
+        serial_opts = cls._extra_serial_opts
+        for console in consoles:
+            serial_opts += ' console=%s' % console
+
+        replacements = dict(
+            serial_opts=serial_opts,
+            boot_args_options=boot_args_options)
+        return (
+            "%(serial_opts)s "
+            "%(boot_args_options)s"
+             % replacements)
+
+    @classmethod
+    def _get_boot_env(cls, consoles):
+        """Get the boot environment for this board.
+
+        In general subclasses should not have to override this.
+        """
+        boot_env = {}
+        boot_env["bootargs"] = cls._get_bootargs(consoles)
+        boot_env["bootcmd"] = cls.bootcmd
+        return boot_env
+
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
         if cls.fat_size == 32:
@@ -96,11 +132,61 @@ class AndroidBoardConfig(object):
             _userdata_len, sdcard_start)
 
 
-class AndroidBeagleConfig(AndroidBoardConfig, BeagleConfig):
+class AndroidOmapConfig(AndroidBoardConfig):
     pass
 
-class AndroidPandaConfig(AndroidBoardConfig, PandaConfig):
-    pass
+
+class AndroidBeagleConfig(AndroidOmapConfig, BeagleConfig):
+    _extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
+    extra_boot_args_options = (
+        'init=/init androidboot.console=ttyO2 '
+        'earlyprintk fixrtc nocompcache vram=12M '
+        'omapfb.mode=dvi:1280x720MR-16@60')
+
+    @classmethod
+    def populate_boot_script(cls, boot_partition, boot_disk, consoles):
+        cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
+        cmd_runner.run(['mount', boot_partition, boot_disk],
+            as_root=True).wait()
+
+        boot_env = cls._get_boot_env(consoles)
+
+        boot_dir = boot_disk
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
+        make_boot_script(boot_env, boot_script_path)
+
+        cmd_runner.run(['sync']).wait()
+        try:
+            cmd_runner.run(['umount', boot_disk], as_root=True).wait()
+        except cmd_runner.SubcommandNonZeroReturnValue:
+            pass
+
+
+class AndroidPandaConfig(AndroidOmapConfig, PandaConfig):
+    _extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
+    extra_boot_args_options = (
+        'init=/init androidboot.console=ttyO2 '
+        'earlyprintk fixrtc nocompcache vram=32M '
+        'omapfb.vram=0:8M mem=463M@0x80000000 mem=512M@0xA0000000')
+
+    @classmethod
+    def populate_boot_script(cls, boot_partition, boot_disk, consoles):
+        cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
+        cmd_runner.run(['mount', boot_partition, boot_disk],
+            as_root=True).wait()
+
+        boot_env = cls._get_boot_env(consoles)
+
+        boot_dir = boot_disk
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
+        make_boot_script(boot_env, boot_script_path)
+
+        cmd_runner.run(['sync']).wait()
+        try:
+            cmd_runner.run(['umount', boot_disk], as_root=True).wait()
+        except cmd_runner.SubcommandNonZeroReturnValue:
+            pass
+
 
 android_board_configs = {
     'beagle': AndroidBeagleConfig,

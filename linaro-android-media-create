@@ -145,6 +145,7 @@ if __name__ == '__main__':
         args.should_align_boot_part)
 
     populate_partition(BOOT_DIR + "/boot", BOOT_DISK, boot_partition)
+    board_config.populate_boot_script(boot_partition, BOOT_DISK, args.consoles)
     populate_partition(SYSTEM_DIR + "/system", SYSTEM_DISK, system_partition)
     populate_partition(DATA_DIR + "/data", DATA_DISK, data_partition)
     print "Done creating Linaro Android image on %s" % args.device

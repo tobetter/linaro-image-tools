@@ -124,6 +124,10 @@ def get_android_args_parser():
     parser.add_argument(
         '--boot_label', default='boot',
         help='Label to use for the boot filesystem.')
+    parser.add_argument(
+        '--console', action='append', dest='consoles', default=[],
+        help=('Add a console to kernel boot parameter; this parameter can be '
+              'defined multiple times.'))
 
     parser.add_argument(
         '--system', default='system.tar.bz2', required=True,
