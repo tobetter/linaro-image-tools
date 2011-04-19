@@ -45,7 +45,6 @@ from linaro_image_tools.utils import ensure_command, is_arm_host
 
 # Just define the global variables
 TMP_DIR = None
-ROOTFS_DIR = None
 BOOT_DISK = None
 SYSTEM_DISK = None
 CACHE_DISK = None
