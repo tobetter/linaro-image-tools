@@ -462,10 +462,7 @@ class TestGetBootCmd(TestCase):
             rootfs_uuid="deadbeef", d_img_data="overo.dtb")
         expected = {
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
-                        'root=UUID=deadbeef rootwait ro earlyprintk '
-                        'mpurate=500 vram=12M '
-                        'omapfb.mode=dvi:1024x768MR-16@60 '
-                        'omapdss.def_disp=dvi',
+                        'root=UUID=deadbeef rootwait ro earlyprintk',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
