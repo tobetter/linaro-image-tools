@@ -315,7 +315,7 @@ class BoardConfig(object):
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
                                      d_img_data)
         cls._make_boot_files(
-            boot_env, chroot_dir, boot_dir, 
+            boot_env, chroot_dir, boot_dir,
             boot_device_or_file, k_img_data, i_img_data, d_img_data)
 
     @classmethod
@@ -478,7 +478,7 @@ class OveroConfig(OmapConfig):
     load_addr = '0x80008000'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'earlyprintk')
+        'earlyprintk vram=12M')
 
 
 class PandaConfig(OmapConfig):
