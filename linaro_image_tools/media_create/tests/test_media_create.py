@@ -177,6 +177,8 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def make_boot_files(self, config):
         def _get_kflavor_files_mock(cls, path):
+            if cls.dtb_name is None:
+                return (path, path, None)
             return (path, path, path)
 
         self.useFixture(MockSomethingFixture(
