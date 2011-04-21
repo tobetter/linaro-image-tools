@@ -478,7 +478,7 @@ class OveroConfig(OmapConfig):
     load_addr = '0x80008000'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'earlyprintk vram=12M')
+        'earlyprintk mpurate=${mpurate} vram=12M')
 
 
 class PandaConfig(OmapConfig):
@@ -817,7 +817,7 @@ def make_dtb(img_data, boot_disk):
 def make_boot_script(boot_env, boot_script_path):
     boot_script_data = (
         "setenv bootcmd '%(bootcmd)s'\n"
-        "setenv bootargs '%(bootargs)s'\n"
+        "setenv bootargs %(bootargs)s\n"
         "boot"
         % boot_env)
 
