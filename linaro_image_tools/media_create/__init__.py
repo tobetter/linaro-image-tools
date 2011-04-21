@@ -88,7 +88,7 @@ def get_args_parser():
         help=('A hardware pack that should be installed in the rootfs; this '
               'parameter can be defined multiple times.'))
     parser.add_argument(
-        '--hwpacksig', action='append', dest='hwpacksigs', required=True,
+        '--hwpack-sig', action='append', dest='hwpacksigs', required=False,
         help=('Signature file for verifying a hwpack; this '
               'parameter can be defined multiple times.'))
     parser.add_argument(
@@ -103,7 +103,7 @@ def get_args_parser():
         help=('The tarball containing the rootfs used to create the bootable '
               'system.'))
     parser.add_argument(
-        '--binary-sig', dest='binarysig', required=True,
+        '--binary-sig', dest='binarysig', required=False,
         help=('Signature file used for verifying the binary tarball.'))
     parser.add_argument(
         '--no-rootfs', dest='should_format_rootfs', action='store_false',

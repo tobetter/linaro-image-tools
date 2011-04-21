@@ -104,20 +104,24 @@ if __name__ == '__main__':
 
     ensure_required_commands(args)
 
-    print "Verifying integrity of hwpacks and binary tarball."
-    if len(args.hwpacksigs) != len(args.hwpacks):
-        print "Number of hwpack signatures does not match number of hwpacks."
-        sys.exit(1)
+    if args.hwpacksigs is not None:
+        print "Verifying integrity of hwpacks and binary tarball."
+        if len(args.hwpacksigs) != len(args.hwpacks):
+            print "Number of hwpack signatures does not match number of hwpacks."
+            sys.exit(1)
 
-    sig_file_list = args.hwpacksigs
-    sig_file_list.append(args.binarysig)
-    for sig_file in sig_file_list:
-        if cmd_runner.run(['sha1sum', '-c', sig_file[0:-4]]).wait() != 0:
-            print "Could not verify hash."
-            sys.exit(1)
-        if cmd_runner.run(['gpg', '--verify', sig_file]).wait() != 0:
-            print "Could not verify signature."
-            sys.exit(1)
+            sig_file_list = args.hwpacksigs
+            if args.binarysig is not None:
+                sig_file_list.append(args.binarysig)
+            for sig_file in sig_file_list:
+                if cmd_runner.run(['sha1sum', '-c', sig_file[0:-4]]).wait() != 0:
+                    print "Could not verify hash."
+                    sys.exit(1)
+                if cmd_runner.run(['gpg', '--verify', sig_file]).wait() != 0:
+                    print "Could not verify signature."
+                    sys.exit(1)
+        else:
+            print "Will not verify integrity of hwpacks and binary tarball."
 
     media = Media(args.device)
     if media.is_block_device:
