@@ -255,6 +255,8 @@ class BoardConfig(object):
             "fatload mmc %(mmc_option)s %(initrd_addr)s uInitrd; "
             % replacements)
         if d_img_data is not None:
+            assert cls.dtb_addr is not None, (
+                "Need a dtb_addr when passing d_img_data")
             boot_script += (
                 "fatload mmc %(mmc_option)s %(dtb_addr)s board.dtb; "
                 "bootm %(kernel_addr)s %(initrd_addr)s %(dtb_addr)s"
