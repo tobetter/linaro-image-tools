@@ -1,0 +1,2172 @@
+time: 2011-04-21 13:24:32.965919Z
+time: 2011-04-21 13:24:33.364159Z
+test: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_Popen
+time: 2011-04-21 13:24:33.364254Z
+successful: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_Popen
+time: 2011-04-21 13:24:33.364306Z
+time: 2011-04-21 13:24:33.364355Z
+test: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_chrooted
+time: 2011-04-21 13:24:33.364405Z
+successful: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_chrooted
+time: 2011-04-21 13:24:33.364445Z
+time: 2011-04-21 13:24:33.364490Z
+test: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_run
+time: 2011-04-21 13:24:33.364542Z
+successful: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_run
+time: 2011-04-21 13:24:33.364588Z
+time: 2011-04-21 13:24:33.364634Z
+test: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_run_as_root_as_root
+time: 2011-04-21 13:24:33.364682Z
+successful: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_run_as_root_as_root
+time: 2011-04-21 13:24:33.364722Z
+time: 2011-04-21 13:24:33.364766Z
+test: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_run_as_root_with_sudo
+time: 2011-04-21 13:24:33.364813Z
+successful: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_run_as_root_with_sudo
+time: 2011-04-21 13:24:33.364852Z
+time: 2011-04-21 13:24:33.364896Z
+test: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_run_must_be_given_list_as_args
+time: 2011-04-21 13:24:33.364945Z
+successful: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_run_must_be_given_list_as_args
+time: 2011-04-21 13:24:33.364984Z
+time: 2011-04-21 13:24:33.365029Z
+test: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_run_raises_exception_on_non_zero_return_code
+time: 2011-04-21 13:24:33.365078Z
+successful: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_run_raises_exception_on_non_zero_return_code
+time: 2011-04-21 13:24:33.365117Z
+time: 2011-04-21 13:24:33.365162Z
+test: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_run_succeeds_on_zero_return_code
+time: 2011-04-21 13:24:33.365218Z
+successful: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_run_succeeds_on_zero_return_code
+time: 2011-04-21 13:24:33.365257Z
+time: 2011-04-21 13:24:33.365302Z
+test: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_tuple_with_sudo
+time: 2011-04-21 13:24:33.365349Z
+successful: linaro_image_tools.tests.test_cmd_runner.TestCmdRunner.test_tuple_with_sudo
+time: 2011-04-21 13:24:33.365388Z
+time: 2011-04-21 13:24:33.365432Z
+test: linaro_image_tools.tests.test_cmd_runner.TestSanitizePath.test_idempotent
+time: 2011-04-21 13:24:33.365480Z
+successful: linaro_image_tools.tests.test_cmd_runner.TestSanitizePath.test_idempotent
+time: 2011-04-21 13:24:33.365518Z
+time: 2011-04-21 13:24:33.365563Z
+test: linaro_image_tools.tests.test_cmd_runner.TestSanitizePath.test_path_missing_dirs
+time: 2011-04-21 13:24:33.365610Z
+successful: linaro_image_tools.tests.test_cmd_runner.TestSanitizePath.test_path_missing_dirs
+time: 2011-04-21 13:24:33.365649Z
+time: 2011-04-21 13:24:33.365693Z
+test: linaro_image_tools.tests.test_cmd_runner.TestSanitizePath.test_path_unset
+time: 2011-04-21 13:24:33.365740Z
+successful: linaro_image_tools.tests.test_cmd_runner.TestSanitizePath.test_path_unset
+time: 2011-04-21 13:24:33.365779Z
+time: 2011-04-21 13:24:33.365823Z
+test: linaro_image_tools.tests.test_utils.TestEnsureCommand.test_command_already_present
+time: 2011-04-21 13:24:33.365871Z
+successful: linaro_image_tools.tests.test_utils.TestEnsureCommand.test_command_already_present
+time: 2011-04-21 13:24:33.365910Z
+time: 2011-04-21 13:24:33.365954Z
+test: linaro_image_tools.tests.test_utils.TestEnsureCommand.test_command_not_present
+time: 2011-04-21 13:24:33.366005Z
+successful: linaro_image_tools.tests.test_utils.TestEnsureCommand.test_command_not_present
+time: 2011-04-21 13:24:33.366044Z
+time: 2011-04-21 13:24:33.366088Z
+test: linaro_image_tools.tests.test_utils.TestFindCommand.test_existing_command
+time: 2011-04-21 13:24:33.366135Z
+successful: linaro_image_tools.tests.test_utils.TestFindCommand.test_existing_command
+time: 2011-04-21 13:24:33.366211Z
+time: 2011-04-21 13:24:33.366257Z
+test: linaro_image_tools.tests.test_utils.TestFindCommand.test_nonexisting_command
+time: 2011-04-21 13:24:33.366304Z
+successful: linaro_image_tools.tests.test_utils.TestFindCommand.test_nonexisting_command
+time: 2011-04-21 13:24:33.366343Z
+time: 2011-04-21 13:24:33.366387Z
+test: linaro_image_tools.tests.test_utils.TestFindCommand.test_preferred_dir
+time: 2011-04-21 13:24:33.366436Z
+successful: linaro_image_tools.tests.test_utils.TestFindCommand.test_preferred_dir
+time: 2011-04-21 13:24:33.366474Z
+time: 2011-04-21 13:24:33.366518Z
+test: linaro_image_tools.tests.test_utils.TestInstallPackageProviding.test_found_package
+time: 2011-04-21 13:24:33.366566Z
+successful: linaro_image_tools.tests.test_utils.TestInstallPackageProviding.test_found_package
+time: 2011-04-21 13:24:33.366605Z
+time: 2011-04-21 13:24:33.366649Z
+test: linaro_image_tools.tests.test_utils.TestInstallPackageProviding.test_not_found_package
+time: 2011-04-21 13:24:33.366696Z
+successful: linaro_image_tools.tests.test_utils.TestInstallPackageProviding.test_not_found_package
+time: 2011-04-21 13:24:33.366735Z
+time: 2011-04-21 13:24:33.366779Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_adds_path
+time: 2011-04-21 13:24:33.366827Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_adds_path
+time: 2011-04-21 13:24:33.366867Z
+time: 2011-04-21 13:24:33.366911Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_sets_linkname
+time: 2011-04-21 13:24:33.366959Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_sets_linkname
+time: 2011-04-21 13:24:33.366998Z
+time: 2011-04-21 13:24:33.367042Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_sets_mode
+time: 2011-04-21 13:24:33.367090Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_sets_mode
+time: 2011-04-21 13:24:33.367129Z
+time: 2011-04-21 13:24:33.367173Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_sets_name
+time: 2011-04-21 13:24:33.371788Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_sets_name
+time: 2011-04-21 13:24:33.371834Z
+time: 2011-04-21 13:24:33.371881Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_sets_size
+time: 2011-04-21 13:24:33.371930Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_sets_size
+time: 2011-04-21 13:24:33.371970Z
+time: 2011-04-21 13:24:33.372014Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_sets_type
+time: 2011-04-21 13:24:33.372063Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_sets_type
+time: 2011-04-21 13:24:33.372102Z
+time: 2011-04-21 13:24:33.372147Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_uses_default_gid
+time: 2011-04-21 13:24:33.372196Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_uses_default_gid
+time: 2011-04-21 13:24:33.372235Z
+time: 2011-04-21 13:24:33.372280Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_uses_default_gname
+time: 2011-04-21 13:24:33.372328Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_uses_default_gname
+time: 2011-04-21 13:24:33.372368Z
+time: 2011-04-21 13:24:33.372412Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_uses_default_mtime
+time: 2011-04-21 13:24:33.372460Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_uses_default_mtime
+time: 2011-04-21 13:24:33.372500Z
+time: 2011-04-21 13:24:33.372544Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_uses_default_uid
+time: 2011-04-21 13:24:33.372608Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_uses_default_uid
+time: 2011-04-21 13:24:33.372649Z
+time: 2011-04-21 13:24:33.372694Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_uses_default_uname
+time: 2011-04-21 13:24:33.372741Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_dir_uses_default_uname
+time: 2011-04-21 13:24:33.372780Z
+time: 2011-04-21 13:24:33.372824Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_from_string_adds_path
+time: 2011-04-21 13:24:33.372872Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_from_string_adds_path
+time: 2011-04-21 13:24:33.372912Z
+time: 2011-04-21 13:24:33.372956Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_from_string_sets_linkname
+time: 2011-04-21 13:24:33.373004Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_from_string_sets_linkname
+time: 2011-04-21 13:24:33.373048Z
+time: 2011-04-21 13:24:33.373094Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_from_string_sets_mode
+time: 2011-04-21 13:24:33.373142Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_from_string_sets_mode
+time: 2011-04-21 13:24:33.373191Z
+time: 2011-04-21 13:24:33.373236Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_from_string_sets_size
+time: 2011-04-21 13:24:33.373284Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_from_string_sets_size
+time: 2011-04-21 13:24:33.373324Z
+time: 2011-04-21 13:24:33.373368Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_from_string_sets_type
+time: 2011-04-21 13:24:33.373417Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_from_string_sets_type
+time: 2011-04-21 13:24:33.373456Z
+time: 2011-04-21 13:24:33.373500Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_from_string_uses_content
+time: 2011-04-21 13:24:33.373549Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_from_string_uses_content
+time: 2011-04-21 13:24:33.373588Z
+time: 2011-04-21 13:24:33.373632Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_uses_default_gid
+time: 2011-04-21 13:24:33.373680Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_uses_default_gid
+time: 2011-04-21 13:24:33.373719Z
+time: 2011-04-21 13:24:33.373764Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_uses_default_gname
+time: 2011-04-21 13:24:33.373812Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_uses_default_gname
+time: 2011-04-21 13:24:33.373851Z
+time: 2011-04-21 13:24:33.373896Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_uses_default_mtime
+time: 2011-04-21 13:24:33.373945Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_uses_default_mtime
+time: 2011-04-21 13:24:33.373984Z
+time: 2011-04-21 13:24:33.374030Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_uses_default_uid
+time: 2011-04-21 13:24:33.374079Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_uses_default_uid
+time: 2011-04-21 13:24:33.374117Z
+time: 2011-04-21 13:24:33.374161Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_uses_default_uname
+time: 2011-04-21 13:24:33.374208Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_create_file_uses_default_uname
+time: 2011-04-21 13:24:33.374270Z
+time: 2011-04-21 13:24:36.648428Z
+test: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_creates_empty_tarfile
+time: 2011-04-21 13:24:36.648513Z
+successful: linaro_image_tools.hwpack.tests.test_better_tarfile.TarFileTests.test_creates_empty_tarfile
+time: 2011-04-21 13:24:36.648560Z
+time: 2011-04-21 13:24:36.648607Z
+test: linaro_image_tools.hwpack.tests.test_builder.ConfigFileMissingTests.test_str
+time: 2011-04-21 13:24:36.648655Z
+successful: linaro_image_tools.hwpack.tests.test_builder.ConfigFileMissingTests.test_str
+time: 2011-04-21 13:24:36.648695Z
+time: 2011-04-21 13:24:36.648739Z
+test: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_builds_correct_contents
+time: 2011-04-21 13:24:36.648788Z
+successful: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_builds_correct_contents
+time: 2011-04-21 13:24:36.648827Z
+time: 2011-04-21 13:24:36.648872Z
+test: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_builds_correct_contents_multiple_packages
+time: 2011-04-21 13:24:36.648921Z
+successful: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_builds_correct_contents_multiple_packages
+time: 2011-04-21 13:24:36.648961Z
+time: 2011-04-21 13:24:36.649006Z
+test: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_builds_one_pack_per_arch
+time: 2011-04-21 13:24:36.649054Z
+successful: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_builds_one_pack_per_arch
+time: 2011-04-21 13:24:36.649093Z
+time: 2011-04-21 13:24:36.649138Z
+test: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_creates_external_manifest
+time: 2011-04-21 13:24:36.649194Z
+successful: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_creates_external_manifest
+time: 2011-04-21 13:24:36.649234Z
+time: 2011-04-21 13:24:36.649278Z
+test: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_includes_local_debs
+time: 2011-04-21 13:24:36.649327Z
+successful: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_includes_local_debs
+time: 2011-04-21 13:24:36.649366Z
+time: 2011-04-21 13:24:36.649410Z
+test: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_includes_local_debs_even_if_not_in_config
+time: 2011-04-21 13:24:36.649465Z
+successful: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_includes_local_debs_even_if_not_in_config
+time: 2011-04-21 13:24:36.649505Z
+time: 2011-04-21 13:24:36.649549Z
+test: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_obeys_assume_installed
+time: 2011-04-21 13:24:36.649597Z
+successful: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_obeys_assume_installed
+time: 2011-04-21 13:24:36.649637Z
+time: 2011-04-21 13:24:36.649681Z
+test: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_obeys_include_debs
+time: 2011-04-21 13:24:36.649729Z
+successful: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_obeys_include_debs
+time: 2011-04-21 13:24:36.649768Z
+time: 2011-04-21 13:24:36.649812Z
+test: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_prefers_local_debs
+time: 2011-04-21 13:24:36.649860Z
+successful: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_prefers_local_debs
+time: 2011-04-21 13:24:36.649899Z
+time: 2011-04-21 13:24:36.649943Z
+test: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_raises_on_missing_configuration
+time: 2011-04-21 13:24:36.649993Z
+successful: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_raises_on_missing_configuration
+time: 2011-04-21 13:24:36.650032Z
+time: 2011-04-21 13:24:36.650077Z
+test: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_validates_configuration
+time: 2011-04-21 13:24:36.650125Z
+successful: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_validates_configuration
+time: 2011-04-21 13:24:36.650185Z
+time: 2011-04-21 13:24:36.650231Z
+test: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_warn_if_not_including_local_deb
+time: 2011-04-21 13:24:36.650286Z
+successful: linaro_image_tools.hwpack.tests.test_builder.HardwarePackBuilderTests.test_warn_if_not_including_local_deb
+time: 2011-04-21 13:24:36.650326Z
+time: 2011-04-21 13:24:36.650370Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_architectures
+time: 2011-04-21 13:24:36.650418Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_architectures
+time: 2011-04-21 13:24:36.650456Z
+time: 2011-04-21 13:24:36.650500Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_architectures_filters_duplicates
+time: 2011-04-21 13:24:36.650548Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_architectures_filters_duplicates
+time: 2011-04-21 13:24:36.650587Z
+time: 2011-04-21 13:24:36.650631Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_architectures_with_newline
+time: 2011-04-21 13:24:36.650679Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_architectures_with_newline
+time: 2011-04-21 13:24:36.650719Z
+time: 2011-04-21 13:24:36.650763Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_assume_installed
+time: 2011-04-21 13:24:36.650810Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_assume_installed
+time: 2011-04-21 13:24:36.650849Z
+time: 2011-04-21 13:24:36.650893Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_assume_installed_filters_duplicates
+time: 2011-04-21 13:24:36.650941Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_assume_installed_filters_duplicates
+time: 2011-04-21 13:24:36.650980Z
+time: 2011-04-21 13:24:36.651025Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_assume_installed_with_newline
+time: 2011-04-21 13:24:36.651076Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_assume_installed_with_newline
+time: 2011-04-21 13:24:36.651115Z
+time: 2011-04-21 13:24:36.651160Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_create
+time: 2011-04-21 13:24:36.651207Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_create
+time: 2011-04-21 13:24:36.651246Z
+time: 2011-04-21 13:24:36.651290Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_include_debs
+time: 2011-04-21 13:24:36.651337Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_include_debs
+time: 2011-04-21 13:24:36.651376Z
+time: 2011-04-21 13:24:36.651420Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_include_debs_defaults_true
+time: 2011-04-21 13:24:36.651467Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_include_debs_defaults_true
+time: 2011-04-21 13:24:36.651506Z
+time: 2011-04-21 13:24:36.651551Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_include_debs_defaults_true_on_empty
+time: 2011-04-21 13:24:36.651599Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_include_debs_defaults_true_on_empty
+time: 2011-04-21 13:24:36.651638Z
+time: 2011-04-21 13:24:36.651683Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_maintainer
+time: 2011-04-21 13:24:36.651731Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_maintainer
+time: 2011-04-21 13:24:36.651770Z
+time: 2011-04-21 13:24:36.651814Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_maintainer_None_on_empty
+time: 2011-04-21 13:24:36.651862Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_maintainer_None_on_empty
+time: 2011-04-21 13:24:36.651901Z
+time: 2011-04-21 13:24:36.651945Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_maintainer_default_None
+time: 2011-04-21 13:24:36.651992Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_maintainer_default_None
+time: 2011-04-21 13:24:36.652043Z
+time: 2011-04-21 13:24:36.652088Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_name
+time: 2011-04-21 13:24:36.652136Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_name
+time: 2011-04-21 13:24:36.652176Z
+time: 2011-04-21 13:24:36.652219Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_origin
+time: 2011-04-21 13:24:36.652267Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_origin
+time: 2011-04-21 13:24:36.652306Z
+time: 2011-04-21 13:24:36.652351Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_origin_None_on_empty
+time: 2011-04-21 13:24:36.652398Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_origin_None_on_empty
+time: 2011-04-21 13:24:36.652437Z
+time: 2011-04-21 13:24:36.652481Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_origin_default_None
+time: 2011-04-21 13:24:36.652528Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_origin_default_None
+time: 2011-04-21 13:24:36.652567Z
+time: 2011-04-21 13:24:36.652611Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_packages
+time: 2011-04-21 13:24:36.652658Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_packages
+time: 2011-04-21 13:24:36.652697Z
+time: 2011-04-21 13:24:36.652741Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_packages_filters_duplicates
+time: 2011-04-21 13:24:36.652789Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_packages_filters_duplicates
+time: 2011-04-21 13:24:36.652828Z
+time: 2011-04-21 13:24:36.652872Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_packages_with_newline
+time: 2011-04-21 13:24:36.652920Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_packages_with_newline
+time: 2011-04-21 13:24:36.652959Z
+time: 2011-04-21 13:24:36.653003Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_sources_multiple
+time: 2011-04-21 13:24:36.653051Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_sources_multiple
+time: 2011-04-21 13:24:36.653090Z
+time: 2011-04-21 13:24:36.653134Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_sources_single
+time: 2011-04-21 13:24:36.653189Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_sources_single
+time: 2011-04-21 13:24:36.653228Z
+time: 2011-04-21 13:24:36.653273Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_support_None_on_empty
+time: 2011-04-21 13:24:36.653320Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_support_None_on_empty
+time: 2011-04-21 13:24:36.653360Z
+time: 2011-04-21 13:24:36.653404Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_support_default_None
+time: 2011-04-21 13:24:36.653452Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_support_default_None
+time: 2011-04-21 13:24:36.653491Z
+time: 2011-04-21 13:24:36.653534Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_support_supported
+time: 2011-04-21 13:24:36.653582Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_support_supported
+time: 2011-04-21 13:24:36.653621Z
+time: 2011-04-21 13:24:36.653665Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_support_unsupported
+time: 2011-04-21 13:24:36.653713Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_support_unsupported
+time: 2011-04-21 13:24:36.653754Z
+time: 2011-04-21 13:24:36.653798Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_empty_architectures
+time: 2011-04-21 13:24:36.653846Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_empty_architectures
+time: 2011-04-21 13:24:36.653885Z
+time: 2011-04-21 13:24:36.653929Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_empty_name
+time: 2011-04-21 13:24:36.653977Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_empty_name
+time: 2011-04-21 13:24:36.654031Z
+time: 2011-04-21 13:24:36.654076Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_empty_packages
+time: 2011-04-21 13:24:36.659706Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_empty_packages
+time: 2011-04-21 13:24:36.659753Z
+time: 2011-04-21 13:24:36.659800Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_invalid_include_debs
+time: 2011-04-21 13:24:36.659849Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_invalid_include_debs
+time: 2011-04-21 13:24:36.659889Z
+time: 2011-04-21 13:24:36.659933Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_invalid_name
+time: 2011-04-21 13:24:36.659980Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_invalid_name
+time: 2011-04-21 13:24:36.660020Z
+time: 2011-04-21 13:24:36.660064Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_invalid_package_name
+time: 2011-04-21 13:24:36.660111Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_invalid_package_name
+time: 2011-04-21 13:24:36.660150Z
+time: 2011-04-21 13:24:36.660194Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_invalid_package_name_in_assume_installed
+time: 2011-04-21 13:24:36.660248Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_invalid_package_name_in_assume_installed
+time: 2011-04-21 13:24:36.660288Z
+time: 2011-04-21 13:24:36.660332Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_invalid_supported
+time: 2011-04-21 13:24:36.660380Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_invalid_supported
+time: 2011-04-21 13:24:36.660419Z
+time: 2011-04-21 13:24:36.660463Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_no_architectures
+time: 2011-04-21 13:24:36.660511Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_no_architectures
+time: 2011-04-21 13:24:36.660550Z
+time: 2011-04-21 13:24:36.660594Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_no_hwpack_section
+time: 2011-04-21 13:24:36.660641Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_no_hwpack_section
+time: 2011-04-21 13:24:36.660680Z
+time: 2011-04-21 13:24:36.660724Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_no_name
+time: 2011-04-21 13:24:36.660770Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_no_name
+time: 2011-04-21 13:24:36.660809Z
+time: 2011-04-21 13:24:36.660853Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_no_other_sections
+time: 2011-04-21 13:24:36.660900Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_no_other_sections
+time: 2011-04-21 13:24:36.660947Z
+time: 2011-04-21 13:24:36.660991Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_no_packages
+time: 2011-04-21 13:24:36.661039Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_no_packages
+time: 2011-04-21 13:24:36.661078Z
+time: 2011-04-21 13:24:36.661123Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_other_section_empty_sources_entry
+time: 2011-04-21 13:24:36.661171Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_other_section_empty_sources_entry
+time: 2011-04-21 13:24:36.661225Z
+time: 2011-04-21 13:24:36.661270Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_other_section_no_sources_entry
+time: 2011-04-21 13:24:36.661319Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_other_section_no_sources_entry
+time: 2011-04-21 13:24:36.661358Z
+time: 2011-04-21 13:24:36.661402Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_other_section_only_uri_in_sources_entry
+time: 2011-04-21 13:24:36.661469Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_other_section_only_uri_in_sources_entry
+time: 2011-04-21 13:24:36.661510Z
+time: 2011-04-21 13:24:36.661554Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_other_section_sources_entry_starting_with_deb
+time: 2011-04-21 13:24:36.661604Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_other_section_sources_entry_starting_with_deb
+time: 2011-04-21 13:24:36.661643Z
+time: 2011-04-21 13:24:36.661688Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_other_section_sources_entry_starting_with_deb_src
+time: 2011-04-21 13:24:36.661736Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_other_section_sources_entry_starting_with_deb_src
+time: 2011-04-21 13:24:36.661776Z
+time: 2011-04-21 13:24:36.661819Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_valid_config
+time: 2011-04-21 13:24:36.661867Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_valid_config
+time: 2011-04-21 13:24:36.661906Z
+time: 2011-04-21 13:24:36.661950Z
+test: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_valid_config_with_dash_in_package_name
+time: 2011-04-21 13:24:36.661998Z
+successful: linaro_image_tools.hwpack.tests.test_config.ConfigTests.test_validate_valid_config_with_dash_in_package_name
+time: 2011-04-21 13:24:36.662038Z
+time: 2011-04-21 13:24:36.662082Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_Packages_file_correct_content_with_some_deb_content
+time: 2011-04-21 13:24:36.662130Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_Packages_file_correct_content_with_some_deb_content
+time: 2011-04-21 13:24:36.662171Z
+time: 2011-04-21 13:24:36.662216Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_Packages_file_correct_contents_with_packages
+time: 2011-04-21 13:24:36.868371Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_Packages_file_correct_contents_with_packages
+time: 2011-04-21 13:24:36.868442Z
+time: 2011-04-21 13:24:36.868499Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_Packages_file_empty_with_no_deb_content
+time: 2011-04-21 13:24:36.868553Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_Packages_file_empty_with_no_deb_content
+time: 2011-04-21 13:24:36.868594Z
+time: 2011-04-21 13:24:36.868639Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_Packages_file_empty_with_no_packages
+time: 2011-04-21 13:24:36.868688Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_Packages_file_empty_with_no_packages
+time: 2011-04-21 13:24:36.868729Z
+time: 2011-04-21 13:24:36.868774Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_add_dependency_package_adds_package
+time: 2011-04-21 13:24:36.868823Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_add_dependency_package_adds_package
+time: 2011-04-21 13:24:36.868862Z
+time: 2011-04-21 13:24:36.868907Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_add_dependency_package_adds_package_to_Packages
+time: 2011-04-21 13:24:36.868956Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_add_dependency_package_adds_package_to_Packages
+time: 2011-04-21 13:24:36.868995Z
+time: 2011-04-21 13:24:36.869040Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_add_dependency_package_adds_package_with_dependency
+time: 2011-04-21 13:24:36.869089Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_add_dependency_package_adds_package_with_dependency
+time: 2011-04-21 13:24:36.869129Z
+time: 2011-04-21 13:24:36.869207Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_add_packages_without_content_leaves_out_debs
+time: 2011-04-21 13:24:36.869258Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_add_packages_without_content_leaves_out_debs
+time: 2011-04-21 13:24:36.869297Z
+time: 2011-04-21 13:24:36.869342Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_adds_multiple_in_multiple_steps
+time: 2011-04-21 13:24:36.869390Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_adds_multiple_in_multiple_steps
+time: 2011-04-21 13:24:36.869430Z
+time: 2011-04-21 13:24:36.869474Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_adds_multiple_packages_at_once
+time: 2011-04-21 13:24:36.869523Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_adds_multiple_packages_at_once
+time: 2011-04-21 13:24:36.869562Z
+time: 2011-04-21 13:24:36.869606Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_adds_multiple_sources_list_files
+time: 2011-04-21 13:24:36.869655Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_adds_multiple_sources_list_files
+time: 2011-04-21 13:24:36.869694Z
+time: 2011-04-21 13:24:36.869739Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_adds_packages
+time: 2011-04-21 13:24:36.869786Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_adds_packages
+time: 2011-04-21 13:24:36.869825Z
+time: 2011-04-21 13:24:36.869961Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_adds_sources_list_file
+time: 2011-04-21 13:24:36.870010Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_adds_sources_list_file
+time: 2011-04-21 13:24:36.870050Z
+time: 2011-04-21 13:24:36.870096Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_FORMAT_file
+time: 2011-04-21 13:24:36.870144Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_FORMAT_file
+time: 2011-04-21 13:24:36.870183Z
+time: 2011-04-21 13:24:36.870228Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_Packages_file
+time: 2011-04-21 13:24:36.870276Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_Packages_file
+time: 2011-04-21 13:24:36.870316Z
+time: 2011-04-21 13:24:36.870360Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_manifest_file
+time: 2011-04-21 13:24:36.870408Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_manifest_file
+time: 2011-04-21 13:24:36.870447Z
+time: 2011-04-21 13:24:36.870491Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_metadata_file
+time: 2011-04-21 13:24:36.870539Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_metadata_file
+time: 2011-04-21 13:24:36.870578Z
+time: 2011-04-21 13:24:36.870622Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_pkgs_dir
+time: 2011-04-21 13:24:36.870670Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_pkgs_dir
+time: 2011-04-21 13:24:36.870709Z
+time: 2011-04-21 13:24:36.870754Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_sources_list_dir
+time: 2011-04-21 13:24:36.870802Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_sources_list_dir
+time: 2011-04-21 13:24:36.870841Z
+time: 2011-04-21 13:24:36.870886Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_sources_list_gpg_dir
+time: 2011-04-21 13:24:36.870934Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_creates_sources_list_gpg_dir
+time: 2011-04-21 13:24:36.870986Z
+time: 2011-04-21 13:24:36.877706Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_filename
+time: 2011-04-21 13:24:36.877769Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_filename
+time: 2011-04-21 13:24:36.877812Z
+time: 2011-04-21 13:24:36.877858Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_filename_with_extension
+time: 2011-04-21 13:24:36.877907Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_filename_with_extension
+time: 2011-04-21 13:24:36.877947Z
+time: 2011-04-21 13:24:36.877992Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_filename_with_support
+time: 2011-04-21 13:24:36.878040Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_filename_with_support
+time: 2011-04-21 13:24:36.878080Z
+time: 2011-04-21 13:24:36.878125Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_format_has_no_spaces
+time: 2011-04-21 13:24:36.878173Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_format_has_no_spaces
+time: 2011-04-21 13:24:36.878213Z
+time: 2011-04-21 13:24:36.878257Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_format_is_1_0
+time: 2011-04-21 13:24:36.878305Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_format_is_1_0
+time: 2011-04-21 13:24:36.878345Z
+time: 2011-04-21 13:24:36.878390Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_manifest_contains_package_info
+time: 2011-04-21 13:24:36.878439Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_manifest_contains_package_info
+time: 2011-04-21 13:24:36.878479Z
+time: 2011-04-21 13:24:36.878523Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_manifest_file_empty_with_no_packages
+time: 2011-04-21 13:24:36.878572Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_manifest_file_empty_with_no_packages
+time: 2011-04-21 13:24:36.878618Z
+time: 2011-04-21 13:24:36.878664Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_overwrites_sources_list_file
+time: 2011-04-21 13:24:36.878712Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.HardwarePackTests.test_overwrites_sources_list_file
+time: 2011-04-21 13:24:36.878752Z
+time: 2011-04-21 13:24:36.878796Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_architecture
+time: 2011-04-21 13:24:36.878845Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_architecture
+time: 2011-04-21 13:24:36.878884Z
+time: 2011-04-21 13:24:36.878929Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_default_maintainer_is_None
+time: 2011-04-21 13:24:36.878977Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_default_maintainer_is_None
+time: 2011-04-21 13:24:36.879017Z
+time: 2011-04-21 13:24:36.879061Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_default_origin_is_None
+time: 2011-04-21 13:24:36.879109Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_default_origin_is_None
+time: 2011-04-21 13:24:36.879148Z
+time: 2011-04-21 13:24:36.879192Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_default_support_is_None
+time: 2011-04-21 13:24:36.879241Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_default_support_is_None
+time: 2011-04-21 13:24:36.879280Z
+time: 2011-04-21 13:24:36.879325Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_from_config
+time: 2011-04-21 13:24:36.879373Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_from_config
+time: 2011-04-21 13:24:36.879412Z
+time: 2011-04-21 13:24:36.879456Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_maintainer
+time: 2011-04-21 13:24:36.885904Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_maintainer
+time: 2011-04-21 13:24:36.885945Z
+time: 2011-04-21 13:24:36.885988Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_name
+time: 2011-04-21 13:24:36.886034Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_name
+time: 2011-04-21 13:24:36.886071Z
+time: 2011-04-21 13:24:36.886113Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_origin
+time: 2011-04-21 13:24:36.886158Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_origin
+time: 2011-04-21 13:24:36.886195Z
+time: 2011-04-21 13:24:36.886257Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_str
+time: 2011-04-21 13:24:36.886316Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_str
+time: 2011-04-21 13:24:36.886355Z
+time: 2011-04-21 13:24:36.886398Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_str_with_maintainer
+time: 2011-04-21 13:24:36.886446Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_str_with_maintainer
+time: 2011-04-21 13:24:36.886485Z
+time: 2011-04-21 13:24:36.886533Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_str_with_origin
+time: 2011-04-21 13:24:36.886578Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_str_with_origin
+time: 2011-04-21 13:24:36.886615Z
+time: 2011-04-21 13:24:36.886657Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_str_with_support
+time: 2011-04-21 13:24:36.886702Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_str_with_support
+time: 2011-04-21 13:24:36.886740Z
+time: 2011-04-21 13:24:36.886781Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_support
+time: 2011-04-21 13:24:36.886826Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_support
+time: 2011-04-21 13:24:36.886862Z
+time: 2011-04-21 13:24:38.360298Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_version
+time: 2011-04-21 13:24:38.360386Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_version
+time: 2011-04-21 13:24:38.360432Z
+time: 2011-04-21 13:24:38.360480Z
+test: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_version_with_whitespace
+time: 2011-04-21 13:24:38.360529Z
+successful: linaro_image_tools.hwpack.tests.test_hardwarepack.MetadataTests.test_version_with_whitespace
+time: 2011-04-21 13:24:38.360569Z
+time: 2011-04-21 13:24:38.360614Z
+test: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_cleanup_before_prepare
+time: 2011-04-21 13:24:38.360663Z
+successful: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_cleanup_before_prepare
+time: 2011-04-21 13:24:38.360731Z
+time: 2011-04-21 13:24:38.360777Z
+test: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_cleanup_ignores_missing_tempdir
+time: 2011-04-21 13:24:38.360827Z
+successful: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_cleanup_ignores_missing_tempdir
+time: 2011-04-21 13:24:38.360866Z
+time: 2011-04-21 13:24:38.360911Z
+test: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_cleanup_removes_tempdir
+time: 2011-04-21 13:24:38.360960Z
+successful: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_cleanup_removes_tempdir
+time: 2011-04-21 13:24:38.361000Z
+time: 2011-04-21 13:24:38.361045Z
+test: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_context_manager
+time: 2011-04-21 13:24:38.361109Z
+successful: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_context_manager
+time: 2011-04-21 13:24:38.361149Z
+time: 2011-04-21 13:24:38.361195Z
+test: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_creates_etc_apt_sources_list_file
+time: 2011-04-21 13:24:38.361265Z
+successful: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_creates_etc_apt_sources_list_file
+time: 2011-04-21 13:24:38.361310Z
+time: 2011-04-21 13:24:38.361355Z
+test: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_creates_tempdir
+time: 2011-04-21 13:24:38.361404Z
+successful: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_creates_tempdir
+time: 2011-04-21 13:24:38.361443Z
+time: 2011-04-21 13:24:38.361488Z
+test: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_creates_var_cache_apt_archives_partial_dir
+time: 2011-04-21 13:24:38.361538Z
+successful: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_creates_var_cache_apt_archives_partial_dir
+time: 2011-04-21 13:24:38.361578Z
+time: 2011-04-21 13:24:38.361623Z
+test: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_creates_var_lib_apt_lists_partial_dir
+time: 2011-04-21 13:24:38.361673Z
+successful: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_creates_var_lib_apt_lists_partial_dir
+time: 2011-04-21 13:24:38.361712Z
+time: 2011-04-21 13:24:38.361757Z
+test: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_creates_var_lib_dpkg_status_file
+time: 2011-04-21 13:24:38.361806Z
+successful: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_creates_var_lib_dpkg_status_file
+time: 2011-04-21 13:24:38.361846Z
+time: 2011-04-21 13:24:38.361891Z
+test: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_with_arch_creates_etc_apt_apt_conf
+time: 2011-04-21 13:24:38.361940Z
+successful: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_with_arch_creates_etc_apt_apt_conf
+time: 2011-04-21 13:24:38.361979Z
+time: 2011-04-21 13:24:38.362024Z
+test: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_with_prefer_label_creates_etc_apt_preferences
+time: 2011-04-21 13:24:38.362074Z
+successful: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_prepare_with_prefer_label_creates_etc_apt_preferences
+time: 2011-04-21 13:24:38.362114Z
+time: 2011-04-21 13:24:38.362158Z
+test: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_set_installed_packages
+time: 2011-04-21 13:24:38.362206Z
+successful: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_set_installed_packages
+time: 2011-04-21 13:24:38.362246Z
+time: 2011-04-21 13:24:38.362328Z
+test: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_set_installed_packages_empty_list
+time: 2011-04-21 13:24:38.362378Z
+successful: linaro_image_tools.hwpack.tests.test_packages.AptCacheTests.test_set_installed_packages_empty_list
+time: 2011-04-21 13:24:38.362418Z
+time: 2011-04-21 13:24:38.362463Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_attributes
+time: 2011-04-21 13:24:38.362511Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_attributes
+time: 2011-04-21 13:24:38.362550Z
+time: 2011-04-21 13:24:38.362595Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal
+time: 2011-04-21 13:24:38.362643Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal
+time: 2011-04-21 13:24:38.362682Z
+time: 2011-04-21 13:24:38.362726Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_different_contents
+time: 2011-04-21 13:24:38.362775Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_different_contents
+time: 2011-04-21 13:24:38.362814Z
+time: 2011-04-21 13:24:38.362858Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_one_with_contents_one_not
+time: 2011-04-21 13:24:38.362907Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_one_with_contents_one_not
+time: 2011-04-21 13:24:38.362947Z
+time: 2011-04-21 13:24:38.362991Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_packages_hash_the_same
+time: 2011-04-21 13:24:40.441242Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_packages_hash_the_same
+time: 2011-04-21 13:24:40.441421Z
+time: 2011-04-21 13:24:40.441579Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_breaks
+time: 2011-04-21 13:24:40.441733Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_breaks
+time: 2011-04-21 13:24:40.441854Z
+time: 2011-04-21 13:24:40.441989Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_conflicts
+time: 2011-04-21 13:24:40.442097Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_conflicts
+time: 2011-04-21 13:24:40.442137Z
+time: 2011-04-21 13:24:40.442181Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_depends
+time: 2011-04-21 13:24:40.442230Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_depends
+time: 2011-04-21 13:24:40.442270Z
+time: 2011-04-21 13:24:40.442314Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_pre_depends
+time: 2011-04-21 13:24:40.442362Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_pre_depends
+time: 2011-04-21 13:24:40.442401Z
+time: 2011-04-21 13:24:40.442446Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_provides
+time: 2011-04-21 13:24:40.442494Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_provides
+time: 2011-04-21 13:24:40.442534Z
+time: 2011-04-21 13:24:40.442580Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_recommends
+time: 2011-04-21 13:24:40.442629Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_recommends
+time: 2011-04-21 13:24:40.442669Z
+time: 2011-04-21 13:24:40.442714Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_replaces
+time: 2011-04-21 13:24:40.442763Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_equal_same_replaces
+time: 2011-04-21 13:24:40.442802Z
+time: 2011-04-21 13:24:40.442846Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt
+time: 2011-04-21 13:24:40.442895Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt
+time: 2011-04-21 13:24:40.442935Z
+time: 2011-04-21 13:24:40.442980Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_breaks
+time: 2011-04-21 13:24:40.443029Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_breaks
+time: 2011-04-21 13:24:40.443068Z
+time: 2011-04-21 13:24:40.443113Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_conflicts
+time: 2011-04-21 13:24:40.443162Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_conflicts
+time: 2011-04-21 13:24:40.443202Z
+time: 2011-04-21 13:24:40.443248Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_depends
+time: 2011-04-21 13:24:40.443296Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_depends
+time: 2011-04-21 13:24:40.443336Z
+time: 2011-04-21 13:24:40.443380Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_pre_depends
+time: 2011-04-21 13:24:40.443429Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_pre_depends
+time: 2011-04-21 13:24:40.443467Z
+time: 2011-04-21 13:24:40.443512Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_provides
+time: 2011-04-21 13:24:40.443561Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_provides
+time: 2011-04-21 13:24:40.443629Z
+time: 2011-04-21 13:24:40.443675Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_recommends
+time: 2011-04-21 13:24:40.443723Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_recommends
+time: 2011-04-21 13:24:40.443763Z
+time: 2011-04-21 13:24:40.443807Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_replaces
+time: 2011-04-21 13:24:40.443855Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_with_replaces
+time: 2011-04-21 13:24:40.443895Z
+time: 2011-04-21 13:24:40.443939Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_without_content
+time: 2011-04-21 13:24:40.443988Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_apt_without_content
+time: 2011-04-21 13:24:40.444027Z
+time: 2011-04-21 13:24:40.444072Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb
+time: 2011-04-21 13:24:40.444120Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb
+time: 2011-04-21 13:24:40.444159Z
+time: 2011-04-21 13:24:40.444204Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb_with_breaks
+time: 2011-04-21 13:24:40.444252Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb_with_breaks
+time: 2011-04-21 13:24:40.444291Z
+time: 2011-04-21 13:24:40.444335Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb_with_conflicts
+time: 2011-04-21 13:24:40.444384Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb_with_conflicts
+time: 2011-04-21 13:24:40.444423Z
+time: 2011-04-21 13:24:40.444467Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb_with_depends
+time: 2011-04-21 13:24:40.606050Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb_with_depends
+time: 2011-04-21 13:24:40.606128Z
+time: 2011-04-21 13:24:40.606184Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb_with_pre_depends
+time: 2011-04-21 13:24:40.606236Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb_with_pre_depends
+time: 2011-04-21 13:24:40.606276Z
+time: 2011-04-21 13:24:40.606321Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb_with_recommends
+time: 2011-04-21 13:24:40.606370Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb_with_recommends
+time: 2011-04-21 13:24:40.606410Z
+time: 2011-04-21 13:24:40.606454Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb_with_replaces
+time: 2011-04-21 13:24:40.606502Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_from_deb_with_replaces
+time: 2011-04-21 13:24:40.606542Z
+time: 2011-04-21 13:24:40.606586Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_architecture
+time: 2011-04-21 13:24:40.606635Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_architecture
+time: 2011-04-21 13:24:40.606676Z
+time: 2011-04-21 13:24:40.606720Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_breaks
+time: 2011-04-21 13:24:40.606769Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_breaks
+time: 2011-04-21 13:24:40.606808Z
+time: 2011-04-21 13:24:40.606853Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_breaks_one_None
+time: 2011-04-21 13:24:40.606902Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_breaks_one_None
+time: 2011-04-21 13:24:40.606974Z
+time: 2011-04-21 13:24:40.607021Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_conflicts
+time: 2011-04-21 13:24:40.607069Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_conflicts
+time: 2011-04-21 13:24:40.607109Z
+time: 2011-04-21 13:24:40.607154Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_conflicts_one_None
+time: 2011-04-21 13:24:40.607203Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_conflicts_one_None
+time: 2011-04-21 13:24:40.607243Z
+time: 2011-04-21 13:24:40.607287Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_depends
+time: 2011-04-21 13:24:40.607336Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_depends
+time: 2011-04-21 13:24:40.607375Z
+time: 2011-04-21 13:24:40.607420Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_depends_one_None
+time: 2011-04-21 13:24:40.607468Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_depends_one_None
+time: 2011-04-21 13:24:40.607508Z
+time: 2011-04-21 13:24:40.607553Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_filename
+time: 2011-04-21 13:24:40.607601Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_filename
+time: 2011-04-21 13:24:40.607640Z
+time: 2011-04-21 13:24:40.607684Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_md5
+time: 2011-04-21 13:24:40.607733Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_md5
+time: 2011-04-21 13:24:40.607772Z
+time: 2011-04-21 13:24:40.607816Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_name
+time: 2011-04-21 13:24:40.607864Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_name
+time: 2011-04-21 13:24:40.607903Z
+time: 2011-04-21 13:24:40.607947Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_pre_depends
+time: 2011-04-21 13:24:40.607996Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_pre_depends
+time: 2011-04-21 13:24:40.608035Z
+time: 2011-04-21 13:24:40.608079Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_pre_depends_one_None
+time: 2011-04-21 13:24:40.608128Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_pre_depends_one_None
+time: 2011-04-21 13:24:40.608168Z
+time: 2011-04-21 13:24:40.608212Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_provides
+time: 2011-04-21 13:24:40.608261Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_provides
+time: 2011-04-21 13:24:40.608300Z
+time: 2011-04-21 13:24:40.608345Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_provides_one_None
+time: 2011-04-21 13:24:40.608394Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_provides_one_None
+time: 2011-04-21 13:24:40.608434Z
+time: 2011-04-21 13:24:40.608478Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_recommends
+time: 2011-04-21 13:24:40.608527Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_recommends
+time: 2011-04-21 13:24:40.608567Z
+time: 2011-04-21 13:24:41.438891Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_recommends_one_None
+time: 2011-04-21 13:24:41.439010Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_recommends_one_None
+time: 2011-04-21 13:24:41.439059Z
+time: 2011-04-21 13:24:41.439108Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_replaces
+time: 2011-04-21 13:24:41.439157Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_replaces
+time: 2011-04-21 13:24:41.439197Z
+time: 2011-04-21 13:24:41.439242Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_replaces_one_None
+time: 2011-04-21 13:24:41.439292Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_replaces_one_None
+time: 2011-04-21 13:24:41.439333Z
+time: 2011-04-21 13:24:41.439378Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_size
+time: 2011-04-21 13:24:41.439427Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_size
+time: 2011-04-21 13:24:41.439467Z
+time: 2011-04-21 13:24:41.439513Z
+test: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_version
+time: 2011-04-21 13:24:41.439561Z
+successful: linaro_image_tools.hwpack.tests.test_packages.FetchedPackageTests.test_not_equal_different_version
+time: 2011-04-21 13:24:41.439601Z
+time: 2011-04-21 13:24:41.439645Z
+test: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_single_stanza
+time: 2011-04-21 13:24:41.439694Z
+successful: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_single_stanza
+time: 2011-04-21 13:24:41.439733Z
+time: 2011-04-21 13:24:41.439778Z
+test: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_two_stanzas
+time: 2011-04-21 13:24:41.439825Z
+successful: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_two_stanzas
+time: 2011-04-21 13:24:41.439864Z
+time: 2011-04-21 13:24:41.439908Z
+test: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_breaks
+time: 2011-04-21 13:24:41.439956Z
+successful: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_breaks
+time: 2011-04-21 13:24:41.439995Z
+time: 2011-04-21 13:24:41.440040Z
+test: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_conflicts
+time: 2011-04-21 13:24:41.440087Z
+successful: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_conflicts
+time: 2011-04-21 13:24:41.440127Z
+time: 2011-04-21 13:24:41.440171Z
+test: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_depends
+time: 2011-04-21 13:24:41.440219Z
+successful: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_depends
+time: 2011-04-21 13:24:41.440257Z
+time: 2011-04-21 13:24:41.440301Z
+test: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_extra_text
+time: 2011-04-21 13:24:41.440350Z
+successful: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_extra_text
+time: 2011-04-21 13:24:41.440389Z
+time: 2011-04-21 13:24:41.440434Z
+test: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_pre_depends
+time: 2011-04-21 13:24:41.440481Z
+successful: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_pre_depends
+time: 2011-04-21 13:24:41.440521Z
+time: 2011-04-21 13:24:41.440565Z
+test: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_provides
+time: 2011-04-21 13:24:41.440613Z
+successful: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_provides
+time: 2011-04-21 13:24:41.440652Z
+time: 2011-04-21 13:24:41.440733Z
+test: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_recommends
+time: 2011-04-21 13:24:41.440783Z
+successful: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_recommends
+time: 2011-04-21 13:24:41.440822Z
+time: 2011-04-21 13:24:41.440913Z
+test: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_replaces
+time: 2011-04-21 13:24:41.440963Z
+successful: linaro_image_tools.hwpack.tests.test_packages.GetPackagesFileTests.test_with_replaces
+time: 2011-04-21 13:24:41.441003Z
+time: 2011-04-21 13:24:41.441049Z
+test: linaro_image_tools.hwpack.tests.test_packages.LocalArchiveMakerTests.test_packages_from_sources_entry_for_debs_are_fetchable
+time: 2011-04-21 13:24:41.441099Z
+successful: linaro_image_tools.hwpack.tests.test_packages.LocalArchiveMakerTests.test_packages_from_sources_entry_for_debs_are_fetchable
+time: 2011-04-21 13:24:41.441148Z
+time: 2011-04-21 13:24:41.441194Z
+test: linaro_image_tools.hwpack.tests.test_packages.LocalArchiveMakerTests.test_sources_entry_for_debs
+time: 2011-04-21 13:24:41.441243Z
+successful: linaro_image_tools.hwpack.tests.test_packages.LocalArchiveMakerTests.test_sources_entry_for_debs
+time: 2011-04-21 13:24:41.441282Z
+time: 2011-04-21 13:24:41.441327Z
+test: linaro_image_tools.hwpack.tests.test_packages.LocalArchiveMakerTests.test_sources_entry_for_debs_creates_release_with_label
+time: 2011-04-21 13:24:41.441377Z
+successful: linaro_image_tools.hwpack.tests.test_packages.LocalArchiveMakerTests.test_sources_entry_for_debs_creates_release_with_label
+time: 2011-04-21 13:24:41.441418Z
+time: 2011-04-21 13:24:41.441470Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_broken_dependencies
+time: 2011-04-21 13:24:41.441520Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_broken_dependencies
+time: 2011-04-21 13:24:41.441560Z
+time: 2011-04-21 13:24:41.441604Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_context_manager
+time: 2011-04-21 13:24:41.441653Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_context_manager
+time: 2011-04-21 13:24:41.441692Z
+time: 2011-04-21 13:24:45.003392Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_download_content_False_fetches_no_dependencies
+time: 2011-04-21 13:24:45.003484Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_download_content_False_fetches_no_dependencies
+time: 2011-04-21 13:24:45.003531Z
+time: 2011-04-21 13:24:45.003580Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_download_content_False_doesnt_set_content
+time: 2011-04-21 13:24:45.003633Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_download_content_False_doesnt_set_content
+time: 2011-04-21 13:24:45.003674Z
+time: 2011-04-21 13:24:45.003720Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_correct_package
+time: 2011-04-21 13:24:45.003769Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_correct_package
+time: 2011-04-21 13:24:45.003810Z
+time: 2011-04-21 13:24:45.003856Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_from_correct_architecture
+time: 2011-04-21 13:24:45.003905Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_from_correct_architecture
+time: 2011-04-21 13:24:45.003945Z
+time: 2011-04-21 13:24:45.003990Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_multiple_packages
+time: 2011-04-21 13:24:45.004040Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_multiple_packages
+time: 2011-04-21 13:24:45.004080Z
+time: 2011-04-21 13:24:45.004125Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_multiple_packages_correctly
+time: 2011-04-21 13:24:45.004175Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_multiple_packages_correctly
+time: 2011-04-21 13:24:45.004216Z
+time: 2011-04-21 13:24:45.004279Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_newest
+time: 2011-04-21 13:24:45.004329Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_newest
+time: 2011-04-21 13:24:45.004369Z
+time: 2011-04-21 13:24:45.004414Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_newest_from_multiple_sources
+time: 2011-04-21 13:24:45.004463Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_newest_from_multiple_sources
+time: 2011-04-21 13:24:45.004503Z
+time: 2011-04-21 13:24:45.004548Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_no_packages
+time: 2011-04-21 13:24:45.004597Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_no_packages
+time: 2011-04-21 13:24:45.004637Z
+time: 2011-04-21 13:24:45.004693Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_preferred_label
+time: 2011-04-21 13:24:45.004743Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_preferred_label
+time: 2011-04-21 13:24:45.004783Z
+time: 2011-04-21 13:24:45.004828Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_single_package
+time: 2011-04-21 13:24:45.004877Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_single_package
+time: 2011-04-21 13:24:45.004917Z
+time: 2011-04-21 13:24:45.004962Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_with_relationships
+time: 2011-04-21 13:24:45.005035Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_fetches_with_relationships
+time: 2011-04-21 13:24:45.005076Z
+time: 2011-04-21 13:24:45.005121Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_leaves_no_marked_changes
+time: 2011-04-21 13:24:45.005170Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_leaves_no_marked_changes
+time: 2011-04-21 13:24:45.005210Z
+time: 2011-04-21 13:24:45.005254Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_not_found_because_no_sources
+time: 2011-04-21 13:24:45.005303Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_not_found_because_no_sources
+time: 2011-04-21 13:24:45.005346Z
+time: 2011-04-21 13:24:45.005388Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_not_found_because_not_in_sources
+time: 2011-04-21 13:24:45.005434Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_not_found_because_not_in_sources
+time: 2011-04-21 13:24:45.005472Z
+time: 2011-04-21 13:24:45.005513Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_not_found_one_of_two_missing
+time: 2011-04-21 13:24:45.005560Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_not_found_one_of_two_missing
+time: 2011-04-21 13:24:45.005597Z
+time: 2011-04-21 13:24:45.005643Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_records_correct_architecture
+time: 2011-04-21 13:24:47.826178Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetch_packages_records_correct_architecture
+time: 2011-04-21 13:24:47.826252Z
+time: 2011-04-21 13:24:47.826308Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetches_dependencies
+time: 2011-04-21 13:24:47.826360Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetches_dependencies
+time: 2011-04-21 13:24:47.826400Z
+time: 2011-04-21 13:24:47.826464Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetches_recommends
+time: 2011-04-21 13:24:47.826514Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_fetches_recommends
+time: 2011-04-21 13:24:47.826553Z
+time: 2011-04-21 13:24:47.826599Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_cant_satisfy_depenencies
+time: 2011-04-21 13:24:47.826648Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_cant_satisfy_depenencies
+time: 2011-04-21 13:24:47.826687Z
+time: 2011-04-21 13:24:47.826732Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_dependency_of_ignored
+time: 2011-04-21 13:24:47.826781Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_dependency_of_ignored
+time: 2011-04-21 13:24:47.826820Z
+time: 2011-04-21 13:24:47.826865Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_is_cumulative
+time: 2011-04-21 13:24:47.826914Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_is_cumulative
+time: 2011-04-21 13:24:47.826954Z
+time: 2011-04-21 13:24:47.826999Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_leaves_no_marked_changes
+time: 2011-04-21 13:24:47.827048Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_leaves_no_marked_changes
+time: 2011-04-21 13:24:47.827087Z
+time: 2011-04-21 13:24:47.827132Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_packages
+time: 2011-04-21 13:24:47.827180Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_packages
+time: 2011-04-21 13:24:47.827220Z
+time: 2011-04-21 13:24:47.827265Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_unknown_package
+time: 2011-04-21 13:24:47.827313Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_unknown_package
+time: 2011-04-21 13:24:47.827353Z
+time: 2011-04-21 13:24:47.827397Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_with_provides
+time: 2011-04-21 13:24:47.827447Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignore_with_provides
+time: 2011-04-21 13:24:47.827486Z
+time: 2011-04-21 13:24:47.827532Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignored_arent_fetched_even_if_explicitly_requested
+time: 2011-04-21 13:24:47.827582Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_ignored_arent_fetched_even_if_explicitly_requested
+time: 2011-04-21 13:24:47.827624Z
+time: 2011-04-21 13:24:47.827668Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_no_metadata_for_ignored_even_if_explicitly_requested
+time: 2011-04-21 13:24:47.827719Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageFetcherTests.test_no_metadata_for_ignored_even_if_explicitly_requested
+time: 2011-04-21 13:24:47.827759Z
+time: 2011-04-21 13:24:47.827804Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_arch_all_by_default
+time: 2011-04-21 13:24:47.827852Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_arch_all_by_default
+time: 2011-04-21 13:24:47.827892Z
+time: 2011-04-21 13:24:47.827937Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_custom_architecture
+time: 2011-04-21 13:24:47.827985Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_custom_architecture
+time: 2011-04-21 13:24:47.828024Z
+time: 2011-04-21 13:24:47.828068Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_all_given_fields
+time: 2011-04-21 13:24:47.828123Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_all_given_fields
+time: 2011-04-21 13:24:47.828183Z
+time: 2011-04-21 13:24:47.828229Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_correct_file_name
+time: 2011-04-21 13:24:47.828279Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_correct_file_name
+time: 2011-04-21 13:24:47.828319Z
+time: 2011-04-21 13:24:47.828364Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_correct_file_name_arch
+time: 2011-04-21 13:24:47.828414Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_correct_file_name_arch
+time: 2011-04-21 13:24:47.828454Z
+time: 2011-04-21 13:24:47.828499Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_breaks
+time: 2011-04-21 13:24:47.828547Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_breaks
+time: 2011-04-21 13:24:47.828587Z
+time: 2011-04-21 13:24:47.828633Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_conflicts
+time: 2011-04-21 13:24:50.118443Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_conflicts
+time: 2011-04-21 13:24:50.118624Z
+time: 2011-04-21 13:24:50.118782Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_depends
+time: 2011-04-21 13:24:50.118938Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_depends
+time: 2011-04-21 13:24:50.119059Z
+time: 2011-04-21 13:24:50.119193Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_package_name
+time: 2011-04-21 13:24:50.119342Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_package_name
+time: 2011-04-21 13:24:50.119463Z
+time: 2011-04-21 13:24:50.119600Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_predepends
+time: 2011-04-21 13:24:50.119748Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_predepends
+time: 2011-04-21 13:24:50.119866Z
+time: 2011-04-21 13:24:50.119999Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_provides
+time: 2011-04-21 13:24:50.120147Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_provides
+time: 2011-04-21 13:24:50.120265Z
+time: 2011-04-21 13:24:50.120398Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_recommends
+time: 2011-04-21 13:24:50.120546Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_recommends
+time: 2011-04-21 13:24:50.120666Z
+time: 2011-04-21 13:24:50.120824Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_replaces
+time: 2011-04-21 13:24:50.120974Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_replaces
+time: 2011-04-21 13:24:50.121093Z
+time: 2011-04-21 13:24:50.121227Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_version
+time: 2011-04-21 13:24:50.121374Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_deb_with_given_version
+time: 2011-04-21 13:24:50.121425Z
+time: 2011-04-21 13:24:50.121470Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_file
+time: 2011-04-21 13:24:50.121519Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_make_package_creates_file
+time: 2011-04-21 13:24:50.121578Z
+time: 2011-04-21 13:24:50.121624Z
+test: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_unknown_field_name_fails
+time: 2011-04-21 13:24:50.121673Z
+successful: linaro_image_tools.hwpack.tests.test_packages.PackageMakerTests.test_unknown_field_name_fails
+time: 2011-04-21 13:24:50.121712Z
+time: 2011-04-21 13:24:50.121757Z
+test: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_alternative_packages
+time: 2011-04-21 13:24:50.121806Z
+successful: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_alternative_packages
+time: 2011-04-21 13:24:50.121846Z
+time: 2011-04-21 13:24:50.121892Z
+test: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_multiple_package
+time: 2011-04-21 13:24:50.121941Z
+successful: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_multiple_package
+time: 2011-04-21 13:24:50.121981Z
+time: 2011-04-21 13:24:50.122025Z
+test: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_no_relationship
+time: 2011-04-21 13:24:50.122073Z
+successful: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_no_relationship
+time: 2011-04-21 13:24:50.122113Z
+time: 2011-04-21 13:24:50.122158Z
+test: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_package_with_eq
+time: 2011-04-21 13:24:50.122206Z
+successful: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_package_with_eq
+time: 2011-04-21 13:24:50.122247Z
+time: 2011-04-21 13:24:50.122291Z
+test: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_package_with_ge
+time: 2011-04-21 13:24:50.122340Z
+successful: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_package_with_ge
+time: 2011-04-21 13:24:50.122380Z
+time: 2011-04-21 13:24:50.122424Z
+test: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_package_with_gt
+time: 2011-04-21 13:24:50.122471Z
+successful: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_package_with_gt
+time: 2011-04-21 13:24:50.122510Z
+time: 2011-04-21 13:24:50.122555Z
+test: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_package_with_le
+time: 2011-04-21 13:24:50.122603Z
+successful: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_package_with_le
+time: 2011-04-21 13:24:50.122643Z
+time: 2011-04-21 13:24:50.122687Z
+test: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_package_with_lt
+time: 2011-04-21 13:24:50.122736Z
+successful: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_package_with_lt
+time: 2011-04-21 13:24:50.122775Z
+time: 2011-04-21 13:24:50.122819Z
+test: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_single_package
+time: 2011-04-21 13:24:50.122867Z
+successful: linaro_image_tools.hwpack.tests.test_packages.StringifyRelationshipTests.test_single_package
+time: 2011-04-21 13:24:50.122907Z
+time: 2011-04-21 13:24:50.701445Z
+test: linaro_image_tools.hwpack.tests.test_packages.TemporaryDirectoryManagerTests.test_enter_twice_fails
+time: 2011-04-21 13:24:50.701532Z
+successful: linaro_image_tools.hwpack.tests.test_packages.TemporaryDirectoryManagerTests.test_enter_twice_fails
+time: 2011-04-21 13:24:50.701579Z
+time: 2011-04-21 13:24:50.701627Z
+test: linaro_image_tools.hwpack.tests.test_packages.TemporaryDirectoryManagerTests.test_exit_removes_temporary_directory
+time: 2011-04-21 13:24:50.701678Z
+successful: linaro_image_tools.hwpack.tests.test_packages.TemporaryDirectoryManagerTests.test_exit_removes_temporary_directory
+time: 2011-04-21 13:24:50.701719Z
+time: 2011-04-21 13:24:50.701764Z
+test: linaro_image_tools.hwpack.tests.test_packages.TemporaryDirectoryManagerTests.test_exit_without_enter_silent
+time: 2011-04-21 13:24:50.701814Z
+successful: linaro_image_tools.hwpack.tests.test_packages.TemporaryDirectoryManagerTests.test_exit_without_enter_silent
+time: 2011-04-21 13:24:50.701887Z
+time: 2011-04-21 13:24:50.701934Z
+test: linaro_image_tools.hwpack.tests.test_packages.TemporaryDirectoryManagerTests.test_make_temporary_directory_makes_directory
+time: 2011-04-21 13:24:50.701983Z
+successful: linaro_image_tools.hwpack.tests.test_packages.TemporaryDirectoryManagerTests.test_make_temporary_directory_makes_directory
+time: 2011-04-21 13:24:50.702025Z
+time: 2011-04-21 13:24:50.702070Z
+test: linaro_image_tools.hwpack.tests.test_packages.TemporaryDirectoryManagerTests.test_make_temporary_directory_without_enter_fails
+time: 2011-04-21 13:24:50.702120Z
+successful: linaro_image_tools.hwpack.tests.test_packages.TemporaryDirectoryManagerTests.test_make_temporary_directory_without_enter_fails
+time: 2011-04-21 13:24:50.702161Z
+time: 2011-04-21 13:24:50.702206Z
+test: linaro_image_tools.hwpack.tests.test_script.ScriptTests.test_builds_a_hwpack
+time: 2011-04-21 13:24:50.702254Z
+successful: linaro_image_tools.hwpack.tests.test_script.ScriptTests.test_builds_a_hwpack
+time: 2011-04-21 13:24:50.702294Z
+time: 2011-04-21 13:24:50.702339Z
+test: linaro_image_tools.hwpack.tests.test_script.ScriptTests.test_errors_on_missing_configfile
+time: 2011-04-21 13:24:50.702388Z
+successful: linaro_image_tools.hwpack.tests.test_script.ScriptTests.test_errors_on_missing_configfile
+time: 2011-04-21 13:24:50.702428Z
+time: 2011-04-21 13:24:50.702473Z
+test: linaro_image_tools.hwpack.tests.test_script.ScriptTests.test_errors_on_missing_configfile_argument
+time: 2011-04-21 13:24:50.702522Z
+successful: linaro_image_tools.hwpack.tests.test_script.ScriptTests.test_errors_on_missing_configfile_argument
+time: 2011-04-21 13:24:50.702562Z
+time: 2011-04-21 13:24:50.702607Z
+test: linaro_image_tools.hwpack.tests.test_script.ScriptTests.test_errors_on_missing_version_argument
+time: 2011-04-21 13:24:50.702655Z
+successful: linaro_image_tools.hwpack.tests.test_script.ScriptTests.test_errors_on_missing_version_argument
+time: 2011-04-21 13:24:50.702694Z
+time: 2011-04-21 13:24:50.702739Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_matches
+time: 2011-04-21 13:24:50.702787Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_matches
+time: 2011-04-21 13:24:50.702827Z
+time: 2011-04-21 13:24:50.702871Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_matches_directory
+time: 2011-04-21 13:24:50.702919Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_matches_directory
+time: 2011-04-21 13:24:50.702958Z
+time: 2011-04-21 13:24:50.703003Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_matches_directory_content
+time: 2011-04-21 13:24:50.703052Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_matches_directory_content
+time: 2011-04-21 13:24:50.703091Z
+time: 2011-04-21 13:24:50.703136Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_matches_mtime_with_skew
+time: 2011-04-21 13:24:50.703185Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_matches_mtime_with_skew
+time: 2011-04-21 13:24:50.703225Z
+time: 2011-04-21 13:24:50.703269Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_matches_mtime_without_skew
+time: 2011-04-21 13:24:50.703318Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_matches_mtime_without_skew
+time: 2011-04-21 13:24:50.703363Z
+time: 2011-04-21 13:24:50.703408Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_missing_path
+time: 2011-04-21 13:24:50.703456Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_missing_path
+time: 2011-04-21 13:24:50.703495Z
+time: 2011-04-21 13:24:50.703539Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_content
+time: 2011-04-21 13:24:50.703602Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_content
+time: 2011-04-21 13:24:50.703643Z
+time: 2011-04-21 13:24:50.703688Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_directory_content
+time: 2011-04-21 13:24:50.703738Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_directory_content
+time: 2011-04-21 13:24:50.703777Z
+time: 2011-04-21 13:24:50.703822Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_gid
+time: 2011-04-21 13:24:50.703871Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_gid
+time: 2011-04-21 13:24:50.703910Z
+time: 2011-04-21 13:24:50.703955Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_gname
+time: 2011-04-21 13:24:50.705218Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_gname
+time: 2011-04-21 13:24:50.705259Z
+time: 2011-04-21 13:24:50.705304Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_linkname
+time: 2011-04-21 13:24:50.705353Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_linkname
+time: 2011-04-21 13:24:50.705393Z
+time: 2011-04-21 13:24:50.705437Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_mode
+time: 2011-04-21 13:24:50.705486Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_mode
+time: 2011-04-21 13:24:50.705525Z
+time: 2011-04-21 13:24:50.705569Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_mtime
+time: 2011-04-21 13:24:50.705618Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_mtime
+time: 2011-04-21 13:24:50.705657Z
+time: 2011-04-21 13:24:50.705701Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_size
+time: 2011-04-21 13:24:50.705750Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_size
+time: 2011-04-21 13:24:50.705789Z
+time: 2011-04-21 13:24:50.705834Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_type
+time: 2011-04-21 13:24:50.705882Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_type
+time: 2011-04-21 13:24:50.705922Z
+time: 2011-04-21 13:24:50.705967Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_uid
+time: 2011-04-21 13:24:50.706015Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_uid
+time: 2011-04-21 13:24:50.706055Z
+time: 2011-04-21 13:24:50.706099Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_uname
+time: 2011-04-21 13:24:50.706147Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_mismatches_wrong_uname
+time: 2011-04-21 13:24:50.706186Z
+time: 2011-04-21 13:24:50.706230Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_str
+time: 2011-04-21 13:24:50.706278Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileHasFileTests.test_str
+time: 2011-04-21 13:24:50.706317Z
+time: 2011-04-21 13:24:50.706362Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileMissingPathMismatchTests.test_describe
+time: 2011-04-21 13:24:50.706411Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileMissingPathMismatchTests.test_describe
+time: 2011-04-21 13:24:50.706450Z
+time: 2011-04-21 13:24:50.706517Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileMissingPathMismatchTests.test_eq
+time: 2011-04-21 13:24:50.706567Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileMissingPathMismatchTests.test_eq
+time: 2011-04-21 13:24:50.706606Z
+time: 2011-04-21 13:24:50.706651Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileMissingPathMismatchTests.test_no_eq_different_path
+time: 2011-04-21 13:24:50.706701Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileMissingPathMismatchTests.test_no_eq_different_path
+time: 2011-04-21 13:24:50.706740Z
+time: 2011-04-21 13:24:50.706785Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileMissingPathMismatchTests.test_no_eq_different_tarball
+time: 2011-04-21 13:24:50.706835Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileMissingPathMismatchTests.test_no_eq_different_tarball
+time: 2011-04-21 13:24:50.706874Z
+time: 2011-04-21 13:24:50.706919Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_describe
+time: 2011-04-21 13:24:50.706967Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_describe
+time: 2011-04-21 13:24:50.707006Z
+time: 2011-04-21 13:24:50.707050Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_eq
+time: 2011-04-21 13:24:50.707099Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_eq
+time: 2011-04-21 13:24:50.707137Z
+time: 2011-04-21 13:24:50.707181Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_not_eq_different_actual
+time: 2011-04-21 13:24:50.707230Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_not_eq_different_actual
+time: 2011-04-21 13:24:50.707271Z
+time: 2011-04-21 13:24:50.707315Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_not_eq_different_attribute
+time: 2011-04-21 13:24:50.707365Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_not_eq_different_attribute
+time: 2011-04-21 13:24:50.707405Z
+time: 2011-04-21 13:24:50.707449Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_not_eq_different_expected
+time: 2011-04-21 13:24:50.707499Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_not_eq_different_expected
+time: 2011-04-21 13:24:50.707539Z
+time: 2011-04-21 13:24:50.707583Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_not_eq_different_path
+time: 2011-04-21 13:24:50.713901Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_not_eq_different_path
+time: 2011-04-21 13:24:50.713961Z
+time: 2011-04-21 13:24:50.714012Z
+test: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_not_eq_different_tarball
+time: 2011-04-21 13:24:50.714065Z
+successful: linaro_image_tools.hwpack.tests.test_tarfile_matchers.TarfileWrongTypeMismatchTests.test_not_eq_different_tarball
+time: 2011-04-21 13:24:50.714105Z
+time: 2011-04-21 13:24:50.714151Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestEachOf.test_docstring
+time: 2011-04-21 13:24:50.714200Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestEachOf.test_docstring
+time: 2011-04-21 13:24:50.714239Z
+time: 2011-04-21 13:24:50.714284Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesAsPackagesFile.test_ignore_one_md5
+time: 2011-04-21 13:24:50.714333Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesAsPackagesFile.test_ignore_one_md5
+time: 2011-04-21 13:24:50.714372Z
+time: 2011-04-21 13:24:50.714417Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesAsPackagesFile.test_one
+time: 2011-04-21 13:24:50.714465Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesAsPackagesFile.test_one
+time: 2011-04-21 13:24:50.714533Z
+time: 2011-04-21 13:24:50.714579Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesPackage.test_mismatch
+time: 2011-04-21 13:24:50.714627Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesPackage.test_mismatch
+time: 2011-04-21 13:24:50.714666Z
+time: 2011-04-21 13:24:50.714710Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesPackage.test_simple
+time: 2011-04-21 13:24:50.714759Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesPackage.test_simple
+time: 2011-04-21 13:24:50.714798Z
+time: 2011-04-21 13:24:50.714842Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesPackage.test_skip_one_attribute
+time: 2011-04-21 13:24:50.714891Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesPackage.test_skip_one_attribute
+time: 2011-04-21 13:24:50.714930Z
+time: 2011-04-21 13:24:50.714976Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesPackageRelationshipList.test_docstring
+time: 2011-04-21 13:24:50.715024Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesPackageRelationshipList.test_docstring
+time: 2011-04-21 13:24:50.715064Z
+time: 2011-04-21 13:24:50.715108Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_matches
+time: 2011-04-21 13:24:50.715155Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_matches
+time: 2011-04-21 13:24:50.715195Z
+time: 2011-04-21 13:24:50.715239Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_mismatch_and_too_many_matchers
+time: 2011-04-21 13:24:50.715288Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_mismatch_and_too_many_matchers
+time: 2011-04-21 13:24:50.715328Z
+time: 2011-04-21 13:24:50.715373Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_mismatch_and_too_many_values
+time: 2011-04-21 13:24:50.715421Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_mismatch_and_too_many_values
+time: 2011-04-21 13:24:50.715461Z
+time: 2011-04-21 13:24:50.715505Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_mismatch_and_two_too_many_matchers
+time: 2011-04-21 13:24:50.715554Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_mismatch_and_two_too_many_matchers
+time: 2011-04-21 13:24:50.715594Z
+time: 2011-04-21 13:24:50.715638Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_mismatch_and_two_too_many_values
+time: 2011-04-21 13:24:50.715687Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_mismatch_and_two_too_many_values
+time: 2011-04-21 13:24:50.715726Z
+time: 2011-04-21 13:24:50.715770Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_mismatches
+time: 2011-04-21 13:24:50.715818Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_mismatches
+time: 2011-04-21 13:24:50.715858Z
+time: 2011-04-21 13:24:50.715902Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_too_many_matchers
+time: 2011-04-21 13:24:50.715949Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_too_many_matchers
+time: 2011-04-21 13:24:50.715989Z
+time: 2011-04-21 13:24:50.716033Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_too_many_values
+time: 2011-04-21 13:24:50.716081Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_too_many_values
+time: 2011-04-21 13:24:50.716120Z
+time: 2011-04-21 13:24:50.716164Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_two_too_many_matchers
+time: 2011-04-21 13:24:50.716212Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_two_too_many_matchers
+time: 2011-04-21 13:24:50.716250Z
+time: 2011-04-21 13:24:50.716294Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_two_too_many_values
+time: 2011-04-21 13:24:50.716355Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesSetwise.test_two_too_many_values
+time: 2011-04-21 13:24:50.716396Z
+time: 2011-04-21 13:24:50.716440Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesStructure.test_fromExample
+time: 2011-04-21 13:24:50.716488Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesStructure.test_fromExample
+time: 2011-04-21 13:24:50.716528Z
+time: 2011-04-21 13:24:50.716572Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesStructure.test_matches
+time: 2011-04-21 13:24:50.716619Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesStructure.test_matches
+time: 2011-04-21 13:24:50.716659Z
+time: 2011-04-21 13:24:50.716703Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesStructure.test_mismatch
+time: 2011-04-21 13:24:50.721865Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesStructure.test_mismatch
+time: 2011-04-21 13:24:50.721917Z
+time: 2011-04-21 13:24:50.721965Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesStructure.test_update
+time: 2011-04-21 13:24:50.722014Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesStructure.test_update
+time: 2011-04-21 13:24:50.722054Z
+time: 2011-04-21 13:24:50.722098Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestMatchesStructure.test_update_none
+time: 2011-04-21 13:24:50.722147Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestMatchesStructure.test_update_none
+time: 2011-04-21 13:24:50.722186Z
+time: 2011-04-21 13:24:50.722230Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestParsePackagesFileContent.test_one
+time: 2011-04-21 13:24:50.722278Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestParsePackagesFileContent.test_one
+time: 2011-04-21 13:24:50.722318Z
+time: 2011-04-21 13:24:50.722361Z
+test: linaro_image_tools.hwpack.tests.test_testing.TestParsePackagesFileContent.test_several
+time: 2011-04-21 13:24:50.722409Z
+successful: linaro_image_tools.hwpack.tests.test_testing.TestParsePackagesFileContent.test_several
+time: 2011-04-21 13:24:50.722449Z
+time: 2011-04-21 13:24:50.722494Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestAlignPartition.test_align_partition_4_mib_4_mib
+time: 2011-04-21 13:24:50.722543Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestAlignPartition.test_align_partition_4_mib_4_mib
+time: 2011-04-21 13:24:50.722597Z
+time: 2011-04-21 13:24:50.722642Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestAlignPartition.test_align_partition_none_4_mib
+time: 2011-04-21 13:24:50.722691Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestAlignPartition.test_align_partition_none_4_mib
+time: 2011-04-21 13:24:50.722731Z
+time: 2011-04-21 13:24:50.722776Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestAlignPartition.test_align_up_no_rounding
+time: 2011-04-21 13:24:50.722824Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestAlignPartition.test_align_up_no_rounding
+time: 2011-04-21 13:24:50.722863Z
+time: 2011-04-21 13:24:50.722908Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestAlignPartition.test_align_up_none
+time: 2011-04-21 13:24:50.722956Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestAlignPartition.test_align_up_none
+time: 2011-04-21 13:24:50.722996Z
+time: 2011-04-21 13:24:50.723040Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestAlignPartition.test_align_up_rounding
+time: 2011-04-21 13:24:50.723089Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestAlignPartition.test_align_up_rounding
+time: 2011-04-21 13:24:50.723128Z
+time: 2011-04-21 13:24:50.723172Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_dt_kflavor_files_later_in_flavors
+time: 2011-04-21 13:24:50.723221Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_dt_kflavor_files_later_in_flavors
+time: 2011-04-21 13:24:50.723279Z
+time: 2011-04-21 13:24:50.723325Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_dt_kflavor_files_more_specific
+time: 2011-04-21 13:24:50.723374Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_dt_kflavor_files_more_specific
+time: 2011-04-21 13:24:50.723416Z
+time: 2011-04-21 13:24:50.723461Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_file_matching
+time: 2011-04-21 13:24:50.723509Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_file_matching
+time: 2011-04-21 13:24:50.723549Z
+time: 2011-04-21 13:24:50.723593Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_file_matching_no_files_found
+time: 2011-04-21 13:24:50.723642Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_file_matching_no_files_found
+time: 2011-04-21 13:24:50.723682Z
+time: 2011-04-21 13:24:50.723736Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_file_matching_too_many_files_found
+time: 2011-04-21 13:24:50.723786Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_file_matching_too_many_files_found
+time: 2011-04-21 13:24:50.723827Z
+time: 2011-04-21 13:24:50.723873Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_kflavor_files_later_in_flavors
+time: 2011-04-21 13:24:50.723922Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_kflavor_files_later_in_flavors
+time: 2011-04-21 13:24:50.723963Z
+time: 2011-04-21 13:24:50.724008Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_kflavor_files_more_specific
+time: 2011-04-21 13:24:50.724057Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_kflavor_files_more_specific
+time: 2011-04-21 13:24:50.724098Z
+time: 2011-04-21 13:24:50.724143Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_kflavor_files_raises_when_no_match
+time: 2011-04-21 13:24:50.724192Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_get_kflavor_files_raises_when_no_match
+time: 2011-04-21 13:24:50.724232Z
+time: 2011-04-21 13:24:50.724277Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_install_mx5_boot_loader
+time: 2011-04-21 13:24:50.724326Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_install_mx5_boot_loader
+time: 2011-04-21 13:24:50.724365Z
+time: 2011-04-21 13:24:50.724409Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_install_mx5_boot_loader_too_large
+time: 2011-04-21 13:24:50.786782Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_install_mx5_boot_loader_too_large
+time: 2011-04-21 13:24:50.786880Z
+time: 2011-04-21 13:24:50.786964Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_install_omap_boot_loader
+time: 2011-04-21 13:24:50.787042Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_install_omap_boot_loader
+time: 2011-04-21 13:24:50.787103Z
+time: 2011-04-21 13:24:50.787170Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_make_boot_script
+time: 2011-04-21 13:24:50.787244Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_make_boot_script
+time: 2011-04-21 13:24:50.787304Z
+time: 2011-04-21 13:24:50.787371Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_make_dtb
+time: 2011-04-21 13:24:50.787443Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_make_dtb
+time: 2011-04-21 13:24:50.787502Z
+time: 2011-04-21 13:24:50.787568Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_make_flashable_env
+time: 2011-04-21 13:24:50.787642Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_make_flashable_env
+time: 2011-04-21 13:24:50.787734Z
+time: 2011-04-21 13:24:50.787804Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_make_flashable_env_too_small_env
+time: 2011-04-21 13:24:50.787878Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_make_flashable_env_too_small_env
+time: 2011-04-21 13:24:50.787938Z
+time: 2011-04-21 13:24:50.788005Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_make_uImage
+time: 2011-04-21 13:24:50.788078Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_make_uImage
+time: 2011-04-21 13:24:50.788137Z
+time: 2011-04-21 13:24:50.788300Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_make_uInitrd
+time: 2011-04-21 13:24:50.788377Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_make_uInitrd
+time: 2011-04-21 13:24:50.788439Z
+time: 2011-04-21 13:24:50.788507Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_run_mkimage
+time: 2011-04-21 13:24:50.788580Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBoards.test_run_mkimage
+time: 2011-04-21 13:24:50.788639Z
+time: 2011-04-21 13:24:50.788720Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_beagle_steps
+time: 2011-04-21 13:24:50.788795Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_beagle_steps
+time: 2011-04-21 13:24:50.788854Z
+time: 2011-04-21 13:24:50.788922Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_igep_steps
+time: 2011-04-21 13:24:50.788995Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_igep_steps
+time: 2011-04-21 13:24:50.789055Z
+time: 2011-04-21 13:24:50.789122Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_mx5_steps
+time: 2011-04-21 13:24:50.789195Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_mx5_steps
+time: 2011-04-21 13:24:50.789254Z
+time: 2011-04-21 13:24:50.789322Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_overo_steps
+time: 2011-04-21 13:24:50.789395Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_overo_steps
+time: 2011-04-21 13:24:50.789453Z
+time: 2011-04-21 13:24:50.789519Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_panda_steps
+time: 2011-04-21 13:24:50.789592Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_panda_steps
+time: 2011-04-21 13:24:50.789650Z
+time: 2011-04-21 13:24:50.789717Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_smdkv310_steps
+time: 2011-04-21 13:24:50.789789Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_smdkv310_steps
+time: 2011-04-21 13:24:50.789848Z
+time: 2011-04-21 13:24:50.789914Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_ux500_steps
+time: 2011-04-21 13:24:50.789987Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_ux500_steps
+time: 2011-04-21 13:24:50.790046Z
+time: 2011-04-21 13:24:50.790112Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_vexpress_steps
+time: 2011-04-21 13:24:50.790184Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestBootSteps.test_vexpress_steps
+time: 2011-04-21 13:24:50.790243Z
+time: 2011-04-21 13:24:50.790310Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestCheckDevice.test_check_device_and_deselect
+time: 2011-04-21 13:24:50.790383Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestCheckDevice.test_check_device_and_deselect
+time: 2011-04-21 13:24:50.790442Z
+time: 2011-04-21 13:24:50.790509Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestCheckDevice.test_check_device_and_select
+time: 2011-04-21 13:24:50.790614Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestCheckDevice.test_check_device_and_select
+time: 2011-04-21 13:24:50.790674Z
+time: 2011-04-21 13:24:50.790741Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestCheckDevice.test_check_device_not_found
+time: 2011-04-21 13:24:50.790815Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestCheckDevice.test_check_device_not_found
+time: 2011-04-21 13:24:50.790874Z
+time: 2011-04-21 13:24:50.790942Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestCheckDevice.test_ensure_device_partitions_not_mounted
+time: 2011-04-21 13:24:50.791023Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestCheckDevice.test_ensure_device_partitions_not_mounted
+time: 2011-04-21 13:24:50.791084Z
+time: 2011-04-21 13:24:51.382295Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestCreatePartitions.test_create_partitions_for_beagle
+time: 2011-04-21 13:24:51.382382Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestCreatePartitions.test_create_partitions_for_beagle
+time: 2011-04-21 13:24:51.382428Z
+time: 2011-04-21 13:24:51.382476Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestCreatePartitions.test_create_partitions_for_mx5
+time: 2011-04-21 13:24:51.382527Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestCreatePartitions.test_create_partitions_for_mx5
+time: 2011-04-21 13:24:51.382567Z
+time: 2011-04-21 13:24:51.382612Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestCreatePartitions.test_create_partitions_for_smdkv310
+time: 2011-04-21 13:24:51.382662Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestCreatePartitions.test_create_partitions_for_smdkv310
+time: 2011-04-21 13:24:51.382701Z
+time: 2011-04-21 13:24:51.382746Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestCreatePartitions.test_create_partitions_with_img_file
+time: 2011-04-21 13:24:51.382795Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestCreatePartitions.test_create_partitions_with_img_file
+time: 2011-04-21 13:24:51.382835Z
+time: 2011-04-21 13:24:51.382880Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestCreatePartitions.test_run_sfdisk_commands
+time: 2011-04-21 13:24:51.382929Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestCreatePartitions.test_run_sfdisk_commands
+time: 2011-04-21 13:24:51.382968Z
+time: 2011-04-21 13:24:51.383013Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestCreatePartitions.test_run_sfdisk_commands_raises_on_non_zero_returncode
+time: 2011-04-21 13:24:51.383065Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestCreatePartitions.test_run_sfdisk_commands_raises_on_non_zero_returncode
+time: 2011-04-21 13:24:51.383105Z
+time: 2011-04-21 13:24:51.383150Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestFixForBug697824.test_omap_make_boot_files
+time: 2011-04-21 13:24:51.383199Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestFixForBug697824.test_omap_make_boot_files
+time: 2011-04-21 13:24:51.383239Z
+time: 2011-04-21 13:24:51.383283Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestFixForBug697824.test_set_appropriate_serial_tty_new_kernel
+time: 2011-04-21 13:24:51.383333Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestFixForBug697824.test_set_appropriate_serial_tty_new_kernel
+time: 2011-04-21 13:24:51.383373Z
+time: 2011-04-21 13:24:51.383425Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestFixForBug697824.test_set_appropriate_serial_tty_old_kernel
+time: 2011-04-21 13:24:51.383475Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestFixForBug697824.test_set_appropriate_serial_tty_old_kernel
+time: 2011-04-21 13:24:51.383514Z
+time: 2011-04-21 13:24:51.383559Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_beagle
+time: 2011-04-21 13:24:51.383635Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_beagle
+time: 2011-04-21 13:24:51.383676Z
+time: 2011-04-21 13:24:51.383721Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_igep
+time: 2011-04-21 13:24:51.383770Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_igep
+time: 2011-04-21 13:24:51.383810Z
+time: 2011-04-21 13:24:51.383854Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_mx51
+time: 2011-04-21 13:24:51.383902Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_mx51
+time: 2011-04-21 13:24:51.383941Z
+time: 2011-04-21 13:24:51.383985Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_overo
+time: 2011-04-21 13:24:51.384034Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_overo
+time: 2011-04-21 13:24:51.384074Z
+time: 2011-04-21 13:24:51.384118Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_panda
+time: 2011-04-21 13:24:51.384166Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_panda
+time: 2011-04-21 13:24:51.384205Z
+time: 2011-04-21 13:24:51.384250Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_smdkv310
+time: 2011-04-21 13:24:51.384298Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_smdkv310
+time: 2011-04-21 13:24:51.384337Z
+time: 2011-04-21 13:24:51.384382Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_ux500
+time: 2011-04-21 13:24:51.384431Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_ux500
+time: 2011-04-21 13:24:51.384471Z
+time: 2011-04-21 13:24:51.384516Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_vexpress
+time: 2011-04-21 13:24:51.384564Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetBootCmd.test_vexpress
+time: 2011-04-21 13:24:51.384604Z
+time: 2011-04-21 13:24:51.384648Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetMLOFile.test_mlo_from_new_xloader
+time: 2011-04-21 13:24:51.384710Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetMLOFile.test_mlo_from_new_xloader
+time: 2011-04-21 13:24:51.384750Z
+time: 2011-04-21 13:24:51.384795Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetMLOFile.test_mlo_from_old_xloader
+time: 2011-04-21 13:24:51.384843Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetMLOFile.test_mlo_from_old_xloader
+time: 2011-04-21 13:24:51.384882Z
+time: 2011-04-21 13:24:51.629119Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetMLOFile.test_more_than_one_mlo_found
+time: 2011-04-21 13:24:51.629342Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetMLOFile.test_more_than_one_mlo_found
+time: 2011-04-21 13:24:51.629475Z
+time: 2011-04-21 13:24:51.629615Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetMLOFile.test_no_mlo_found
+time: 2011-04-21 13:24:51.629763Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetMLOFile.test_no_mlo_found
+time: 2011-04-21 13:24:51.629882Z
+time: 2011-04-21 13:24:51.630016Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetSfdiskCmd.test_default
+time: 2011-04-21 13:24:51.630158Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetSfdiskCmd.test_default
+time: 2011-04-21 13:24:51.630275Z
+time: 2011-04-21 13:24:51.630409Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetSfdiskCmd.test_default_aligned
+time: 2011-04-21 13:24:51.630555Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetSfdiskCmd.test_default_aligned
+time: 2011-04-21 13:24:51.630673Z
+time: 2011-04-21 13:24:51.630805Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetSfdiskCmd.test_mx5
+time: 2011-04-21 13:24:51.631017Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetSfdiskCmd.test_mx5
+time: 2011-04-21 13:24:51.631139Z
+time: 2011-04-21 13:24:51.631272Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetSfdiskCmd.test_smdkv310
+time: 2011-04-21 13:24:51.631420Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetSfdiskCmd.test_smdkv310
+time: 2011-04-21 13:24:51.631630Z
+time: 2011-04-21 13:24:51.631767Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetUuid.test_get_uuid
+time: 2011-04-21 13:24:51.631911Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetUuid.test_get_uuid
+time: 2011-04-21 13:24:51.632029Z
+time: 2011-04-21 13:24:51.632163Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestGetUuid.test_parse_blkid_output
+time: 2011-04-21 13:24:51.632307Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestGetUuid.test_parse_blkid_output
+time: 2011-04-21 13:24:51.632427Z
+time: 2011-04-21 13:24:51.632560Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_copy_file
+time: 2011-04-21 13:24:51.632731Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_copy_file
+time: 2011-04-21 13:24:51.632852Z
+time: 2011-04-21 13:24:51.632986Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_hwpack_atexit
+time: 2011-04-21 13:24:51.633131Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_hwpack_atexit
+time: 2011-04-21 13:24:51.633249Z
+time: 2011-04-21 13:24:51.633382Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_install_hwpack
+time: 2011-04-21 13:24:51.633531Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_install_hwpack
+time: 2011-04-21 13:24:51.633646Z
+time: 2011-04-21 13:24:51.633781Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_install_hwpacks
+time: 2011-04-21 13:24:51.633927Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_install_hwpacks
+time: 2011-04-21 13:24:51.634044Z
+time: 2011-04-21 13:24:51.634177Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_install_packages
+time: 2011-04-21 13:24:51.634320Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_install_packages
+time: 2011-04-21 13:24:51.634438Z
+time: 2011-04-21 13:24:51.634570Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_mount_chroot_proc
+time: 2011-04-21 13:24:51.634713Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_mount_chroot_proc
+time: 2011-04-21 13:24:51.634829Z
+time: 2011-04-21 13:24:51.634962Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_prepare_chroot
+time: 2011-04-21 13:24:51.635107Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_prepare_chroot
+time: 2011-04-21 13:24:51.635223Z
+time: 2011-04-21 13:24:51.635356Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_run_local_atexit_funcs
+time: 2011-04-21 13:24:51.635502Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_run_local_atexit_funcs
+time: 2011-04-21 13:24:51.635620Z
+time: 2011-04-21 13:24:51.635755Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_temporarily_overwrite_file_on_dir
+time: 2011-04-21 13:24:51.635915Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestInstallHWPack.test_temporarily_overwrite_file_on_dir
+time: 2011-04-21 13:24:51.636036Z
+time: 2011-04-21 13:24:51.636168Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_calculate_partition_size_and_offset
+time: 2011-04-21 13:24:51.636318Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_calculate_partition_size_and_offset
+time: 2011-04-21 13:24:51.636491Z
+time: 2011-04-21 13:24:51.636629Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_convert_size_in_gbytes_to_bytes
+time: 2011-04-21 13:24:51.636830Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_convert_size_in_gbytes_to_bytes
+time: 2011-04-21 13:24:51.636953Z
+time: 2011-04-21 13:24:51.637090Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_convert_size_in_kbytes_to_bytes
+time: 2011-04-21 13:24:52.292102Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_convert_size_in_kbytes_to_bytes
+time: 2011-04-21 13:24:52.292173Z
+time: 2011-04-21 13:24:52.292229Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_convert_size_in_mbytes_to_bytes
+time: 2011-04-21 13:24:52.292282Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_convert_size_in_mbytes_to_bytes
+time: 2011-04-21 13:24:52.292323Z
+time: 2011-04-21 13:24:52.292369Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_ensure_partition_is_not_mounted_for_mounted_partition
+time: 2011-04-21 13:24:52.292421Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_ensure_partition_is_not_mounted_for_mounted_partition
+time: 2011-04-21 13:24:52.292463Z
+time: 2011-04-21 13:24:52.292508Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_ensure_partition_is_not_mounted_for_umounted_partition
+time: 2011-04-21 13:24:52.292559Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_ensure_partition_is_not_mounted_for_umounted_partition
+time: 2011-04-21 13:24:52.292599Z
+time: 2011-04-21 13:24:52.292644Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_get_boot_and_root_loopback_devices
+time: 2011-04-21 13:24:52.292694Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_get_boot_and_root_loopback_devices
+time: 2011-04-21 13:24:52.292734Z
+time: 2011-04-21 13:24:52.292779Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_get_boot_and_root_partitions_for_media_beagle
+time: 2011-04-21 13:24:52.292829Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_get_boot_and_root_partitions_for_media_beagle
+time: 2011-04-21 13:24:52.292869Z
+time: 2011-04-21 13:24:52.292914Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_get_boot_and_root_partitions_for_media_mx5
+time: 2011-04-21 13:24:52.292963Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_get_boot_and_root_partitions_for_media_mx5
+time: 2011-04-21 13:24:52.293003Z
+time: 2011-04-21 13:24:52.293048Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_partition_numbering
+time: 2011-04-21 13:24:52.293096Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_partition_numbering
+time: 2011-04-21 13:24:52.293136Z
+time: 2011-04-21 13:24:52.293193Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_setup_partitions_for_block_device
+time: 2011-04-21 13:24:52.293243Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_setup_partitions_for_block_device
+time: 2011-04-21 13:24:52.293283Z
+time: 2011-04-21 13:24:52.293328Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_setup_partitions_for_image_file
+time: 2011-04-21 13:24:52.293377Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPartitionSetup.test_setup_partitions_for_image_file
+time: 2011-04-21 13:24:52.293422Z
+time: 2011-04-21 13:24:52.293486Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateBoot.test_populate_boot_live
+time: 2011-04-21 13:24:52.293536Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateBoot.test_populate_boot_live
+time: 2011-04-21 13:24:52.293575Z
+time: 2011-04-21 13:24:52.293620Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateBoot.test_populate_boot_no_uboot_flavor
+time: 2011-04-21 13:24:52.293670Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateBoot.test_populate_boot_no_uboot_flavor
+time: 2011-04-21 13:24:52.293710Z
+time: 2011-04-21 13:24:52.293755Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateBoot.test_populate_boot_regular
+time: 2011-04-21 13:24:52.293803Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateBoot.test_populate_boot_regular
+time: 2011-04-21 13:24:52.293842Z
+time: 2011-04-21 13:24:52.293887Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateBoot.test_populate_boot_uboot_flavor
+time: 2011-04-21 13:24:52.293936Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateBoot.test_populate_boot_uboot_flavor
+time: 2011-04-21 13:24:52.293976Z
+time: 2011-04-21 13:24:52.294026Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateBoot.test_populate_boot_uboot_in_boot_part
+time: 2011-04-21 13:24:52.294075Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateBoot.test_populate_boot_uboot_in_boot_part
+time: 2011-04-21 13:24:52.294115Z
+time: 2011-04-21 13:24:52.294159Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_append_to_fstab
+time: 2011-04-21 13:24:52.294208Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_append_to_fstab
+time: 2011-04-21 13:24:52.294248Z
+time: 2011-04-21 13:24:52.294293Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_create_flash_kernel_config
+time: 2011-04-21 13:24:52.294343Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_create_flash_kernel_config
+time: 2011-04-21 13:24:52.294383Z
+time: 2011-04-21 13:24:52.294428Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_has_no_space_left_for_swap
+time: 2011-04-21 13:24:52.300427Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_has_no_space_left_for_swap
+time: 2011-04-21 13:24:52.300499Z
+time: 2011-04-21 13:24:52.300554Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_has_space_left_for_swap
+time: 2011-04-21 13:24:52.300607Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_has_space_left_for_swap
+time: 2011-04-21 13:24:52.300648Z
+time: 2011-04-21 13:24:52.300699Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_move_contents
+time: 2011-04-21 13:24:52.300749Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_move_contents
+time: 2011-04-21 13:24:52.300788Z
+time: 2011-04-21 13:24:52.300833Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_populate_rootfs
+time: 2011-04-21 13:24:52.300882Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_populate_rootfs
+time: 2011-04-21 13:24:52.300921Z
+time: 2011-04-21 13:24:52.300966Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_rootfs_mount_options_for_btrfs
+time: 2011-04-21 13:24:52.301016Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_rootfs_mount_options_for_btrfs
+time: 2011-04-21 13:24:52.301056Z
+time: 2011-04-21 13:24:52.301101Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_rootfs_mount_options_for_ext4
+time: 2011-04-21 13:24:52.301150Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_rootfs_mount_options_for_ext4
+time: 2011-04-21 13:24:52.301240Z
+time: 2011-04-21 13:24:52.301287Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_rootfs_mount_options_for_unknown
+time: 2011-04-21 13:24:52.301336Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_rootfs_mount_options_for_unknown
+time: 2011-04-21 13:24:52.301376Z
+time: 2011-04-21 13:24:52.301421Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_write_data_to_protected_file
+time: 2011-04-21 13:24:52.301477Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestPopulateRootFS.test_write_data_to_protected_file
+time: 2011-04-21 13:24:52.301518Z
+time: 2011-04-21 13:24:52.301562Z
+test: linaro_image_tools.media_create.tests.test_media_create.TestUnpackBinaryTarball.test_unpack_binary_tarball
+time: 2011-04-21 13:24:52.301611Z
+successful: linaro_image_tools.media_create.tests.test_media_create.TestUnpackBinaryTarball.test_unpack_binary_tarball
+time: 2011-04-21 13:24:52.301650Z
+time: 2011-04-21 13:24:52.319734Z
