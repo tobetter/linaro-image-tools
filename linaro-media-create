@@ -77,7 +77,7 @@ def cleanup_tempdir():
 def ensure_required_commands(args):
     """Ensure we have the commands that we know are going to be used."""
     required_commands = [
-        'mkfs.vfat', 'sfdisk', 'mkimage', 'parted']
+        'mkfs.vfat', 'sfdisk', 'mkimage', 'parted', 'gpg', 'sha1sum']
     if not is_arm_host():
         required_commands.append('qemu-arm-static')
         required_commands.append('qemu-img')
@@ -103,6 +103,17 @@ if __name__ == '__main__':
     board_config = board_configs[args.board]
 
     ensure_required_commands(args)
+
+    print "Verifying integrity of hwpacks and binary tarball."
+    sig_file_list = args.hwpacksigs
+    sig_file_list.append(args.binarysig)
+    for sig_file in sig_file_list:
+        if cmd_runner.run(['sha1sum', '-c', sig_file[0:-4]]).wait() != 0:
+            print "Could not verify hash."
+            sys.exit(1)
+        if cmd_runner.run(['gpg', '--verify', sig_file]).wait() != 0:
+            print "Could not verify signature."
+            sys.exit(1)
 
     media = Media(args.device)
     if media.is_block_device:

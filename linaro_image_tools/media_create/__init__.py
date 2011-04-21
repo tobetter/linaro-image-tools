@@ -88,6 +88,10 @@ def get_args_parser():
         help=('A hardware pack that should be installed in the rootfs; this '
               'parameter can be defined multiple times.'))
     parser.add_argument(
+        '--hwpacksig', action='append', dest='hwpacksigs', required=True,
+        help=('Signature file for verifying a hwpack; this '
+              'parameter can be defined multiple times.'))
+    parser.add_argument(
         '--hwpack-force-yes', action='store_true',
         help='Pass --force-yes to linaro-hwpack-install')
     parser.add_argument(
@@ -98,6 +102,9 @@ def get_args_parser():
         '--binary', default='binary-tar.tar.gz', required=True,
         help=('The tarball containing the rootfs used to create the bootable '
               'system.'))
+    parser.add_argument(
+        '--binary-sig', dest='binarysig', required=True,
+        help=('Signature file used for verifying the binary tarball.'))
     parser.add_argument(
         '--no-rootfs', dest='should_format_rootfs', action='store_false',
         help='Do not deploy the root filesystem.')
