@@ -364,7 +364,7 @@ class TestGetBootCmd(TestCase):
     def test_smdkv310(self):
         boot_commands = board_configs['smdkv310']._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
-            rootfs_uuid="deadbeef", d_img_data="smdkv310.dtb")
+            rootfs_uuid="deadbeef", d_img_data=None)
         expected = {
             'bootargs': 'console=ttySAC1,115200n8  root=UUID=deadbeef '
                         'rootwait ro',

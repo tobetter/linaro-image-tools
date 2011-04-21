@@ -722,7 +722,6 @@ class SMDKV310Config(BoardConfig):
 
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
-        make_dtb(d_img_data, boot_dir)
 
         # unused at the moment once FAT support enabled for the
         # Samsung u-boot this can be used bug 727978
