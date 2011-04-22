@@ -36,7 +36,7 @@ if [ -n "$status" ]; then
 fi
 
 log_i "Running tests"
-if ! python -m testtools.run tests.test_suite; then
+if ! python -m testtools.run linaro_image_tools.tests.test_suite; then
     die "Testsuite doesn't pass"
 fi
 

@@ -1,3 +1,2438 @@
+2011-04-21  Mattias Backman  <mattias.backman@linaro.org>
+
+	* setup.py:
+
+	Release 0.4.4
+
+2011-04-21  Mattias Backman  <mattias.backman@linaro.org>
+
+	* do-release:
+
+	Tests are now in module linaro_image_tools.
+
+2011-04-21  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	TestBootSteps.make_boot_files(): only return a d_img_data if the BoardConfig
+	defines a dtb_name.
+
+2011-04-21  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Don't call make_dtb() on Samsung or pass a d_img_data file in the testsuite as
+	this board doesn't set DTB config vars for now.
+
+2011-04-21  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Raise an assertion error when _get_bootcmd() is called with a d_img_data but
+	cls.dtb_addr is None.
+
+2011-04-20  James Westby  <james.westby@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Merge changes to s5pv310 support:
+	
+	- Use the new s5pv310 u-boot.
+	- Load from the FAT partition like most other boards.
+
+2011-04-20  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_image_tools/hwpack/packages.py:
+	* linaro_image_tools/hwpack/tests/test_packages.py:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Fixed merge conflicts
+
+2011-04-19  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Add in Loic's changes
+
+2011-04-09  loic.minier@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Merge install_smdkv310_boot_env(), install_smdkv310_spl(), and
+	install_smdkv310_uboot() into Samsung's make_boot_files(); simplifies reading.
+
+2011-04-09  loic.minier@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+
+	make_uImage and make_uInitrd return _run_mkimage() again.
+
+2011-04-09  loic.minier@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Drop count= from the _dd() call in install_smdkv310_boot_env() too as the size
+	of the input file is guaranteed already and this might hide issues.
+
+2011-04-09  loic.minier@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Drop unused Samsung constants and asserts.
+
+2011-04-09  loic.minier@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Drop count= from _dd() call in install_smdkv310_spl(); this was only needed
+	when copying parts of the source file, but now the whole file should be copied.
+
+2011-04-09  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Update comments for Samsung implementation.
+
+2011-04-06  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Fix test cases the Samsung smdkv310
+
+2011-04-06  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	SMDKv310 u-boot can load from a FAT partition some remove the old code 
+	that wrote directly to the MMC card
+
+2011-04-05  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Fix broken merge and remove redundant line
+
+2011-04-05  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro-android-media-create:
+	* linaro-media-create:
+	* linaro_image_tools/cmd_runner.py:
+	* linaro_image_tools/media_create/__init__.py:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/partitions.py:
+	* linaro_image_tools/media_create/rootfs.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/media_create/unpack_binary_tarball.py:
+	* linaro_image_tools/tests/fixtures.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+	* linaro_image_tools/media_create/hwpack.py:
+	* linaro_image_tools/media_create/chroot_utils.py:
+
+	Fix merege conflict
+
+2011-03-31  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Remove debugging code
+
+2011-03-31  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Update Samsung BL0 and BL1 comments 
+	Remove u-boot comment as it is no longer valid
+
+2011-03-30  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Change the tools to use the new SPL + uboot method
+	Fat and ext2 are enabled to load the kernel
+
+2011-04-18  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Merge lp:~shawnguo/linaro-image-tools/add-dtb; adds support for device tree
+	binaries.
+
+2011-04-15  Shawn Guo  <shawn.guo@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Fix lines longer than 80 characters introduced by dtb changes
+
+2011-04-15  Shawn Guo  <shawn.guo@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Change @classproperty bootcmd to @classmethod _get_bootcmd, and pass
+	full path name of .dtb file, so that we can get the correct bootcmd
+	with .dtb being optional.
+
+2011-04-14  Shawn Guo  <shawn.guo@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Change DT_GLOB to DTB_GLOB to include dtb_name, so that the meaning
+	of 'dtb' and 'cls.dtb_name' in _get_kflavor_files can be clear.
+
+2011-04-14  Shawn Guo  <shawn.guo@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Improve _get_kflavor_files comment to state that dtb is optional
+
+2011-04-12  Shawn Guo  <shawn.guo@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Address the following review comments from Loic
+	
+	* make .dtb presenting optional
+	* keep 'igep' unchanged and add isee-igep-v2.dtb for it
+	* make bootcmd(cls) a little simpler
+	* keep mx51 addresses unchanged and align mx53 with it
+	* add tests for dtb related functions
+
+2011-04-11  Shawn Guo  <shawn.guo@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Add dtb support for omap and mx5 based boards
+
+2011-04-10  Shawn Guo  <shawn.guo@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Align mx51 offset of kernel_addr and initrd_addr with mx53
+
+2011-04-11  loic.minier@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Tweak first RAM size on Panda to be a multiple of 8 MiB; see LP #633227.
+
+2011-04-07  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Drop ip=none from Panda board cmdline args; dangerous option to include by
+	default according to Steve Langasek.
+
+2011-04-07  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Merge lp:~hrw/linaro-image-tools/more-ram-for-pandaboard; gives more RAM on
+	Panda boards; LP: #707047.
+
+2011-04-06  Marcin Juszkiewicz  <marcin.juszkiewicz@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	pandaboard: enable 463+512MB ram configuration
+	
+	Current Linaro kernel (2.6.38-1207) kernel works fine with this setup. I did
+	some builds on my EA1 board without problems. Machine is running 24/7 with
+	rootfs stored on usb harddrive.
+	
+	Memory hole is required for DSP and 2d/3d acceleration stuff.
+
+2011-04-07  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/hwpack/packages.py:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Merge lp:~mabac/linaro-image-tools/bug-744857; adds support for multiple kernel
+	flavors, in particular for i.MX53, i.MX51 (LP #744857) and OMAP4 (LP #720114);
+	also properly fixes U8500 support (LP #737173).
+
+2011-04-06  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Remove blank line, sort kernel_flavors and add test for _get_kflavor_files not finding files.
+
+2011-04-06  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro_image_tools/hwpack/packages.py:
+
+	Fix deprecation warning. Unrelated but maybe I can sneak it in here.
+
+2011-04-06  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro_image_tools/hwpack/packages.py:
+
+	Fix deprecation warning for package.isInstalled.
+
+2011-04-06  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro_image_tools/hwpack/tests/test_packages.py:
+
+	Merge from trunk.
+
+2011-04-06  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Add kernel_flavor 'omap4' for linaro-m hwpack bsp-omap4.
+
+2011-04-05  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Move looking up kernel and initrd files to make_boot_files().
+
+2011-04-05  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro-android-media-create:
+	* linaro-media-create:
+	* linaro_image_tools/cmd_runner.py:
+	* linaro_image_tools/media_create/__init__.py:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/partitions.py:
+	* linaro_image_tools/media_create/rootfs.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/media_create/unpack_binary_tarball.py:
+	* linaro_image_tools/tests/fixtures.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+	* linaro_image_tools/media_create/hwpack.py:
+	* linaro_image_tools/media_create/chroot_utils.py:
+
+	Merge from trunk.
+
+2011-04-05  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Fix tests by mocking _get_kflavor_files.
+
+2011-04-05  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Merge lool's changes for _get_kflavor_files.
+
+2011-04-05  loic.minier@linaro.org
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Fix _get_kflavor_files tests to pass by creating a temp dir and a derived class
+	rather than temp files and a BoardConfig instance.
+
+2011-04-05  loic.minier@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Restore uImage_file and uInitrd_file in Samsung V310 code.
+
+2011-04-05  loic.minier@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Rename _get_kflavor_file to _get_kflavor_files and change it to only take a
+	base directory to search the kernel and initrd files and return these.
+
+2011-04-05  loic.minier@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Move BoardConfig.kernel_base and .initrd_base to global constants named
+	KERNEL_GLOB and INITRD_GLOB.
+
+2011-04-05  loic.minier@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Fix typo: use initrd_base instead of kernel_base for initrd.
+
+2011-04-05  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Make the changes to _make_boot_files.
+
+2011-04-04  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Add get_kflavor_file function.
+
+2011-04-04  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Change kernel_suffix to kernel_flavors.
+
+2011-04-05  loic.minier@linaro.org
+
+	* linaro_image_tools/hwpack/tests/test_packages.py:
+
+	Typo: cumalative instead of cumulative.
+
+2011-04-05  Guilherme Salgado  <guilherme.salgado@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/partitions.py:
+
+	Add a couple XXX/TODO comments for things that need to be fixed.
+
+2011-04-05  Alexander Sack  <asac@linaro.org>
+
+	* linaro-android-media-create:
+	* linaro_image_tools/media_create/__init__.py:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/partitions.py:
+	* linaro_image_tools/media_create/rootfs.py:
+	* linaro_image_tools/media_create/unpack_binary_tarball.py:
+
+	Merge lp:~jeremychang/linaro-image-tools/android adding experimental linaro
+	android platform image support; LP: #724207
+
+2011-04-01  jeremy.chang@linaro.org
+
+	* linaro-android-media-create:
+	* linaro_image_tools/media_create/__init__.py:
+	* linaro_image_tools/media_create/boards.py:
+
+	Add android_board_configs to indicate the supported boards for android
+	
+	We would like to support beagle and panda first!
+
+2011-04-01  jeremy.chang@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/partitions.py:
+
+	Add get_android_sfdisk_cmd function
+	
+	apart from the get_sfdisk_cmd function cause no much reuse code and to make 
+	it clean.
+
+2011-04-01  jeremy.chang@linaro.org
+
+	* linaro_image_tools/media_create/partitions.py:
+
+	Give it a loop over formating same kind partitions
+
+2011-04-01  jeremy.chang@linaro.org
+
+	* linaro-android-media-create:
+
+	umount android partitions in cleanup function
+	
+	Umount system, cache, data, sdcard partitions 
+
+2011-03-31  jeremy.chang@linaro.org
+
+	* linaro-android-media-create:
+	* linaro_image_tools/media_create/__init__.py:
+	* linaro_image_tools/media_create/partitions.py:
+
+	Add a EXPERIMENTAL banner for linaro-android-media-create
+	
+	Refine the parameters parser to claim linaro-android-media-create only supports
+	mmc device.
+
+2011-03-31  jeremy.chang@linaro.org
+
+	* linaro_image_tools/media_create/partitions.py:
+
+	Recover the unneeded Keyword arguments change.
+	
+	Keyword arguments have defaults in Python
+
+2011-03-31  jeremy.chang@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Fix regression bug, UnboundLocalError in get_sfdisk_cmd in boards.py
+
+2011-03-30  jeremy.chang@linaro.org
+
+	* linaro_image_tools/media_create/android_boards.py:
+	* linaro_image_tools/media_create/android_init.py:
+	* linaro-android-media-create:
+	* linaro_image_tools/media_create/__init__.py:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/partitions.py:
+
+	Clean up the android code
+	
+	Remove redundant code, android_boards.py and android_init.py
+	
+	Modify the import path in linaro-android-media-create due to rebased the trunk.
+	
+	Change the author of linaro-android-media-creat
+
+2011-03-23  jeremy.chang@linaro.org
+
+	* linaro_image_tools/media_create/partitions.py:
+
+	Change sdcard partition to vfat format
+
+2011-03-16  jeremy.chang@linaro.org
+
+	* linaro_image_tools/media_create/android_init.py:
+
+	Change android rootfs partition default format to ext4
+
+2011-03-09  jeremy.chang@linaro.org
+
+	* setup.py:
+
+	Install linaro-android-media-create
+	
+	Add linaro-android-media-create in setup.py
+
+2011-03-08  jeremy.chang@linaro.org
+
+	* linaro-android-media-create:
+	* linaro_image_tools/media_create/android_boards.py:
+	* linaro_image_tools/media_create/android_init.py:
+	* linaro_image_tools/media_create/partitions.py:
+	* linaro_image_tools/media_create/rootfs.py:
+	* linaro_image_tools/media_create/unpack_binary_tarball.py:
+
+	Add Android images deployment support
+	
+	How to run example:
+	$ sudo ./linaro-android-media-create --dev beagle --system system.tar.bz2 \
+	--userdata userdata.tar.bz2 --root root.tar.bz2 --mmc /dev/sdb
+	
+	Partitions layout:
+	+ boot (vfat) - 128M - not mounted
+	+ rootfs (ext4) - 128M - mounted: /
+	+ system (ext4) - 256M - mounted /system
+	+ cache (ext4) - 256M - mounted /cache
+	+ userdata (ext4) - 512M - mounted /data
+	+ sdcard (ext4) - rest of size - mounted as /sdcard
+	
+	This patch includes:
+	* Create and format partitions.
+	* Untar root.tar.bz2 system.tar.bz2, userdata.tar.bz2 and move the 
+	content to the corresponding partitions.
+	
+	The content of the boot partition and the hwpack option is not considered here
+	yet.
+
+2011-04-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Mock os.getuid() in test_append_to_fstab() to avoid calling sudo in the tests.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+	* linaro_image_tools/cmd_runner.py:
+	* linaro_image_tools/media_create/rootfs.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/tests/fixtures.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+	* linaro_image_tools/media_create/hwpack.py:
+	* linaro_image_tools/media_create/chroot_utils.py:
+
+	Merge lp:~lool/linaro-image-tools/btrfs-support; various improvements to the
+	btrfs support and related fixes:
+	- set proper fstab mount options; LP: #745771
+	- install btrfs-tools if missing; LP #715932
+	- fix missing final newline in fstab; LP: #745728
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/chroot_utils.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Run apt-get clean after installing packages.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/rootfs.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Add newline to all lines appended to etc/fstab; add tests for append_to_fstab;
+	LP: #745728.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Silence install_packages() output in tests.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/chroot_utils.py:
+
+	Add some message while installing packages in the chroot, and fix the
+	linaro-hwpack-install message to not mention apt-get.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/rootfs.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Add rootfs_mount_options() helper for the mount options to use in fstab
+	depending on the rootfs; add tests; LP: #745771.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/media_create/hwpack.py:
+	* linaro_image_tools/media_create/chroot_utils.py:
+
+	Rename linaro_image_tools.media_create.hwpack to chroot_utils as it also
+	contains a helper to install packages.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+
+	Factor tests for mkfs.fs commands and raise an error for unknown rootfs types.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+
+	Install btrfs-tools in the chroot when creating a btrfs rootfs; LP: #715932.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/hwpack.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Add test for media_create.hwpack.install_packages().
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/hwpack.py:
+
+	Add install_packages function to apt-get install some packages in the chroot.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+
+	Remove unused vars.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Don't repeat the prepare_chroot() testing in test_install_hwpacks(), just check
+	that it was called with proper args; refactor some media_create.hwpack tests to
+	work with arbitrary chroot and tmp dirs.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/tests/fixtures.py:
+
+	Test whether .wait() (or .communicate()) was run for every Popen() object, not
+	just the last one.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/hwpack.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Split off generic parts from install_hwpacks() into a new prepare_chroot();
+	update tests.
+
+2011-04-04  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/cmd_runner.py:
+	* linaro_image_tools/media_create/hwpack.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+
+	Add chroot support to cmd_runner.run() and use it to install hwpacks.
+
+2011-04-04  Guilherme Salgado  <guilherme.salgado@linaro.org>
+
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Unbreak generation of vexpress images
+
+2011-04-04  matt.waddel@linaro.org
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Fixes number of parameters in call to make_boot_files() in the test code
+
+2011-04-04  matt.waddel@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Removes potentially uninitialized variable, boot_script_path, from calls to make_boot_files()
+
+2011-04-01  matt.waddel@linaro.org
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Prevents uninitialized string from being passed to make_boot_files() in the vexpress
+
+2011-04-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Merge lp:~lag/linaro-image-tools/lt-ux500-support but change glob from "u*500"
+	to "u?500"; fixes support for new name of vmlinuz file in U8500 hwpack;
+	LP: #737173.
+
+2011-03-07  Lee Jones  <lee.jones@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	Include support for the new u8500 hardware pack
+
+2011-03-29  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Update tests for new mx51 initrd address.
+
+2011-03-28  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Merge lp:~jcrigby/linaro-image-tools/mx51-initrd_addr-fix; makes sure the
+	kernel and initrd addresses are sufficiently far apart; bump initrd to
+	0x92000000 which is 32 MiB away from the kernel.
+
+2011-03-17  John Rigby  <john.rigby@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	make initrd_addr for mx5 larger
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/cmd_runner.py:
+	* linaro_image_tools/hwpack/packages.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+	* linaro_image_tools/utils.py:
+
+	Merge lp:~lool/linaro-image-tools/missing-sbin; fixes runs of the testsuite
+	when /sbin isn't in the PATH; LP: #709517.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/cmd_runner.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+
+	Expose default path of sanitize_path() as to help testing and add tests for
+	sanitize_path().
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/testing.py:
+	* linaro_image_tools/tests/fixtures.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+	* linaro_image_tools/tests/test_utils.py:
+	* linaro_image_tools/media_create/populate_boot.py:
+	* linaro-media-create:
+	* linaro_image_tools/hwpack/packages.py:
+	* linaro_image_tools/hwpack/testing.py:
+	* linaro_image_tools/hwpack/tests/test_builder.py:
+	* linaro_image_tools/hwpack/tests/test_packages.py:
+	* linaro_image_tools/hwpack/tests/test_script.py:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/hwpack.py:
+	* linaro_image_tools/media_create/partitions.py:
+	* linaro_image_tools/media_create/rootfs.py:
+	* linaro_image_tools/media_create/tests/fixtures.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/media_create/unpack_binary_tarball.py:
+	* linaro_image_tools/tests/__init__.py:
+	* linaro_image_tools/media_create/cmd_runner.py:
+	* linaro_image_tools/cmd_runner.py:
+	* linaro_image_tools/media_create/utils.py:
+	* linaro_image_tools/utils.py:
+
+	Merge lp:linaro-image-tools; update cmd_runner import path.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/hwpack/packages.py:
+
+	Use cmd_runner instead of subprocess, this ensures that a sane PATH is used.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/utils.py:
+
+	Sanitize path with cmd_runner's helper rather than reinventing it.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/utils.py:
+
+	Bug: find_command() was setting os.environ['PATH'] to ":/bin:usr/bin" if unset,
+	but this means that the current directory was searched first unconditionally
+	even when calling linaro-image-tools system-wide.  Later logic in
+	find_command() correctly prepends the current directory when needed, so it was
+	useless and incorrect to include . in the PATH by default.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/cmd_runner.py:
+
+	Factor handling of unset PATH and default PATH in the common case.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/cmd_runner.py:
+
+	Fix handling of empty PATH; this actually means that the current directory
+	should be searched, and not that PATH is empty.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/cmd_runner.py:
+
+	Actually make sure that any of the directories typically found in the PATH are
+	added if missing; this will ensure that commands which we call and which are
+	typically in /usr/bin are also in the PATH, and that commands from
+	linaro-image-tools which might have been installed under /usr/local are also in
+	the PATH.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/cmd_runner.py:
+
+	Move PATH sanitization to a function and call that from Popen.__init__(); note
+	that:
+	- this regresses the hwpack testsuite as it uses subprocess.Popen directly, so
+	that a broken PATH might not be fixed up
+	- due to the media_create code doing a os.environ.copy() before os.environ
+	being sanitized, this requires sanitizing both os.environ and the env copy
+	passed to Popen()
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/cmd_runner.py:
+
+	Set os.environ['PATH'] if unset or empty; append /sbin to it if missing;
+	LP: #709517.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/testing.py:
+	* linaro_image_tools/tests/fixtures.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+	* linaro_image_tools/tests/test_utils.py:
+	* linaro-media-create:
+	* linaro_image_tools/hwpack/testing.py:
+	* linaro_image_tools/hwpack/tests/test_builder.py:
+	* linaro_image_tools/hwpack/tests/test_packages.py:
+	* linaro_image_tools/hwpack/tests/test_script.py:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/hwpack.py:
+	* linaro_image_tools/media_create/partitions.py:
+	* linaro_image_tools/media_create/rootfs.py:
+	* linaro_image_tools/media_create/tests/fixtures.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/media_create/unpack_binary_tarball.py:
+	* linaro_image_tools/tests/__init__.py:
+	* linaro_image_tools/media_create/cmd_runner.py:
+	* linaro_image_tools/cmd_runner.py:
+	* linaro_image_tools/media_create/utils.py:
+	* linaro_image_tools/utils.py:
+
+	Merge lp:~lool/linaro-image-tools/testsuite-when-installed-v2:
+	- allows running the hwpack testsuite from installed sources; LP: #711312
+	- correctly finds linaro-hwpack-install when installed to /usr/local;
+	LP: #710104
+	- tidies up code and code layout
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+	* linaro_image_tools/tests/test_utils.py:
+
+	Use cmd_runner.SUDO_ARGS instead of importing it; tidy up imports.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+	* linaro_image_tools/tests/test_utils.py:
+
+	Revert parts of r309; use MockCmdRunnerPopenFixture.mock.commands_executed
+	instead of .calls for clarity in the test cases, and simply define sudo_args
+	from SUDO_ARGS.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/tests/test_utils.py:
+	* linaro_image_tools/utils.py:
+
+	Move duplicated preferred_tools_dir helper to linaro_image_tools.utils; this
+	still works because linaro_image_tools.utils' __file__ is still a relative
+	path.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/testing.py:
+	* linaro_image_tools/hwpack/testing.py:
+	* linaro_image_tools/hwpack/tests/test_builder.py:
+	* linaro_image_tools/hwpack/tests/test_packages.py:
+	* linaro_image_tools/hwpack/tests/test_script.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+	* linaro_image_tools/tests/test_utils.py:
+
+	Move TestCaseWithFixtures from linaro_image_tools.hwpack.testing to testing as
+	it's used in more places than hwpack.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/tests/fixtures.py:
+
+	Fix typo: "tht" instead of "the".
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/tests/fixtures.py:
+	* linaro_image_tools/tests/fixtures.py:
+
+	Drop unused imports.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/tests/fixtures.py:
+	* linaro_image_tools/media_create/tests/fixtures.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+	* linaro_image_tools/tests/test_utils.py:
+
+	Move CreateTempDirFixture, MockSomethingFixture, MockCmdRunnerPopen and
+	MockCmdRunnerPopenFixture from linaro_image_tools.media_create.tests.fixtures
+	to tests.fixtures as these are used outside of media_create.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/cmd_runner.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+	* linaro_image_tools/tests/test_utils.py:
+
+	Expose cmd_runner's 'sudo -E' args for use in tests; convert most tests to use
+	an array of args rather than a string.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/cmd_runner.py:
+	* linaro_image_tools/tests/test_cmd_runner.py:
+
+	Add a test for and fix cmd_runner.run() with tuples.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/tests/test_cmd_runner.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/tests/__init__.py:
+
+	Split linaro_image_tools.cmd_runner tests out of
+	media_create.tests.test_media_create into tests.test_cmd_runner.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/hwpack.py:
+	* linaro_image_tools/media_create/partitions.py:
+	* linaro_image_tools/media_create/populate_boot.py:
+	* linaro_image_tools/media_create/rootfs.py:
+	* linaro_image_tools/media_create/tests/fixtures.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/media_create/unpack_binary_tarball.py:
+	* linaro_image_tools/tests/test_utils.py:
+	* linaro_image_tools/utils.py:
+	* linaro_image_tools/media_create/cmd_runner.py:
+	* linaro_image_tools/cmd_runner.py:
+
+	Move linaro_image_tools.media_create.cmd_runner to
+	linaro_image_tools.cmd_runner as it's used in linaro_image_tools.utils and
+	generally useful anyway.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/tests/test_utils.py:
+	* linaro-media-create:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/tests/__init__.py:
+
+	Split linaro_image_tools.utils tests out of
+	media_create.tests.test_media_create into tests.test_utils; some code
+	duplication for now.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/hwpack/tests/test_script.py:
+
+	Drop unused "os" import.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/hwpack/tests/test_script.py:
+	* linaro_image_tools/media_create/hwpack.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/media_create/utils.py:
+	* linaro_image_tools/utils.py:
+
+	Move linaro_image_tools.media_create.utils to linaro_image_tools.utils.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/hwpack/tests/test_script.py:
+
+	Use media_create.find_command instead of custom find_script as it works
+	better to run the testsuite on an installed system; LP: #711312.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/media_create/utils.py:
+
+	Merge lp:~lool/linaro-image-tools/really-automatic-apt; fixes automatic
+	installation of missing packages when APT pulls multiple packages; LP: #741638.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/media_create/utils.py:
+
+	Pass --yes to apt-get when automatically installing packages for missing
+	commands, this is needed when more than one package would get installed;
+	LP: #741638.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/populate_boot.py:
+	* linaro-media-create:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Merge lp:~lool/linaro-image-tools/move-populate-boot; move populate_boot() from
+	media_create.populate_boot to media_create.boards.BoardConfig; LP: #716469.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Rename boot_script to boot_script_path when passing a pathname.
+
+2011-03-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/boards.py:
+
+	Simplify boot_script_path computation.
+
+2011-03-23  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools/media_create/populate_boot.py:
+	* linaro-media-create:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+
+	Move populate_boot() from media_create.populate_boot to
+	media_create.boards.BoardConfig; LP: #716469.
+
+2011-03-23  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools:
+	* linaro_image_tools/__init__.py:
+	* .testr.conf:
+	* COPYING:
+	* linaro-hwpack-create:
+	* linaro-media-create:
+	* linaro_image_tools/hwpack/builder.py:
+	* linaro_image_tools/hwpack/hardwarepack.py:
+	* linaro_image_tools/hwpack/testing.py:
+	* linaro_image_tools/hwpack/tests/__init__.py:
+	* linaro_image_tools/hwpack/tests/test_better_tarfile.py:
+	* linaro_image_tools/hwpack/tests/test_builder.py:
+	* linaro_image_tools/hwpack/tests/test_config.py:
+	* linaro_image_tools/hwpack/tests/test_hardwarepack.py:
+	* linaro_image_tools/hwpack/tests/test_packages.py:
+	* linaro_image_tools/hwpack/tests/test_script.py:
+	* linaro_image_tools/hwpack/tests/test_tarfile_matchers.py:
+	* linaro_image_tools/hwpack/tests/test_testing.py:
+	* linaro_image_tools/media_create/__init__.py:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/check_device.py:
+	* linaro_image_tools/media_create/hwpack.py:
+	* linaro_image_tools/media_create/partitions.py:
+	* linaro_image_tools/media_create/populate_boot.py:
+	* linaro_image_tools/media_create/rootfs.py:
+	* linaro_image_tools/media_create/tests/__init__.py:
+	* linaro_image_tools/media_create/tests/fixtures.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/media_create/unpack_binary_tarball.py:
+	* linaro_image_tools/media_create/utils.py:
+	* linaro_image_tools/tests/__init__.py:
+	* linaro_image_tools/tests/integration.txt:
+	* hwpack:
+	* linaro_image_tools/hwpack:
+	* linaro_media_create:
+	* linaro_image_tools/media_create:
+	* tests:
+	* linaro_image_tools/tests:
+
+	Merge lp:~lool/linaro-image-tools/shuffle-modules; move modules to to
+	linaro_image_tools.* to allow sharing code; LP: #711310.
+
+2011-03-23  Loïc Minier  <lool@dooz.org>
+
+	* linaro_image_tools:
+	* linaro_image_tools/__init__.py:
+	* .testr.conf:
+	* COPYING:
+	* linaro-hwpack-create:
+	* linaro-media-create:
+	* linaro_image_tools/hwpack/builder.py:
+	* linaro_image_tools/hwpack/hardwarepack.py:
+	* linaro_image_tools/hwpack/testing.py:
+	* linaro_image_tools/hwpack/tests/__init__.py:
+	* linaro_image_tools/hwpack/tests/test_better_tarfile.py:
+	* linaro_image_tools/hwpack/tests/test_builder.py:
+	* linaro_image_tools/hwpack/tests/test_config.py:
+	* linaro_image_tools/hwpack/tests/test_hardwarepack.py:
+	* linaro_image_tools/hwpack/tests/test_packages.py:
+	* linaro_image_tools/hwpack/tests/test_script.py:
+	* linaro_image_tools/hwpack/tests/test_tarfile_matchers.py:
+	* linaro_image_tools/hwpack/tests/test_testing.py:
+	* linaro_image_tools/media_create/__init__.py:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/check_device.py:
+	* linaro_image_tools/media_create/hwpack.py:
+	* linaro_image_tools/media_create/partitions.py:
+	* linaro_image_tools/media_create/populate_boot.py:
+	* linaro_image_tools/media_create/rootfs.py:
+	* linaro_image_tools/media_create/tests/__init__.py:
+	* linaro_image_tools/media_create/tests/fixtures.py:
+	* linaro_image_tools/media_create/tests/test_media_create.py:
+	* linaro_image_tools/media_create/unpack_binary_tarball.py:
+	* linaro_image_tools/media_create/utils.py:
+	* linaro_image_tools/tests/__init__.py:
+	* linaro_image_tools/tests/integration.txt:
+	* hwpack:
+	* linaro_image_tools/hwpack:
+	* linaro_media_create:
+	* linaro_image_tools/media_create:
+	* tests:
+	* linaro_image_tools/tests:
+
+	Shuffle modules to be under the same hierarchy:
+	- linaro_media_create -> linaro_image_tools/media_create
+	- hwpack -> linaro_image_tools.hwpack
+	- tests -> linaro_image_tools.tests
+	this will notably give us a place to share code between
+	linaro_image_tools.media_create and .hwpack.
+
+2011-03-18  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge lp:~lool/linaro-image-tools/efikasb-support; adds support for EfikaMX
+	SmartBook and cleans up i.MX5x support.
+
+2011-03-17  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Create a Mx51Config derived from Mx5Config and move load addresses and kernel
+	flavor specific to i.MX51 to Mx51Config; also introduce a Mx53Config derived
+	from Mx5Config and merge i.MX53 data from Mx53LocoConfig into it.  Update tests
+	to use Mx5 or Mx51 correctly.
+
+2011-03-17  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Rename i.MX5 to i.MX5x in comment.
+
+2011-03-17  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	TestBootSteps.test_mx5_steps(): create a fake Mx5Config instead of using
+	Mx51evkConfig.
+
+2011-03-17  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Add support for EfikaMX SmartBook (efikasb).
+
+2011-03-17  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge lp:~lool/linaro-image-tools/chs-align-tests; don't hardcode heads and
+	sectoes in tests.
+
+2011-03-17  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Use HEADS and SECTORS from partitions.py in tests.
+
+2011-03-12  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge lp:~lool/linaro-image-tools/igep-support; couple of tests relative to
+	IGEP.
+
+2011-03-11  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+	* linaro_media_create/__init__.py:
+	* linaro_media_create/boards.py:
+	* linaro_media_create/cmd_runner.py:
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/populate_boot.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge with lp:linaro-image-tools; rework tests for new bootcmd/bootargs dict.
+
+2011-02-12  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Add tests for IGEP.
+
+2011-03-11  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge lp:~lool/linaro-image-tools/chs-align; use 128 heads and 32 sectors;
+	should avoid some warnings from disk partitioning tools.
+
+2011-03-11  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/cmd_runner.py:
+	* linaro_media_create/populate_boot.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge with lp:linaro-image-tools and fix conflicts.
+
+2011-02-19  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	We try to align partition start/end offsets to 4 MiB, but we had stopped making
+	any effort to align to CHS boundaries and were always using 255 heads and 63
+	sectors.  Since this causes warnings with partitioning tools and since we can
+	use any geometry we like, use 128 heads and 32 sectors as geometry which gives
+	us 2 MiB cylinders and means partitions will end/start on cylinder boundaries
+	most of the time.
+
+2011-03-09  Guilherme Salgado  <guilherme.salgado@linaro.org>
+
+	* linaro_media_create/cmd_runner.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Change cmd_runner.run() to always pass -E to sudo
+
+2011-03-09  Guilherme Salgado  <guilherme.salgado@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	merge trunk
+
+2011-03-09  Guilherme Salgado  <guilherme.salgado@linaro.org>
+
+	* linaro_media_create/cmd_runner.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Change cmd_runner.run() to always pass -E to sudo
+
+2011-03-09  James Westby  <james.westby@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Add support for the smdkv310. Thanks Angus.
+
+2011-03-05  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge in Guilherme suggestions for Loic's brnach
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Make sure an assertion is raised if the environment size is smaller than the
+	generated environment; also change the code to do a single struct.pack() call
+	instead of one call per byte to pad.
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	make_flashable_env: sort env_strings to have reliable ordering.
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Add test for make_flashable_env().
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Rename tempfile to tmpfile to allow importing tempfile.
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Implement size checks in install_smdkv310_uImage and install_smdkv310_initrd
+	and document why they aren't needed in install_smdkv310_boot_env.
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Simplify _dd docstring a bit.
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Change the _get_bootcmd classmethod to a bootcmd classproperty; thanks
+	Guilherme Salgado.
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Remove unused import causing a lot of pyflakes errors.
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Add testcase for the mx5 bootloader being too big.
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Fix size check for mx5_boot_loader to use the LOADER constant rather than BOOT.
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Check size of imx_file is smaller than guaranteed bootloader partition size in
+	install_mx5_boot_loader(); update testsuite to pass a real file to allow
+	os.path.getsize() to work.
+
+2011-03-02  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	fix review comments from salgado
+
+2011-03-02  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	add the temp_dir logic back in that I removed during the last merge 
+
+2011-03-02  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	merge to trunk
+
+2011-03-01  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Fixup partition tests for new partition sizes.
+	Remove duplicate Samsung SMDK v310 test
+
+2011-03-01  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	Remove duplicate EfikaMX classes 
+
+2011-03-01  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	Remove duplicate Samsung board definition from merge
+	Add constants reserved length  and copy length for the Samsung uinitrd
+
+2011-03-01  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	merge in samsung-v310-v2
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Use proper initrd size of 6 MiB instead of 100 MiB for Samsung, and use that
+	in movi boot commands.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Don't hardcode kernel_addr and initrd_addr in Samsung movi commands.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Remove a couple of spaces.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Don't generate a boot.scr for now as it is unused and might be confusing.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Use chroot_dir consistently instead of mixing with root_dir.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Instead of passing boot commands around, just pass a boot_env dict.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Rename boot_cmd to boot_commands for clarity.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	SMDKV310Config: make env_size a regular variable in _make_boot_files() instead
+	of a class variable as it's used only once.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Merge SMDKV310Config and SamsungConfig since there's only one board for now.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Consistent spacing between functions.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Drop seeminly useless make_boot_ini() return value.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Simplify _get_boot_commands() a bit.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/populate_boot.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge with lp:linaro-image-tools.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Ups, also rename _get_boot_cmd to _get_boot_commands in the testsuite.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Rename _get_boot_cmd to _get_boot_commands to avoid confusion with
+	_get_bootcmd.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Don't align bootloader partition to 4 MiB boundary, instead start on the first
+	sector possible, +1s.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Remove trailing spaces.
+
+2011-03-01  Loïc Minier  <lool@dooz.org>
+
+	Fake merge with lp:~lool/linaro-image-tools/samsung-v310 as to show that these
+	changes were merged.
+
+2011-02-22  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Add TODOs to add missing checks.
+
+2011-02-22  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Define and use a _dd() function to wrap dd.
+
+2011-02-22  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Rework Samsung V310 partitioning:
+	- don't use a boot partition since u-boot currently reads uImage/uInitrd from
+	fixed offsets
+	- avoid hardcoding partition lengths/offsets, use constants instead
+	- limit dd's count when writing uImage and uInitrd
+
+2011-02-21  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Use SECTOR_SIZE in install_mx51evk_boot_loader() instead of hardcoding 1024.
+
+2011-02-21  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Use SECTOR_SIZE instead of hardcoding 512 in dd calls.
+
+2011-03-01  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/populate_boot.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	merge in changes to the trunk
+
+2011-02-28  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	incorporated Loic's conastant changes
+
+2011-02-28  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Update bootcmd and bootargs
+	Fixed tests for v310 board
+
+2011-02-17  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	Remove commented out code and old comments
+
+2011-02-17  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/populate_boot.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Finished fixing changes to partitons 
+	Remove use_fat_partiton flag
+	Added vfat partition to Samsung v310 build
+	All boot binaries are generated to the boot partition but they are currently
+	still loaded from raw MMC offsets.
+
+2011-02-15  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	fix broken smdkv310 tests
+
+2011-02-15  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	more review changes
+
+2011-02-15  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	more review changes
+
+2011-02-14  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	fix changes due to sfdisk command changes
+
+2011-02-14  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro-media-create:
+	* linaro_media_create/__init__.py:
+	* linaro_media_create/boards.py:
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge the latest linaro-media-tools into my branch
+
+2011-02-10  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	fix bootm line so that initrd mounts
+
+2011-02-10  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	Get rid of whitespace change
+
+2011-02-10  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/populate_boot.py:
+
+	Merge review changes
+
+2011-02-10  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	added tests for the SMDKv310 board
+
+2011-02-09  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	Fix kernel load address and u-boot env
+
+2011-02-08  Angus Ainslie  <angus.ainslie@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/populate_boot.py:
+
+	Added Samsung SMDK V310 - doesn't quite boot yet
+
+2011-03-08  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Merge lp:~lool/linaro-image-tools/share-omap; set kernel_suffix = 'linaro-omap'
+	in OmapConfig instead of children classes.
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Set kernel_suffix = 'linaro-omap' in OmapConfig instead of children classes.
+
+2011-03-08  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Merge lp:~linaro-landing-team-freescale/linaro-image-tools/mx53-loco; adds
+	support for i.MX53 LOCO board.
+
+2011-03-08  Eric Miao  <eric.miao@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	Fix names of uboot_flavor and kernel_suffix
+
+2011-03-07  Eric Miao  <eric.miao@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	Merged Loic's changes
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Drop now unused install_mx5_uboot().
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Let Mx53 use the Mx5 _make_boot_files() which is now identical.
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Always require a non-padded u-boot.imx for Mx53.
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Use cls.uboot_flavor instead of hardcoding 'mx53_loco'.
+
+2011-03-05  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Convert tabs to spaces.
+
+2011-03-05  Eric Miao  <eric.miao@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	Make use of Mx5Config as superclass for Mx53LoCoConfig
+
+2011-03-01  Eric Miao  <eric.miao@linaro.org>
+
+	* linaro-media-create:
+	* linaro_media_create/__init__.py:
+	* linaro_media_create/boards.py:
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/populate_boot.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merged lp:linaro-image-tools
+
+2011-02-28  Eric Miao  <eric.miao@linaro.org>
+
+	* linaro_media_create/boards.py:
+
+	Add preliminary support for Freescale i.MX53 LoCo board
+
+2011-03-03  Guilherme Salgado  <guilherme.salgado@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Saving of the plain boot script (boot.txt) on the boot partition was failing with a permission error; this fixes it.
+
+2011-03-03  Guilherme Salgado  <guilherme.salgado@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Saving of the plain boot script (boot.txt) on the boot partition was failing with a permission error; this fixes it.
+
+2011-03-01  Guilherme Salgado  <guilherme.salgado@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	l-m-c now stores the original boot script (before we feed it to mkimage) in the boot partition as boot.txt
+
+2011-02-28  Guilherme Salgado  <guilherme.salgado@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Rename the plain-text boot script saved on the boot partition from boot.script to boot.txt
+
+2011-02-09  Guilherme Salgado  <guilherme.salgado@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	l-m-c now stores the original boot script (before we feed it to mkimage) in the boot partition
+
+2011-02-25  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/populate_boot.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge lp:~lool/linaro-image-tools/efikamx; adds EfikaMX support.
+
+2011-02-25  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Be consistent and use "uboot" rather than "u_boot".
+
+2011-02-25  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/populate_boot.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	populate_boot(): assert that uboot_flavor is set when uboot_in_boot_part is.
+
+2011-02-25  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Fix TestPopulateBoot.prepare_config to create derived classes rather than
+	using the passed class.
+
+2011-02-25  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	TestPopulateBoot: instead of testing with representative boards, test with
+	specially crafted test configs.
+
+2011-02-25  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Share expected_call across TestPopulateBoot tests.
+
+2011-02-25  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Share expected_args across TestPopulateBoot tests.
+
+2011-02-25  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Add TestPopulateBoot.call_populate_boot() to avoid code repeating the
+	populate_boot args.
+
+2011-02-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Test install_omap_boot_loader().
+
+2011-02-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Test install_mx5_boot_loader().
+
+2011-02-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Don't instanciate BoardConfig classes.
+
+2011-02-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Use Mx5Config() instead of mx51evk's config.
+
+2011-02-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Fix TestPopulateBoot name clash which was hiding some tests.
+
+2011-02-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	More consistent spacing.
+
+2011-02-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Test populate_boot() with more board configs.
+
+2011-02-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Add tests for linaro_media_create.populate_boot.populate_boot().
+
+2011-02-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/populate_boot.py:
+
+	Drop unused errno import.
+
+2011-02-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/populate_boot.py:
+
+	Run "mkdir -p" instead of using os.makedirs(); this might be less elegant, but
+	it makes the code much simpler and easier to test as we don't need to create a
+	place to run the os.makedirs() or to mock anything more than cmd_runner.
+
+2011-02-24  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/populate_boot.py:
+
+	Add a uboot_in_boot_part BoardConfig flag to decide whether u-boot.bin should
+	be copied to the boot partition instead of just checking uboot_flavor; this
+	allows using uboot_flavor consistently on mx5 boards.
+
+2011-02-17  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Add support for EfikaMX smarttops.
+	- rename mx51evk-related logic to share it across mx5-based boards
+	- EfikamxConfig and Mx51evkConfig just set uboot_name (NB: uboot_flavor has a
+	special omap-only meaning and hence wasn't suitable)
+
+2011-02-23  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge lp:~doanac/linaro-image-tools/overo-video; enable Overo on 1024x768.
+
+2011-02-22  Andy Doan  <andy.doan@linaro.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	update boot.scr for overo to support 1024x768 resolution
+
+2011-02-14  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+	* linaro_media_create/__init__.py:
+	* linaro_media_create/boards.py:
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge lp:~lool/linaro-image-tools/4-mib-align; this reworks the way we create
+	partitions and will align the rootfs partition on 4 MiB boundaries by default.
+	It adds an --align-boot-part linaro-media-create flag to also align the boot
+	partition in case your x-loader is recent enough to support this.
+
+2011-02-14  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Fix typos in comments.
+
+2011-02-14  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Closing triple double-quotes need to stand on their own line.
+
+2011-02-14  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Convert align_up to a real function and add docstrings to align_partition()
+	and align_up().
+
+2011-02-11  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Make sure boot partition has an even length in sectors (partition length is an
+	entire number of KiBs) to please OMAP3 ROMs; these apparently don't care for
+	the start sector, but do care for the length of the partition...  Update
+	comments as well.
+
+2011-02-11  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+	* linaro_media_create/__init__.py:
+	* linaro_media_create/boards.py:
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Add --align-boot-part flag to force (4 MiB) alignment of boot partition.
+
+2011-02-11  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Add tests for align_up and align_partition.
+
+2011-02-11  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Rework sfdisk commands again; completely bypass CHS calculations as they are
+	irrelevant (see LP #626907 for discussion).
+	- enforce some sensible sizes of >= 1 MiB, >= 50 MiB, and >= 50 MiB for
+	(optional) bootloader partition, boot partition and root partition
+	respectively
+	- document partition layout in get_sfdisk_cmd()
+	- update testsuite for new values
+
+2011-02-11  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/__init__.py:
+	* linaro_media_create/boards.py:
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge with lp:linaro-image-tools to pick up the partition rework changes.
+	- adjust test_partition_numbering() to create a third partition at +24 MiB
+	and to expect the linux part at +16 MiB
+	- bump tempfile for sfdisk tests to 30M instead of 20M as to fit above test
+	- adjust linux size in tests per above change
+
+2011-02-11  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Factorize the creation of a relatively common disk tempfile.
+
+2011-02-11  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+
+	Add messages to asserts.
+
+2011-02-10  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/boards.py:
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Align partitions at 4 MiB; this requires switching to sector addressing for
+	sfdisk commands and is fairly intrusive.
+
+2011-02-10  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge lp:~lool/linaro-image-tools/part-size-rework; fixes various issues with
+	the partition-handling code; prepares the ground for aligned partitions.
+
+2011-02-10  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Add comment to test_partition_numbering().
+
+2011-02-10  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Add test to make sure first partition after vfat is selected as the linux
+	partition.
+
+2011-02-10  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Drop tests which are probably useless after discussion -- let's not bloat the
+	testsuite.
+
+2011-02-10  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Remove debug print.
+
+2011-02-10  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Add some tests to make sure rootfs is after bootfs and that partitions don't
+	overlap.
+
+2011-02-10  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/partitions.py:
+
+	Add an explicit break when we find the linux partition as to not use a
+	partition found afterwards.
+
+2011-02-10  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/partitions.py:
+
+	Add some helpful message in the "normal partition" assert.
+
+2011-02-10  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/partitions.py:
+
+	Fix weird line-wrapping of mine.
+
+2011-02-10  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/partitions.py:
+
+	Rework processing of parted partitions; when using partitions not aligned on
+	cylinder boundaries, some "free space" partition is returned by the call to
+	nextPartition(); this partition isn't the one we were actually looking for.
+	This will be exercized by the testsuite once we move to 4 MiB aligned
+	partitions.
+
+2011-02-09  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Don't reset image_size_in_bytes to a cylinder-aligned size: we want to honor
+	the requested image size, even if that means some padding.
+
+2011-02-09  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Fix use of image_size instead of image_size_in_bytes when calling qemu-img.
+
+2011-02-10  Guilherme Salgado  <guilherme.salgado@linaro.org>
+
+	* linaro_media_create/__init__.py:
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	When --consoles is passed to l-m-c, append (instead of prepend) them to the list of serial options in the boot cmd (fixes bug #711255)
+
+2011-02-10  Guilherme Salgado  <guilherme.salgado@linaro.org>
+
+	* linaro_media_create/__init__.py:
+	* linaro_media_create/boards.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	When --consoles is passed to l-m-c, append (instead of prepend) them to the list of serial options in the boot cmd
+
+2011-02-02  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Factor the prefer_dir computation which had to be repeated in the previous
+	merge.
+
+2011-02-02  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+	* linaro_media_create/hwpack.py:
+	* linaro_media_create/tests/test_media_create.py:
+	* linaro_media_create/utils.py:
+
+	Merge lp:~lool/linaro-image-tools/testsuite-when-installed; allows running
+	parts of the testsuite when installed system-wide.  Had to resolve a conflict
+	in linaro-media-create and patch an additional install_hwpacks() call site.
+
+2011-02-02  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+	* linaro_media_create/utils.py:
+
+	Default to os.getcwd() instead of "." as "." breaks with some
+	ChdirToTempdirFixture based tests.
+
+2011-02-02  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+	* linaro_media_create/utils.py:
+
+	More explicit handling of empty PATH components as "." in find_command.
+
+2011-02-02  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+	* linaro_media_create/hwpack.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Pass a tools dir (preferred directory) to install_hwpacks; should be the
+	directory of linaro-media-create when it's run with an explicit directory, or
+	"." when running from a bzr checkout.
+
+2011-02-02  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+	* linaro_media_create/utils.py:
+
+	Add an optional prefer_dir arg to find_command to allow searching a specific
+	directory first.
+
+2011-02-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Test find_command().
+
+2011-02-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/hwpack.py:
+	* linaro_media_create/tests/test_media_create.py:
+	* linaro_media_create/utils.py:
+
+	Add and use find_command() which will search a linaro-image-tools command
+	in the current directory if running from a bzr checkout or in PATH otherwise;
+	this helps with running the testsuite on an installed system; LP: #709518.
+
+2011-02-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro-hwpack-install:
+	* linaro-media-create:
+	* linaro_media_create/cmd_runner.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge lp:~lool/linaro-image-tools/optional-sudo; allows running as root
+	without calling sudo.
+
+2011-02-02  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+
+	Merge lp:~lool/linaro-image-tools/lp-711573; fixes various issues introduced
+	with optional-sudo merge, notably tracebacks in cleanup.
+
+2011-02-02  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+
+	Always try to unmount ROOT_DISK, even if BOOT_DISK didn't unmount successfully.
+
+2011-02-02  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+
+	Use cmd_runner.run() instead of .Popen() as the latter doesn't accept as_root.
+
+2011-02-02  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+
+	Add missing cmd_runner module before SubcommandNonZeroReturnValue; LP: #711573.
+
+2011-02-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/fixtures.py:
+
+	Fix testsuite breakage with reldir; was running the wrong testsuite. :-/
+
+2011-02-01  Guilherme Salgado  <salgado@canonical.com>
+
+	* linaro_media_create/hwpack.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Make sure we cleanup properly when install_hwpacks fails
+
+2011-02-01  Guilherme Salgado  <salgado@canonical.com>
+
+	* linaro_media_create/hwpack.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Add a test for hwpack.run_local_atexit_funcs() and fix an undefined name in it
+
+2011-02-01  Guilherme Salgado  <salgado@canonical.com>
+
+	* COPYING:
+	* COPYING.GPL-2:
+	* COPYING.GPL-3:
+	* do-release:
+	* .bzr-builddeb:
+	* .bzr-builddeb/default.conf:
+	* debian:
+	* debian/changelog:
+	* debian/compat:
+	* debian/control:
+	* debian/copyright:
+	* debian/linaro-image-tools.install:
+	* debian/python-hwpack.install:
+	* debian/python-linaro-media-create.install:
+	* debian/rules:
+	* README:
+	* hwpack/__init__.py:
+	* hwpack/better_tarfile.py:
+	* hwpack/builder.py:
+	* hwpack/config.py:
+	* hwpack/hardwarepack.py:
+	* hwpack/packages.py:
+	* hwpack/tarfile_matchers.py:
+	* hwpack/testing.py:
+	* hwpack/tests/__init__.py:
+	* hwpack/tests/test_better_tarfile.py:
+	* hwpack/tests/test_builder.py:
+	* hwpack/tests/test_config.py:
+	* hwpack/tests/test_hardwarepack.py:
+	* hwpack/tests/test_packages.py:
+	* hwpack/tests/test_script.py:
+	* hwpack/tests/test_tarfile_matchers.py:
+	* hwpack/tests/test_testing.py:
+	* linaro-hwpack-create:
+	* linaro-hwpack-install:
+	* linaro-media-create:
+	* linaro_media_create/__init__.py:
+	* linaro_media_create/boards.py:
+	* linaro_media_create/check_device.py:
+	* linaro_media_create/cmd_runner.py:
+	* linaro_media_create/hwpack.py:
+	* linaro_media_create/partitions.py:
+	* linaro_media_create/populate_boot.py:
+	* linaro_media_create/rootfs.py:
+	* linaro_media_create/tests/fixtures.py:
+	* linaro_media_create/tests/test_media_create.py:
+	* linaro_media_create/unpack_binary_tarball.py:
+	* linaro_media_create/utils.py:
+	* setup.py:
+	* tests/integration.txt:
+
+	merge trunk
+
+2011-01-31  Andy Doan  <andy.doan@canonical.com>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	add test case for atexit fix
+
+2011-01-26  Andy Doan  <andy.doan@canonical.com>
+
+	* linaro_media_create/hwpack.py:
+
+	add exception handling to hwpack cleanup logic
+	
+	This will help ensure all exit functions are attempted even
+	if one of them raises an exception
+
+2011-01-25  Andy Doan  <andy.doan@canonical.com>
+
+	* linaro_media_create/hwpack.py:
+
+	ensure local_atexit functions always run
+	
+	The local_atexit functions were only executing when
+	the code ran as expected. We need exception handling
+	to make sure we always clean up after ourselves
+
+2011-02-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/fixtures.py:
+
+	Merge lp:~lool/linaro-image-tools/temp-tarball; fixes warnings when running
+	testsuite.
+
+2011-02-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/fixtures.py:
+
+	Make names "tarball" and "tarball.gz" configurable and move mkdir() to setUp()
+	instead of __init__().
+
+2011-02-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/fixtures.py:
+
+	Rework tarball creation to avoid these warnings:
+	tar: Removing leading `/' from member names
+	tar: /tmp/tmpNhHGL5: file changed as we read it
+	
+	To avoid this, we pass a new relative "tarball" subdirectory to tar instead of
+	the absolute tempdir which contains the destination tarball itself.
+
+2011-02-01  Loïc Minier  <lool@dooz.org>
+
+	* linaro-hwpack-install:
+	* linaro-media-create:
+	* linaro_media_create/cmd_runner.py:
+	* linaro_media_create/tests/test_media_create.py:
+
+	Merge lp:~lool/linaro-image-tools/optional-sudo; makes usage of sudo optional
+	so that one can run tools directly as root.
+
+2011-01-29  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/tests/test_media_create.py:
+
+	Mock getuid() when testing cmd_runner and test both the sudo needed and sudo
+	not needed cases.
+
+2011-01-29  Loïc Minier  <lool@dooz.org>
+
+	* linaro-media-create:
+
+	linaro-media-create: Use linaro_media_create.cmd_runner's Popen rather than the
+	one from subprocess; avoids hardcoding sudo in the commands.
+
+2011-01-29  Loïc Minier  <lool@dooz.org>
+
+	* linaro-hwpack-install:
+
+	linaro-hwpack-install: only call sudo when running as non-root.
+
+2011-01-29  Loïc Minier  <lool@dooz.org>
+
+	* linaro_media_create/cmd_runner.py:
+
+	cmd_runner: Don't prepend sudo if we're root.
+
+2011-02-01  Loïc Minier  <lool@dooz.org>
+
+	* setup.py:
+
+	Post-release version bump to 0.4.3.1
+
 2011-02-01  Loïc Minier  <lool@dooz.org>
 
 	* setup.py:

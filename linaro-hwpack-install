@@ -38,6 +38,11 @@ SOURCES_LIST_FILE="${TEMP_DIR}/sources.list"
 APT_GET_OPTIONS="Dir::Etc::SourceList=${SOURCES_LIST_FILE}"
 SUPPORTED_FORMATS="1.0"  # A space-separated list of hwpack formats.
 
+sudo="sudo"
+if [ $(id -u) -eq 0 ]; then
+    sudo=""
+fi
+
 die() {
   echo -e "$@"
   exit 1
@@ -79,7 +84,7 @@ cleanup() {
   # Ensure our temp dir and apt sources are removed.
   echo -n "Cleaning up ..."
   rm -rf $TEMP_DIR
-  sudo apt-get update -qq
+  $sudo apt-get update -qq
   echo "Done"
 }
 
@@ -128,14 +133,14 @@ for filename in $(ls "${HWPACK_DIR}"/sources.list.d/); do
   done < $stripped_file
 
   if [ $should_install -eq 1 ]; then
-    sudo cp $file /etc/apt/sources.list.d/hwpack.$filename
+    $sudo cp $file /etc/apt/sources.list.d/hwpack.$filename
   fi
 done
 
 # Import the OpenPGP keys for the files installed above.
 for filename in $(ls "${HWPACK_DIR}"/sources.list.d.gpg/); do
   file="${HWPACK_DIR}"/sources.list.d.gpg/$filename
-  sudo apt-key add $file
+  $sudo apt-key add $file
 done
 
 # Add one extra apt source for the packages included in the hwpack and make
@@ -145,7 +150,7 @@ echo "deb file:${HWPACK_DIR}/pkgs ./" > "$SOURCES_LIST_FILE"
 cat /etc/apt/sources.list >> "$SOURCES_LIST_FILE"
 
 echo "Updating apt package lists ..."
-sudo apt-get -o "$APT_GET_OPTIONS" update -q
+$sudo apt-get -o "$APT_GET_OPTIONS" update -q
 
 echo -n "Installing packages ..."
 
@@ -199,11 +204,11 @@ if [ "$DEP_PACKAGE_PRESENT" == "yes" ]; then
   done
 fi
 
-sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" install ${packages}
+$sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" install ${packages}
 
 if [ "$DEP_PACKAGE_PRESENT" == "yes" ]; then
   if [ -n "${to_be_installed}" ]; then
-    sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" markauto ${to_be_installed}
+    $sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" markauto ${to_be_installed}
   fi
 fi
 

@@ -6,6 +6,4 @@ export PATH := $(PATH):/sbin
 	dh $*
 
 override_dh_auto_test:
-	# XXX: The test-suite currently fails on Lucid. What can we do about
-	# it?
-	python -m testtools.run tests.test_suite
+	python -m testtools.run linaro_image_tools.tests.test_suite
