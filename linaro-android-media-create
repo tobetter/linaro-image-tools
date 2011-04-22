@@ -28,14 +28,13 @@ from linaro_image_tools import cmd_runner
 from linaro_image_tools.media_create.boards import android_board_configs
 from linaro_image_tools.media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
-from linaro_image_tools.media_create.hwpack import install_hwpacks
+from linaro_image_tools.media_create.chroot_utils import install_hwpacks
 from linaro_image_tools.media_create.partitions import (
     Media,
     setup_partitions,
     setup_android_partitions,
     get_uuid,
     )
-from linaro_image_tools.media_create.populate_boot import populate_boot
 from linaro_image_tools.media_create.rootfs import populate_partition
 from linaro_image_tools.media_create.unpack_binary_tarball import (
     unpack_android_binary_tarball
