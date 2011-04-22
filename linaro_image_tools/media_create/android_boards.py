@@ -82,6 +82,7 @@ class AndroidBoardConfig(object):
         android_kernel_cmdline = cmdline_file.read()
         boot_env['bootargs'] = boot_env['bootargs'] + ' ' + \
             android_kernel_cmdline
+        cmdline_file.close()
 
         boot_dir = boot_disk
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
