@@ -47,6 +47,7 @@ class AndroidBoardConfig(object):
         boot_args_options = 'rootwait ro'
         if cls.extra_boot_args_options is not None:
             boot_args_options += ' %s' % cls.extra_boot_args_options
+        boot_args_options += ' %s' % cls.android_specific_args
         serial_opts = cls._extra_serial_opts
         for console in consoles:
             serial_opts += ' console=%s' % console
@@ -143,18 +144,12 @@ class AndroidOmapConfig(AndroidBoardConfig):
 
 class AndroidBeagleConfig(AndroidOmapConfig, BeagleConfig):
     _extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
-    extra_boot_args_options = (
-        'init=/init androidboot.console=ttyO2 '
-        'earlyprintk fixrtc nocompcache vram=12M '
-        'omapfb.mode=dvi:1280x720MR-16@60')
+    android_specific_args = 'init=/init androidboot.console=ttyO2'
 
 
 class AndroidPandaConfig(AndroidOmapConfig, PandaConfig):
     _extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
-    extra_boot_args_options = (
-        'init=/init androidboot.console=ttyO2 '
-        'earlyprintk fixrtc nocompcache vram=32M '
-        'omapfb.vram=0:8M mem=463M@0x80000000 mem=512M@0xA0000000')
+    android_specific_args = 'init=/init androidboot.console=ttyO2'
 
 
 android_board_configs = {
