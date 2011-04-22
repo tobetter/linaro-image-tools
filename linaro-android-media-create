@@ -127,7 +127,6 @@ if __name__ == '__main__':
         # All good, move on.
         pass
 
-
     cmd_runner.run(['mkdir', '-p', BOOT_DIR]).wait()
     cmd_runner.run(['mkdir', '-p', SYSTEM_DIR]).wait()
     cmd_runner.run(['mkdir', '-p', DATA_DIR]).wait()
