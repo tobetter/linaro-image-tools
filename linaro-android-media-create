@@ -25,10 +25,9 @@ import tempfile
 
 from linaro_image_tools import cmd_runner
 
-from linaro_image_tools.media_create.boards import android_board_configs
+from linaro_image_tools.media_create.android_boards import android_board_configs
 from linaro_image_tools.media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
-from linaro_image_tools.media_create.chroot_utils import install_hwpacks
 from linaro_image_tools.media_create.partitions import (
     Media,
     setup_partitions,
@@ -46,9 +45,7 @@ from linaro_image_tools.utils import ensure_command, is_arm_host
 
 # Just define the global variables
 TMP_DIR = None
-ROOTFS_DIR = None
 BOOT_DISK = None
-ROOT_DISK = None
 SYSTEM_DISK = None
 CACHE_DISK = None
 DATA_DISK = None
@@ -61,11 +58,11 @@ SDCARD_DISK = None
 def cleanup_tempdir():
     """Remove TEMP_DIR with all its contents.
 
-    Before doing so, make sure BOOT_DISK and ROOT_DISK are not mounted.
+    Before doing so, make sure DISKs are not mounted.
     """
     devnull = open('/dev/null', 'w')
     # ignore non-zero return codes
-    for disk in BOOT_DISK, ROOT_DISK, SYSTEM_DISK, CACHE_DISK, DATA_DISK, \
+    for disk in BOOT_DISK, SYSTEM_DISK, CACHE_DISK, DATA_DISK, \
                 SDCARD_DISK:
         if disk is not None:
             try:
@@ -86,10 +83,6 @@ def ensure_required_commands(args):
     if not is_arm_host():
         required_commands.append('qemu-arm-static')
         required_commands.append('qemu-img')
-    if args.rootfs in ['ext2', 'ext3', 'ext4']:
-        required_commands.append('mkfs.%s' % args.rootfs)
-    else:
-        required_commands.append('mkfs.btrfs')
     for command in required_commands:
         ensure_command(command)
 
@@ -108,12 +101,11 @@ if __name__ == '__main__':
     # If --help was specified this won't execute.
     # Create temp dir and initialize rest of path vars.
     TMP_DIR = tempfile.mkdtemp()
-    ROOT_DIR = os.path.join(TMP_DIR, 'root')
+    BOOT_DIR = os.path.join(TMP_DIR, 'boot')
     SYSTEM_DIR = os.path.join(TMP_DIR, 'system')
     DATA_DIR = os.path.join(TMP_DIR, 'data')
 
     BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
-    ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
     SYSTEM_DISK = os.path.join(TMP_DIR, 'system-disc')
     CACHE_DISK = os.path.join(TMP_DIR, 'cache-disc')
     DATA_DISK = os.path.join(TMP_DIR, 'userdata-disc')
@@ -135,23 +127,22 @@ if __name__ == '__main__':
         # All good, move on.
         pass
 
-
-    cmd_runner.run(['mkdir', '-p', ROOT_DIR]).wait()
+    cmd_runner.run(['mkdir', '-p', BOOT_DIR]).wait()
     cmd_runner.run(['mkdir', '-p', SYSTEM_DIR]).wait()
     cmd_runner.run(['mkdir', '-p', DATA_DIR]).wait()
 
-    unpack_android_binary_tarball(args.root, ROOT_DIR)
+    unpack_android_binary_tarball(args.boot, BOOT_DIR)
     unpack_android_binary_tarball(args.system, SYSTEM_DIR)
     unpack_android_binary_tarball(args.userdata, DATA_DIR)
 
     # Create partitions    
-    boot_partition, root_partition, system_partition, cache_partition, \
+    boot_partition, system_partition, cache_partition, \
         data_partition, sdcard_partition = setup_android_partitions( \
-        board_config, media, args.boot_label, args.rfs_label,
-        args.rootfs, args.should_create_partitions, args.should_format_bootfs,
-        args.should_format_rootfs, args.should_align_boot_part)
+        board_config, media, args.boot_label, args.should_create_partitions,
+        args.should_align_boot_part)
 
-    populate_partition(ROOT_DIR, ROOT_DISK, root_partition)
+    populate_partition(BOOT_DIR + "/boot", BOOT_DISK, boot_partition)
+    board_config.populate_boot_script(boot_partition, BOOT_DISK, args.consoles)
     populate_partition(SYSTEM_DIR + "/system", SYSTEM_DISK, system_partition)
     populate_partition(DATA_DIR + "/data", DATA_DISK, data_partition)
     print "Done creating Linaro Android image on %s" % args.device

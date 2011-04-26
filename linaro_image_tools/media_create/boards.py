@@ -193,54 +193,6 @@ class BoardConfig(object):
         return '%s,%s,%s,*\n%s,,,-' % (
             boot_start, boot_len, partition_type, root_start)
 
-    # TODO: Create separate config classes for android and move this method
-    # into them, also renaming it to get_sfdisk_cmd() so that we don't need
-    # the image_type check in partitions.py.
-    @classmethod
-    def get_android_sfdisk_cmd(cls, should_align_boot_part=False):
-        if cls.fat_size == 32:
-            partition_type = '0x0C'
-        else:
-            partition_type = '0x0E'
-
-        BOOT_MIN_SIZE_S = align_up(128 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        ROOT_MIN_SIZE_S = align_up(128 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        SYSTEM_MIN_SIZE_S = align_up(256 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        CACHE_MIN_SIZE_S = align_up(256 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        USERDATA_MIN_SIZE_S = align_up(512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        SDCARD_MIN_SIZE_S = align_up(512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-
-        # align on sector 63 for compatibility with broken versions of x-loader
-        # unless align_boot_part is set
-        boot_align = 63
-        if should_align_boot_part:
-            boot_align = PART_ALIGN_S
-
-        # can only start on sector 1 (sector 0 is MBR / partition table)
-        boot_start, boot_end, boot_len = align_partition(
-            1, BOOT_MIN_SIZE_S, boot_align, PART_ALIGN_S)
-        # apparently OMAP3 ROMs require the vfat length to be an even number
-        # of sectors (multiple of 1 KiB); decrease the length if it's odd,
-        # there should still be enough room
-        boot_len = boot_len - boot_len % 2
-        boot_end = boot_start + boot_len - 1
-
-        root_start, _root_end, _root_len = align_partition(
-            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
-        system_start, _system_end, _system_len = align_partition(
-            _root_end + 1, SYSTEM_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
-        cache_start, _cache_end, _cache_len = align_partition(
-            _system_end + 1, CACHE_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
-        userdata_start, _userdata_end, _userdata_len = align_partition(
-            _cache_end + 1, USERDATA_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
-        sdcard_start, _sdcard_end, _sdcard_len = align_partition(
-            _userdata_end + 1, SDCARD_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
-
-        return '%s,%s,%s,*\n%s,%s,L\n%s,%s,L\n%s,-,E\n%s,%s,L\n%s,%s,L\n%s,,,-' % (
-            boot_start, boot_len, partition_type, root_start, _root_len,
-            system_start, _system_len, cache_start, cache_start, _cache_len,
-            userdata_start, _userdata_len, sdcard_start)
-
     @classmethod
     def _get_bootcmd(cls, d_img_data):
         """Get the bootcmd for this board.
@@ -741,11 +693,6 @@ board_configs = {
     'mx53loco' : Mx53LoCoConfig,
     'overo': OveroConfig,
     'smdkv310': SMDKV310Config,
-    }
-
-android_board_configs = {
-    'beagle': BeagleConfig,
-    'panda': PandaConfig,
     }
 
 
