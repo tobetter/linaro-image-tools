@@ -89,6 +89,7 @@ def get_args_parser():
               'parameter can be defined multiple times.'))
     parser.add_argument(
         '--hwpack-sig', action='append', dest='hwpacksigs', required=False,
+        default=[],
         help=('Signature file for verifying a hwpack; this '
               'parameter can be defined multiple times.'))
     parser.add_argument(
