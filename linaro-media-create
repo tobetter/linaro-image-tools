@@ -104,15 +104,9 @@ if __name__ == '__main__':
 
     ensure_required_commands(args)
 
-    print "Verifying integrity of hwpacks and binary tarball."
-    if len(args.hwpacksigs) != len(args.hwpacks):
-        print "Number of hwpack signatures does not match number of hwpacks."
-
     sig_file_list = args.hwpacksigs[:]
     if args.binarysig is not None:
         sig_file_list.append(args.binarysig)
-    else:
-        print "Rootfs signature file not specified."
     for sig_file in sig_file_list:
         if cmd_runner.run(['gpg', '--verify', sig_file]).wait() != 0:
             print "Could not verify signature."
