@@ -14,5 +14,5 @@ DistUtilsExtra.auto.setup(
 
         scripts=[
             "linaro-hwpack-create", "linaro-hwpack-install",
-            "linaro-media-create"],
+            "linaro-media-create", "linaro-android-media-create"],
      )
