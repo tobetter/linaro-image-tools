@@ -5,7 +5,7 @@ import DistUtilsExtra.auto
 
 DistUtilsExtra.auto.setup(
         name="linaro-image-tools",
-        version="0.4.4",
+        version="0.4.5",
         description="Tools to create and write Linaro images",
         url="https://launchpad.net/linaro-image-tools",
         license="GPL v3 or later",
@@ -14,5 +14,5 @@ DistUtilsExtra.auto.setup(
 
         scripts=[
             "linaro-hwpack-create", "linaro-hwpack-install",
-            "linaro-media-create"],
+            "linaro-media-create", "linaro-android-media-create"],
      )

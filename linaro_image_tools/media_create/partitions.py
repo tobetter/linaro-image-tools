@@ -42,40 +42,28 @@ UDISKS = "org.freedesktop.UDisks"
 
 
 def setup_android_partitions(board_config, media, bootfs_label,
-                     rootfs_label, rootfs_type, should_create_partitions,
-                     should_format_bootfs, should_format_rootfs,
-                     should_align_boot_part=False):
+                     should_create_partitions, should_align_boot_part=False):
     cylinders = None
 
     if should_create_partitions:
         create_partitions(
             board_config, media, HEADS, SECTORS, cylinders,
-            should_align_boot_part=should_align_boot_part, image_type="ANDROID")
+            should_align_boot_part=should_align_boot_part)
 
-    bootfs, rootfs, system, cache, data, sdcard = \
+    bootfs, system, cache, data, sdcard = \
         get_android_partitions_for_media (media, board_config)
     ensure_partition_is_not_mounted(bootfs)
-    ensure_partition_is_not_mounted(rootfs)
     ensure_partition_is_not_mounted(system)
     ensure_partition_is_not_mounted(cache)
     ensure_partition_is_not_mounted(data)
     ensure_partition_is_not_mounted(sdcard)
 
-    if should_format_bootfs:
-        print "\nFormating boot partition\n"
-        proc = cmd_runner.run(
-            ['mkfs.vfat', '-F', str(board_config.fat_size), bootfs, '-n',
-             bootfs_label],
-            as_root=True)
-        proc.wait()
-
-    if should_format_rootfs:
-        print "\nFormating root partition\n"
-        mkfs = 'mkfs.%s' % rootfs_type
-        proc = cmd_runner.run(
-            [mkfs, rootfs, '-L', rootfs_label],
-            as_root=True)
-        proc.wait()
+    print "\nFormating boot partition\n"
+    proc = cmd_runner.run(
+        ['mkfs.vfat', '-F', str(board_config.fat_size), bootfs, '-n',
+         bootfs_label],
+        as_root=True)
+    proc.wait()
 
     ext4_partitions = {"system": system, "cache": cache, "userdata": data}
     for label, dev in ext4_partitions.iteritems():
@@ -91,7 +79,7 @@ def setup_android_partitions(board_config, media, bootfs_label,
         as_root=True)
     proc.wait()
 
-    return bootfs, rootfs, system, cache, data, sdcard
+    return bootfs, system, cache, data, sdcard
 
 # I wonder if it'd make sense to convert this into a small shim which calls
 # the appropriate function for the given type of device?  I think it's still
@@ -277,22 +265,20 @@ def get_android_partitions_for_media(media, board_config):
 
     boot_partition = _get_device_file_for_partition_number(
         media.path, 1 + board_config.mmc_part_offset)
-    root_partition = _get_device_file_for_partition_number(
-        media.path, 2 + board_config.mmc_part_offset)
     system_partition = _get_device_file_for_partition_number(
-        media.path, 3 + board_config.mmc_part_offset)
+        media.path, 2 + board_config.mmc_part_offset)
     cache_partition = _get_device_file_for_partition_number(
-        media.path, 5 + board_config.mmc_part_offset)
+        media.path, 3 + board_config.mmc_part_offset)
     data_partition = _get_device_file_for_partition_number(
-        media.path, 6 + board_config.mmc_part_offset)
+        media.path, 5 + board_config.mmc_part_offset)
     sdcard_partition = _get_device_file_for_partition_number(
-        media.path, 7 + board_config.mmc_part_offset)
+        media.path, 6 + board_config.mmc_part_offset)
 
-    assert boot_partition is not None and root_partition is not None, (
-        "Could not find boot/root partition for %s" % media.path)
+    assert boot_partition is not None, (
+        "Could not find boot partition for %s" % media.path)
 
-    return boot_partition, root_partition, system_partition, \
-        cache_partition, data_partition, sdcard_partition
+    return boot_partition, system_partition, cache_partition, \
+        data_partition, sdcard_partition
 
 def get_boot_and_root_partitions_for_media(media, board_config):
     """Return the device files for the boot and root partitions of media.
@@ -388,7 +374,7 @@ def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
 
 
 def create_partitions(board_config, media, heads, sectors, cylinders=None,
-                      should_align_boot_part=False, image_type=None):
+                      should_align_boot_part=False):
     """Partition the given media according to the board requirements.
 
     :param board_config: A BoardConfig class.
@@ -407,14 +393,8 @@ def create_partitions(board_config, media, heads, sectors, cylinders=None,
             ['parted', '-s', media.path, 'mklabel', 'msdos'], as_root=True)
         proc.wait()
 
-    # XXX: We should get rid of this by using separate config classes for
-    # android -- see comment in get_android_sfdisk_cmd() for more details.
-    if image_type == "ANDROID":
-        sfdisk_cmd = board_config.get_android_sfdisk_cmd(
-            should_align_boot_part=should_align_boot_part)
-    else:
-        sfdisk_cmd = board_config.get_sfdisk_cmd(
-            should_align_boot_part=should_align_boot_part)
+    sfdisk_cmd = board_config.get_sfdisk_cmd(
+        should_align_boot_part=should_align_boot_part)
 
     run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
 

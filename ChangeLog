@@ -1,3 +1,170 @@
+2011-04-27  Mattias Backman  <mattias.backman@linaro.org>
+
+	* setup.py:
+
+	Release 0.4.5
+
+2011-04-27  Mattias Backman  <mattias.backman@linaro.org>
+
+	* setup.py:
+
+	Include linaro-android-media-create in release.
+
+2011-04-27  James Westby  <james.westby@linaro.org>
+
+	* linaro-media-create:
+	* linaro_image_tools/media_create/__init__.py:
+
+	Optionally check signatures on hwpacks and images.
+
+2011-04-27  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro-media-create:
+
+	Replace magic number with len(.asc) and change error messages.
+
+2011-04-27  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro-media-create:
+
+	Remove error printouts.
+
+2011-04-26  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro-media-create:
+	* linaro_image_tools/media_create/__init__.py:
+
+	Make signature list default be empty list to avoid having to check for None.
+
+2011-04-21  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro-media-create:
+	* linaro_image_tools/media_create/__init__.py:
+
+	Make checking signatures optional.
+
+2011-04-21  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro-media-create:
+
+	Check that a signature file for each hwpack is passed.
+
+2011-04-21  Mattias Backman  <mattias.backman@linaro.org>
+
+	* linaro-media-create:
+	* linaro_image_tools/media_create/__init__.py:
+
+	Exit if gpg signature or archive hash cannot be verified.
+
+2011-04-26  James Westby  <james.westby@linaro.org>
+
+	* linaro_image_tools/media_create/android_boards.py:
+	* linaro-android-media-create:
+	* linaro_image_tools/media_create/__init__.py:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/partitions.py:
+
+	Move to boottarball for Android images.
+
+2011-04-22  jeremy.chang@linaro.org
+
+	* linaro_image_tools/media_create/android_boards.py:
+
+	Share more between the two bootscript
+
+2011-04-22  jeremy.chang@linaro.org
+
+	* linaro_image_tools/media_create/android_boards.py:
+
+	Fix umount error
+	
+	Fix the error of umount: device is busy by close the file
+
+2011-04-22  jeremy.chang@linaro.org
+
+	* linaro-android-media-create:
+	* linaro_image_tools/media_create/android_boards.py:
+
+	Use import to replace the duplicatd code
+
+2011-04-21  jeremy.chang@linaro.org
+
+	* linaro_image_tools/media_create/android_boards.py:
+
+	android_board.py: fix boot env
+	
+	change bootcmd property to _get_bootcmd method
+
+2011-04-19  jeremy.chang@linaro.org
+
+	* linaro-android-media-create:
+
+	l-a-m-c: Remove unused ROOTFS_DIR
+
+2011-04-19  jeremy.chang@linaro.org
+
+	* linaro-android-media-create:
+
+	linaro-android-media-create: remove the unnecessary and wrong import of install_hwpacks
+
+2011-04-18  jeremy.chang@linaro.org
+
+	* linaro_image_tools/media_create/android_boards.py:
+
+	Android kernel cmdline support added
+	
+	Take the cmdline file (in boottarball) into account when creating parameters 
+	for the kernel.
+
+2011-04-18  jeremy.chang@linaro.org
+
+	* linaro-android-media-create:
+	* linaro_image_tools/media_create/__init__.py:
+	* linaro_image_tools/media_create/android_boards.py:
+
+	generate boot.scr in android boot partition
+
+2011-04-12  jeremy.chang@linaro.org
+
+	* linaro_image_tools/media_create/android_boards.py:
+	* linaro-android-media-create:
+	* linaro_image_tools/media_create/__init__.py:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/partitions.py:
+
+	Create separate config classes for android
+	
+	get rid of the image type check.
+
+2011-04-11  jeremy.chang@linaro.org
+
+	* linaro-android-media-create:
+	* linaro_image_tools/media_create/__init__.py:
+	* linaro_image_tools/media_create/boards.py:
+	* linaro_image_tools/media_create/partitions.py:
+
+	Introduce boottarball to android to replace the roottarball
+	
+	rootfs partition is deprecated that is replaced by ramdisk image.
+	
+	Argument changed to as the example:
+	$ linaro-android-media-create --dev beagle --system system.tar.bz2 \
+	--userdata userdata.tar.bz2 --boot boot.tar.bz2 --mmc /dev/sdb
+
+2011-04-22  Loïc Minier<loic.minier@linaro.org>
+
+	* linaro-android-media-create:
+
+	Fix linaro-android-media-create imports: import media_create.chroot_utils
+	instaed of hwpack, and drop unused and unavailable populate_boot import;
+	LP: #768790.
+
+2011-04-21  Mattias Backman  <mattias.backman@linaro.org>
+
+	* setup.py:
+
+	Post-release version bump to 0.4.4.1
+
 2011-04-21  Mattias Backman  <mattias.backman@linaro.org>
 
 	* setup.py:
