@@ -106,6 +106,7 @@ if __name__ == '__main__':
     ensure_required_commands(args)
 
     sig_file_list = args.hwpacksigs[:]
+    verified_files = []
     if args.binarysig is not None:
         sig_file_list.append(args.binarysig)
     for sig_file in sig_file_list:
@@ -115,9 +116,9 @@ if __name__ == '__main__':
             sys.exit(1)
         sha1sums_out, _ = cmd_runner.run(['sha1sum', '-c', hash_file],
                                          stdout=subprocess.PIPE).communicate()
-        verified_files = sha1sums_out.splitlines()
-        for verified_file in verified_files:
-            print 'Hash verification of file %s' % verified_file
+        verified_files.extend(sha1sums_out.replace(': OK', '').splitlines())
+    for verified_file in verified_files:
+        print 'Hash verification of file %s OK.' % verified_file
 
     media = Media(args.device)
     if media.is_block_device:
@@ -138,7 +139,7 @@ if __name__ == '__main__':
     if lmc_dir == '':
         lmc_dir = None
     install_hwpacks(
-        ROOTFS_DIR, TMP_DIR, lmc_dir, args.hwpack_force_yes, *hwpacks)
+        ROOTFS_DIR, TMP_DIR, lmc_dir, args.hwpack_force_yes, verified_files, *hwpacks)
 
     if args.rootfs == 'btrfs':
         install_packages(ROOTFS_DIR, TMP_DIR, "btrfs-tools")
