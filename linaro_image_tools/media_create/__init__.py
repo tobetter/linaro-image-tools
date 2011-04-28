@@ -20,7 +20,7 @@
 import argparse
 
 from linaro_image_tools.media_create.boards import board_configs
-from linaro_image_tools.media_create.boards import android_board_configs
+from linaro_image_tools.media_create.android_boards import android_board_configs
 
 
 KNOWN_BOARDS = board_configs.keys()
@@ -88,6 +88,11 @@ def get_args_parser():
         help=('A hardware pack that should be installed in the rootfs; this '
               'parameter can be defined multiple times.'))
     parser.add_argument(
+        '--hwpack-sig', action='append', dest='hwpacksigs', required=False,
+        default=[],
+        help=('Signature file for verifying a hwpack; this '
+              'parameter can be defined multiple times.'))
+    parser.add_argument(
         '--hwpack-force-yes', action='store_true',
         help='Pass --force-yes to linaro-hwpack-install')
     parser.add_argument(
@@ -98,6 +103,9 @@ def get_args_parser():
         '--binary', default='binary-tar.tar.gz', required=True,
         help=('The tarball containing the rootfs used to create the bootable '
               'system.'))
+    parser.add_argument(
+        '--binary-sig', dest='binarysig', required=False,
+        help=('Signature file used for verifying the binary tarball.'))
     parser.add_argument(
         '--no-rootfs', dest='should_format_rootfs', action='store_false',
         help='Do not deploy the root filesystem.')
@@ -122,14 +130,12 @@ def get_android_args_parser():
         '--dev', required=True, dest='board', choices=ANDROID_KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
     parser.add_argument(
-        '--rootfs', default='ext4', choices=['ext3', 'ext4'],
-        help='Type of filesystem to use for the rootfs')
-    parser.add_argument(
-        '--rfs_label', default='rootfs',
-        help='Label to use for the root filesystem.')
-    parser.add_argument(
         '--boot_label', default='boot',
         help='Label to use for the boot filesystem.')
+    parser.add_argument(
+        '--console', action='append', dest='consoles', default=[],
+        help=('Add a console to kernel boot parameter; this parameter can be '
+              'defined multiple times.'))
 
     parser.add_argument(
         '--system', default='system.tar.bz2', required=True,
@@ -138,15 +144,9 @@ def get_android_args_parser():
         '--userdata', default='userdata.tar.bz2', required=True,
         help=('The tarball containing the Android data paritition'))
     parser.add_argument(
-        '--root', default='root.tar.bz2', required=True,
+        '--boot', default='boot.tar.bz2', required=True,
         help=('The tarball containing the Android root partition'))
 
-    parser.add_argument(
-        '--no-rootfs', dest='should_format_rootfs', action='store_false',
-        help='Do not deploy the root filesystem.')
-    parser.add_argument(
-        '--no-bootfs', dest='should_format_bootfs', action='store_false',
-        help='Do not deploy the boot filesystem.')
     parser.add_argument(
         '--no-part', dest='should_create_partitions', action='store_false',
         help='Reuse existing partitions on the given media.')
