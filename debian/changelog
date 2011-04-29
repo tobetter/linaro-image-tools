@@ -2,7 +2,7 @@ linaro-image-tools (0.4.5-0ubuntu1) natty; urgency=low
 
   * New upstream release.
 
- -- James Westby <jw2328@flash.jameswestby.net>  Thu, 28 Apr 2011 19:35:41 -0400
+ -- James Westby <james.westby@linaro.org>  Thu, 28 Apr 2011 19:35:41 -0400
 
 linaro-image-tools (0.4.4-0ubuntu1~linaro1) natty; urgency=low
 
