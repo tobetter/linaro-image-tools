@@ -112,7 +112,7 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
         cylinders = image_size_in_bytes / CYLINDER_SIZE
         proc = cmd_runner.run(
             ['dd', 'of=%s' % media.path,
-             'bs=1', 'seek=%s' % image_size_in_bytes],
+             'bs=1', 'seek=%s' % image_size_in_bytes, 'count=0'],
             stderr=open('/dev/null', 'w'))
         proc.wait()
 
