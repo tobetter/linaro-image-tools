@@ -812,8 +812,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
     def test_run_sfdisk_commands(self):
         tmpfile = self.createTempFileAsFixture()
         proc = cmd_runner.run(
-            ['qemu-img', 'create', '-f', 'raw', tmpfile, '10M'],
-            stdout=subprocess.PIPE)
+            ['dd', 'of=%s' % tmpfile, 'bs=1', 'seek=10M', 'count=0'],
+            stderr=open('/dev/null', 'w'))
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
             '2,16063,0xDA', HEADS, SECTORS, '', tmpfile, as_root=False,
@@ -899,8 +899,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def _create_qemu_img_with_partitions(self, sfdisk_commands):
         tmpfile = self.createTempFileAsFixture()
         proc = cmd_runner.run(
-            ['qemu-img', 'create', '-f', 'raw', tmpfile, '30M'],
-            stdout=subprocess.PIPE)
+            ['dd', 'of=%s' % tmpfile, 'bs=1', 'seek=30M', 'count=0'],
+            stderr=open('/dev/null', 'w'))
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
             sfdisk_commands, HEADS, SECTORS, '', tmpfile, as_root=False,
@@ -958,7 +958,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def test_setup_partitions_for_image_file(self):
         # In practice we could pass an empty image file to setup_partitions,
         # but here we mock Popen() and thanks to that the image is not setup
-        # (via qemu-img) inside setup_partitions.  That's why we pass an
+        # (via dd) inside setup_partitions.  That's why we pass an
         # already setup image file.
         tmpfile = self._create_tmpfile()
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
@@ -981,7 +981,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             'root', 'ext3', True, True, True)
         self.assertEqual(
              # This is the call that would create a 2 GiB image file.
-            ['qemu-img create -f raw %s 2147483648' % tmpfile,
+            ['dd of=%s bs=1 seek=2147483648 count=0' % tmpfile,
              # This call would partition the image file.
              '%s sfdisk --force -D -uS -H %s -S %s -C 1024 %s' % (
                  sudo_args, HEADS, SECTORS, tmpfile),
