@@ -59,8 +59,7 @@ def install_hwpacks(
         mount_chroot_proc(chroot_dir)
         for hwpack_file in hwpack_files:
             hwpack_verified = False
-            _, hwpack_filename = os.path.split(hwpack_file)
-            if hwpack_filename in verified_files:
+            if os.path.basename(hwpack_file) in verified_files:
                 hwpack_verified = True
             install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes or hwpack_verified)
     finally:
