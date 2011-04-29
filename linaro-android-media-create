@@ -82,7 +82,6 @@ def ensure_required_commands(args):
         'mkfs.vfat', 'sfdisk', 'mkimage', 'parted']
     if not is_arm_host():
         required_commands.append('qemu-arm-static')
-        required_commands.append('qemu-img')
     for command in required_commands:
         ensure_command(command)
 
