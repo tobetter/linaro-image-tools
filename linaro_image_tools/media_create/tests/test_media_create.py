@@ -812,8 +812,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
     def test_run_sfdisk_commands(self):
         tmpfile = self.createTempFileAsFixture()
         proc = cmd_runner.run(
-            ['qemu-img', 'create', '-f', 'raw', tmpfile, '10M'],
-            stdout=subprocess.PIPE)
+            ['dd', 'of=%s' % tmpfile, 'bs=1', 'seek=10M', 'count=0'],
+            stderr=open('/dev/null', 'w'))
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
             '2,16063,0xDA', HEADS, SECTORS, '', tmpfile, as_root=False,
@@ -899,8 +899,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def _create_qemu_img_with_partitions(self, sfdisk_commands):
         tmpfile = self.createTempFileAsFixture()
         proc = cmd_runner.run(
-            ['qemu-img', 'create', '-f', 'raw', tmpfile, '30M'],
-            stdout=subprocess.PIPE)
+            ['dd', 'of=%s' % tmpfile, 'bs=1', 'seek=30M', 'count=0'],
+            stderr=open('/dev/null', 'w'))
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
             sfdisk_commands, HEADS, SECTORS, '', tmpfile, as_root=False,
