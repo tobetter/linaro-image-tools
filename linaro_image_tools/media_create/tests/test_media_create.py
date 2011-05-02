@@ -1392,7 +1392,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
         prefer_dir = preferred_tools_dir()
 
         install_hwpacks(
-            chroot_dir, tmp_dir, prefer_dir, force_yes, 'hwpack1.tgz',
+            chroot_dir, tmp_dir, prefer_dir, force_yes, [], 'hwpack1.tgz',
             'hwpack2.tgz')
         linaro_hwpack_install = find_command(
             'linaro-hwpack-install', prefer_dir=prefer_dir)
@@ -1506,7 +1506,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
         exception_caught = False
         try:
             install_hwpacks(
-                'chroot', '/tmp/dir', preferred_tools_dir(), force_yes,
+                'chroot', '/tmp/dir', preferred_tools_dir(), force_yes, [],
                 'hwp.tgz', 'hwp2.tgz')
         except:
             exception_caught = True
