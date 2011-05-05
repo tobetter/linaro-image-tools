@@ -117,7 +117,6 @@ class HardwarePack(object):
     """
 
     # The format version cannot contain white spaces. 
-    FORMAT = "1.0"
     FORMAT_FILENAME = "FORMAT"
     METADATA_FILENAME = "metadata"
     MANIFEST_FILENAME = "manifest"
@@ -126,7 +125,7 @@ class HardwarePack(object):
     SOURCES_LIST_DIRNAME = "sources.list.d"
     SOURCES_LIST_GPG_DIRNAME = "sources.list.d.gpg"
 
-    def __init__(self, metadata):
+    def __init__(self, metadata, version):
         """Create a HardwarePack.
 
         :param metadata: the metadata to use.
@@ -135,6 +134,7 @@ class HardwarePack(object):
         self.metadata = metadata
         self.sources = {}
         self.packages = []
+        self.format = version
 
     def filename(self, extension=".tar.gz"):
         """The filename that this hardware pack should have.
@@ -225,7 +225,7 @@ class HardwarePack(object):
         kwargs["default_mtime"] = time.time()
         with writeable_tarfile(fileobj, mode="w:gz", **kwargs) as tf:
             tf.create_file_from_string(
-                self.FORMAT_FILENAME, self.FORMAT + "\n")
+                self.FORMAT_FILENAME, self.format + "\n")
             tf.create_file_from_string(
                 self.METADATA_FILENAME, str(self.metadata))
             tf.create_dir(self.PACKAGES_DIRNAME)
