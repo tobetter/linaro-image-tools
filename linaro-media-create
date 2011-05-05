@@ -110,7 +110,7 @@ if __name__ == '__main__':
         sig_file_list.append(args.binarysig)
     for sig_file in sig_file_list:
         hash_file = sig_file[0:-len('.asc')]
-        cmd_runner.run(['gpg', '--verify', sig_file]).wait() != 0:
+        cmd_runner.run(['gpg', '--verify', sig_file]).wait()
         sha1sums_out, _ = cmd_runner.run(['sha1sum', '-c', hash_file],
                                          stdout=subprocess.PIPE).communicate()
         verified_files.extend(sha1sums_out.replace(': OK', '').splitlines())
