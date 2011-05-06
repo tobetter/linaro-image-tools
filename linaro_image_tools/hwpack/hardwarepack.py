@@ -150,10 +150,11 @@ class Metadata(object):
             metadata += "INITRD_ADDR=%s\n" % self.initrd_addr
         if self.load_addr is not None:
             metadata += "LOAD_ADDR=%s\n" % self.load_addr
-        if self.wired_interfaces is not None:
-            metadata += "WIRED_INTERFACES=%s\n" % self.wired_interfaces
-        if self.wireless_interfaces is not None:
-            metadata += "WIRELESS_INTERFACES=%s\n" % self.wireless_interfaces
+        if self.wired_interfaces != []:
+            metadata += "WIRED_INTERFACES=%s\n" % " ".join(self.wired_interfaces)
+        if self.wireless_interfaces != []:
+            metadata += "WIRELESS_INTERFACES=%s\n" % " ".join(
+                self.wireless_interfaces)
         if self.partition_layout is not None:
             metadata += "PARTITION_LAYOUT=%s\n" % self.partition_layout
         if self.mmc_id is not None:

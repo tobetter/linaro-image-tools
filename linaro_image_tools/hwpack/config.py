@@ -42,6 +42,21 @@ class Config(object):
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
     ASSUME_INSTALLED_KEY = "assume-installed"
+    BOARD_KEY = "board"
+    CMDLINE_KEY = "cmdline"
+    U_BOOT_KEY = "u_boot"
+    VMLINUZ_KEY = "vmlinuz"
+    INITRD_KEY = "initrd"
+    OMAP_MLO_KEY = "omap_mlo"
+    SERIAL_TTY_KEY = "serial_tty"
+    KERNEL_ADDR_KEY = "kernel_addr"
+    INITRD_ADDR_KEY = "initrd_addr"
+    LOAD_ADDR_KEY = "load_addr"
+    FDT_KEY = "fdt"
+    WIRED_INTERFACES_KEY = "wired_interfaces"
+    WIRELESS_INTERFACES_KEY = "wireless_interfaces"
+    PARTITION_LAYOUT_KEY = "partition_layout"
+    MMC_ID_KEY = "mmc_id"
 
     def __init__(self, fp):
         """Create a Config.
@@ -65,6 +80,21 @@ class Config(object):
         self._validate_architectures()
         self._validate_assume_installed()
         self._validate_sections()
+        self._validate_board()
+        self._validate_cmdline()
+        self._validate_u_boot()
+        self._validate_vmlinuz()
+        self._validate_initrd()
+        self._validate_omap_mlo()
+        self._validate_serial_tty()
+        self._validate_kernel_addr()
+        self._validate_initrd_addr()
+        self._validate_load_addr()
+        self._validate_fdt()
+        self._validate_wired_interfaces()
+        self._validate_wireless_interfaces()
+        self._validate_partition_layout()
+        self._validate_mmc_id()
 
     @property
     def name(self):
@@ -99,6 +129,130 @@ class Config(object):
             return result
         except ConfigParser.NoOptionError:
             return None
+
+    @property
+    def board(self):
+        """The board that this hwpack is for.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.BOARD_KEY)
+
+
+    @property
+    def cmdline(self):
+        """The kernel command line.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.CMDLINE_KEY)
+
+
+    @property
+    def u_boot(self):
+        """The u-boot binary file
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.U_BOOT_KEY)
+
+    @property
+    def vmlinuz(self):
+        """Linux image file name relative to rootfs (vmlinux or vmlinuz) 
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.VMLINUZ_KEY)
+
+    @property
+    def initrd(self):
+        """initrd file name relative to rootfs 
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.INITRD_KEY)
+
+    @property
+    def omap_mlo(self):
+        """x-loader / MLO file name in the hwpack (OMAP specific) 
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.OMAP_MLO_KEY)
+
+    @property
+    def serial_tty(self):
+        """/dev device name of the serial console for this kernel 
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.SERIAL_TTY_KEY)
+
+    @property
+    def kernel_addr(self):
+        """address where u-boot should load the kernel 
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.KERNEL_ADDR_KEY)
+
+    @property
+    def initrd_addr(self):
+        """address where u-boot should load the kernel 
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.INITRD_ADDR_KEY)
+
+    @property
+    def load_addr(self):
+        """address for uImage generation
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.LOAD_ADDR_KEY)
+
+    @property
+    def fdt(self):
+        """device tree binary filename relative to rootfs 
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.FDT_KEY)
+
+    @property
+    def wired_interfaces(self):
+        """The interfaces for wired networks
+
+        A list of str.
+        """
+        return self._get_list_from_main_section(self.WIRED_INTERFACES_KEY)
+
+    @property
+    def wireless_interfaces(self):
+        """The interfaces for wireless networks
+
+        A list of str.
+        """
+        return self._get_list_from_main_section(self.WIRELESS_INTERFACES_KEY)
+
+    @property
+    def partition_layout(self):
+        """bootfs16_rootfs, bootfs_rootfs and reserved_bootfs_rootfs; 
+        controls what kind of SD card partition layout we should use when 
+        writing images 
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.PARTITION_LAYOUT_KEY)
+
+    @property
+    def mmc_id(self):
+        """which MMC drive contains the boot filesystem 
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.MMC_ID_KEY)
 
     @property
     def origin(self):
@@ -184,6 +338,76 @@ class Config(object):
         except ConfigParser.NoOptionError:
             raise HwpackConfigError(
                 "No name in the [%s] section" % self.MAIN_SECTION)
+
+    def notify_not_implemented(self):
+        """ Alert that a _validate function needs to be implemented.
+        Remove this when format of new parameters are defined and
+        implementation matches the format.
+        """
+        print "XXX _validate function not implemented in %s" % __name__
+
+    def _validate_board(self):
+        self.notify_not_implemented()
+
+        try:
+            board = self.board
+            if not board:
+                raise HwpackConfigError("Empty value for board")
+        except ConfigParser.NoOptionError:
+            raise HwpackConfigError(
+                "No board in the [%s] section" % self.MAIN_SECTION)
+
+    def _validate_cmdline(self):
+        self.notify_not_implemented()
+
+    def _validate_u_boot(self):
+        self.notify_not_implemented()
+
+    def _validate_vmlinuz(self):
+        self.notify_not_implemented()
+
+    def _validate_initrd(self):
+        self.notify_not_implemented()
+
+    def _validate_omap_mlo(self):
+        self.notify_not_implemented()
+
+    def _validate_serial_tty(self):
+        self.notify_not_implemented()
+
+    def _validate_kernel_addr(self):
+        self.notify_not_implemented()
+
+    def _validate_initrd_addr(self):
+        self.notify_not_implemented()
+
+    def _validate_load_addr(self):
+        self.notify_not_implemented()
+
+    def _validate_fdt(self):
+        self.notify_not_implemented()
+
+    def _validate_wired_interfaces(self):
+        self.notify_not_implemented()
+
+    def _validate_wireless_interfaces(self):
+        self.notify_not_implemented()
+
+    def _validate_partition_layout(self):
+        defined_partition_layouts = ['bootfs16_rootfs',
+                                     'bootfs_rootfs',
+                                     'reserved_bootfs_rootfs',
+                                     ]
+        if self.partition_layout not in defined_partition_layouts:
+            raise HwpackConfigError(
+                "Undefined partition layout %s in the [%s] section. "
+                "Valid partion layouts are %s."
+                % (self.partition_layout, self.MAIN_SECTION,
+                   ", ".join(defined_partition_layouts)))
+            
+
+    def _validate_mmc_id(self):
+        self.notify_not_implemented()
 
     def _validate_include_debs(self):
         try:
