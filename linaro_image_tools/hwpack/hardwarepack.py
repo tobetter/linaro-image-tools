@@ -110,7 +110,14 @@ class Metadata(object):
         """
         return cls(
             config.name, version, architecture, origin=config.origin,
-            maintainer=config.maintainer, support=config.support)
+            maintainer=config.maintainer, support=config.support,
+            board=config.board, cmdline=config.cmdline, u_boot=config.u_boot, 
+            vmlinuz=config.vmlinuz, initrd=config.initrd, omap_mlo=config.omap_mlo,
+            serial_tty=config.serial_tty, kernel_addr=config.kernel_addr,
+            initrd_addr=config.initrd_addr, load_addr=config.load_addr,
+            fdt=config.fdt, wired_interfaces=config.wired_interfaces,
+            wireless_interfaces=config.wireless_interfaces,
+            partition_layout=config.partition_layout, mmc_id=config.mmc_id)
 
     def __str__(self):
         """Get the contents of the metadata file."""
@@ -123,6 +130,34 @@ class Metadata(object):
             metadata += "MAINTAINER=%s\n" % self.maintainer
         if self.support is not None:
             metadata += "SUPPORT=%s\n" % self.support
+        if self.board is not None:
+            metadata += "BOARD=%s\n" % self.board
+        if self.cmdline is not None:
+            metadata += "CMDLINE=%s\n" % self.cmdline
+        if self.u_boot is not None:
+            metadata += "U_BOOT=%s\n" % self.u_boot
+        if self.vmlinuz is not None:
+            metadata += "VMLINUZ=%s\n" % self.vmlinuz
+        if self.initrd is not None:
+            metadata += "INITRD=%s\n" % self.initrd
+        if self.omap_mlo is not None:
+            metadata += "OMAP_MLO=%s\n" % self.omap_mlo
+        if self.serial_tty is not None:
+            metadata += "SERIAL_TTY=%s\n" % self.serial_tty
+        if self.kernel_addr is not None:
+            metadata += "KERNEL_ADDR=%s\n" % self.kernel_addr
+        if self.initrd_addr is not None:
+            metadata += "INITRD_ADDR=%s\n" % self.initrd_addr
+        if self.load_addr is not None:
+            metadata += "LOAD_ADDR=%s\n" % self.load_addr
+        if self.wired_interfaces is not None:
+            metadata += "WIRED_INTERFACES=%s\n" % self.wired_interfaces
+        if self.wireless_interfaces is not None:
+            metadata += "WIRELESS_INTERFACES=%s\n" % self.wireless_interfaces
+        if self.partition_layout is not None:
+            metadata += "PARTITION_LAYOUT=%s\n" % self.partition_layout
+        if self.mmc_id is not None:
+            metadata += "MMC_ID=%s\n" % self.mmc_id
         return metadata
 
 
