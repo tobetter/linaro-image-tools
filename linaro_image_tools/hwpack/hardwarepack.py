@@ -55,7 +55,11 @@ class Metadata(object):
     """
 
     def __init__(self, name, version, architecture, origin=None,
-                 maintainer=None, support=None):
+                 maintainer=None, support=None,
+                 board=None, cmdline=None, u_boot=None, vmlinuz=None, initrd=None,
+                 omap_mlo=None, serial_tty=None, kernel_addr=None, initrd_addr=None,
+                 load_addr=None, fdt=None, wired_interfaces=None,
+                 wireless_interfaces=None, partition_layout=None, mmc_id=None):
         """Create the Metadata for a hardware pack.
 
         See the instance variables for a description of the arguments.
@@ -70,6 +74,21 @@ class Metadata(object):
         self.maintainer = maintainer
         self.support = support
         self.architecture = architecture
+        self.board = board
+        self.cmdline = cmdline
+        self.u_boot = u_boot
+        self.vmlinuz = vmlinuz
+        self.initrd = initrd
+        self.omap_mlo = omap_mlo
+        self.serial_tty = serial_tty
+        self.kernel_addr = kernel_addr
+        self.initrd_addr = initrd_addr
+        self.load_addr = load_addr
+        self.fdt = fdt
+        self.wired_interfaces = wired_interfaces
+        self.wireless_interfaces = wireless_interfaces
+        self.partition_layout = partition_layout
+        self.mmc_id = mmc_id
 
     @classmethod
     def from_config(cls, config, version, architecture):
