@@ -331,7 +331,7 @@ def convert_size_to_bytes(size):
     """Convert a size string in Kbytes, Mbytes or Gbytes to bytes."""
     unit = size[-1].upper()
     # no unit? (ends with a digit)
-    if ord(unit) in range(ord('0'), ord('9') + 1):
+    if unit in '0123456789':
         return int(size)
     real_size = int(size[:-1])
     if unit == 'K':
