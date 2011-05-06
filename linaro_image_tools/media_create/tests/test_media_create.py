@@ -846,6 +846,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
         return self._create_qemu_img_with_partitions(
             '16384,15746,0x0C,*\n32768,,,-')
 
+    def test_convert_size_no_suffix(self):
+        self.assertEqual(524288, convert_size_to_bytes('524288'))
+
     def test_convert_size_in_kbytes_to_bytes(self):
         self.assertEqual(512 * 1024, convert_size_to_bytes('512K'))
 
