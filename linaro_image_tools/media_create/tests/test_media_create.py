@@ -628,6 +628,8 @@ class TestBoards(TestCaseWithFixtures):
         file1 = self.createTempFileAsFixture(prefix)
         file2 = self.createTempFileAsFixture(prefix)
         directory = os.path.dirname(file1)
+        assert directory == os.path.dirname(file2), (
+            "file1 and file2 should be in the same directory")
         self.assertRaises(
             ValueError, _get_file_matching, '%s/%s*' % (directory, prefix))
 
