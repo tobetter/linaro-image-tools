@@ -495,6 +495,136 @@ class Ux500Config(BoardConfig):
         make_boot_script(boot_env, boot_script_path)
 
 
+class SnowballSdcardConfig(Ux500Config):
+    '''Use only with --mmc option. Creates the standard vfat and ext2
+       partitions for kernel and rootfs on an SD card.
+       Note that the Snowball board needs a loader partition on the
+       internal eMMC flash to boot. That partition is created with
+       the SnowballConfigImage configuration.'''
+
+    @classmethod
+    def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
+        make_uImage(cls.load_addr, k_img_data, boot_dir)
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
+        make_boot_script(boot_env, boot_script_path)
+
+
+class SnowballImageConfig(SnowballSdcardConfig):
+    '''Use only with --image option. Creates a raw image which contains an
+       additional (raw) loader partition, containing some boot stages
+       and u-boot.'''
+    # Boot ROM looks for a boot table of contents (TOC) at 0x20000
+    # Actually, it first looks at address 0, but that's where l-m-c
+    # puts the MBR, so the boot loader skips that address. 
+    LOADER_START_S = (128 * 1024) / SECTOR_SIZE
+
+    @classmethod
+    def get_sfdisk_cmd(cls, should_align_boot_part=None):
+        """Return the sfdisk command to partition the media.
+
+        :param should_align_boot_part: Ignored.
+
+        The Snowball partitioning scheme depends on whether the target is
+        a raw image or an SD card. Both targets have the normal
+        FAT 32 boot partition and EXT? root partition.
+        The raw image prepends these two partitions with a raw loader partition,
+        containing HW-dependent boot stages up to and including u-boot.
+        This is done since the boot rom always boots off the internal memory;
+        there simply is no point to having a loader partition on SD card.
+        """
+        # boot ROM expects bootloader at 0x20000, which is sector 0x100 
+        # with the usual SECTOR_SIZE of 0x200.
+        # (sector 0 is MBR / partition table)
+        loader_start, loader_end, loader_len = align_partition(
+            SnowballImageConfig.LOADER_START_S, 
+            LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
+
+        boot_start, boot_end, boot_len = align_partition(
+            loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+        # we ignore _root_end / _root_len and return an sfdisk command to
+        # instruct the use of all remaining space; XXX if we had some root size
+        # config, we could do something more sensible
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
+        loader_start, loader_len, boot_start, boot_len, root_start)
+
+
+    @classmethod
+    def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
+        make_uImage(cls.load_addr, k_img_data, boot_dir)
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
+        make_boot_script(boot_env, boot_script_path)
+        toc_filename = 'toc.bin'
+        # Adresses are relative the toc at 0x20000
+        files = [('ISSW', 'boot_image_issw.bin', -1, 0, 0),
+                 ('X-LOADER', 'boot_image_x-loader.bin', -1, 0, 0),
+                 ('MEM_INIT', 'mem_init.bin', 0, 0x160000, 0),
+                 ('PWR_MGT', 'power_management.bin', 0, 0x170000, 0),
+                 ('NORMAL', 'u-boot.bin', 0, 0xBA0000, 0),
+                 ('UBOOT_ENV', 'u-boot-env.bin', 0, 0x00C1F000, 0)]
+        config_files_path = os.path.join(chroot_dir, 'boot')
+        new_files = get_file_info(config_files_path, files)
+        with open(toc_filename, 'wb') as toc:
+            create_toc(toc, new_files)
+        install_snowball_boot_loader(toc_filename, new_files, 
+                                     boot_device_or_file, cls.LOADER_START_S)
+        os.remove(toc_filename)
+
+
+
+def install_snowball_boot_loader(toc_file_name, files, 
+                                 boot_device_or_file, start_sector):
+    ''' Copies TOC and boot files into the boot partition.
+        A sector size of 1 is used for some files, as they do not
+        necessarily start on an even address. '''
+    _dd(toc_file_name, boot_device_or_file, seek=start_sector)
+    for item in files:
+        section, filename, dummy_flag, offset, size = item
+        if (offset % SECTOR_SIZE) != 0:
+            seek_bytes = start_sector * SECTOR_SIZE + offset
+            _dd(filename, boot_device_or_file, block_size=1, seek=seek_bytes)
+        else:
+            seek_sectors = start_sector + offset/SECTOR_SIZE
+            _dd(filename, boot_device_or_file, seek=seek_sectors)
+
+
+def create_toc(f, files):
+    ''' Writes a table of contents of the boot binaries.
+        Boot rom searches this table to find the binaries.'''
+    for item in files:
+        section, filename, flag, address, size = item
+        data = struct.pack('<IIIii12s', 
+                           address,
+                           size, 
+                           0, flag, flag, 
+                           section)
+        f.write(data)
+
+
+def get_file_info(bin_dir, files):
+    ''' Fills in the offsets of files that are located in
+        non-absolute memory locations depending on their sizes.'
+        Also fills in file sizes'''
+    toc_size = 512
+    ofs = toc_size
+    for i in range(len(files)):
+        section, filename, flag, address, sz = files[i]
+        filename = os.path.join(bin_dir, filename)
+        if address != 0:
+            ofs = address
+        size = os.path.getsize(filename)
+        files[i] = section, filename, flag, ofs, size
+        ofs += size
+    return files
+
+
+
 class Mx5Config(BoardConfig):
     serial_tty = 'ttymxc0'
     extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
@@ -687,6 +817,8 @@ board_configs = {
     'panda': PandaConfig,
     'vexpress': VexpressConfig,
     'ux500': Ux500Config,
+    'snowball_sdcard': SnowballSdcardConfig,
+    'snowball_image': SnowballImageConfig,
     'efikamx': EfikamxConfig,
     'efikasb': EfikasbConfig,
     'mx51evk': Mx51evkConfig,

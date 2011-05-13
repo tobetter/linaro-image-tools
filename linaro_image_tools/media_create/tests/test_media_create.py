@@ -213,6 +213,18 @@ class TestBootSteps(TestCaseWithFixtures):
         expected = ['make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
+    def test_snowball_sdcard_steps(self):
+        self.make_boot_files(boards.SnowballSdcardConfig)
+        expected = ['make_uImage', 'make_boot_script']
+        self.assertEqual(expected, self.funcs_calls)
+
+    def test_snowball_image_steps(self):
+        self.make_boot_files(boards.SnowballImageConfig)
+        expected = ['make_uImage', 'make_boot_script',
+                    'get_file_info', 'create_toc', 
+                    'install_snowball_boot_loader']
+        self.assertEqual(expected, self.funcs_calls)
+
     def test_panda_steps(self):
         self.mock_set_appropriate_serial_tty(boards.PandaConfig)
         self.make_boot_files(boards.PandaConfig)
@@ -330,6 +342,16 @@ class TestGetSfdiskCmd(TestCase):
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             boards.Mx5Config.get_sfdisk_cmd())
 
+    def test_snowball_sdcard(self):
+        self.assertEqual(
+            '63,106432,0x0C,*\n106496,,,-',
+            boards.SnowballSdcardConfig.get_sfdisk_cmd())
+
+    def test_snowball_image(self):
+        self.assertEqual(
+            '256,7936,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            boards.SnowballImageConfig.get_sfdisk_cmd())
+
     def test_smdkv310(self):
         self.assertEquals(
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
@@ -392,6 +414,23 @@ class TestGetBootCmd(TestCase):
                        'fatload mmc 1:1 0x08000000 uInitrd; '
                        'bootm 0x00100000 0x08000000'}
         self.assertEqual(expected, boot_commands)
+
+    def test_snowball_image(self):
+        boot_commands = board_configs['snowball_image']._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=[],
+            rootfs_uuid="deadbeef", d_img_data=None)
+        expected = {
+            'bootargs': 'console=tty0 console=ttyAMA2,115200n8  '
+                        'root=UUID=deadbeef rootwait ro earlyprintk '
+                        'rootdelay=1 fixrtc nocompcache mem=96M@0 '
+                        'mem_modem=32M@96M mem=44M@128M pmem=22M@172M '
+                        'mem=30M@194M mem_mali=32M@224M pmem_hwb=54M@256M '
+                        'hwmem=48M@302M mem=152M@360M',
+            'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
+                       'fatload mmc 1:1 0x08000000 uInitrd; '
+                       'bootm 0x00100000 0x08000000'}
+        self.assertEqual(expected, boot_commands)
+
 
     def test_panda(self):
         # XXX: To fix bug 697824 we have to change class attributes of our
