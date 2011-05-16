@@ -583,8 +583,7 @@ class SnowballImageConfig(SnowballSdcardConfig):
         A sector size of 1 is used for some files, as they do not
         necessarily start on an even address. '''
         _dd(toc_file_name, boot_device_or_file, seek=start_sector)
-        for item in files:
-            section, filename, dummy_flag, offset, size = item
+        for _, filename, _, offset, _ in files:
             if (offset % SECTOR_SIZE) != 0:
                 seek_bytes = start_sector * SECTOR_SIZE + offset
                 _dd(filename, boot_device_or_file, block_size=1,
