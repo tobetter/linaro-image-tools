@@ -559,7 +559,8 @@ class SnowballImageConfig(SnowballSdcardConfig):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
-        toc_filename = 'toc.bin'
+        _, toc_filename = tempfile.mkstemp()
+        atexit.register(os.unlink, toc_filename)
         # Adresses are relative the toc at 0x20000
         files = [('ISSW', 'boot_image_issw.bin', -1, 0, 0),
                  ('X-LOADER', 'boot_image_x-loader.bin', -1, 0, 0),
@@ -574,7 +575,6 @@ class SnowballImageConfig(SnowballSdcardConfig):
         cls.install_snowball_boot_loader(toc_filename, new_files,
                                      boot_device_or_file,
                                      cls.SNOWBALL_LOADER_START_S)
-        os.remove(toc_filename)
 
     @classmethod
     def install_snowball_boot_loader(cls, toc_file_name, files,
