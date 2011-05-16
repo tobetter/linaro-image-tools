@@ -552,7 +552,6 @@ class SnowballImageConfig(SnowballSdcardConfig):
         return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
         loader_start, loader_len, boot_start, boot_len, root_start)
 
-
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
@@ -569,60 +568,60 @@ class SnowballImageConfig(SnowballSdcardConfig):
                  ('NORMAL', 'u-boot.bin', 0, 0xBA0000, 0),
                  ('UBOOT_ENV', 'u-boot-env.bin', 0, 0x00C1F000, 0)]
         config_files_path = os.path.join(chroot_dir, 'boot')
-        new_files = get_file_info(config_files_path, files)
+        new_files = cls.get_file_info(config_files_path, files)
         with open(toc_filename, 'wb') as toc:
-            create_toc(toc, new_files)
-        install_snowball_boot_loader(toc_filename, new_files, 
-                                     boot_device_or_file, cls.SNOWBALL_LOADER_START_S)
+            cls.create_toc(toc, new_files)
+        cls.install_snowball_boot_loader(toc_filename, new_files,
+                                     boot_device_or_file,
+                                     cls.SNOWBALL_LOADER_START_S)
         os.remove(toc_filename)
 
-
-
-def install_snowball_boot_loader(toc_file_name, files, 
-                                 boot_device_or_file, start_sector):
-    ''' Copies TOC and boot files into the boot partition.
+    @classmethod
+    def install_snowball_boot_loader(cls, toc_file_name, files,
+                                     boot_device_or_file, start_sector):
+        ''' Copies TOC and boot files into the boot partition.
         A sector size of 1 is used for some files, as they do not
         necessarily start on an even address. '''
-    _dd(toc_file_name, boot_device_or_file, seek=start_sector)
-    for item in files:
-        section, filename, dummy_flag, offset, size = item
-        if (offset % SECTOR_SIZE) != 0:
-            seek_bytes = start_sector * SECTOR_SIZE + offset
-            _dd(filename, boot_device_or_file, block_size=1, seek=seek_bytes)
-        else:
-            seek_sectors = start_sector + offset/SECTOR_SIZE
-            _dd(filename, boot_device_or_file, seek=seek_sectors)
+        _dd(toc_file_name, boot_device_or_file, seek=start_sector)
+        for item in files:
+            section, filename, dummy_flag, offset, size = item
+            if (offset % SECTOR_SIZE) != 0:
+                seek_bytes = start_sector * SECTOR_SIZE + offset
+                _dd(filename, boot_device_or_file, block_size=1,
+                    seek=seek_bytes)
+            else:
+                seek_sectors = start_sector + offset/SECTOR_SIZE
+                _dd(filename, boot_device_or_file, seek=seek_sectors)
 
-
-def create_toc(f, files):
-    ''' Writes a table of contents of the boot binaries.
+    @classmethod
+    def create_toc(cls, f, files):
+        ''' Writes a table of contents of the boot binaries.
         Boot rom searches this table to find the binaries.'''
-    for item in files:
-        section, filename, flag, address, size = item
-        data = struct.pack('<IIIii12s', 
-                           address,
-                           size, 
-                           0, flag, flag, 
-                           section)
-        f.write(data)
+        for item in files:
+            section, filename, flag, address, size = item
+            data = struct.pack('<IIIii12s',
+                               address,
+                               size,
+                               0, flag, flag,
+                               section)
+            f.write(data)
 
-
-def get_file_info(bin_dir, files):
-    ''' Fills in the offsets of files that are located in
+    @classmethod
+    def get_file_info(cls, bin_dir, files):
+        ''' Fills in the offsets of files that are located in
         non-absolute memory locations depending on their sizes.'
         Also fills in file sizes'''
-    toc_size = 512
-    ofs = toc_size
-    for i in range(len(files)):
-        section, filename, flag, address, sz = files[i]
-        filename = os.path.join(bin_dir, filename)
-        if address != 0:
-            ofs = address
-        size = os.path.getsize(filename)
-        files[i] = section, filename, flag, ofs, size
-        ofs += size
-    return files
-
+        toc_size = 512
+        ofs = toc_size
+        for i in range(len(files)):
+            section, filename, flag, address, sz = files[i]
+            filename = os.path.join(bin_dir, filename)
+            if address != 0:
+                ofs = address
+            size = os.path.getsize(filename)
+            files[i] = section, filename, flag, ofs, size
+            ofs += size
+        return files
 
 
 class Mx5Config(BoardConfig):
