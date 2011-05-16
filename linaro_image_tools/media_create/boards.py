@@ -614,7 +614,7 @@ class SnowballImageConfig(SnowballSdcardConfig):
         toc_size = 512
         ofs = toc_size
         updated_files = []
-        for section, filename, flag, address, sz in files:
+        for section, filename, flag, address, _ in files:
             filename = os.path.join(bin_dir, filename)
             if address != 0:
                 ofs = address
