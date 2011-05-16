@@ -518,7 +518,7 @@ class SnowballImageConfig(SnowballSdcardConfig):
     # Boot ROM looks for a boot table of contents (TOC) at 0x20000
     # Actually, it first looks at address 0, but that's where l-m-c
     # puts the MBR, so the boot loader skips that address. 
-    LOADER_START_S = (128 * 1024) / SECTOR_SIZE
+    SNOWBALL_LOADER_START_S = (128 * 1024) / SECTOR_SIZE
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=None):
@@ -538,7 +538,7 @@ class SnowballImageConfig(SnowballSdcardConfig):
         # with the usual SECTOR_SIZE of 0x200.
         # (sector 0 is MBR / partition table)
         loader_start, loader_end, loader_len = align_partition(
-            SnowballImageConfig.LOADER_START_S, 
+            SnowballImageConfig.SNOWBALL_LOADER_START_S, 
             LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
 
         boot_start, boot_end, boot_len = align_partition(
@@ -573,7 +573,7 @@ class SnowballImageConfig(SnowballSdcardConfig):
         with open(toc_filename, 'wb') as toc:
             create_toc(toc, new_files)
         install_snowball_boot_loader(toc_filename, new_files, 
-                                     boot_device_or_file, cls.LOADER_START_S)
+                                     boot_device_or_file, cls.SNOWBALL_LOADER_START_S)
         os.remove(toc_filename)
 
 
