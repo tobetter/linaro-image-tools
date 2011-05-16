@@ -597,8 +597,7 @@ class SnowballImageConfig(SnowballSdcardConfig):
     def create_toc(cls, f, files):
         ''' Writes a table of contents of the boot binaries.
         Boot rom searches this table to find the binaries.'''
-        for item in files:
-            section, filename, flag, address, size = item
+        for section, filename, flag, address, size in files:
             data = struct.pack('<IIIii12s',
                                address,
                                size,
