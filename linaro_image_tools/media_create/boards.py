@@ -598,6 +598,14 @@ class SnowballImageConfig(SnowballSdcardConfig):
         ''' Writes a table of contents of the boot binaries.
         Boot rom searches this table to find the binaries.'''
         for section, filename, flag, address, size in files:
+            # Format string means: < little endian,
+            # I; unsigned int; offset,
+            # I; unsigned int; size,
+            # I; unsigned int; flags,
+            # i; int; align,
+            # i; int; load_address,
+            # 12s; string of char; name
+            # http://igloocommunity.org/support/index.php/ConfigPartitionOverview
             data = struct.pack('<IIIii12s',
                                address,
                                size,
