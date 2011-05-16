@@ -561,15 +561,9 @@ class SnowballImageConfig(SnowballSdcardConfig):
         make_boot_script(boot_env, boot_script_path)
         _, toc_filename = tempfile.mkstemp()
         atexit.register(os.unlink, toc_filename)
-        # Adresses are relative the toc at 0x20000
-        files = [('ISSW', 'boot_image_issw.bin', -1, 0, 0),
-                 ('X-LOADER', 'boot_image_x-loader.bin', -1, 0, 0),
-                 ('MEM_INIT', 'mem_init.bin', 0, 0x160000, 0),
-                 ('PWR_MGT', 'power_management.bin', 0, 0x170000, 0),
-                 ('NORMAL', 'u-boot.bin', 0, 0xBA0000, 0),
-                 ('UBOOT_ENV', 'u-boot-env.bin', 0, 0x00C1F000, 0)]
         config_files_path = os.path.join(chroot_dir, 'boot')
-        new_files = cls.get_file_info(config_files_path, files)
+        new_files = cls.get_file_info(config_files_path,
+                                      'snowball_toc.txt')
         with open(toc_filename, 'wb') as toc:
             cls.create_toc(toc, new_files)
         cls.install_snowball_boot_loader(toc_filename, new_files,
@@ -583,20 +577,20 @@ class SnowballImageConfig(SnowballSdcardConfig):
         A sector size of 1 is used for some files, as they do not
         necessarily start on an even address. '''
         _dd(toc_file_name, boot_device_or_file, seek=start_sector)
-        for _, filename, _, offset, _ in files:
-            if (offset % SECTOR_SIZE) != 0:
-                seek_bytes = start_sector * SECTOR_SIZE + offset
-                _dd(filename, boot_device_or_file, block_size=1,
+        for file in files:
+            if (file['offset'] % SECTOR_SIZE) != 0:
+                seek_bytes = start_sector * SECTOR_SIZE + file['offset']
+                _dd(file['filename'], boot_device_or_file, block_size=1,
                     seek=seek_bytes)
             else:
-                seek_sectors = start_sector + offset/SECTOR_SIZE
-                _dd(filename, boot_device_or_file, seek=seek_sectors)
+                seek_sectors = start_sector + file['offset']/SECTOR_SIZE
+                _dd(file['filename'], boot_device_or_file, seek=seek_sectors)
 
     @classmethod
     def create_toc(cls, f, files):
         ''' Writes a table of contents of the boot binaries.
         Boot rom searches this table to find the binaries.'''
-        for section, filename, flag, address, size in files:
+        for file in files:
             # Format string means: < little endian,
             # I; unsigned int; offset,
             # I; unsigned int; size,
@@ -606,28 +600,36 @@ class SnowballImageConfig(SnowballSdcardConfig):
             # 12s; string of char; name
             # http://igloocommunity.org/support/index.php/ConfigPartitionOverview
             data = struct.pack('<IIIii12s',
-                               address,
-                               size,
-                               0, flag, flag,
-                               section)
+                               file['address'],
+                               file['size'],
+                               0, file['flag'], file['flag'],
+                               file['section'])
             f.write(data)
 
     @classmethod
-    def get_file_info(cls, bin_dir, files):
+    def get_file_info(cls, bin_dir, info_file_name):
         ''' Fills in the offsets of files that are located in
         non-absolute memory locations depending on their sizes.'
         Also fills in file sizes'''
         toc_size = 512
         ofs = toc_size
-        updated_files = []
-        for section, filename, flag, address, _ in files:
-            filename = os.path.join(bin_dir, filename)
-            if address != 0:
-                ofs = address
-            size = os.path.getsize(filename)
-            updated_files.append((section, filename, flag, ofs, size))
-            ofs += size
-        return updated_files
+        files = []
+        with open(info_file_name, 'r') as info_file:
+            for line in info_file:
+                file_data = line.split()
+                print file_data
+                filename = os.path.join(bin_dir, file_data[1])
+                address = long(file_data[3], 16)
+                if address != 0:
+                    ofs = address
+                size = os.path.getsize(filename)
+                files.append({'section': file_data[0],
+                              'filename': filename,
+                              'flag': int(file_data[2]),
+                              'address': ofs,
+                              'size': size})
+                ofs += size
+        return files
 
 
 class Mx5Config(BoardConfig):
