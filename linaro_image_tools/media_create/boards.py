@@ -613,15 +613,15 @@ class SnowballImageConfig(SnowballSdcardConfig):
         Also fills in file sizes'''
         toc_size = 512
         ofs = toc_size
-        for i in range(len(files)):
-            section, filename, flag, address, sz = files[i]
+        updated_files = []
+        for section, filename, flag, address, sz in files:
             filename = os.path.join(bin_dir, filename)
             if address != 0:
                 ofs = address
             size = os.path.getsize(filename)
-            files[i] = section, filename, flag, ofs, size
+            updated_files.append((section, filename, flag, ofs, size))
             ofs += size
-        return files
+        return updated_files
 
 
 class Mx5Config(BoardConfig):
