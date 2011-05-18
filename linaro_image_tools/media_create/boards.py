@@ -600,11 +600,10 @@ class SnowballImageConfig(SnowballSdcardConfig):
             # i; int; load_address,
             # 12s; string of char; name
             # http://igloocommunity.org/support/index.php/ConfigPartitionOverview
-            data = struct.pack('<IIIii12s',
-                               file['address'],
-                               file['size'],
-                               0, file['flag'], file['flag'],
-                               file['section'])
+            flags = 0
+            load_adress = file['align']
+            data = struct.pack('<IIIii12s', file['offset'], file['size'], flags,
+                               file['align'], load_adress, file['section_name'])
             f.write(data)
 
     @classmethod
