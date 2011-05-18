@@ -519,6 +519,7 @@ class SnowballImageConfig(SnowballSdcardConfig):
     # Actually, it first looks at address 0, but that's where l-m-c
     # puts the MBR, so the boot loader skips that address. 
     SNOWBALL_LOADER_START_S = (128 * 1024) / SECTOR_SIZE
+    SNOWBALL_STARTUP_FILES_CONFIG = 'snowball_toc.txt'
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=None):
@@ -563,7 +564,7 @@ class SnowballImageConfig(SnowballSdcardConfig):
         atexit.register(os.unlink, toc_filename)
         config_files_path = os.path.join(chroot_dir, 'boot')
         new_files = cls.get_file_info(config_files_path,
-                                      'snowball_toc.txt')
+                                      SNOWBALL_STARTUP_FILES_CONFIG)
         with open(toc_filename, 'wb') as toc:
             cls.create_toc(toc, new_files)
         cls.install_snowball_boot_loader(toc_filename, new_files,
