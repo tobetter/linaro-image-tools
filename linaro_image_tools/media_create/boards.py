@@ -596,7 +596,7 @@ class SnowballImageConfig(SnowballSdcardConfig):
     def create_toc(cls, f, files):
         ''' Writes a table of contents of the boot binaries.
         Boot rom searches this table to find the binaries.'''
-        for section, filename, flag, address, size in files:
+        for section_name, filename, align, offset, size in files:
             # Format string means: < little endian,
             # I; unsigned int; offset,
             # I; unsigned int; size,
@@ -605,11 +605,10 @@ class SnowballImageConfig(SnowballSdcardConfig):
             # i; int; load_address,
             # 12s; string of char; name
             # http://igloocommunity.org/support/index.php/ConfigPartitionOverview
-            data = struct.pack('<IIIii12s',
-                               address,
-                               size,
-                               0, flag, flag,
-                               section)
+            flags = 0
+            load_adress = align
+            data = struct.pack('<IIIii12s', offset, size, flags, align,
+                               load_adress, section_name)
             f.write(data)
 
     @classmethod
