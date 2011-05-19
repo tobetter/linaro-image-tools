@@ -119,6 +119,10 @@ if __name__ == '__main__':
 
     media = Media(args.device)
     if media.is_block_device:
+        if not board_config.supports_writing_to_mmc:
+            print "The board '%s' does not support the --mmc option. Please use " \
+                "--image_file to create an image file for this board." % args.board
+            sys.exit(1)
         if not confirm_device_selection_and_ensure_it_is_ready(args.device):
             sys.exit(1)
     elif not args.should_format_rootfs or not args.should_format_bootfs:
