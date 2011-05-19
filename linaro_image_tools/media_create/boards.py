@@ -563,8 +563,7 @@ class SnowballImageConfig(SnowballSdcardConfig):
         _, toc_filename = tempfile.mkstemp()
         atexit.register(os.unlink, toc_filename)
         config_files_path = os.path.join(chroot_dir, 'boot')
-        new_files = cls.get_file_info(config_files_path,
-                                      SNOWBALL_STARTUP_FILES_CONFIG)
+        new_files = cls.get_file_info(config_files_path)
         with open(toc_filename, 'wb') as toc:
             cls.create_toc(toc, new_files)
         cls.install_snowball_boot_loader(toc_filename, new_files,
@@ -605,30 +604,33 @@ class SnowballImageConfig(SnowballSdcardConfig):
             data = struct.pack('<IIIii12s', file['offset'], file['size'],
                                flags, file['align'], load_adress,
                                file['section_name'])
+            print "DEBUG: %s" % len(data)
             f.write(data)
 
     @classmethod
-    def get_file_info(cls, bin_dir, info_file_name):
+    def get_file_info(cls, bin_dir):
         ''' Fills in the offsets of files that are located in
         non-absolute memory locations depending on their sizes.'
         Also fills in file sizes'''
         toc_size = 512
         ofs = toc_size
         files = []
-        with open(info_file_name, 'r') as info_file:
+        with open(cls.SNOWBALL_STARTUP_FILES_CONFIG, 'r') as info_file:
             for line in info_file:
                 file_data = line.split()
-                print file_data
+                if file_data[0][0] == '#':
+                    continue
                 filename = os.path.join(bin_dir, file_data[1])
                 address = long(file_data[3], 16)
                 if address != 0:
                     ofs = address
                 size = os.path.getsize(filename)
-                files.append({'section': file_data[0],
+                files.append({'section_name': file_data[0],
                               'filename': filename,
-                              'flag': int(file_data[2]),
-                              'address': ofs,
-                              'size': size})
+                              'align': int(file_data[2]),
+                              'offset': ofs,
+                              'size': size,
+                              'load_adress': file_data[4]})
                 ofs += size
         return files
 
