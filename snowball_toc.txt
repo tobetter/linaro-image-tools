@@ -1,0 +1,7 @@
+# section     relative file name        align    address    load address
+ISSW          boot_image_issw.bin       -1       0          -1
+X-LOADER      boot_image_x-loader.bin   -1       0          -1
+MEM_INIT      mem_init.bin               0       0x160000    0
+PWR_MGT       power_management.bin       0       0x170000    0
+NORMAL        u-boot.bin                 0       0xBA0000    0
+UBOOT_ENV     u-boot-env.bin             0       0x00C1F000  0
