@@ -495,7 +495,7 @@ class Ux500Config(BoardConfig):
         make_boot_script(boot_env, boot_script_path)
 
 
-class SnowballSdcardConfig(Ux500Config):
+class SnowballSdConfig(Ux500Config):
     '''Use only with --mmc option. Creates the standard vfat and ext2
        partitions for kernel and rootfs on an SD card.
        Note that the Snowball board needs a loader partition on the
@@ -511,7 +511,7 @@ class SnowballSdcardConfig(Ux500Config):
         make_boot_script(boot_env, boot_script_path)
 
 
-class SnowballImageConfig(SnowballSdcardConfig):
+class SnowballEmmcConfig(SnowballSdConfig):
     '''Use only with --image option. Creates a raw image which contains an
        additional (raw) loader partition, containing some boot stages
        and u-boot.'''
@@ -539,7 +539,7 @@ class SnowballImageConfig(SnowballSdcardConfig):
         # with the usual SECTOR_SIZE of 0x200.
         # (sector 0 is MBR / partition table)
         loader_start, loader_end, loader_len = align_partition(
-            SnowballImageConfig.SNOWBALL_LOADER_START_S, 
+            SnowballEmmcConfig.SNOWBALL_LOADER_START_S, 
             LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
 
         boot_start, boot_end, boot_len = align_partition(
@@ -604,7 +604,6 @@ class SnowballImageConfig(SnowballSdcardConfig):
             data = struct.pack('<IIIii12s', file['offset'], file['size'],
                                flags, file['align'], load_adress,
                                file['section_name'])
-            print "DEBUG: %s" % len(data)
             f.write(data)
 
     @classmethod
@@ -827,8 +826,8 @@ board_configs = {
     'panda': PandaConfig,
     'vexpress': VexpressConfig,
     'ux500': Ux500Config,
-    'snowball_sdcard': SnowballSdcardConfig,
-    'snowball_image': SnowballImageConfig,
+    'snowball_sd': SnowballSdConfig,
+    'snowball_emmc': SnowballEmmcConfig,
     'efikamx': EfikamxConfig,
     'efikasb': EfikasbConfig,
     'mx51evk': Mx51evkConfig,

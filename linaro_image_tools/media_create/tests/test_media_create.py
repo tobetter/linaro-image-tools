@@ -213,13 +213,13 @@ class TestBootSteps(TestCaseWithFixtures):
         expected = ['make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
-    def test_snowball_sdcard_steps(self):
-        self.make_boot_files(boards.SnowballSdcardConfig)
+    def test_snowball_sd_steps(self):
+        self.make_boot_files(boards.SnowballSdConfig)
         expected = ['make_uImage', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
-    def test_snowball_image_steps(self):
-        self.make_boot_files(boards.SnowballImageConfig)
+    def test_snowball_emmc_steps(self):
+        self.make_boot_files(boards.SnowballEmmcConfig)
         expected = ['make_uImage', 'make_boot_script',
                     'get_file_info', 'create_toc', 
                     'install_snowball_boot_loader']
@@ -342,15 +342,15 @@ class TestGetSfdiskCmd(TestCase):
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             boards.Mx5Config.get_sfdisk_cmd())
 
-    def test_snowball_sdcard(self):
+    def test_snowball_sd(self):
         self.assertEqual(
             '63,106432,0x0C,*\n106496,,,-',
-            boards.SnowballSdcardConfig.get_sfdisk_cmd())
+            boards.SnowballSdConfig.get_sfdisk_cmd())
 
-    def test_snowball_image(self):
+    def test_snowball_emmc(self):
         self.assertEqual(
             '256,7936,0xDA\n8192,106496,0x0C,*\n114688,,,-',
-            boards.SnowballImageConfig.get_sfdisk_cmd())
+            boards.SnowballEmmcConfig.get_sfdisk_cmd())
 
     def test_smdkv310(self):
         self.assertEquals(
@@ -415,8 +415,8 @@ class TestGetBootCmd(TestCase):
                        'bootm 0x00100000 0x08000000'}
         self.assertEqual(expected, boot_commands)
 
-    def test_snowball_image(self):
-        boot_commands = board_configs['snowball_image']._get_boot_env(
+    def test_snowball_emmc(self):
+        boot_commands = board_configs['snowball_emmc']._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_uuid="deadbeef", d_img_data=None)
         expected = {
