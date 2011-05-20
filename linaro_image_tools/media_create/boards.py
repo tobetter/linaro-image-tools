@@ -141,6 +141,7 @@ class BoardConfig(object):
     extra_serial_opts = ''
     live_serial_opts = ''
     extra_boot_args_options = None
+    supports_writing_to_mmc = True
 
     # These attributes must be defined on all subclasses.
     kernel_addr = None
@@ -518,6 +519,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
     # Boot ROM looks for a boot table of contents (TOC) at 0x20000
     # Actually, it first looks at address 0, but that's where l-m-c
     # puts the MBR, so the boot loader skips that address. 
+    supports_writing_to_mmc = False
     SNOWBALL_LOADER_START_S = (128 * 1024) / SECTOR_SIZE
     SNOWBALL_STARTUP_FILES_CONFIG = 'startfiles.cfg'
     TOC_SIZE = 512
