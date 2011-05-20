@@ -519,7 +519,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
     # Actually, it first looks at address 0, but that's where l-m-c
     # puts the MBR, so the boot loader skips that address. 
     SNOWBALL_LOADER_START_S = (128 * 1024) / SECTOR_SIZE
-    SNOWBALL_STARTUP_FILES_CONFIG = 'snowball_toc.txt'
+    SNOWBALL_STARTUP_FILES_CONFIG = 'startfiles.cfg'
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=None):
@@ -614,7 +614,8 @@ class SnowballEmmcConfig(SnowballSdConfig):
         toc_size = 512
         ofs = toc_size
         files = []
-        with open(cls.SNOWBALL_STARTUP_FILES_CONFIG, 'r') as info_file:
+        with open(os.path.join(bin_dir, cls.SNOWBALL_STARTUP_FILES_CONFIG),
+                  'r') as info_file:
             for line in info_file:
                 file_data = line.split()
                 if file_data[0][0] == '#':
