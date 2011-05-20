@@ -520,6 +520,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
     # puts the MBR, so the boot loader skips that address. 
     SNOWBALL_LOADER_START_S = (128 * 1024) / SECTOR_SIZE
     SNOWBALL_STARTUP_FILES_CONFIG = 'startfiles.cfg'
+    TOC_SIZE = 512
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=None):
@@ -576,8 +577,12 @@ class SnowballEmmcConfig(SnowballSdConfig):
         ''' Copies TOC and boot files into the boot partition.
         A sector size of 1 is used for some files, as they do not
         necessarily start on an even address. '''
+        assert os.path.getsize(toc_file_name) <= cls.TOC_SIZE
         _dd(toc_file_name, boot_device_or_file, seek=start_sector)
+
         for file in files:
+            # XXX We need checks that these files do not overwrite each
+            # other. This code assumes that offset and file sizes are ok.
             if (file['offset'] % SECTOR_SIZE) != 0:
                 seek_bytes = start_sector * SECTOR_SIZE + file['offset']
                 _dd(file['filename'], boot_device_or_file, block_size=1,
@@ -611,8 +616,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
         ''' Fills in the offsets of files that are located in
         non-absolute memory locations depending on their sizes.'
         Also fills in file sizes'''
-        toc_size = 512
-        ofs = toc_size
+        ofs = cls.TOC_SIZE
         files = []
         with open(os.path.join(bin_dir, cls.SNOWBALL_STARTUP_FILES_CONFIG),
                   'r') as info_file:
