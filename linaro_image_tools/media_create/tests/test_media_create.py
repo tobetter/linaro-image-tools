@@ -218,13 +218,6 @@ class TestBootSteps(TestCaseWithFixtures):
         expected = ['make_uImage', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
-    def test_snowball_emmc_steps(self):
-        self.make_boot_files(boards.SnowballEmmcConfig)
-        expected = ['make_uImage', 'make_boot_script',
-                    'get_file_info', 'create_toc', 
-                    'install_snowball_boot_loader']
-        self.assertEqual(expected, self.funcs_calls)
-
     def test_panda_steps(self):
         self.mock_set_appropriate_serial_tty(boards.PandaConfig)
         self.make_boot_files(boards.PandaConfig)
