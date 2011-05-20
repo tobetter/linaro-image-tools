@@ -495,6 +495,150 @@ class Ux500Config(BoardConfig):
         make_boot_script(boot_env, boot_script_path)
 
 
+class SnowballSdConfig(Ux500Config):
+    '''Use only with --mmc option. Creates the standard vfat and ext2
+       partitions for kernel and rootfs on an SD card.
+       Note that the Snowball board needs a loader partition on the
+       internal eMMC flash to boot. That partition is created with
+       the SnowballConfigImage configuration.'''
+
+    @classmethod
+    def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
+        make_uImage(cls.load_addr, k_img_data, boot_dir)
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
+        make_boot_script(boot_env, boot_script_path)
+
+
+class SnowballEmmcConfig(SnowballSdConfig):
+    '''Use only with --image option. Creates a raw image which contains an
+       additional (raw) loader partition, containing some boot stages
+       and u-boot.'''
+    # Boot ROM looks for a boot table of contents (TOC) at 0x20000
+    # Actually, it first looks at address 0, but that's where l-m-c
+    # puts the MBR, so the boot loader skips that address. 
+    SNOWBALL_LOADER_START_S = (128 * 1024) / SECTOR_SIZE
+    SNOWBALL_STARTUP_FILES_CONFIG = 'startfiles.cfg'
+    TOC_SIZE = 512
+
+    @classmethod
+    def get_sfdisk_cmd(cls, should_align_boot_part=None):
+        """Return the sfdisk command to partition the media.
+
+        :param should_align_boot_part: Ignored.
+
+        The Snowball partitioning scheme depends on whether the target is
+        a raw image or an SD card. Both targets have the normal
+        FAT 32 boot partition and EXT? root partition.
+        The raw image prepends these two partitions with a raw loader partition,
+        containing HW-dependent boot stages up to and including u-boot.
+        This is done since the boot rom always boots off the internal memory;
+        there simply is no point to having a loader partition on SD card.
+        """
+        # boot ROM expects bootloader at 0x20000, which is sector 0x100 
+        # with the usual SECTOR_SIZE of 0x200.
+        # (sector 0 is MBR / partition table)
+        loader_start, loader_end, loader_len = align_partition(
+            SnowballEmmcConfig.SNOWBALL_LOADER_START_S, 
+            LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
+
+        boot_start, boot_end, boot_len = align_partition(
+            loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+        # we ignore _root_end / _root_len and return an sfdisk command to
+        # instruct the use of all remaining space; XXX if we had some root size
+        # config, we could do something more sensible
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
+        loader_start, loader_len, boot_start, boot_len, root_start)
+
+    @classmethod
+    def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
+        make_uImage(cls.load_addr, k_img_data, boot_dir)
+        boot_script_path = os.path.join(boot_dir, cls.boot_script)
+        make_boot_script(boot_env, boot_script_path)
+        _, toc_filename = tempfile.mkstemp()
+        atexit.register(os.unlink, toc_filename)
+        config_files_path = os.path.join(chroot_dir, 'boot')
+        new_files = cls.get_file_info(config_files_path)
+        with open(toc_filename, 'wb') as toc:
+            cls.create_toc(toc, new_files)
+        cls.install_snowball_boot_loader(toc_filename, new_files,
+                                     boot_device_or_file,
+                                     cls.SNOWBALL_LOADER_START_S)
+
+    @classmethod
+    def install_snowball_boot_loader(cls, toc_file_name, files,
+                                     boot_device_or_file, start_sector):
+        ''' Copies TOC and boot files into the boot partition.
+        A sector size of 1 is used for some files, as they do not
+        necessarily start on an even address. '''
+        assert os.path.getsize(toc_file_name) <= cls.TOC_SIZE
+        _dd(toc_file_name, boot_device_or_file, seek=start_sector)
+
+        for file in files:
+            # XXX We need checks that these files do not overwrite each
+            # other. This code assumes that offset and file sizes are ok.
+            if (file['offset'] % SECTOR_SIZE) != 0:
+                seek_bytes = start_sector * SECTOR_SIZE + file['offset']
+                _dd(file['filename'], boot_device_or_file, block_size=1,
+                    seek=seek_bytes)
+            else:
+                seek_sectors = start_sector + file['offset']/SECTOR_SIZE
+                _dd(file['filename'], boot_device_or_file, seek=seek_sectors)
+
+    @classmethod
+    def create_toc(cls, f, files):
+        ''' Writes a table of contents of the boot binaries.
+        Boot rom searches this table to find the binaries.'''
+        for file in files:
+            # Format string means: < little endian,
+            # I; unsigned int; offset,
+            # I; unsigned int; size,
+            # I; unsigned int; flags,
+            # i; int; align,
+            # i; int; load_address,
+            # 12s; string of char; name
+            # http://igloocommunity.org/support/index.php/ConfigPartitionOverview
+            flags = 0
+            load_adress = file['align']
+            data = struct.pack('<IIIii12s', file['offset'], file['size'],
+                               flags, file['align'], load_adress,
+                               file['section_name'])
+            f.write(data)
+
+    @classmethod
+    def get_file_info(cls, bin_dir):
+        ''' Fills in the offsets of files that are located in
+        non-absolute memory locations depending on their sizes.'
+        Also fills in file sizes'''
+        ofs = cls.TOC_SIZE
+        files = []
+        with open(os.path.join(bin_dir, cls.SNOWBALL_STARTUP_FILES_CONFIG),
+                  'r') as info_file:
+            for line in info_file:
+                file_data = line.split()
+                if file_data[0][0] == '#':
+                    continue
+                filename = os.path.join(bin_dir, file_data[1])
+                address = long(file_data[3], 16)
+                if address != 0:
+                    ofs = address
+                size = os.path.getsize(filename)
+                files.append({'section_name': file_data[0],
+                              'filename': filename,
+                              'align': int(file_data[2]),
+                              'offset': ofs,
+                              'size': size,
+                              'load_adress': file_data[4]})
+                ofs += size
+        return files
+
+
 class Mx5Config(BoardConfig):
     serial_tty = 'ttymxc0'
     extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
@@ -687,6 +831,8 @@ board_configs = {
     'panda': PandaConfig,
     'vexpress': VexpressConfig,
     'ux500': Ux500Config,
+    'snowball_sd': SnowballSdConfig,
+    'snowball_emmc': SnowballEmmcConfig,
     'efikamx': EfikamxConfig,
     'efikasb': EfikasbConfig,
     'mx51evk': Mx51evkConfig,
