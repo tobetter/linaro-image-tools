@@ -437,7 +437,7 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
-                        'nocompcache vram=32M omapfb.vram=0:8M '
+                        'nocompcache vram=48M omapfb.vram=0:24M '
                         'mem=456M@0x80000000 mem=512M@0xA0000000',
             'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '

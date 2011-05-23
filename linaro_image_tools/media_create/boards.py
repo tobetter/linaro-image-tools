@@ -449,7 +449,7 @@ class PandaConfig(OmapConfig):
     load_addr = '0x80008000'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'earlyprintk fixrtc nocompcache vram="48M" '
+        'earlyprintk fixrtc nocompcache vram=48M '
         'omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000')
 
 
