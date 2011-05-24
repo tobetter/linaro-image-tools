@@ -458,7 +458,7 @@ class TestGetBootCmd(TestCase):
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
                         'nocompcache vram=12M '
-                        'omapfb.mode=dvi:1280x720MR-16@60',
+                        'omapfb.mode=dvi:1280x720MR-16@60 mpurate=${mpurate}',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
@@ -478,7 +478,7 @@ class TestGetBootCmd(TestCase):
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
                         'nocompcache vram=12M '
-                        'omapfb.mode=dvi:1280x720MR-16@60',
+                        'omapfb.mode=dvi:1280x720MR-16@60 mpurate=${mpurate}',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
