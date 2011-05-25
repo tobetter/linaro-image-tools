@@ -675,7 +675,12 @@ class PackageFetcher(object):
             result_package = FetchedPackage.from_apt(candidate, base)
             fetched[package] = result_package
         for package in packages:
-            self.cache.cache[package].mark_install(auto_fix=False)
+            try:
+                self.cache.cache[package].mark_install(auto_fix=True)
+            except SystemError:
+                # Dependency not satisfied, but we check for that
+                # immediately afterwards.
+                pass
             if self.cache.cache.broken_count:
                 raise DependencyNotSatisfied(
                     "Unable to satisfy dependencies of %s" %
@@ -683,10 +688,13 @@ class PackageFetcher(object):
                         if p.is_inst_broken]))
         self._filter_ignored(fetched)
         if not download_content:
+            self.cache.cache.clear()
             return fetched.values()
         acq = apt_pkg.Acquire(DummyProgress())
         acqfiles = []
         for package in self.cache.cache.get_changes():
+            if (package.marked_delete or package.marked_keep):
+                continue
             logger.debug("Fetching %s ..." % package)
             candidate = package.candidate
             base = os.path.basename(candidate.filename)
