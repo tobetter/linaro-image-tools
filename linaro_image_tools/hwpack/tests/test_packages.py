@@ -1122,6 +1122,11 @@ class PackageFetcherTests(TestCaseWithFixtures):
         self.assertEqual([], list(fetcher.cache.cache.get_changes()))
 
     def test_fetch_packages_can_remove_package(self):
+        """Check that removed packages aren't included in the hwpack
+
+        When installing the hwpack would cause an "assume-installed" package
+        to be removed the hwpack shouldn't contain that package.
+        """
         wanted_package = DummyFetchedPackage(
             "foo", "1.0", conflicts="provided", provides="provided",
             depends="zoo", replaces="provided")
@@ -1138,28 +1143,8 @@ class PackageFetcherTests(TestCaseWithFixtures):
                 top_package]))
         fetcher = self.get_fetcher([source])
         fetcher.ignore_packages(["top"])
-        # This would error if there is no way to install "foo",
-        # including if it couldn't remove packages to do so.
-        fetcher.fetch_packages(["foo"])
-
-    def test_fetch_packages_doesnt_fetch_packages_that_will_be_removed(self):
-        """Check that removed packages aren't included in the hwpack
-
-        When installing the hwpack would cause an "assume-installed" package
-        to be removed the hwpack shouldn't contain that package.
-        """
-        wanted_package = DummyFetchedPackage(
-            "foo", "1.0", provides="provided", conflicts="provided")
-        dep_package = DummyFetchedPackage(
-            "bar", "1.0", depends="provided")
-        conflict_package = DummyFetchedPackage(
-            "baz", "1.0", provides="provided", conflicts="provided")
-        source = self.useFixture(AptSourceFixture(
-            [wanted_package, dep_package, conflict_package]))
-        fetcher = self.get_fetcher([source])
-        fetcher.ignore_packages(["bar", "baz"])
         fetched = fetcher.fetch_packages(["foo"])
-        self.assertEqual([wanted_package], fetched)
+        self.assertEqual([wanted_package, extra_package], fetched)
 
     def test_ignore_with_provides(self):
         ignored_package = DummyFetchedPackage(

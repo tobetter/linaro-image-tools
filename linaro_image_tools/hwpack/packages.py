@@ -674,18 +674,26 @@ class PackageFetcher(object):
             base = os.path.basename(candidate.filename)
             result_package = FetchedPackage.from_apt(candidate, base)
             fetched[package] = result_package
-        for package in packages:
-            try:
-                self.cache.cache[package].mark_install(auto_fix=True)
-            except SystemError:
-                # Dependency not satisfied, but we check for that
-                # immediately afterwards.
-                pass
+
+        def check_no_broken_packages():
             if self.cache.cache.broken_count:
                 raise DependencyNotSatisfied(
                     "Unable to satisfy dependencies of %s" %
                     ", ".join([p.name for p in self.cache.cache
                         if p.is_inst_broken]))
+
+        for package in packages:
+            try:
+                self.cache.cache[package].mark_install(auto_fix=True)
+            except SystemError:
+                # Either we raise a DependencyNotSatisfied error
+                # if some packages are broken, or we raise the original
+                # error if there was another cause
+                check_no_broken_packages()
+                raise
+            # Check that nothing was broken, even if mark_install didn't
+            # raise SystemError, just to make sure.
+            check_no_broken_packages()
         self._filter_ignored(fetched)
         if not download_content:
             self.cache.cache.clear()
