@@ -19,7 +19,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
 # USA.
 
+import doctest
 import subprocess
+
+from testtools.matchers import DocTestMatches
 
 from linaro_image_tools.hwpack.hardwarepack import Metadata
 from linaro_image_tools.hwpack.testing import (
@@ -89,3 +92,21 @@ class ScriptTests(TestCaseWithFixtures):
                 metadata, [available_package],
                 {"ubuntu": source.sources_entry},
                 package_spec=package_name))
+
+    def test_log_output(self):
+        package_name = 'foo'
+        architecture = 'armel'
+        available_package = DummyFetchedPackage(
+            package_name, "1.1", architecture=architecture)
+        source = self.useFixture(AptSourceFixture([available_package]))
+        config = self.useFixture(ConfigFileFixture(
+            '[hwpack]\nname=ahwpack\npackages=%s\narchitectures=armel\n'
+            '\n[ubuntu]\nsources-entry=%s\n' % (
+                package_name, source.sources_entry)))
+        stdout, stderr = self.run_script([config.filename, "1.0"])
+        self.assertThat(
+            stderr,
+            DocTestMatches(
+                "Building for %(arch)s\nFetching packages\n"
+                "Wrote hwpack_ahwpack_1.0_%(arch)s.tar.gz"
+                "\n" % dict(arch=architecture)))
