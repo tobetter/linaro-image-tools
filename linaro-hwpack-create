@@ -48,7 +48,7 @@ if __name__ == '__main__':
     ch.setLevel(logging.INFO)
     formatter = logging.Formatter("%(message)s")
     ch.setFormatter(formatter)
-    logger = logging.getLogger("hwpack")
+    logger = logging.getLogger("linaro_image_tools")
     logger.setLevel(logging.INFO)
     logger.addHandler(ch)
     if args.debug:
