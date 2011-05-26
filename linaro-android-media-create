@@ -118,9 +118,8 @@ if __name__ == '__main__':
     if media.is_block_device:
         if not confirm_device_selection_and_ensure_it_is_ready(args.device):
             sys.exit(1)
-    elif not args.should_format_rootfs or not args.should_format_bootfs:
-        print ("Do not use --no-boot or --no-part in conjunction with "
-               "--image_file.")
+    elif not args.should_create_partitions:
+        print ("Do not use --no-part in conjunction with --image_file.")
         sys.exit(1)
     else:
         # All good, move on.
