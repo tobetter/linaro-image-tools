@@ -910,13 +910,20 @@ def make_dtb(img_data, boot_disk):
     return img
 
 
-def make_boot_script(boot_env, boot_script_path):
-    boot_script_data = (
+def get_plain_boot_script_contents(boot_env):
+    # We use double quotes to avoid u-boot argument limits
+    # while retaining the ability to expand variables. See
+    # https://bugs.launchpad.net/linaro-image-tools/+bug/788765
+    # for more.
+    return (
         "setenv bootcmd \"%(bootcmd)s\"\n"
         "setenv bootargs \"%(bootargs)s\"\n"
         "boot"
         % boot_env)
 
+
+def make_boot_script(boot_env, boot_script_path):
+    boot_script_data = get_plain_boot_script_contents(boot_env)
     # Need to save the boot script data into a file that will be passed to
     # mkimage.
     _, tmpfile = tempfile.mkstemp()
