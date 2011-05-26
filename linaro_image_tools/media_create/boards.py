@@ -912,8 +912,8 @@ def make_dtb(img_data, boot_disk):
 
 def make_boot_script(boot_env, boot_script_path):
     boot_script_data = (
-        "setenv bootcmd '%(bootcmd)s'\n"
-        "setenv bootargs %(bootargs)s\n"
+        "setenv bootcmd \"%(bootcmd)s\"\n"
+        "setenv bootargs \"%(bootargs)s\"\n"
         "boot"
         % boot_env)
 
