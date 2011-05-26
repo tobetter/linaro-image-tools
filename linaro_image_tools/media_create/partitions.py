@@ -58,13 +58,17 @@ def setup_android_partitions(board_config, media, image_size, bootfs_label,
             board_config, media, HEADS, SECTORS, cylinders,
             should_align_boot_part=should_align_boot_part)
 
-    bootfs, system, cache, data, sdcard = \
-        get_android_partitions_for_media (media, board_config)
-    ensure_partition_is_not_mounted(bootfs)
-    ensure_partition_is_not_mounted(system)
-    ensure_partition_is_not_mounted(cache)
-    ensure_partition_is_not_mounted(data)
-    ensure_partition_is_not_mounted(sdcard)
+    if media.is_block_device:
+        bootfs, system, cache, data, sdcard = \
+            get_android_partitions_for_media (media, board_config)
+        ensure_partition_is_not_mounted(bootfs)
+        ensure_partition_is_not_mounted(system)
+        ensure_partition_is_not_mounted(cache)
+        ensure_partition_is_not_mounted(data)
+        ensure_partition_is_not_mounted(sdcard)
+    else:
+        bootfs, system, cache, data, sdcard = \
+            get_android_loopback_devices(media.path)
 
     print "\nFormating boot partition\n"
     proc = cmd_runner.run(
@@ -202,6 +206,9 @@ def get_boot_and_root_loopback_devices(image_file):
     root_device = register_loopback(image_file, linux_offset, linux_size)
     return boot_device, root_device
 
+
+def get_android_loopback_devices(image_file):
+    raise NotImplementedError("get_boot_and_root_loopback_devices is not implemented yet!")
 
 def register_loopback(image_file, offset, size):
     """Register a loopback device with an atexit handler to de-register it."""
