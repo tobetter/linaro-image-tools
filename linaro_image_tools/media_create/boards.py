@@ -916,8 +916,8 @@ def get_plain_boot_script_contents(boot_env):
     # https://bugs.launchpad.net/linaro-image-tools/+bug/788765
     # for more.
     return (
-        "setenv bootcmd \"%(bootcmd)s\"\n"
-        "setenv bootargs \"%(bootargs)s\"\n"
+        'setenv bootcmd "%(bootcmd)s"\n'
+        'setenv bootargs "%(bootargs)s"\n'
         "boot"
         % boot_env)
 
