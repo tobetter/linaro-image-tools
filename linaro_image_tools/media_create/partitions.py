@@ -291,6 +291,14 @@ def get_android_partitions_for_media(media, board_config):
 
     assert boot_partition is not None, (
         "Could not find boot partition for %s" % media.path)
+    assert system_partition is not None, (
+        "Could not find system partition for %s" % media.path)
+    assert cache_partition is not None, (
+        "Could not find cache partition for %s" % media.path)
+    assert data_partition is not None, (
+        "Could not find data partition for %s" % media.path)
+    assert sdcard_partition is not None, (
+        "Could not find sdcard partition for %s" % media.path)
 
     return boot_partition, system_partition, cache_partition, \
         data_partition, sdcard_partition
