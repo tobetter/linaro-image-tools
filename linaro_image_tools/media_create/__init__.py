@@ -131,6 +131,10 @@ def get_android_args_parser():
         '--image_file', dest='device',
         help='File where we should write the image file.')
     parser.add_argument(
+        '--image_size', default='2G',
+        help=('The image size, specified in mega/giga bytes (e.g. 3000M or '
+              '3G); use with --image_file only'))
+    parser.add_argument(
         '--dev', required=True, dest='board', choices=ANDROID_KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
     parser.add_argument(

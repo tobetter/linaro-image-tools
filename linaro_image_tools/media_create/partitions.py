@@ -41,7 +41,7 @@ DBUS_PROPERTIES = 'org.freedesktop.DBus.Properties'
 UDISKS = "org.freedesktop.UDisks"
 
 
-def setup_android_partitions(board_config, media, bootfs_label,
+def setup_android_partitions(board_config, media, image_size, bootfs_label,
                      should_create_partitions, should_align_boot_part=False):
     cylinders = None
     if not media.is_block_device:
