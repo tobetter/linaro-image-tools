@@ -44,6 +44,14 @@ UDISKS = "org.freedesktop.UDisks"
 def setup_android_partitions(board_config, media, bootfs_label,
                      should_create_partitions, should_align_boot_part=False):
     cylinders = None
+    if not media.is_block_device:
+        image_size_in_bytes = convert_size_to_bytes(image_size)
+        cylinders = image_size_in_bytes / CYLINDER_SIZE
+        proc = cmd_runner.run(
+            ['dd', 'of=%s' % media.path,
+             'bs=1', 'seek=%s' % image_size_in_bytes, 'count=0'],
+            stderr=open('/dev/null', 'w'))
+        proc.wait()
 
     if should_create_partitions:
         create_partitions(
