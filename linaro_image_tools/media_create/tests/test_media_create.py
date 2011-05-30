@@ -25,6 +25,7 @@ import string
 import subprocess
 import sys
 import tempfile
+import textwrap
 import time
 import types
 
@@ -44,6 +45,7 @@ from linaro_image_tools.media_create.boards import (
     align_up,
     align_partition,
     board_configs,
+    get_plain_boot_script_contents,
     make_flashable_env,
     install_mx5_boot_loader,
     install_omap_boot_loader,
@@ -625,6 +627,14 @@ class TestBoards(TestCaseWithFixtures):
         expected = [
             '%s cp -v chroot_dir/MLO boot_disk' % sudo_args, 'sync']
         self.assertEqual(expected, fixture.mock.commands_executed)
+
+    def test_get_plain_boot_script_contents(self):
+        boot_env = {'bootargs': 'mybootargs', 'bootcmd': 'mybootcmd'}
+        boot_script_data = get_plain_boot_script_contents(boot_env)
+        self.assertEqual(textwrap.dedent("""\
+            setenv bootcmd "mybootcmd"
+            setenv bootargs "mybootargs"
+            boot"""), boot_script_data)
 
     def test_make_boot_script(self):
         self.useFixture(MockSomethingFixture(
