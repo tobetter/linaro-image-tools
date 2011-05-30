@@ -231,8 +231,8 @@ def calculate_partition_size_and_offset(image_file):
                 partition.type)
         if 'boot' in partition.getFlagsAsString():
             geometry = partition.geometry
-            vfat_offset = geometry.start * 512
-            vfat_size = geometry.length * 512
+            vfat_offset = geometry.start * SECTOR_SIZE
+            vfat_size = geometry.length * SECTOR_SIZE
             vfat_partition = partition
         elif vfat_partition is not None:
             # next partition after boot partition is the root partition
@@ -241,8 +241,8 @@ def calculate_partition_size_and_offset(image_file):
             # iterate disk.partitions which only returns
             # parted.PARTITION_NORMAL partitions
             geometry = partition.geometry
-            linux_offset = geometry.start * 512
-            linux_size = geometry.length * 512
+            linux_offset = geometry.start * SECTOR_SIZE
+            linux_size = geometry.length * SECTOR_SIZE
             linux_partition = partition
             break
 
