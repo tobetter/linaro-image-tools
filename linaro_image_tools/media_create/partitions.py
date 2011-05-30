@@ -67,8 +67,13 @@ def setup_android_partitions(board_config, media, image_size, bootfs_label,
         ensure_partition_is_not_mounted(data)
         ensure_partition_is_not_mounted(sdcard)
     else:
-        bootfs, system, cache, data, sdcard = \
-            get_android_loopback_devices(media.path)
+        partitions = get_android_loopback_devices(media.path)
+        bootfs = partitions[0]
+        system = partitions[1]
+        cache = partitions[2]
+        data = partitions[3]
+        sdcard = partitions[4]
+            
 
     print "\nFormating boot partition\n"
     proc = cmd_runner.run(
@@ -208,7 +213,19 @@ def get_boot_and_root_loopback_devices(image_file):
 
 
 def get_android_loopback_devices(image_file):
-    raise NotImplementedError("get_boot_and_root_loopback_devices is not implemented yet!")
+    """Return the loopback devices for the given image file.
+
+    Assumes a particular order of devices in the file.
+    Register the loopback devices as well.
+    """
+    devices = []
+    device_info = calculate_android_partition_size_and_offset(image_file)
+    for device_offset, device_size in device_info:
+        devices.append(register_loopback(image_file, device_offset,
+                                         device_size))
+
+    return devices
+
 
 def register_loopback(image_file, offset, size):
     """Register a loopback device with an atexit handler to de-register it."""
@@ -266,6 +283,36 @@ def calculate_partition_size_and_offset(image_file):
     assert linux_partition is not None, (
         "Couldn't find root partition on %s" % image_file)
     return vfat_size, vfat_offset, linux_size, linux_offset
+
+
+def calculate_android_partition_size_and_offset(image_file):
+    """Return the size and offset of the android partitions.
+
+    Both the size and offset are in bytes.
+
+    :param image_file: A string containing the path to the image_file.
+    :return: A list of (offset, size) pairs.
+    """
+    # Here we can use parted.Device to read the partitions because we're
+    # reading from a regular file rather than a block device.  If it was a
+    # block device we'd need root rights.
+    disk = Disk(Device(image_file))
+    partition_info = []
+    for partition in disk.partitions:
+        assert partition.type == PARTITION_NORMAL, (
+            "Parted should only return normal partitions but got type %i" %
+                partition.type)
+        geometry = partition.geometry
+        partition_info.append((geometry.start * SECTOR_SIZE,
+                               geometry.length * SECTOR_SIZE))
+        # NB: don't use vfat_partition.nextPartition() as that might return
+        # a partition of type PARTITION_FREESPACE; it's much easier to
+        # iterate disk.partitions which only returns
+        # parted.PARTITION_NORMAL partitions
+
+    assert len(partition_info) == 5
+    return partition_info
+
 
 def get_android_partitions_for_media(media, board_config):
     """Return the device files for all the Android partitions of media.
