@@ -111,7 +111,7 @@ class Metadata(object):
         return cls(
             config.name, version, architecture, origin=config.origin,
             maintainer=config.maintainer, support=config.support,
-            board=config.board, cmdline=config.cmdline, u_boot=config.u_boot, 
+            board=config.board, cmdline=config.cmdline, u_boot="XXX unpacked file name", 
             vmlinuz=config.vmlinuz, initrd=config.initrd, omap_mlo=config.omap_mlo,
             serial_tty=config.serial_tty, kernel_addr=config.kernel_addr,
             initrd_addr=config.initrd_addr, load_addr=config.load_addr,

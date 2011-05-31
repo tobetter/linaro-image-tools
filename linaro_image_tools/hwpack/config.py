@@ -44,7 +44,7 @@ class Config(object):
     ASSUME_INSTALLED_KEY = "assume-installed"
     BOARD_KEY = "board"
     CMDLINE_KEY = "cmdline"
-    U_BOOT_KEY = "u_boot"
+    U_BOOT_PACKAGE_KEY = "u-boot-package"
     VMLINUZ_KEY = "vmlinuz"
     INITRD_KEY = "initrd"
     OMAP_MLO_KEY = "omap_mlo"
@@ -81,6 +81,7 @@ class Config(object):
         self._validate_include_debs()
         self._validate_support()
         self._validate_packages()
+        self._validate_u_boot_package()
         self._validate_architectures()
         self._validate_assume_installed()
         self._validate_sections()
@@ -163,14 +164,6 @@ class Config(object):
         """
         return self._get_option_from_main_section(self.CMDLINE_KEY)
 
-
-    @property
-    def u_boot(self):
-        """The u-boot binary file
-
-        A str.
-        """
-        return self._get_option_from_main_section(self.U_BOOT_KEY)
 
     @property
     def vmlinuz(self):
@@ -312,6 +305,15 @@ class Config(object):
         A list of str.
         """
         return self._get_list_from_main_section(self.PACKAGES_KEY)
+
+    @property
+    def u_boot_package(self):
+        """The u-boot package that will be unpacked to get the u-boot bin.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.U_BOOT_PACKAGE_KEY)
+
 
     @property
     def architectures(self):
@@ -458,6 +460,17 @@ class Config(object):
                 raise HwpackConfigError(
                     "Invalid value in %s in the [%s] section: %s"
                     % (self.PACKAGES_KEY, self.MAIN_SECTION, package))
+
+    def _validate_u_boot_package(self):
+        u_boot_package = self.u_boot_package
+        if not u_boot_package:
+            raise HwpackConfigError(
+                "No %s in the [%s] section"
+                % (self.U_BOOT_PACKAGE_KEY, self.MAIN_SECTION))
+        if re.match(self.PACKAGE_REGEX, u_boot_package) is None:
+            raise HwpackConfigError(
+                "Invalid value in %s in the [%s] section: %s"
+                % (self.PACKAGES_KEY, self.MAIN_SECTION, u_boot_package))
 
     def _validate_architectures(self):
         architectures = self.architectures

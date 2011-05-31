@@ -71,6 +71,7 @@ class HardwarePackBuilder(object):
                 hwpack.add_apt_sources(sources)
                 sources = sources.values()
                 packages = self.config.packages[:]
+                packages.append(self.config.u_boot_package)
                 local_packages = [
                     FetchedPackage.from_deb(deb)
                     for deb in self.local_debs]
@@ -86,6 +87,12 @@ class HardwarePackBuilder(object):
                     fetcher.ignore_packages(self.config.assume_installed)
                     packages = fetcher.fetch_packages(
                         packages, download_content=self.config.include_debs)
+                    u_boot_package = None
+                    for package in packages:
+                        # XXX This probably can be done with python list magic?
+                        if package.name == self.config.u_boot_package:
+                            u_boot_package = package
+                    packages.remove(u_boot_package)
                     logger.debug("Adding packages to hwpack")
                     hwpack.add_packages(packages)
                     for local_package in local_packages:
