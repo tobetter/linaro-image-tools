@@ -25,6 +25,7 @@ import string
 import subprocess
 import sys
 import tempfile
+import textwrap
 import time
 import types
 
@@ -44,6 +45,7 @@ from linaro_image_tools.media_create.boards import (
     align_up,
     align_partition,
     board_configs,
+    get_plain_boot_script_contents,
     make_flashable_env,
     install_mx5_boot_loader,
     install_omap_boot_loader,
@@ -213,6 +215,11 @@ class TestBootSteps(TestCaseWithFixtures):
         expected = ['make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
+    def test_snowball_sd_steps(self):
+        self.make_boot_files(boards.SnowballSdConfig)
+        expected = ['make_uImage', 'make_boot_script']
+        self.assertEqual(expected, self.funcs_calls)
+
     def test_panda_steps(self):
         self.mock_set_appropriate_serial_tty(boards.PandaConfig)
         self.make_boot_files(boards.PandaConfig)
@@ -330,6 +337,16 @@ class TestGetSfdiskCmd(TestCase):
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             boards.Mx5Config.get_sfdisk_cmd())
 
+    def test_snowball_sd(self):
+        self.assertEqual(
+            '63,106432,0x0C,*\n106496,,,-',
+            boards.SnowballSdConfig.get_sfdisk_cmd())
+
+    def test_snowball_emmc(self):
+        self.assertEqual(
+            '256,7936,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            boards.SnowballEmmcConfig.get_sfdisk_cmd())
+
     def test_smdkv310(self):
         self.assertEquals(
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
@@ -393,6 +410,23 @@ class TestGetBootCmd(TestCase):
                        'bootm 0x00100000 0x08000000'}
         self.assertEqual(expected, boot_commands)
 
+    def test_snowball_emmc(self):
+        boot_commands = board_configs['snowball_emmc']._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=[],
+            rootfs_uuid="deadbeef", d_img_data=None)
+        expected = {
+            'bootargs': 'console=tty0 console=ttyAMA2,115200n8  '
+                        'root=UUID=deadbeef rootwait ro earlyprintk '
+                        'rootdelay=1 fixrtc nocompcache mem=96M@0 '
+                        'mem_modem=32M@96M mem=44M@128M pmem=22M@172M '
+                        'mem=30M@194M mem_mali=32M@224M pmem_hwb=54M@256M '
+                        'hwmem=48M@302M mem=152M@360M',
+            'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
+                       'fatload mmc 1:1 0x08000000 uInitrd; '
+                       'bootm 0x00100000 0x08000000'}
+        self.assertEqual(expected, boot_commands)
+
+
     def test_panda(self):
         # XXX: To fix bug 697824 we have to change class attributes of our
         # OMAP board configs, and some tests do that so to make sure they
@@ -405,7 +439,7 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
-                        'nocompcache vram=32M omapfb.vram=0:8M '
+                        'nocompcache vram=48M omapfb.vram=0:24M '
                         'mem=456M@0x80000000 mem=512M@0xA0000000',
             'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
@@ -426,7 +460,7 @@ class TestGetBootCmd(TestCase):
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
                         'nocompcache vram=12M '
-                        'omapfb.mode=dvi:1280x720MR-16@60',
+                        'omapfb.mode=dvi:1280x720MR-16@60 mpurate=${mpurate}',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
@@ -446,7 +480,7 @@ class TestGetBootCmd(TestCase):
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
                         'nocompcache vram=12M '
-                        'omapfb.mode=dvi:1280x720MR-16@60',
+                        'omapfb.mode=dvi:1280x720MR-16@60 mpurate=${mpurate}',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
@@ -465,9 +499,7 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk '
-                        'mpurate=500 vram=12M '
-                        'omapfb.mode=dvi:1024x768MR-16@60 '
-                        'omapdss.def_disp=dvi',
+                        'mpurate=${mpurate} vram=12M',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
@@ -596,6 +628,14 @@ class TestBoards(TestCaseWithFixtures):
             '%s cp -v chroot_dir/MLO boot_disk' % sudo_args, 'sync']
         self.assertEqual(expected, fixture.mock.commands_executed)
 
+    def test_get_plain_boot_script_contents(self):
+        boot_env = {'bootargs': 'mybootargs', 'bootcmd': 'mybootcmd'}
+        boot_script_data = get_plain_boot_script_contents(boot_env)
+        self.assertEqual(textwrap.dedent("""\
+            setenv bootcmd "mybootcmd"
+            setenv bootargs "mybootargs"
+            boot"""), boot_script_data)
+
     def test_make_boot_script(self):
         self.useFixture(MockSomethingFixture(
             tempfile, 'mkstemp', lambda: (-1, '/tmp/random-abxzr')))
@@ -628,6 +668,8 @@ class TestBoards(TestCaseWithFixtures):
         file1 = self.createTempFileAsFixture(prefix)
         file2 = self.createTempFileAsFixture(prefix)
         directory = os.path.dirname(file1)
+        assert directory == os.path.dirname(file2), (
+            "file1 and file2 should be in the same directory")
         self.assertRaises(
             ValueError, _get_file_matching, '%s/%s*' % (directory, prefix))
 
@@ -845,6 +887,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # boot part at +8 MiB, root part at +16 MiB
         return self._create_qemu_img_with_partitions(
             '16384,15746,0x0C,*\n32768,,,-')
+
+    def test_convert_size_no_suffix(self):
+        self.assertEqual(524288, convert_size_to_bytes('524288'))
 
     def test_convert_size_in_kbytes_to_bytes(self):
         self.assertEqual(512 * 1024, convert_size_to_bytes('512K'))

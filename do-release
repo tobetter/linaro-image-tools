@@ -40,6 +40,9 @@ if ! python -m testtools.run linaro_image_tools.tests.test_suite; then
     die "Testsuite doesn't pass"
 fi
 
+log_i "Removing test repository data"
+rm -rf .testrepository/
+
 if bzr tags | awk '{print $1}' | grep -qFx "$version"; then
     die "Tag $version already exists"
 fi
