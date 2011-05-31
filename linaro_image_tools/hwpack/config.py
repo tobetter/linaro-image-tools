@@ -57,6 +57,9 @@ class Config(object):
     WIRELESS_INTERFACES_KEY = "wireless_interfaces"
     PARTITION_LAYOUT_KEY = "partition_layout"
     MMC_ID_KEY = "mmc_id"
+    FORMAT_KEY = "format"
+
+    SUPPORTED_FORMATS = ["1.0", "2.0"]
 
     def __init__(self, fp):
         """Create a Config.
@@ -73,6 +76,7 @@ class Config(object):
         """
         if not self.parser.has_section(self.MAIN_SECTION):
             raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
+        self._validate_format()
         self._validate_name()
         self._validate_include_debs()
         self._validate_support()
@@ -95,6 +99,18 @@ class Config(object):
         self._validate_wireless_interfaces()
         self._validate_partition_layout()
         self._validate_mmc_id()
+
+    @property
+    def format(self):
+        """The format of the hardware pack. A str."""
+        try:
+            return self.parser.get(self.MAIN_SECTION, self.FORMAT_KEY)
+        except ConfigParser.NoOptionError:
+            # Default to 1.0 to aviod breaking existing hwpack files.
+            # When this code no longer supports 1.0, it effectively makes
+            # explicitly specifying format in hwpack files mandatory.
+            return "1.0"
+        return 
 
     @property
     def name(self):
@@ -327,6 +343,14 @@ class Config(object):
             sources[section_name] = self.parser.get(
                 section_name, self.SOURCES_ENTRY_KEY)
         return sources
+
+    def _validate_format(self):
+        format = self.format
+        if not format:
+            raise HwpackConfigError("Empty value for format")
+        if format not in self.SUPPORTED_FORMATS:
+            raise HwpackConfigError("Format version '%s' is not supported." % \
+                                        format)
 
     def _validate_name(self):
         try:

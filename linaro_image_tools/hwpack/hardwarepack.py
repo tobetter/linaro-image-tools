@@ -180,7 +180,7 @@ class HardwarePack(object):
     SOURCES_LIST_DIRNAME = "sources.list.d"
     SOURCES_LIST_GPG_DIRNAME = "sources.list.d.gpg"
 
-    def __init__(self, metadata, version):
+    def __init__(self, metadata, format):
         """Create a HardwarePack.
 
         :param metadata: the metadata to use.
@@ -189,7 +189,7 @@ class HardwarePack(object):
         self.metadata = metadata
         self.sources = {}
         self.packages = []
-        self.format = version
+        self.format = format
 
     def filename(self, extension=".tar.gz"):
         """The filename that this hardware pack should have.

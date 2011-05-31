@@ -56,6 +56,7 @@ class HardwarePackBuilder(object):
                 raise ConfigFileMissing(config_path)
             raise
         self.config.validate()
+        self.format = self.config.format
         self.version = version
         self.local_debs = local_debs
 
@@ -64,7 +65,7 @@ class HardwarePackBuilder(object):
             logger.info("Building for %s" % architecture)
             metadata = Metadata.from_config(
                 self.config, self.version, architecture)
-            hwpack = HardwarePack(metadata, self.version)
+            hwpack = HardwarePack(metadata, self.format)
             sources = self.config.sources
             with LocalArchiveMaker() as local_archive_maker:
                 hwpack.add_apt_sources(sources)
