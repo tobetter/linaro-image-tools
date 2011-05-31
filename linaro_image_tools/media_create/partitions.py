@@ -71,8 +71,8 @@ def setup_android_partitions(board_config, media, image_size, bootfs_label,
         bootfs = partitions[0]
         system = partitions[1]
         cache = partitions[2]
-        data = partitions[3]
-        sdcard = partitions[4]
+        data = partitions[4]
+        sdcard = partitions[5]
             
 
     print "\nFormating boot partition\n"
@@ -299,9 +299,6 @@ def calculate_android_partition_size_and_offset(image_file):
     disk = Disk(Device(image_file))
     partition_info = []
     for partition in disk.partitions:
-        assert partition.type == PARTITION_NORMAL, (
-            "Parted should only return normal partitions but got type %i" %
-                partition.type)
         geometry = partition.geometry
         partition_info.append((geometry.start * SECTOR_SIZE,
                                geometry.length * SECTOR_SIZE))
@@ -310,7 +307,7 @@ def calculate_android_partition_size_and_offset(image_file):
         # iterate disk.partitions which only returns
         # parted.PARTITION_NORMAL partitions
 
-    assert len(partition_info) == 5
+    assert len(partition_info) == 6
     return partition_info
 
 
