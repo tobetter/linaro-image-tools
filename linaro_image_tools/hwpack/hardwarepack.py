@@ -20,6 +20,7 @@
 # USA.
 
 import time
+import os
 
 from linaro_image_tools.hwpack.better_tarfile import writeable_tarfile
 from linaro_image_tools.hwpack.packages import (
@@ -56,7 +57,7 @@ class Metadata(object):
 
     def __init__(self, name, version, architecture, origin=None,
                  maintainer=None, support=None,
-                 board=None, cmdline=None, u_boot=None, vmlinuz=None, initrd=None,
+                 board=None, cmdline=None, vmlinuz=None, initrd=None,
                  omap_mlo=None, serial_tty=None, kernel_addr=None, initrd_addr=None,
                  load_addr=None, fdt=None, wired_interfaces=None,
                  wireless_interfaces=None, partition_layout=None, mmc_id=None):
@@ -76,7 +77,7 @@ class Metadata(object):
         self.architecture = architecture
         self.board = board
         self.cmdline = cmdline
-        self.u_boot = u_boot
+        self.u_boot = []
         self.vmlinuz = vmlinuz
         self.initrd = initrd
         self.omap_mlo = omap_mlo
@@ -111,8 +112,8 @@ class Metadata(object):
         return cls(
             config.name, version, architecture, origin=config.origin,
             maintainer=config.maintainer, support=config.support,
-            board=config.board, cmdline=config.cmdline, u_boot="XXX unpacked file name", 
-            vmlinuz=config.vmlinuz, initrd=config.initrd, omap_mlo=config.omap_mlo,
+            board=config.board, cmdline=config.cmdline, vmlinuz=config.vmlinuz,
+            initrd=config.initrd, omap_mlo=config.omap_mlo,
             serial_tty=config.serial_tty, kernel_addr=config.kernel_addr,
             initrd_addr=config.initrd_addr, load_addr=config.load_addr,
             fdt=config.fdt, wired_interfaces=config.wired_interfaces,
@@ -134,8 +135,8 @@ class Metadata(object):
             metadata += "BOARD=%s\n" % self.board
         if self.cmdline is not None:
             metadata += "CMDLINE=%s\n" % self.cmdline
-        if self.u_boot is not None:
-            metadata += "U_BOOT=%s\n" % self.u_boot
+        if self.u_boot != []:
+            metadata += "U_BOOT=%s\n" % " ".join(self.u_boot)
         if self.vmlinuz is not None:
             metadata += "VMLINUZ=%s\n" % self.vmlinuz
         if self.initrd is not None:
@@ -179,6 +180,7 @@ class HardwarePack(object):
     PACKAGES_FILENAME = "%s/Packages" % PACKAGES_DIRNAME
     SOURCES_LIST_DIRNAME = "sources.list.d"
     SOURCES_LIST_GPG_DIRNAME = "sources.list.d.gpg"
+    U_BOOT_DIR = "u-boot"
 
     def __init__(self, metadata, format):
         """Create a HardwarePack.
@@ -190,6 +192,7 @@ class HardwarePack(object):
         self.sources = {}
         self.packages = []
         self.format = format
+        self.files = []
 
     def filename(self, extension=".tar.gz"):
         """The filename that this hardware pack should have.
@@ -255,6 +258,13 @@ class HardwarePack(object):
                 relationships, self.metadata.architecture)
             self.packages.append(FetchedPackage.from_deb(deb_file_path))
 
+    def add_files(self, dir, files):
+        for file in files:
+            target_file = os.path.join(dir, os.path.basename(file))
+            if dir == self.U_BOOT_DIR:
+                self.metadata.u_boot.append(target_file)
+            self.files.append((file, target_file))
+
     def manifest_text(self):
         manifest_content = ""
         for package in self.packages:
@@ -284,6 +294,8 @@ class HardwarePack(object):
             tf.create_file_from_string(
                 self.METADATA_FILENAME, str(self.metadata))
             tf.create_dir(self.PACKAGES_DIRNAME)
+            for fs_file_name, arc_file_name in self.files:
+                tf.add(fs_file_name, arcname=arc_file_name)
             for package in self.packages:
                 if package.content is not None:
                     tf.create_file_from_string(

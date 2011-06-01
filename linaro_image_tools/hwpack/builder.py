@@ -21,6 +21,11 @@
 
 import logging
 import errno
+import subprocess
+import tempfile
+import os
+
+from linaro_image_tools import cmd_runner
 
 from linaro_image_tools.hwpack.config import Config
 from linaro_image_tools.hwpack.hardwarepack import HardwarePack, Metadata
@@ -60,6 +65,23 @@ class HardwarePackBuilder(object):
         self.version = version
         self.local_debs = local_debs
 
+    def unpack_package(self, package, wanted_path):
+        package_file_name = 'testing/pkgs/u-boot-linaro-s5pv310_2011.03-0samsung6_armel.deb'
+        
+        tempdir = tempfile.mkdtemp()
+        # XXX atexit remove tempdir
+        p = cmd_runner.run(["tar", "--wildcards", "-C", tempdir, "-xf", "-"],
+                           stdin=subprocess.PIPE)
+        cmd_runner.run(["dpkg", "--fsys-tarfile", package_file_name],
+                       stdout=p.stdin).communicate()
+        p.communicate()
+        
+        unpacked_files = []
+        for root, _, files in os.walk(tempdir + wanted_path):
+            unpacked_files.extend(os.path.join(root, file) for file in files)
+
+        return unpacked_files
+
     def build(self):
         for architecture in self.config.architectures:
             logger.info("Building for %s" % architecture)
@@ -87,12 +109,19 @@ class HardwarePackBuilder(object):
                     fetcher.ignore_packages(self.config.assume_installed)
                     packages = fetcher.fetch_packages(
                         packages, download_content=self.config.include_debs)
+
                     u_boot_package = None
                     for package in packages:
                         # XXX This probably can be done with python list magic?
                         if package.name == self.config.u_boot_package:
                             u_boot_package = package
                     packages.remove(u_boot_package)
+                    u_boot_files = self.unpack_package(u_boot_package,
+                                                       '/usr/lib/u-boot/')
+                    logger.debug("Unpacked %d files from u-boot package %s." % \
+                                     (len(u_boot_files), u_boot_package.name))
+                    hwpack.add_files(hwpack.U_BOOT_DIR, u_boot_files)
+
                     logger.debug("Adding packages to hwpack")
                     hwpack.add_packages(packages)
                     for local_package in local_packages:
