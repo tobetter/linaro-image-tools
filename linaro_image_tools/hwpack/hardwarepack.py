@@ -148,8 +148,8 @@ class Metadata(object):
             metadata += "SUPPORT=%s\n" % self.support
         if self.board is not None:
             metadata += "BOARD=%s\n" % self.board
-        if self.cmdline is not None:
-            metadata += "CMDLINE=%s\n" % self.cmdline
+        if self.cmdline_append is not None:
+            metadata += "CMDLINE_APPEND=%s\n" % self.cmdline_append
         if self.u_boot != []:
             metadata += "U_BOOT=%s\n" % " ".join(self.u_boot)
         if self.vmlinuz is not None:
@@ -308,9 +308,9 @@ class HardwarePack(object):
                 self.FORMAT_FILENAME, self.format + "\n")
             tf.create_file_from_string(
                 self.METADATA_FILENAME, str(self.metadata))
-            tf.create_dir(self.PACKAGES_DIRNAME)
             for fs_file_name, arc_file_name in self.files:
                 tf.add(fs_file_name, arcname=arc_file_name)
+            tf.create_dir(self.PACKAGES_DIRNAME)
             for package in self.packages:
                 if package.content is not None:
                     tf.create_file_from_string(

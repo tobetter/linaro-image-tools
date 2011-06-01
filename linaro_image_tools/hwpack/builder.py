@@ -65,9 +65,7 @@ class HardwarePackBuilder(object):
         self.version = version
         self.local_debs = local_debs
 
-    def unpack_package(self, package, wanted_path):
-        package_file_name = 'testing/pkgs/u-boot-linaro-s5pv310_2011.03-0samsung6_armel.deb'
-        
+    def unpack_package(self, package_file_name, wanted_path):
         tempdir = tempfile.mkdtemp()
         # XXX atexit remove tempdir
         p = cmd_runner.run(["tar", "--wildcards", "-C", tempdir, "-xf", "-"],
@@ -116,8 +114,10 @@ class HardwarePackBuilder(object):
                         if package.name == self.config.u_boot_package:
                             u_boot_package = package
                     packages.remove(u_boot_package)
-                    u_boot_files = self.unpack_package(u_boot_package,
-                                                       '/usr/lib/u-boot/')
+                    u_boot_files = self.unpack_package(
+                        os.path.join(fetcher.cache.tempdir,
+                                     u_boot_package.filepath),
+                        '/usr/lib/u-boot/')
                     logger.debug("Unpacked %d files from u-boot package %s." % \
                                      (len(u_boot_files), u_boot_package.name))
                     hwpack.add_files(hwpack.U_BOOT_DIR, u_boot_files)
