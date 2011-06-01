@@ -75,20 +75,37 @@ class Metadata(object):
         self.support = support
         self.architecture = architecture
         self.board = board
-        self.cmdline = None
         self.u_boot = []
-        self.vmlinuz = None
-        self.initrd = None
-        self.omap_mlo = None
         self.serial_tty = serial_tty
         self.kernel_addr = kernel_addr
         self.initrd_addr = initrd_addr
         self.load_addr = load_addr
-        self.fdt = None
         self.wired_interfaces = wired_interfaces
         self.wireless_interfaces = wireless_interfaces
         self.partition_layout = partition_layout
         self.mmc_id = mmc_id
+
+        # To be implemented
+        self.fdt = None # similar to unpacking u-boot?
+        self.cmdline_append = None # simply pass-through?
+        self.cmdline_prepend = None # simply pass-through?
+        self.vmlinuz = None # found by inspecting kernel package?
+        self.initrd = None # similar to unpacking u-boot
+
+        # OMAP specific
+        self.omap_mlo = None
+        
+        # Samsung specific
+        self.spl = None # atm handled by unpacking u-boot deb
+        self.spl_offset = None # pass-through from config?
+        self.boot_env_offset = None # pass-through from config?
+
+        # ST-E specific
+        self.snowball_startfiles_cfg = None
+
+        # To be discussed
+        self.boot_partition_min_size = None # pass-through from config?
+        self.reserved_partition_min_size = None # pass-through from config?
 
     @classmethod
     def from_config(cls, config, version, architecture):
