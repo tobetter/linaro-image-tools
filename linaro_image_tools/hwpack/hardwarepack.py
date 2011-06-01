@@ -56,11 +56,10 @@ class Metadata(object):
     """
 
     def __init__(self, name, version, architecture, origin=None,
-                 maintainer=None, support=None,
-                 board=None, cmdline=None, vmlinuz=None, initrd=None,
-                 omap_mlo=None, serial_tty=None, kernel_addr=None, initrd_addr=None,
-                 load_addr=None, fdt=None, wired_interfaces=None,
-                 wireless_interfaces=None, partition_layout=None, mmc_id=None):
+                 maintainer=None, support=None, board=None, serial_tty=None,
+                 kernel_addr=None, initrd_addr=None, load_addr=None, fdt=None,
+                 wired_interfaces=None, wireless_interfaces=None,
+                 partition_layout=None, mmc_id=None):
         """Create the Metadata for a hardware pack.
 
         See the instance variables for a description of the arguments.
@@ -76,16 +75,16 @@ class Metadata(object):
         self.support = support
         self.architecture = architecture
         self.board = board
-        self.cmdline = cmdline
+        self.cmdline = None
         self.u_boot = []
-        self.vmlinuz = vmlinuz
-        self.initrd = initrd
-        self.omap_mlo = omap_mlo
+        self.vmlinuz = None
+        self.initrd = None
+        self.omap_mlo = None
         self.serial_tty = serial_tty
         self.kernel_addr = kernel_addr
         self.initrd_addr = initrd_addr
         self.load_addr = load_addr
-        self.fdt = fdt
+        self.fdt = None
         self.wired_interfaces = wired_interfaces
         self.wireless_interfaces = wireless_interfaces
         self.partition_layout = partition_layout
@@ -112,11 +111,10 @@ class Metadata(object):
         return cls(
             config.name, version, architecture, origin=config.origin,
             maintainer=config.maintainer, support=config.support,
-            board=config.board, cmdline=config.cmdline, vmlinuz=config.vmlinuz,
-            initrd=config.initrd, omap_mlo=config.omap_mlo,
-            serial_tty=config.serial_tty, kernel_addr=config.kernel_addr,
-            initrd_addr=config.initrd_addr, load_addr=config.load_addr,
-            fdt=config.fdt, wired_interfaces=config.wired_interfaces,
+            board=config.board, serial_tty=config.serial_tty,
+            kernel_addr=config.kernel_addr, initrd_addr=config.initrd_addr,
+            load_addr=config.load_addr,
+            wired_interfaces=config.wired_interfaces,
             wireless_interfaces=config.wireless_interfaces,
             partition_layout=config.partition_layout, mmc_id=config.mmc_id)
 

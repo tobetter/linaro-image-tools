@@ -43,16 +43,11 @@ class Config(object):
     ARCHITECTURES_KEY = "architectures"
     ASSUME_INSTALLED_KEY = "assume-installed"
     BOARD_KEY = "board"
-    CMDLINE_KEY = "cmdline"
     U_BOOT_PACKAGE_KEY = "u-boot-package"
-    VMLINUZ_KEY = "vmlinuz"
-    INITRD_KEY = "initrd"
-    OMAP_MLO_KEY = "omap_mlo"
     SERIAL_TTY_KEY = "serial_tty"
     KERNEL_ADDR_KEY = "kernel_addr"
     INITRD_ADDR_KEY = "initrd_addr"
     LOAD_ADDR_KEY = "load_addr"
-    FDT_KEY = "fdt"
     WIRED_INTERFACES_KEY = "wired_interfaces"
     WIRELESS_INTERFACES_KEY = "wireless_interfaces"
     PARTITION_LAYOUT_KEY = "partition_layout"
@@ -86,16 +81,11 @@ class Config(object):
         self._validate_assume_installed()
         self._validate_sections()
         self._validate_board()
-        self._validate_cmdline()
         self._validate_u_boot()
-        self._validate_vmlinuz()
-        self._validate_initrd()
-        self._validate_omap_mlo()
         self._validate_serial_tty()
         self._validate_kernel_addr()
         self._validate_initrd_addr()
         self._validate_load_addr()
-        self._validate_fdt()
         self._validate_wired_interfaces()
         self._validate_wireless_interfaces()
         self._validate_partition_layout()
@@ -155,40 +145,6 @@ class Config(object):
         """
         return self._get_option_from_main_section(self.BOARD_KEY)
 
-
-    @property
-    def cmdline(self):
-        """The kernel command line.
-
-        A str.
-        """
-        return self._get_option_from_main_section(self.CMDLINE_KEY)
-
-
-    @property
-    def vmlinuz(self):
-        """Linux image file name relative to rootfs (vmlinux or vmlinuz) 
-
-        A str.
-        """
-        return self._get_option_from_main_section(self.VMLINUZ_KEY)
-
-    @property
-    def initrd(self):
-        """initrd file name relative to rootfs 
-
-        A str.
-        """
-        return self._get_option_from_main_section(self.INITRD_KEY)
-
-    @property
-    def omap_mlo(self):
-        """x-loader / MLO file name in the hwpack (OMAP specific) 
-
-        A str.
-        """
-        return self._get_option_from_main_section(self.OMAP_MLO_KEY)
-
     @property
     def serial_tty(self):
         """/dev device name of the serial console for this kernel 
@@ -220,14 +176,6 @@ class Config(object):
         An int.
         """
         return self._get_option_from_main_section(self.LOAD_ADDR_KEY)
-
-    @property
-    def fdt(self):
-        """device tree binary filename relative to rootfs 
-
-        A str.
-        """
-        return self._get_option_from_main_section(self.FDT_KEY)
 
     @property
     def wired_interfaces(self):
@@ -389,15 +337,6 @@ class Config(object):
     def _validate_u_boot(self):
         self.notify_not_implemented()
 
-    def _validate_vmlinuz(self):
-        self.notify_not_implemented()
-
-    def _validate_initrd(self):
-        self.notify_not_implemented()
-
-    def _validate_omap_mlo(self):
-        self.notify_not_implemented()
-
     def _validate_serial_tty(self):
         self.notify_not_implemented()
 
@@ -408,9 +347,6 @@ class Config(object):
         self.notify_not_implemented()
 
     def _validate_load_addr(self):
-        self.notify_not_implemented()
-
-    def _validate_fdt(self):
         self.notify_not_implemented()
 
     def _validate_wired_interfaces(self):
