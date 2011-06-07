@@ -56,7 +56,7 @@ class Metadata(object):
     """
 
     def __init__(self, name, version, architecture, origin=None,
-                 maintainer=None, support=None, board=None, serial_tty=None,
+                 maintainer=None, support=None, serial_tty=None,
                  kernel_addr=None, initrd_addr=None, load_addr=None, fdt=None,
                  wired_interfaces=None, wireless_interfaces=None,
                  partition_layout=None, mmc_id=None):
@@ -74,7 +74,6 @@ class Metadata(object):
         self.maintainer = maintainer
         self.support = support
         self.architecture = architecture
-        self.board = board
         self.u_boot = []
         self.serial_tty = serial_tty
         self.kernel_addr = kernel_addr
@@ -128,9 +127,8 @@ class Metadata(object):
         return cls(
             config.name, version, architecture, origin=config.origin,
             maintainer=config.maintainer, support=config.support,
-            board=config.board, serial_tty=config.serial_tty,
-            kernel_addr=config.kernel_addr, initrd_addr=config.initrd_addr,
-            load_addr=config.load_addr,
+            serial_tty=config.serial_tty, kernel_addr=config.kernel_addr,
+            initrd_addr=config.initrd_addr, load_addr=config.load_addr,
             wired_interfaces=config.wired_interfaces,
             wireless_interfaces=config.wireless_interfaces,
             partition_layout=config.partition_layout, mmc_id=config.mmc_id)
@@ -146,8 +144,6 @@ class Metadata(object):
             metadata += "MAINTAINER=%s\n" % self.maintainer
         if self.support is not None:
             metadata += "SUPPORT=%s\n" % self.support
-        if self.board is not None:
-            metadata += "BOARD=%s\n" % self.board
         if self.cmdline_append is not None:
             metadata += "CMDLINE_APPEND=%s\n" % self.cmdline_append
         if self.u_boot != []:

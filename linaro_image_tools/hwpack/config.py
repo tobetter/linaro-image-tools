@@ -42,7 +42,6 @@ class Config(object):
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
     ASSUME_INSTALLED_KEY = "assume-installed"
-    BOARD_KEY = "board"
     U_BOOT_PACKAGE_KEY = "u-boot-package"
     SERIAL_TTY_KEY = "serial_tty"
     KERNEL_ADDR_KEY = "kernel_addr"
@@ -80,7 +79,6 @@ class Config(object):
         self._validate_architectures()
         self._validate_assume_installed()
         self._validate_sections()
-        self._validate_board()
         self._validate_u_boot()
         self._validate_serial_tty()
         self._validate_kernel_addr()
@@ -136,14 +134,6 @@ class Config(object):
             return result
         except ConfigParser.NoOptionError:
             return None
-
-    @property
-    def board(self):
-        """The board that this hwpack is for.
-
-        A str.
-        """
-        return self._get_option_from_main_section(self.BOARD_KEY)
 
     @property
     def serial_tty(self):
@@ -319,17 +309,6 @@ class Config(object):
         implementation matches the format.
         """
         print "XXX _validate function not implemented in %s" % __name__
-
-    def _validate_board(self):
-        self.notify_not_implemented()
-
-        try:
-            board = self.board
-            if not board:
-                raise HwpackConfigError("Empty value for board")
-        except ConfigParser.NoOptionError:
-            raise HwpackConfigError(
-                "No board in the [%s] section" % self.MAIN_SECTION)
 
     def _validate_cmdline(self):
         self.notify_not_implemented()
