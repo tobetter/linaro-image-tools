@@ -74,7 +74,7 @@ class Metadata(object):
         self.maintainer = maintainer
         self.support = support
         self.architecture = architecture
-        self.u_boot = []
+        self.u_boot = None
         self.serial_tty = serial_tty
         self.kernel_addr = kernel_addr
         self.initrd_addr = initrd_addr
@@ -146,8 +146,8 @@ class Metadata(object):
             metadata += "SUPPORT=%s\n" % self.support
         if self.cmdline_append is not None:
             metadata += "CMDLINE_APPEND=%s\n" % self.cmdline_append
-        if self.u_boot != []:
-            metadata += "U_BOOT=%s\n" % " ".join(self.u_boot)
+        if self.u_boot is not None:
+            metadata += "U_BOOT=%s\n" % self.u_boot
         if self.vmlinuz is not None:
             metadata += "VMLINUZ=%s\n" % self.vmlinuz
         if self.initrd is not None:
@@ -269,12 +269,9 @@ class HardwarePack(object):
                 relationships, self.metadata.architecture)
             self.packages.append(FetchedPackage.from_deb(deb_file_path))
 
-    def add_files(self, dir, files):
-        for file in files:
-            target_file = os.path.join(dir, os.path.basename(file))
-            if dir == self.U_BOOT_DIR:
-                self.metadata.u_boot.append(target_file)
-            self.files.append((file, target_file))
+    def add_file(self, dir, file):
+        target_file = os.path.join(dir, os.path.basename(file))
+        self.files.append((file, target_file))
 
     def manifest_text(self):
         manifest_content = ""

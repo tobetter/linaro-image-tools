@@ -43,6 +43,7 @@ class Config(object):
     ARCHITECTURES_KEY = "architectures"
     ASSUME_INSTALLED_KEY = "assume-installed"
     U_BOOT_PACKAGE_KEY = "u-boot-package"
+    U_BOOT_FILE_KEY = "u-boot-file"
     SERIAL_TTY_KEY = "serial_tty"
     KERNEL_ADDR_KEY = "kernel_addr"
     INITRD_ADDR_KEY = "initrd_addr"
@@ -76,10 +77,10 @@ class Config(object):
         self._validate_support()
         self._validate_packages()
         self._validate_u_boot_package()
+        self._validate_u_boot_file()
         self._validate_architectures()
         self._validate_assume_installed()
         self._validate_sections()
-        self._validate_u_boot()
         self._validate_serial_tty()
         self._validate_kernel_addr()
         self._validate_initrd_addr()
@@ -246,12 +247,19 @@ class Config(object):
 
     @property
     def u_boot_package(self):
-        """The u-boot package that will be unpacked to get the u-boot bin.
+        """The u-boot package that contains the u-boot bin.
 
         A str.
         """
         return self._get_option_from_main_section(self.U_BOOT_PACKAGE_KEY)
 
+    @property
+    def u_boot_file(self):
+        """The u-boot bin file that will be unpacked from the u-boot package.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.U_BOOT_FILE_KEY)
 
     @property
     def architectures(self):
@@ -313,7 +321,7 @@ class Config(object):
     def _validate_cmdline(self):
         self.notify_not_implemented()
 
-    def _validate_u_boot(self):
+    def _validate_u_boot_file(self):
         self.notify_not_implemented()
 
     def _validate_serial_tty(self):

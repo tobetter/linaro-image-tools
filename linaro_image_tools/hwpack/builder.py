@@ -65,7 +65,7 @@ class HardwarePackBuilder(object):
         self.version = version
         self.local_debs = local_debs
 
-    def unpack_package(self, package_file_name, wanted_path):
+    def unpack_package(self, package_file_name):
         tempdir = tempfile.mkdtemp()
         # XXX atexit remove tempdir
         p = cmd_runner.run(["tar", "--wildcards", "-C", tempdir, "-xf", "-"],
@@ -74,11 +74,17 @@ class HardwarePackBuilder(object):
                        stdout=p.stdin).communicate()
         p.communicate()
         
-        unpacked_files = []
-        for root, _, files in os.walk(tempdir + wanted_path):
-            unpacked_files.extend(os.path.join(root, file) for file in files)
+        return tempdir
 
-        return unpacked_files
+    def add_file_from_package(self, package, file, target_dir, target_hwpack):
+        temp_dir = self.unpack_package(package)
+        temp_file = os.path.join(temp_dir, file)
+        assert os.path.exists(temp_file), "The file '%s' was " \
+            "not found in the package '%s'." % (file, package)
+            
+        logger.debug("Unpacked %s from package %s." % (temp_file, package))
+        target_hwpack.add_file(target_dir, temp_file)
+        return os.path.join(target_dir, os.path.basename(temp_file))
 
     def build(self):
         for architecture in self.config.architectures:
@@ -114,13 +120,13 @@ class HardwarePackBuilder(object):
                         if package.name == self.config.u_boot_package:
                             u_boot_package = package
                     packages.remove(u_boot_package)
-                    u_boot_files = self.unpack_package(
-                        os.path.join(fetcher.cache.tempdir,
-                                     u_boot_package.filepath),
-                        '/usr/lib/u-boot/')
-                    logger.debug("Unpacked %d files from u-boot package %s." % \
-                                     (len(u_boot_files), u_boot_package.name))
-                    hwpack.add_files(hwpack.U_BOOT_DIR, u_boot_files)
+
+                    u_boot_package_path = os.path.join(fetcher.cache.tempdir,
+                                                       u_boot_package.filepath)
+                    u_boot_target_file = self.add_file_from_package(
+                        u_boot_package_path, self.config.u_boot_file,
+                        hwpack.U_BOOT_DIR, hwpack)
+                    hwpack.metadata.u_boot = u_boot_target_file
 
                     logger.debug("Adding packages to hwpack")
                     hwpack.add_packages(packages)
