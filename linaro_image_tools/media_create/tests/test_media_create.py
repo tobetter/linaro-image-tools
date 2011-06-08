@@ -71,6 +71,7 @@ from linaro_image_tools.media_create.partitions import (
     HEADS,
     SECTORS,
     calculate_partition_size_and_offset,
+    calculate_android_partition_size_and_offset,
     convert_size_to_bytes,
     create_partitions,
     ensure_partition_is_not_mounted,
@@ -886,7 +887,13 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def _create_tmpfile(self):
         # boot part at +8 MiB, root part at +16 MiB
         return self._create_qemu_img_with_partitions(
-            '16384,15746,0x0C,*\n32768,,,-')
+            '16384,15746,0x0C,*\n32768,,,-', '30M')
+
+    def _create_android_tmpfile(self):
+        # boot part at +8 MiB, root part at +16 MiB
+        return self._create_qemu_img_with_partitions(
+            '63,270272,0x0C,*\n270336,524288,L\n794624,524288,L\n1318912,-,E\n' \
+                '1318912,1048576,L\n2367488,,,-', '2G')
 
     def test_convert_size_no_suffix(self):
         self.assertEqual(524288, convert_size_to_bytes('524288'))
@@ -908,10 +915,24 @@ class TestPartitionSetup(TestCaseWithFixtures):
             [8061952L, 8388608L, 14680064L, 16777216L],
             [vfat_size, vfat_offset, linux_size, linux_offset])
 
+    def test_calculate_android_partition_size_and_offset(self):
+        tmpfile = self._create_android_tmpfile()
+        device_info = calculate_android_partition_size_and_offset(tmpfile)
+        expected = [
+            (32256L, 138379264L),
+            (138412032L, 268435456L),
+            (406847488L, 268435456L),
+            (675282944L, 1472200704L),
+            (675299328L, 536854528L),
+            (1212170240L, 935313408L)
+            ]
+        for device_pair, expected_pair in map(None, device_info, expected):
+            self.assertEqual(device_pair, expected_pair)
+
     def test_partition_numbering(self):
         # another Linux partition at +24 MiB after the boot/root parts
         tmpfile = self._create_qemu_img_with_partitions(
-            '16384,15746,0x0C,*\n32768,15427,,-\n49152,,,-')
+            '16384,15746,0x0C,*\n32768,15427,,-\n49152,,,-', '30M')
         vfat_size, vfat_offset, linux_size, linux_offset = (
             calculate_partition_size_and_offset(tmpfile))
         # check that the linux partition offset starts at +16 MiB so that it's
@@ -941,10 +962,10 @@ class TestPartitionSetup(TestCaseWithFixtures):
             ("%s%d" % (tmpfile, 2), "%s%d" % (tmpfile, 3)),
             get_boot_and_root_partitions_for_media(media, boards.Mx5Config))
 
-    def _create_qemu_img_with_partitions(self, sfdisk_commands):
+    def _create_qemu_img_with_partitions(self, sfdisk_commands, tempfile_size):
         tmpfile = self.createTempFileAsFixture()
         proc = cmd_runner.run(
-            ['dd', 'of=%s' % tmpfile, 'bs=1', 'seek=30M', 'count=0'],
+            ['dd', 'of=%s' % tmpfile, 'bs=1', 'seek=%s' % tempfile_size, 'count=0'],
             stderr=open('/dev/null', 'w'))
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
