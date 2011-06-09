@@ -97,7 +97,8 @@ class HardwarePackBuilder(object):
                 hwpack.add_apt_sources(sources)
                 sources = sources.values()
                 packages = self.config.packages[:]
-                packages.append(self.config.u_boot_package)
+                if self.config.u_boot_package is not None:
+                    packages.append(self.config.u_boot_package)
                 local_packages = [
                     FetchedPackage.from_deb(deb)
                     for deb in self.local_debs]
@@ -114,19 +115,20 @@ class HardwarePackBuilder(object):
                     packages = fetcher.fetch_packages(
                         packages, download_content=self.config.include_debs)
 
-                    u_boot_package = None
-                    for package in packages:
-                        # XXX This probably can be done with python list magic?
-                        if package.name == self.config.u_boot_package:
-                            u_boot_package = package
-                    packages.remove(u_boot_package)
+                    if self.config.u_boot_package is not None:
+                        u_boot_package = None
+                        for package in packages:
+                            # XXX This probably can be done with python list magic?
+                            if package.name == self.config.u_boot_package:
+                                u_boot_package = package
+                        packages.remove(u_boot_package)
 
-                    u_boot_package_path = os.path.join(fetcher.cache.tempdir,
-                                                       u_boot_package.filepath)
-                    u_boot_target_file = self.add_file_from_package(
-                        u_boot_package_path, self.config.u_boot_file,
-                        hwpack.U_BOOT_DIR, hwpack)
-                    hwpack.metadata.u_boot = u_boot_target_file
+                        u_boot_package_path = os.path.join(fetcher.cache.tempdir,
+                                                           u_boot_package.filepath)
+                        u_boot_target_file = self.add_file_from_package(
+                            u_boot_package_path, self.config.u_boot_file,
+                            hwpack.U_BOOT_DIR, hwpack)
+                        hwpack.metadata.u_boot = u_boot_target_file
 
                     logger.debug("Adding packages to hwpack")
                     hwpack.add_packages(packages)
