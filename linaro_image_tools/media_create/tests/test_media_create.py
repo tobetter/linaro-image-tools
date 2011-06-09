@@ -76,6 +76,7 @@ from linaro_image_tools.media_create.partitions import (
     create_partitions,
     ensure_partition_is_not_mounted,
     get_boot_and_root_loopback_devices,
+    get_android_loopback_devices,
     get_boot_and_root_partitions_for_media,
     Media,
     run_sfdisk_commands,
@@ -1018,6 +1019,47 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # setup it is passed to the atexit handler.
         self.assertEquals(
             ['%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args],
+            popen_fixture.mock.commands_executed)
+
+    def test_get_android_loopback_devices(self):
+        tmpfile = self._create_android_tmpfile()
+        atexit_fixture = self.useFixture(MockSomethingFixture(
+            atexit, 'register', AtExitRegister()))
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        # We can't test the return value of get_boot_and_root_loopback_devices
+        # because it'd require running losetup as root, so we just make sure
+        # it calls losetup correctly.
+        get_android_loopback_devices(tmpfile)
+        self.assertEqual(
+            ['%s losetup -f --show %s --offset 32256 --sizelimit 138379264'
+                % (sudo_args, tmpfile),
+             '%s losetup -f --show %s --offset 138412032 --sizelimit 268435456'
+                % (sudo_args, tmpfile),
+             '%s losetup -f --show %s --offset 406847488 --sizelimit 268435456'
+                % (sudo_args, tmpfile),
+             '%s losetup -f --show %s --offset 675282944 --sizelimit 1472200704'
+                % (sudo_args, tmpfile),
+             '%s losetup -f --show %s --offset 675299328 --sizelimit 536854528'
+                % (sudo_args, tmpfile),
+             '%s losetup -f --show %s --offset 1212170240 --sizelimit 935313408'
+                % (sudo_args, tmpfile)],
+            popen_fixture.mock.commands_executed)
+
+        # get_boot_and_root_loopback_devices will also setup two exit handlers
+        # to de-register the loopback devices set up above.
+        self.assertEqual(6, len(atexit_fixture.mock.funcs))
+        popen_fixture.mock.calls = []
+        atexit_fixture.mock.run_funcs()
+        # We did not really run losetup above (as it requires root) so here we
+        # don't have a device to pass to 'losetup -d', but when a device is
+        # setup it is passed to the atexit handler.
+        self.assertEquals(
+            ['%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args,
              '%s losetup -d ' % sudo_args],
             popen_fixture.mock.commands_executed)
 
