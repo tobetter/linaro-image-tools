@@ -76,11 +76,15 @@ class Config(object):
         self._validate_include_debs()
         self._validate_support()
         self._validate_packages()
-        self._validate_u_boot_package()
-        self._validate_u_boot_file()
         self._validate_architectures()
         self._validate_assume_installed()
         self._validate_sections()
+
+        if self.format < '2.0':
+            return
+
+        self._validate_u_boot_package()
+        self._validate_u_boot_file()
         self._validate_serial_tty()
         self._validate_kernel_addr()
         self._validate_initrd_addr()
