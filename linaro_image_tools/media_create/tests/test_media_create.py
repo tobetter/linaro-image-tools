@@ -886,9 +886,12 @@ class TestPartitionSetup(TestCaseWithFixtures):
             (63 * self.sector_size, 270272 * self.sector_size),
             (270336 * self.sector_size, 524288 * self.sector_size),
             (794624 * self.sector_size, 524288 * self.sector_size),
-            (1318912 * self.sector_size, self.android_image_size - 1318912 * self.sector_size),
-            ((1318912 + 32) * self.sector_size, (1048576 - 32) * self.sector_size),
-            ((2367488 + 32) * self.sector_size, self.android_image_size - (2367488 + 32) * self.sector_size)
+            (1318912 * self.sector_size, (self.android_image_size - 
+                                          1318912 * self.sector_size)),
+            ((1318912 + 32) * self.sector_size, ((1048576 - 32) * 
+                                                 self.sector_size)),
+            ((2367488 + 32) * self.sector_size, 
+             self.android_image_size - (2367488 + 32) * self.sector_size)
             ]
 
     def tearDown(self):
