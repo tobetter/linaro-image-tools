@@ -880,6 +880,16 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Stub time.sleep() as create_partitions() use that.
         self.orig_sleep = time.sleep
         time.sleep = lambda s: None
+        self.sector_size = 512
+        self.android_image_size = 2 * 1024**3 # rounded up from ~1.13GiB
+        self.android_offsets_and_sizes = [
+            (63 * self.sector_size, 270272 * self.sector_size),
+            (270336 * self.sector_size, 524288 * self.sector_size),
+            (794624 * self.sector_size, 524288 * self.sector_size),
+            (1318912 * self.sector_size, self.android_image_size - 1318912 * self.sector_size),
+            ((1318912 + 32) * self.sector_size, (1048576 - 32) * self.sector_size),
+            ((2367488 + 32) * self.sector_size, self.android_image_size - (2367488 + 32) * self.sector_size)
+            ]
 
     def tearDown(self):
         super(TestPartitionSetup, self).tearDown()
@@ -891,10 +901,10 @@ class TestPartitionSetup(TestCaseWithFixtures):
             '16384,15746,0x0C,*\n32768,,,-', '30M')
 
     def _create_android_tmpfile(self):
-        # boot part at +8 MiB, root part at +16 MiB
+        # boot, system, cache, (extended), userdata and sdcard partitions
         return self._create_qemu_img_with_partitions(
             '63,270272,0x0C,*\n270336,524288,L\n794624,524288,L\n1318912,-,E\n' \
-                '1318912,1048576,L\n2367488,,,-', '2G')
+                '1318912,1048576,L\n2367488,,,-', '%s' % self.android_image_size)
 
     def test_convert_size_no_suffix(self):
         self.assertEqual(524288, convert_size_to_bytes('524288'))
@@ -919,15 +929,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def test_calculate_android_partition_size_and_offset(self):
         tmpfile = self._create_android_tmpfile()
         device_info = calculate_android_partition_size_and_offset(tmpfile)
-        expected = [
-            (32256L, 138379264L),
-            (138412032L, 268435456L),
-            (406847488L, 268435456L),
-            (675282944L, 1472200704L),
-            (675299328L, 536854528L),
-            (1212170240L, 935313408L)
-            ]
-        for device_pair, expected_pair in map(None, device_info, expected):
+        for device_pair, expected_pair in map(None, device_info,
+                                              self.android_offsets_and_sizes):
             self.assertEqual(device_pair, expected_pair)
 
     def test_partition_numbering(self):
@@ -1032,18 +1035,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # it calls losetup correctly.
         get_android_loopback_devices(tmpfile)
         self.assertEqual(
-            ['%s losetup -f --show %s --offset 32256 --sizelimit 138379264'
-                % (sudo_args, tmpfile),
-             '%s losetup -f --show %s --offset 138412032 --sizelimit 268435456'
-                % (sudo_args, tmpfile),
-             '%s losetup -f --show %s --offset 406847488 --sizelimit 268435456'
-                % (sudo_args, tmpfile),
-             '%s losetup -f --show %s --offset 675282944 --sizelimit 1472200704'
-                % (sudo_args, tmpfile),
-             '%s losetup -f --show %s --offset 675299328 --sizelimit 536854528'
-                % (sudo_args, tmpfile),
-             '%s losetup -f --show %s --offset 1212170240 --sizelimit 935313408'
-                % (sudo_args, tmpfile)],
+            ['%s losetup -f --show %s --offset %s --sizelimit %s'
+                % (sudo_args, tmpfile, offset, size) for (offset, size) in 
+             self.android_offsets_and_sizes],
             popen_fixture.mock.commands_executed)
 
         # get_boot_and_root_loopback_devices will also setup two exit handlers
