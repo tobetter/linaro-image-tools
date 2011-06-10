@@ -56,14 +56,12 @@ class Metadata(object):
     """
 
     def __init__(self, name, version, architecture, origin=None,
-                 maintainer=None, support=None, serial_tty=None,
-                 kernel_addr=None, initrd_addr=None, load_addr=None, fdt=None,
-                 wired_interfaces=None, wireless_interfaces=None,
-                 partition_layout=None, mmc_id=None):
+                 maintainer=None, support=None, format='1.0'):
         """Create the Metadata for a hardware pack.
 
         See the instance variables for a description of the arguments.
         """
+        self.format = format
         self.name = name
         if ' ' in version:
             raise AssertionError(
@@ -74,6 +72,16 @@ class Metadata(object):
         self.maintainer = maintainer
         self.support = support
         self.architecture = architecture
+
+    @classmethod
+    def add_v2_config(self, serial_tty=None, kernel_addr=None, initrd_addr=None,
+                      load_addr=None, fdt=None, wired_interfaces=None,
+                      wireless_interfaces=None, partition_layout=None,
+                      mmc_id=None):
+        """Add fields that are specific to the new format.
+
+        These fields are not present in earlier config files.
+        """
         self.u_boot = None
         self.serial_tty = serial_tty
         self.kernel_addr = kernel_addr
@@ -124,14 +132,21 @@ class Metadata(object):
             targetting.
         :type architecture: str
         """
-        return cls(
+        metadata = cls(
             config.name, version, architecture, origin=config.origin,
             maintainer=config.maintainer, support=config.support,
-            serial_tty=config.serial_tty, kernel_addr=config.kernel_addr,
-            initrd_addr=config.initrd_addr, load_addr=config.load_addr,
-            wired_interfaces=config.wired_interfaces,
-            wireless_interfaces=config.wireless_interfaces,
-            partition_layout=config.partition_layout, mmc_id=config.mmc_id)
+            format=config.format)
+
+        if config.format >= '2.0':
+            metadata.add_v2_config(serial_tty=config.serial_tty,
+                                   kernel_addr=config.kernel_addr,
+                                   initrd_addr=config.initrd_addr,
+                                   load_addr=config.load_addr,
+                                   wired_interfaces=config.wired_interfaces,
+                                   wireless_interfaces=config.wireless_interfaces,
+                                   partition_layout=config.partition_layout,
+                                   mmc_id=config.mmc_id)
+        return metadata
 
     def __str__(self):
         """Get the contents of the metadata file."""
@@ -144,6 +159,10 @@ class Metadata(object):
             metadata += "MAINTAINER=%s\n" % self.maintainer
         if self.support is not None:
             metadata += "SUPPORT=%s\n" % self.support
+
+        if self.format < '2.0':
+            return metadata
+            
         if self.cmdline_append is not None:
             metadata += "CMDLINE_APPEND=%s\n" % self.cmdline_append
         if self.u_boot is not None:
