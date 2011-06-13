@@ -371,14 +371,15 @@ class Config(object):
         pass
 
     def _validate_partition_layout(self):
-        defined_partition_layouts = ['bootfs16_rootfs',
-                                     'bootfs_rootfs',
-                                     'reserved_bootfs_rootfs',
-                                     ]
+        defined_partition_layouts = [
+            #'bootfs16_rootfs',
+            'bootfs_rootfs',
+            #'reserved_bootfs_rootfs',
+            ]
         if self.partition_layout not in defined_partition_layouts:
             raise HwpackConfigError(
                 "Undefined partition layout %s in the [%s] section. "
-                "Valid partion layouts are %s."
+                "Valid partition layouts are %s."
                 % (self.partition_layout, self.MAIN_SECTION,
                    ", ".join(defined_partition_layouts)))
             

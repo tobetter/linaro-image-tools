@@ -219,6 +219,15 @@ class ConfigTests(TestCase):
                                      "u-boot-file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
+    def test_validate_partition_layout(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n" \
+                                     "partition_layout = apafs_bananfs\n")
+        self.assertValidationError(
+            "Undefined partition layout coolfs_strangefs in the [hwpack] " \
+                "section. Valid partition layouts are bootfs_rootfs.", config)
+
     def test_validate_wired_interfaces(self):
         self.assertTrue("XXX What is an invalid interface name?")
 
@@ -292,6 +301,12 @@ class ConfigTests(TestCase):
                                  self.valid_end)
         config.validate()
         self.assertEqual(["wlan0", "wl1", "usb2"], config.wireless_interfaces)
+
+    def test_partition_layout(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("bootfs_rootfs",
+                         config.partition_layout)
 
     def test_u_boot_file(self):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)
