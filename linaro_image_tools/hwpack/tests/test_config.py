@@ -30,6 +30,7 @@ class ConfigTests(TestCase):
 
     valid_start = (
         "[hwpack]\nname = ahwpack\npackages = foo\narchitectures = armel\n")
+    valid_start_v2 = valid_start + "format = 2.0\n"
 
     def test_create(self):
         config = Config(StringIO())
@@ -169,6 +170,51 @@ class ConfigTests(TestCase):
                 "architectures = armel\n\n"
                 "[ubuntu]\nsources-entry = foo bar\n")
         self.assertEqual(None, config.validate())
+
+    def test_validate_supported_format(self):
+        config = self.get_config(
+                self.valid_start
+                + "\nformat = 0.9\n")
+        self.assertValidationError(
+            "Format version '0.9' is not supported.", config)
+
+    def test_validate_space_format(self):
+        for format in Config.SUPPORTED_FORMATS:
+            self.assertNotIn(" ", format)
+
+    def test_validate_invalid_u_boot_package_name(self):
+        config = self.get_config(
+                self.valid_start_v2 + "u-boot-package = ~~\n")
+        self.assertValidationError(
+            "Invalid value in u-boot-package in the [hwpack] section: ~~",
+            config)
+
+    def test_validate_empty_u_boot_package(self):
+        config = self.get_config(
+            self.valid_start_v2 + "u-boot-package = \n")
+        self.assertValidationError(
+            "No u-boot-package in the [hwpack] section", config)
+
+    def test_validate_no_u_boot_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n")
+        self.assertValidationError("No u_boot_file in the [hwpack] section", config)
+
+    def test_validate_empty_u_boot_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\nu-boot-file = ")
+        self.assertValidationError("No u_boot_file in the [hwpack] section", config)
+
+    def test_validate_invalid_u_boot_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\nu-boot-file = ~~")
+        self.assertValidationError("Invalid path: ~~", config)
+
+    def test_u_boot_file(self):
+        config = self.get_config(self.valid_start_v2 +
+                                 "u-boot-package = u-boot-linaro-s5pv310\nu-boot-file = usr/lib/u-boot/smdkv310/u-boot.bin")
+        self.assertEqual("usr/lib/u-boot/smdkv310/u-boot.bin",
+                         config.u_boot_file)
 
     def test_name(self):
         config = self.get_config(

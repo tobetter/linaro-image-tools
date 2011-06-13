@@ -38,6 +38,7 @@ class Config(object):
     SOURCES_ENTRY_KEY = "sources-entry"
     PACKAGES_KEY = "packages"
     PACKAGE_REGEX = NAME_REGEX
+    PATH_REGEX = NAME_REGEX
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
@@ -78,21 +79,20 @@ class Config(object):
         self._validate_packages()
         self._validate_architectures()
         self._validate_assume_installed()
+
+        if self.format > '1.0':
+            self._validate_u_boot_package()
+            self._validate_u_boot_file()
+            self._validate_serial_tty()
+            self._validate_kernel_addr()
+            self._validate_initrd_addr()
+            self._validate_load_addr()
+            self._validate_wired_interfaces()
+            self._validate_wireless_interfaces()
+            self._validate_partition_layout()
+            self._validate_mmc_id()
+
         self._validate_sections()
-
-        if self.format < '2.0':
-            return
-
-        self._validate_u_boot_package()
-        self._validate_u_boot_file()
-        self._validate_serial_tty()
-        self._validate_kernel_addr()
-        self._validate_initrd_addr()
-        self._validate_load_addr()
-        self._validate_wired_interfaces()
-        self._validate_wireless_interfaces()
-        self._validate_partition_layout()
-        self._validate_mmc_id()
 
     @property
     def format(self):
@@ -326,7 +326,12 @@ class Config(object):
         self.notify_not_implemented()
 
     def _validate_u_boot_file(self):
-        self.notify_not_implemented()
+        u_boot_file = self.u_boot_file
+        if not u_boot_file:
+            raise HwpackConfigError("No u_boot_file in the [%s] section" % \
+                                        self.MAIN_SECTION)
+        if re.match(self.PATH_REGEX, u_boot_file) is None:
+            raise HwpackConfigError("Invalid path: %s" % u_boot_file)
 
     def _validate_serial_tty(self):
         self.notify_not_implemented()
@@ -397,7 +402,7 @@ class Config(object):
         if re.match(self.PACKAGE_REGEX, u_boot_package) is None:
             raise HwpackConfigError(
                 "Invalid value in %s in the [%s] section: %s"
-                % (self.PACKAGES_KEY, self.MAIN_SECTION, u_boot_package))
+                % (self.U_BOOT_PACKAGE_KEY, self.MAIN_SECTION, u_boot_package))
 
     def _validate_architectures(self):
         architectures = self.architectures
