@@ -38,7 +38,7 @@ class Config(object):
     SOURCES_ENTRY_KEY = "sources-entry"
     PACKAGES_KEY = "packages"
     PACKAGE_REGEX = NAME_REGEX
-    PATH_REGEX = NAME_REGEX
+    PATH_REGEX = r"[a-z0-9][a-z0-9+\-./]+$"
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
@@ -334,7 +334,11 @@ class Config(object):
             raise HwpackConfigError("Invalid path: %s" % u_boot_file)
 
     def _validate_serial_tty(self):
-        self.notify_not_implemented()
+        serial_tty = self.serial_tty
+        if serial_tty is None:
+            return
+        if len(serial_tty) < 4 or serial_tty[:3] != 'tty':
+            raise HwpackConfigError("Invalid serial tty: %s" % serial_tty)
 
     def _validate_kernel_addr(self):
         self.notify_not_implemented()

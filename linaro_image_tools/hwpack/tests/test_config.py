@@ -31,6 +31,13 @@ class ConfigTests(TestCase):
     valid_start = (
         "[hwpack]\nname = ahwpack\npackages = foo\narchitectures = armel\n")
     valid_start_v2 = valid_start + "format = 2.0\n"
+    valid_complete_v2 = (valid_start_v2 +
+                         "u-boot-package = u-boot-linaro-s5pv310\n" \
+                             "u-boot-file = usr/lib/u-boot/smdkv310/" \
+                             "u-boot.bin\nserial_tty=ttySAC1\n" \
+                             "partition_layout = bootfs_rootfs\n" \
+                             "[ubuntu]\nsources-entry = foo bar\n")
+
 
     def test_create(self):
         config = Config(StringIO())
@@ -198,23 +205,42 @@ class ConfigTests(TestCase):
     def test_validate_no_u_boot_file(self):
         config = self.get_config(self.valid_start_v2 + 
                                  "u-boot-package = u-boot-linaro-s5pv310\n")
-        self.assertValidationError("No u_boot_file in the [hwpack] section", config)
+        self.assertValidationError("No u_boot_file in the [hwpack] section",
+                                   config)
 
     def test_validate_empty_u_boot_file(self):
         config = self.get_config(self.valid_start_v2 + 
-                                 "u-boot-package = u-boot-linaro-s5pv310\nu-boot-file = ")
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = \n")
         self.assertValidationError("No u_boot_file in the [hwpack] section", config)
 
     def test_validate_invalid_u_boot_file(self):
         config = self.get_config(self.valid_start_v2 + 
-                                 "u-boot-package = u-boot-linaro-s5pv310\nu-boot-file = ~~")
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
-    def test_u_boot_file(self):
+    def test_validate_serial_tty(self):
         config = self.get_config(self.valid_start_v2 +
-                                 "u-boot-package = u-boot-linaro-s5pv310\nu-boot-file = usr/lib/u-boot/smdkv310/u-boot.bin")
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\nserial_tty=tty\n")
+        self.assertValidationError("Invalid serial tty: tty", config)
+        config = self.get_config(self.valid_start_v2 +
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n" \
+                                     "serial_tty=ttxSAC1\n")
+        self.assertValidationError("Invalid serial tty: ttxSAC1", config)
+
+    def test_u_boot_file(self):
+        config = self.get_config(self.valid_complete_v2)
+        config.validate()
         self.assertEqual("usr/lib/u-boot/smdkv310/u-boot.bin",
                          config.u_boot_file)
+
+    def test_serial_tty(self):
+        config = self.get_config(self.valid_complete_v2)
+        config.validate()
+        self.assertEqual("ttySAC1", config.serial_tty)
 
     def test_name(self):
         config = self.get_config(
