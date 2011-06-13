@@ -880,18 +880,20 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Stub time.sleep() as create_partitions() use that.
         self.orig_sleep = time.sleep
         time.sleep = lambda s: None
-        self.sector_size = 512
-        self.android_image_size = 2 * 1024**3 # rounded up from ~1.13GiB
+        # The partitions use ~1.13GiB and we round up to a standard sdcard size
+        self.android_image_size = 2 * 1024**3
+        # Extended partition info takes 32 sectors from the first ext partition
+        ext_part_size = 32
         self.android_offsets_and_sizes = [
-            (63 * self.sector_size, 270272 * self.sector_size),
-            (270336 * self.sector_size, 524288 * self.sector_size),
-            (794624 * self.sector_size, 524288 * self.sector_size),
-            (1318912 * self.sector_size, (self.android_image_size - 
-                                          1318912 * self.sector_size)),
-            ((1318912 + 32) * self.sector_size, ((1048576 - 32) * 
-                                                 self.sector_size)),
-            ((2367488 + 32) * self.sector_size, 
-             self.android_image_size - (2367488 + 32) * self.sector_size)
+            (63 * SECTOR_SIZE, 270272 * SECTOR_SIZE),
+            (270336 * SECTOR_SIZE, 524288 * SECTOR_SIZE),
+            (794624 * SECTOR_SIZE, 524288 * SECTOR_SIZE),
+            (1318912 * SECTOR_SIZE, (self.android_image_size - 
+                                     1318912 * SECTOR_SIZE)),
+            ((1318912 + ext_part_size) * SECTOR_SIZE,
+             (1048576 - ext_part_size) * SECTOR_SIZE),
+            ((2367488 + ext_part_size) * SECTOR_SIZE, 
+             self.android_image_size - (2367488 + ext_part_size) * SECTOR_SIZE)
             ]
 
     def tearDown(self):
@@ -932,6 +934,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def test_calculate_android_partition_size_and_offset(self):
         tmpfile = self._create_android_tmpfile()
         device_info = calculate_android_partition_size_and_offset(tmpfile)
+        # We use map(None, ...) since it would catch if the lists are not of
+        # equal length and zip() would not in all cases.
         for device_pair, expected_pair in map(None, device_info,
                                               self.android_offsets_and_sizes):
             self.assertEqual(device_pair, expected_pair)
