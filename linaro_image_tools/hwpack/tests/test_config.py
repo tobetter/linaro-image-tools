@@ -35,9 +35,8 @@ class ConfigTests(TestCase):
                          "u-boot-package = u-boot-linaro-s5pv310\n" \
                              "u-boot-file = usr/lib/u-boot/smdkv310/" \
                              "u-boot.bin\nserial_tty=ttySAC1\n" \
-                             "partition_layout = bootfs_rootfs\n" \
-                             "[ubuntu]\nsources-entry = foo bar\n")
-
+                             "partition_layout = bootfs_rootfs\n")
+    valid_end = "[ubuntu]\nsources-entry = foo bar\n"
 
     def test_create(self):
         config = Config(StringIO())
@@ -231,16 +230,85 @@ class ConfigTests(TestCase):
                                      "serial_tty=ttxSAC1\n")
         self.assertValidationError("Invalid serial tty: ttxSAC1", config)
 
+    def test_validate_kernel_addr(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "kernel_addr = 0x8000000\n")
+        self.assertValidationError("Invalid kernel address: 0x8000000", config)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "kernel_addr = 0x8000000x\n")
+        self.assertValidationError("Invalid kernel address: 0x8000000x", config)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "kernel_addr = 80000000\n")
+        self.assertValidationError("Invalid kernel address: 80000000", config)
+
+    def test_validate_initrd_addr(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "initrd_addr = 0x8000000\n")
+        self.assertValidationError("Invalid initrd address: 0x8000000", config)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "initrd_addr = 0x8000000x\n")
+        self.assertValidationError("Invalid initrd address: 0x8000000x", config)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "initrd_addr = 80000000\n")
+        self.assertValidationError("Invalid initrd address: 80000000", config)
+
+    def test_validate_load_addr(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "load_addr = 0x8000000\n")
+        self.assertValidationError("Invalid load address: 0x8000000", config)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "load_addr = 0x8000000x\n")
+        self.assertValidationError("Invalid load address: 0x8000000x", config)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "load_addr = 80000000\n")
+        self.assertValidationError("Invalid load address: 80000000", config)
+
     def test_u_boot_file(self):
-        config = self.get_config(self.valid_complete_v2)
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
         config.validate()
         self.assertEqual("usr/lib/u-boot/smdkv310/u-boot.bin",
                          config.u_boot_file)
 
     def test_serial_tty(self):
-        config = self.get_config(self.valid_complete_v2)
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
         config.validate()
         self.assertEqual("ttySAC1", config.serial_tty)
+
+    def test_kernel_addr(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "kernel_addr = 0x80000000\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual("0x80000000", config.kernel_addr)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "kernel_addr = 0x8aBcdEFf\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual("0x8aBcdEFf", config.kernel_addr)
+
+    def test_initrd_addr(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "initrd_addr = 0x80000000\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual("0x80000000", config.initrd_addr)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "initrd_addr = 0x8aBcdEFf\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual("0x8aBcdEFf", config.initrd_addr)
+
+    def test_load_addr(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "load_addr = 0x80000000\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual("0x80000000", config.load_addr)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "load_addr = 0x8aBcdEFf\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual("0x8aBcdEFf", config.load_addr)
 
     def test_name(self):
         config = self.get_config(

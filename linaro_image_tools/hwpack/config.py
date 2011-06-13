@@ -340,14 +340,29 @@ class Config(object):
         if len(serial_tty) < 4 or serial_tty[:3] != 'tty':
             raise HwpackConfigError("Invalid serial tty: %s" % serial_tty)
 
+    def _validate_addr(self, addr):
+        return re.match(r"^0x[a-fA-F0-9]{8}$", addr)
+
     def _validate_kernel_addr(self):
-        self.notify_not_implemented()
+        addr = self.kernel_addr
+        if addr is None:
+            return
+        if not self._validate_addr(addr):
+            raise HwpackConfigError("Invalid kernel address: %s" % addr)
 
     def _validate_initrd_addr(self):
-        self.notify_not_implemented()
+        addr = self.initrd_addr
+        if addr is None:
+            return
+        if not self._validate_addr(addr):
+            raise HwpackConfigError("Invalid initrd address: %s" % addr)
 
     def _validate_load_addr(self):
-        self.notify_not_implemented()
+        addr = self.load_addr
+        if addr is None:
+            return
+        if not self._validate_addr(addr):
+            raise HwpackConfigError("Invalid load address: %s" % addr)
 
     def _validate_wired_interfaces(self):
         self.notify_not_implemented()
