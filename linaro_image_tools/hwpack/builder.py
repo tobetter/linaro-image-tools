@@ -24,6 +24,8 @@ import errno
 import subprocess
 import tempfile
 import os
+import shutil
+import atexit
 
 from linaro_image_tools import cmd_runner
 
@@ -65,9 +67,13 @@ class HardwarePackBuilder(object):
         self.version = version
         self.local_debs = local_debs
 
+    def cleanup_tempdir(self, dir):
+        if dir is not None and os.path.exists(dir):
+            shutil.rmtree(dir)
+
     def unpack_package(self, package_file_name):
         tempdir = tempfile.mkdtemp()
-        # XXX atexit remove tempdir
+        atexit.register(self.cleanup_tempdir, tempdir)
         p = cmd_runner.run(["tar", "--wildcards", "-C", tempdir, "-xf", "-"],
                            stdin=subprocess.PIPE)
         cmd_runner.run(["dpkg", "--fsys-tarfile", package_file_name],
@@ -118,9 +124,13 @@ class HardwarePackBuilder(object):
                     if self.config.u_boot_package is not None:
                         u_boot_package = None
                         for package in packages:
-                            # XXX This probably can be done with python list magic?
                             if package.name == self.config.u_boot_package:
                                 u_boot_package = package
+                                break
+                            else:
+                                raise Exception(
+                                    "U-boot package %s was not fetched." % \
+                                        self.config.u_boot_package)
                         packages.remove(u_boot_package)
 
                         u_boot_package_path = os.path.join(fetcher.cache.tempdir,
