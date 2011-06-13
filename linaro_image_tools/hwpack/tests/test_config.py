@@ -219,6 +219,12 @@ class ConfigTests(TestCase):
                                      "u-boot-file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
+    def test_validate_wired_interfaces(self):
+        self.assertTrue("XXX What is an invalid interface name?")
+
+    def test_validate_wireless_interfaces(self):
+        self.assertTrue("XXX What is an invalid interface name?")
+
     def test_validate_serial_tty(self):
         config = self.get_config(self.valid_start_v2 +
                                  "u-boot-package = u-boot-linaro-s5pv310\n" \
@@ -262,6 +268,30 @@ class ConfigTests(TestCase):
         config = self.get_config(self.valid_complete_v2 + 
                                  "load_addr = 80000000\n")
         self.assertValidationError("Invalid load address: 80000000", config)
+
+    def test_wired_interfaces(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "wired_interfaces = eth0\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual(["eth0"], config.wired_interfaces)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "wired_interfaces = eth0 eth1 usb2\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual(["eth0", "eth1", "usb2"], config.wired_interfaces)
+
+    def test_wireless_interfaces(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "wireless_interfaces = wlan0\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual(["wlan0"], config.wireless_interfaces)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "wireless_interfaces = wlan0 wl1 usb2\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual(["wlan0", "wl1", "usb2"], config.wireless_interfaces)
 
     def test_u_boot_file(self):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)

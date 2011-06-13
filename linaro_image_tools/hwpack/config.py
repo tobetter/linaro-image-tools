@@ -365,10 +365,10 @@ class Config(object):
             raise HwpackConfigError("Invalid load address: %s" % addr)
 
     def _validate_wired_interfaces(self):
-        self.notify_not_implemented()
+        pass
 
     def _validate_wireless_interfaces(self):
-        self.notify_not_implemented()
+        pass
 
     def _validate_partition_layout(self):
         defined_partition_layouts = ['bootfs16_rootfs',
