@@ -225,7 +225,7 @@ class ConfigTests(TestCase):
                                      "u-boot-file = u-boot.bin\n" \
                                      "partition_layout = apafs_bananfs\n")
         self.assertValidationError(
-            "Undefined partition layout coolfs_strangefs in the [hwpack] " \
+            "Undefined partition layout apafs_bananfs in the [hwpack] " \
                 "section. Valid partition layouts are bootfs_rootfs.", config)
 
     def test_validate_wired_interfaces(self):
@@ -244,6 +244,11 @@ class ConfigTests(TestCase):
                                      "u-boot-file = u-boot.bin\n" \
                                      "serial_tty=ttxSAC1\n")
         self.assertValidationError("Invalid serial tty: ttxSAC1", config)
+
+    def test_validate_mmc_id(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "mmc_id = x\n")
+        self.assertValidationError("Invalid mmc id x", config)
 
     def test_validate_kernel_addr(self):
         config = self.get_config(self.valid_complete_v2 + 
@@ -318,6 +323,13 @@ class ConfigTests(TestCase):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)
         config.validate()
         self.assertEqual("ttySAC1", config.serial_tty)
+
+    def test_mmc_id(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "mmc_id = 1\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual("1", config.mmc_id)
 
     def test_kernel_addr(self):
         config = self.get_config(self.valid_complete_v2 + 

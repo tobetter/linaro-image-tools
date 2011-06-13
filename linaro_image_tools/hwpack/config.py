@@ -315,16 +315,6 @@ class Config(object):
             raise HwpackConfigError(
                 "No name in the [%s] section" % self.MAIN_SECTION)
 
-    def notify_not_implemented(self):
-        """ Alert that a _validate function needs to be implemented.
-        Remove this when format of new parameters are defined and
-        implementation matches the format.
-        """
-        print "XXX _validate function not implemented in %s" % __name__
-
-    def _validate_cmdline(self):
-        self.notify_not_implemented()
-
     def _validate_u_boot_file(self):
         u_boot_file = self.u_boot_file
         if not u_boot_file:
@@ -385,7 +375,13 @@ class Config(object):
             
 
     def _validate_mmc_id(self):
-        self.notify_not_implemented()
+        mmc_id = self.mmc_id
+        if mmc_id is None:
+            return
+        try:
+            int(mmc_id)
+        except:
+            raise HwpackConfigError("Invalid mmc id %s" % (mmc_id))
 
     def _validate_include_debs(self):
         try:
