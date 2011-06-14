@@ -880,6 +880,12 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Stub time.sleep() as create_partitions() use that.
         self.orig_sleep = time.sleep
         time.sleep = lambda s: None
+        self.linux_image_size = 30 * 1024**2
+        self.linux_offsets_and_sizes = [
+            (16384 * SECTOR_SIZE, 15746 * SECTOR_SIZE),
+            (32768 * SECTOR_SIZE, (self.linux_image_size - 
+                                        32768 * SECTOR_SIZE))
+            ]
         self.android_image_size = 256 * 1024**2
         # Extended partition info takes 32 sectors from the first ext partition
         ext_part_size = 32
@@ -902,7 +908,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def _create_tmpfile(self):
         # boot part at +8 MiB, root part at +16 MiB
         return self._create_qemu_img_with_partitions(
-            '16384,15746,0x0C,*\n32768,,,-', '30M')
+            '16384,15746,0x0C,*\n32768,,,-', '%s' % self.linux_image_size)
 
     def _create_android_tmpfile(self):
         # boot, system, cache, (extended), userdata and sdcard partitions
@@ -927,8 +933,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
         vfat_size, vfat_offset, linux_size, linux_offset = (
             calculate_partition_size_and_offset(tmpfile))
         self.assertEqual(
-            [8061952L, 8388608L, 14680064L, 16777216L],
-            [vfat_size, vfat_offset, linux_size, linux_offset])
+            self.linux_offsets_and_sizes,
+            [(vfat_offset, vfat_size), (linux_offset, linux_size)])
 
     def test_calculate_android_partition_size_and_offset(self):
         tmpfile = self._create_android_tmpfile()
@@ -942,7 +948,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def test_partition_numbering(self):
         # another Linux partition at +24 MiB after the boot/root parts
         tmpfile = self._create_qemu_img_with_partitions(
-            '16384,15746,0x0C,*\n32768,15427,,-\n49152,,,-', '30M')
+            '16384,15746,0x0C,*\n32768,15427,,-\n49152,,,-',
+            '%s' % self.linux_image_size)
         vfat_size, vfat_offset, linux_size, linux_offset = (
             calculate_partition_size_and_offset(tmpfile))
         # check that the linux partition offset starts at +16 MiB so that it's
@@ -1012,10 +1019,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # it calls losetup correctly.
         get_boot_and_root_loopback_devices(tmpfile)
         self.assertEqual(
-            ['%s losetup -f --show %s --offset 8388608 --sizelimit 8061952'
-                % (sudo_args, tmpfile),
-             '%s losetup -f --show %s --offset 16777216 --sizelimit 14680064'
-                % (sudo_args, tmpfile)],
+            ['%s losetup -f --show %s --offset %s --sizelimit %s'
+                % (sudo_args, tmpfile, offset, size) for (offset, size) in 
+             self.linux_offsets_and_sizes],
             popen_fixture.mock.commands_executed)
 
         # get_boot_and_root_loopback_devices will also setup two exit handlers
