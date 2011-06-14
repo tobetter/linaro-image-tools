@@ -880,20 +880,19 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Stub time.sleep() as create_partitions() use that.
         self.orig_sleep = time.sleep
         time.sleep = lambda s: None
-        # The partitions use ~1.13GiB and we round up to a standard sdcard size
-        self.android_image_size = 2 * 1024**3
+        self.android_image_size = 256 * 1024**2
         # Extended partition info takes 32 sectors from the first ext partition
         ext_part_size = 32
         self.android_offsets_and_sizes = [
-            (63 * SECTOR_SIZE, 270272 * SECTOR_SIZE),
-            (270336 * SECTOR_SIZE, 524288 * SECTOR_SIZE),
-            (794624 * SECTOR_SIZE, 524288 * SECTOR_SIZE),
-            (1318912 * SECTOR_SIZE, (self.android_image_size - 
-                                     1318912 * SECTOR_SIZE)),
-            ((1318912 + ext_part_size) * SECTOR_SIZE,
-             (1048576 - ext_part_size) * SECTOR_SIZE),
-            ((2367488 + ext_part_size) * SECTOR_SIZE, 
-             self.android_image_size - (2367488 + ext_part_size) * SECTOR_SIZE)
+            (63 * SECTOR_SIZE, 32768 * SECTOR_SIZE),
+            (32831 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
+            (98367 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
+            (294975 * SECTOR_SIZE, (self.android_image_size - 
+                                     294975 * SECTOR_SIZE)),
+            ((294975 + ext_part_size) * SECTOR_SIZE,
+             (131072 - ext_part_size) * SECTOR_SIZE),
+            ((426047 + ext_part_size) * SECTOR_SIZE, 
+             self.android_image_size - (426047 + ext_part_size) * SECTOR_SIZE)
             ]
 
     def tearDown(self):
@@ -908,8 +907,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def _create_android_tmpfile(self):
         # boot, system, cache, (extended), userdata and sdcard partitions
         return self._create_qemu_img_with_partitions(
-            '63,270272,0x0C,*\n270336,524288,L\n794624,524288,L\n1318912,-,E\n' \
-                '1318912,1048576,L\n2367488,,,-', '%s' % self.android_image_size)
+            '63,32768,0x0C,*\n32831,65536,L\n98367,65536,L\n294975,-,E\n' \
+                '294975,131072,L\n426047,,,-', '%s' % self.android_image_size)
 
     def test_convert_size_no_suffix(self):
         self.assertEqual(524288, convert_size_to_bytes('524288'))
