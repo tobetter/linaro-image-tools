@@ -71,10 +71,12 @@ from linaro_image_tools.media_create.partitions import (
     HEADS,
     SECTORS,
     calculate_partition_size_and_offset,
+    calculate_android_partition_size_and_offset,
     convert_size_to_bytes,
     create_partitions,
     ensure_partition_is_not_mounted,
     get_boot_and_root_loopback_devices,
+    get_android_loopback_devices,
     get_boot_and_root_partitions_for_media,
     Media,
     run_sfdisk_commands,
@@ -878,6 +880,20 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Stub time.sleep() as create_partitions() use that.
         self.orig_sleep = time.sleep
         time.sleep = lambda s: None
+        self.android_image_size = 256 * 1024**2
+        # Extended partition info takes 32 sectors from the first ext partition
+        ext_part_size = 32
+        self.android_offsets_and_sizes = [
+            (63 * SECTOR_SIZE, 32768 * SECTOR_SIZE),
+            (32831 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
+            (98367 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
+            (294975 * SECTOR_SIZE, (self.android_image_size - 
+                                     294975 * SECTOR_SIZE)),
+            ((294975 + ext_part_size) * SECTOR_SIZE,
+             (131072 - ext_part_size) * SECTOR_SIZE),
+            ((426047 + ext_part_size) * SECTOR_SIZE, 
+             self.android_image_size - (426047 + ext_part_size) * SECTOR_SIZE)
+            ]
 
     def tearDown(self):
         super(TestPartitionSetup, self).tearDown()
@@ -886,7 +902,13 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def _create_tmpfile(self):
         # boot part at +8 MiB, root part at +16 MiB
         return self._create_qemu_img_with_partitions(
-            '16384,15746,0x0C,*\n32768,,,-')
+            '16384,15746,0x0C,*\n32768,,,-', '30M')
+
+    def _create_android_tmpfile(self):
+        # boot, system, cache, (extended), userdata and sdcard partitions
+        return self._create_qemu_img_with_partitions(
+            '63,32768,0x0C,*\n32831,65536,L\n98367,65536,L\n294975,-,E\n' \
+                '294975,131072,L\n426047,,,-', '%s' % self.android_image_size)
 
     def test_convert_size_no_suffix(self):
         self.assertEqual(524288, convert_size_to_bytes('524288'))
@@ -908,10 +930,19 @@ class TestPartitionSetup(TestCaseWithFixtures):
             [8061952L, 8388608L, 14680064L, 16777216L],
             [vfat_size, vfat_offset, linux_size, linux_offset])
 
+    def test_calculate_android_partition_size_and_offset(self):
+        tmpfile = self._create_android_tmpfile()
+        device_info = calculate_android_partition_size_and_offset(tmpfile)
+        # We use map(None, ...) since it would catch if the lists are not of
+        # equal length and zip() would not in all cases.
+        for device_pair, expected_pair in map(None, device_info,
+                                              self.android_offsets_and_sizes):
+            self.assertEqual(device_pair, expected_pair)
+
     def test_partition_numbering(self):
         # another Linux partition at +24 MiB after the boot/root parts
         tmpfile = self._create_qemu_img_with_partitions(
-            '16384,15746,0x0C,*\n32768,15427,,-\n49152,,,-')
+            '16384,15746,0x0C,*\n32768,15427,,-\n49152,,,-', '30M')
         vfat_size, vfat_offset, linux_size, linux_offset = (
             calculate_partition_size_and_offset(tmpfile))
         # check that the linux partition offset starts at +16 MiB so that it's
@@ -941,10 +972,10 @@ class TestPartitionSetup(TestCaseWithFixtures):
             ("%s%d" % (tmpfile, 2), "%s%d" % (tmpfile, 3)),
             get_boot_and_root_partitions_for_media(media, boards.Mx5Config))
 
-    def _create_qemu_img_with_partitions(self, sfdisk_commands):
+    def _create_qemu_img_with_partitions(self, sfdisk_commands, tempfile_size):
         tmpfile = self.createTempFileAsFixture()
         proc = cmd_runner.run(
-            ['dd', 'of=%s' % tmpfile, 'bs=1', 'seek=30M', 'count=0'],
+            ['dd', 'of=%s' % tmpfile, 'bs=1', 'seek=%s' % tempfile_size, 'count=0'],
             stderr=open('/dev/null', 'w'))
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
@@ -997,6 +1028,38 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # setup it is passed to the atexit handler.
         self.assertEquals(
             ['%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args],
+            popen_fixture.mock.commands_executed)
+
+    def test_get_android_loopback_devices(self):
+        tmpfile = self._create_android_tmpfile()
+        atexit_fixture = self.useFixture(MockSomethingFixture(
+            atexit, 'register', AtExitRegister()))
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        # We can't test the return value of get_boot_and_root_loopback_devices
+        # because it'd require running losetup as root, so we just make sure
+        # it calls losetup correctly.
+        get_android_loopback_devices(tmpfile)
+        self.assertEqual(
+            ['%s losetup -f --show %s --offset %s --sizelimit %s'
+                % (sudo_args, tmpfile, offset, size) for (offset, size) in 
+             self.android_offsets_and_sizes],
+            popen_fixture.mock.commands_executed)
+
+        # get_boot_and_root_loopback_devices will also setup two exit handlers
+        # to de-register the loopback devices set up above.
+        self.assertEqual(6, len(atexit_fixture.mock.funcs))
+        popen_fixture.mock.calls = []
+        atexit_fixture.mock.run_funcs()
+        # We did not really run losetup above (as it requires root) so here we
+        # don't have a device to pass to 'losetup -d', but when a device is
+        # setup it is passed to the atexit handler.
+        self.assertEquals(
+            ['%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args,
              '%s losetup -d ' % sudo_args],
             popen_fixture.mock.commands_executed)
 

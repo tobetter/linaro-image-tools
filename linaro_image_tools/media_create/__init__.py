@@ -124,8 +124,16 @@ def get_args_parser():
 def get_android_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
     parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        '--mmc', dest='device', help='The storage device to use.')
+    group.add_argument(
+        '--image_file', dest='device',
+        help='File where we should write the image file.')
     parser.add_argument(
-        '--mmc', required=True, dest='device', help='The storage device to use.')
+        '--image_size', default='2G',
+        help=('The image size, specified in mega/giga bytes (e.g. 3000M or '
+              '3G); use with --image_file only'))
     parser.add_argument(
         '--dev', required=True, dest='board', choices=ANDROID_KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
