@@ -43,7 +43,7 @@ def prepare_chroot(chroot_dir, tmp_dir):
                   os.path.join(chroot_dir, 'usr', 'bin'))
 
 def install_hwpacks(
-    chroot_dir, tmp_dir, tools_dir, hwpack_force_yes, *hwpack_files):
+    chroot_dir, tmp_dir, tools_dir, hwpack_force_yes, verified_files, *hwpack_files):
     """Install the given hwpacks onto the given chroot."""
     prepare_chroot(chroot_dir, tmp_dir)
 
@@ -58,7 +58,10 @@ def install_hwpacks(
     try:
         mount_chroot_proc(chroot_dir)
         for hwpack_file in hwpack_files:
-            install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes)
+            hwpack_verified = False
+            if os.path.basename(hwpack_file) in verified_files:
+                hwpack_verified = True
+            install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes or hwpack_verified)
     finally:
         run_local_atexit_funcs()
 

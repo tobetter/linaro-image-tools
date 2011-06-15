@@ -22,6 +22,7 @@ import atexit
 import os
 import sys
 import tempfile
+import subprocess
 
 from linaro_image_tools import cmd_runner
 
@@ -80,7 +81,6 @@ def ensure_required_commands(args):
         'mkfs.vfat', 'sfdisk', 'mkimage', 'parted', 'gpg', 'sha1sum']
     if not is_arm_host():
         required_commands.append('qemu-arm-static')
-        required_commands.append('qemu-img')
     if args.rootfs in ['btrfs', 'ext2', 'ext3', 'ext4']:
         required_commands.append('mkfs.%s' % args.rootfs)
     else:
@@ -105,19 +105,24 @@ if __name__ == '__main__':
     ensure_required_commands(args)
 
     sig_file_list = args.hwpacksigs[:]
+    verified_files = []
     if args.binarysig is not None:
         sig_file_list.append(args.binarysig)
     for sig_file in sig_file_list:
         hash_file = sig_file[0:-len('.asc')]
-        if cmd_runner.run(['gpg', '--verify', sig_file]).wait() != 0:
-            print "Could not verify hash file signature %s." % sig_file
-            sys.exit(1)
-        if cmd_runner.run(['sha1sum', '-c', hash_file]).wait() != 0:
-            print "Could not verify hash in file %s." % hash_file
-            sys.exit(1)
+        cmd_runner.run(['gpg', '--verify', sig_file]).wait()
+        sha1sums_out, _ = cmd_runner.run(['sha1sum', '-c', hash_file],
+                                         stdout=subprocess.PIPE).communicate()
+        verified_files.extend(sha1sums_out.replace(': OK', '').splitlines())
+    for verified_file in verified_files:
+        print 'Hash verification of file %s OK.' % verified_file
 
     media = Media(args.device)
     if media.is_block_device:
+        if not board_config.supports_writing_to_mmc:
+            print "The board '%s' does not support the --mmc option. Please use " \
+                "--image_file to create an image file for this board." % args.board
+            sys.exit(1)
         if not confirm_device_selection_and_ensure_it_is_ready(args.device):
             sys.exit(1)
     elif not args.should_format_rootfs or not args.should_format_bootfs:
@@ -135,7 +140,7 @@ if __name__ == '__main__':
     if lmc_dir == '':
         lmc_dir = None
     install_hwpacks(
-        ROOTFS_DIR, TMP_DIR, lmc_dir, args.hwpack_force_yes, *hwpacks)
+        ROOTFS_DIR, TMP_DIR, lmc_dir, args.hwpack_force_yes, verified_files, *hwpacks)
 
     if args.rootfs == 'btrfs':
         install_packages(ROOTFS_DIR, TMP_DIR, "btrfs-tools")

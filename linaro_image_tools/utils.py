@@ -52,15 +52,21 @@ def install_package_providing(command):
         ['apt-get', '--yes', 'install', package], as_root=True).wait()
 
 
+def has_command(command):
+    """Check the given command is available."""
+    try:
+        cmd_runner.run(
+            ['which', command], stdout=open('/dev/null', 'w')).wait()
+        return True
+    except cmd_runner.SubcommandNonZeroReturnValue:
+        return False
+
 def ensure_command(command):
     """Ensure the given command is available.
 
     If it's not, look up a package that provides it and install that.
     """
-    try:
-        cmd_runner.run(
-            ['which', command], stdout=open('/dev/null', 'w')).wait()
-    except cmd_runner.SubcommandNonZeroReturnValue:
+    if not has_command(command):
         install_package_providing(command)
 
 def find_command(name, prefer_dir=None):

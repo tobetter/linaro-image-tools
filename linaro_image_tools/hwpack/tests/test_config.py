@@ -33,6 +33,7 @@ class ConfigTests(TestCase):
 
     def test_create(self):
         config = Config(StringIO())
+        self.assertTrue(config is not None)
 
     def get_config(self, contents):
         return Config(StringIO(contents))

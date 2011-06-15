@@ -82,7 +82,6 @@ def ensure_required_commands(args):
         'mkfs.vfat', 'sfdisk', 'mkimage', 'parted']
     if not is_arm_host():
         required_commands.append('qemu-arm-static')
-        required_commands.append('qemu-img')
     for command in required_commands:
         ensure_command(command)
 
@@ -119,9 +118,8 @@ if __name__ == '__main__':
     if media.is_block_device:
         if not confirm_device_selection_and_ensure_it_is_ready(args.device):
             sys.exit(1)
-    elif not args.should_format_rootfs or not args.should_format_bootfs:
-        print ("Do not use --no-boot or --no-part in conjunction with "
-               "--image_file.")
+    elif not args.should_create_partitions:
+        print ("Do not use --no-part in conjunction with --image_file.")
         sys.exit(1)
     else:
         # All good, move on.
@@ -138,8 +136,8 @@ if __name__ == '__main__':
     # Create partitions    
     boot_partition, system_partition, cache_partition, \
         data_partition, sdcard_partition = setup_android_partitions( \
-        board_config, media, args.boot_label, args.should_create_partitions,
-        args.should_align_boot_part)
+        board_config, media, args.image_size, args.boot_label,
+        args.should_create_partitions, args.should_align_boot_part)
 
     populate_partition(BOOT_DIR + "/boot", BOOT_DISK, boot_partition)
     board_config.populate_boot_script(boot_partition, BOOT_DISK, args.consoles)

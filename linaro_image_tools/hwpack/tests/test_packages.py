@@ -1114,6 +1114,38 @@ class PackageFetcherTests(TestCaseWithFixtures):
         fetcher.fetch_packages(["foo"])
         self.assertEqual([], list(fetcher.cache.cache.get_changes()))
 
+    def test_fetch_packages_without_content_leaves_no_marked_changes(self):
+        wanted_package = DummyFetchedPackage("foo", "1.0")
+        source = self.useFixture(AptSourceFixture([wanted_package]))
+        fetcher = self.get_fetcher([source])
+        fetcher.fetch_packages(["foo"], download_content=False)
+        self.assertEqual([], list(fetcher.cache.cache.get_changes()))
+
+    def test_fetch_packages_can_remove_package(self):
+        """Check that removed packages aren't included in the hwpack
+
+        When installing the hwpack would cause an "assume-installed" package
+        to be removed the hwpack shouldn't contain that package.
+        """
+        wanted_package = DummyFetchedPackage(
+            "foo", "1.0", conflicts="provided", provides="provided",
+            depends="zoo", replaces="provided")
+        top_package = DummyFetchedPackage(
+            "top", "1.0", recommends="bar, baz")
+        dep_package = DummyFetchedPackage(
+            "bar", "1.0", depends="baz")
+        conflict_package = DummyFetchedPackage(
+            "baz", "1.0", recommends="bar", provides="provided",
+            conflicts="provided", replaces="provided")
+        extra_package = DummyFetchedPackage("zoo", "1.0")
+        source = self.useFixture(AptSourceFixture(
+            [wanted_package, dep_package, conflict_package, extra_package,
+                top_package]))
+        fetcher = self.get_fetcher([source])
+        fetcher.ignore_packages(["top"])
+        fetched = fetcher.fetch_packages(["foo"])
+        self.assertEqual([wanted_package, extra_package], fetched)
+
     def test_ignore_with_provides(self):
         ignored_package = DummyFetchedPackage(
             "ubuntu-minimal", "1.0", depends="apt-utils")

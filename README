@@ -13,11 +13,7 @@ installed:
   - python-dbus
   - python-debian >= 0.1.16ubuntu1
   - python-parted
-  - qemu-kvm-extras-static >= 0.13.0 (only if you're running on x86).
-    If you're not running Natty, you can get them from
-      - http://tinyurl.com/6yqzkre for 64-bit
-      - http://tinyurl.com/68rvuoz for 32-bit
-  - qemu-kvm
+  - qemu-user-static >= 0.13.0 (only if you're running on x86)
   - btrfs-tools
   - command-not-found
 

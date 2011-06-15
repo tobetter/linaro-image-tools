@@ -25,6 +25,7 @@ import string
 import subprocess
 import sys
 import tempfile
+import textwrap
 import time
 import types
 
@@ -44,6 +45,7 @@ from linaro_image_tools.media_create.boards import (
     align_up,
     align_partition,
     board_configs,
+    get_plain_boot_script_contents,
     make_flashable_env,
     install_mx5_boot_loader,
     install_omap_boot_loader,
@@ -69,10 +71,12 @@ from linaro_image_tools.media_create.partitions import (
     HEADS,
     SECTORS,
     calculate_partition_size_and_offset,
+    calculate_android_partition_size_and_offset,
     convert_size_to_bytes,
     create_partitions,
     ensure_partition_is_not_mounted,
     get_boot_and_root_loopback_devices,
+    get_android_loopback_devices,
     get_boot_and_root_partitions_for_media,
     Media,
     run_sfdisk_commands,
@@ -213,6 +217,11 @@ class TestBootSteps(TestCaseWithFixtures):
         expected = ['make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
+    def test_snowball_sd_steps(self):
+        self.make_boot_files(boards.SnowballSdConfig)
+        expected = ['make_uImage', 'make_boot_script']
+        self.assertEqual(expected, self.funcs_calls)
+
     def test_panda_steps(self):
         self.mock_set_appropriate_serial_tty(boards.PandaConfig)
         self.make_boot_files(boards.PandaConfig)
@@ -330,6 +339,16 @@ class TestGetSfdiskCmd(TestCase):
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             boards.Mx5Config.get_sfdisk_cmd())
 
+    def test_snowball_sd(self):
+        self.assertEqual(
+            '63,106432,0x0C,*\n106496,,,-',
+            boards.SnowballSdConfig.get_sfdisk_cmd())
+
+    def test_snowball_emmc(self):
+        self.assertEqual(
+            '256,7936,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            boards.SnowballEmmcConfig.get_sfdisk_cmd())
+
     def test_smdkv310(self):
         self.assertEquals(
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
@@ -393,6 +412,23 @@ class TestGetBootCmd(TestCase):
                        'bootm 0x00100000 0x08000000'}
         self.assertEqual(expected, boot_commands)
 
+    def test_snowball_emmc(self):
+        boot_commands = board_configs['snowball_emmc']._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=[],
+            rootfs_uuid="deadbeef", d_img_data=None)
+        expected = {
+            'bootargs': 'console=tty0 console=ttyAMA2,115200n8  '
+                        'root=UUID=deadbeef rootwait ro earlyprintk '
+                        'rootdelay=1 fixrtc nocompcache mem=96M@0 '
+                        'mem_modem=32M@96M mem=44M@128M pmem=22M@172M '
+                        'mem=30M@194M mem_mali=32M@224M pmem_hwb=54M@256M '
+                        'hwmem=48M@302M mem=152M@360M',
+            'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
+                       'fatload mmc 1:1 0x08000000 uInitrd; '
+                       'bootm 0x00100000 0x08000000'}
+        self.assertEqual(expected, boot_commands)
+
+
     def test_panda(self):
         # XXX: To fix bug 697824 we have to change class attributes of our
         # OMAP board configs, and some tests do that so to make sure they
@@ -405,7 +441,7 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
-                        'nocompcache vram=32M omapfb.vram=0:8M '
+                        'nocompcache vram=48M omapfb.vram=0:24M '
                         'mem=456M@0x80000000 mem=512M@0xA0000000',
             'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
@@ -426,7 +462,7 @@ class TestGetBootCmd(TestCase):
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
                         'nocompcache vram=12M '
-                        'omapfb.mode=dvi:1280x720MR-16@60',
+                        'omapfb.mode=dvi:1280x720MR-16@60 mpurate=${mpurate}',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
@@ -446,7 +482,7 @@ class TestGetBootCmd(TestCase):
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
                         'nocompcache vram=12M '
-                        'omapfb.mode=dvi:1280x720MR-16@60',
+                        'omapfb.mode=dvi:1280x720MR-16@60 mpurate=${mpurate}',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
@@ -465,9 +501,7 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk '
-                        'mpurate=500 vram=12M '
-                        'omapfb.mode=dvi:1024x768MR-16@60 '
-                        'omapdss.def_disp=dvi',
+                        'mpurate=${mpurate} vram=12M',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
@@ -596,6 +630,14 @@ class TestBoards(TestCaseWithFixtures):
             '%s cp -v chroot_dir/MLO boot_disk' % sudo_args, 'sync']
         self.assertEqual(expected, fixture.mock.commands_executed)
 
+    def test_get_plain_boot_script_contents(self):
+        boot_env = {'bootargs': 'mybootargs', 'bootcmd': 'mybootcmd'}
+        boot_script_data = get_plain_boot_script_contents(boot_env)
+        self.assertEqual(textwrap.dedent("""\
+            setenv bootcmd "mybootcmd"
+            setenv bootargs "mybootargs"
+            boot"""), boot_script_data)
+
     def test_make_boot_script(self):
         self.useFixture(MockSomethingFixture(
             tempfile, 'mkstemp', lambda: (-1, '/tmp/random-abxzr')))
@@ -628,6 +670,8 @@ class TestBoards(TestCaseWithFixtures):
         file1 = self.createTempFileAsFixture(prefix)
         file2 = self.createTempFileAsFixture(prefix)
         directory = os.path.dirname(file1)
+        assert directory == os.path.dirname(file2), (
+            "file1 and file2 should be in the same directory")
         self.assertRaises(
             ValueError, _get_file_matching, '%s/%s*' % (directory, prefix))
 
@@ -812,8 +856,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
     def test_run_sfdisk_commands(self):
         tmpfile = self.createTempFileAsFixture()
         proc = cmd_runner.run(
-            ['qemu-img', 'create', '-f', 'raw', tmpfile, '10M'],
-            stdout=subprocess.PIPE)
+            ['dd', 'of=%s' % tmpfile, 'bs=1', 'seek=10M', 'count=0'],
+            stderr=open('/dev/null', 'w'))
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
             '2,16063,0xDA', HEADS, SECTORS, '', tmpfile, as_root=False,
@@ -836,6 +880,26 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Stub time.sleep() as create_partitions() use that.
         self.orig_sleep = time.sleep
         time.sleep = lambda s: None
+        self.linux_image_size = 30 * 1024**2
+        self.linux_offsets_and_sizes = [
+            (16384 * SECTOR_SIZE, 15746 * SECTOR_SIZE),
+            (32768 * SECTOR_SIZE, (self.linux_image_size - 
+                                        32768 * SECTOR_SIZE))
+            ]
+        self.android_image_size = 256 * 1024**2
+        # Extended partition info takes 32 sectors from the first ext partition
+        ext_part_size = 32
+        self.android_offsets_and_sizes = [
+            (63 * SECTOR_SIZE, 32768 * SECTOR_SIZE),
+            (32831 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
+            (98367 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
+            (294975 * SECTOR_SIZE, (self.android_image_size - 
+                                     294975 * SECTOR_SIZE)),
+            ((294975 + ext_part_size) * SECTOR_SIZE,
+             (131072 - ext_part_size) * SECTOR_SIZE),
+            ((426047 + ext_part_size) * SECTOR_SIZE, 
+             self.android_image_size - (426047 + ext_part_size) * SECTOR_SIZE)
+            ]
 
     def tearDown(self):
         super(TestPartitionSetup, self).tearDown()
@@ -844,7 +908,16 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def _create_tmpfile(self):
         # boot part at +8 MiB, root part at +16 MiB
         return self._create_qemu_img_with_partitions(
-            '16384,15746,0x0C,*\n32768,,,-')
+            '16384,15746,0x0C,*\n32768,,,-', '%s' % self.linux_image_size)
+
+    def _create_android_tmpfile(self):
+        # boot, system, cache, (extended), userdata and sdcard partitions
+        return self._create_qemu_img_with_partitions(
+            '63,32768,0x0C,*\n32831,65536,L\n98367,65536,L\n294975,-,E\n' \
+                '294975,131072,L\n426047,,,-', '%s' % self.android_image_size)
+
+    def test_convert_size_no_suffix(self):
+        self.assertEqual(524288, convert_size_to_bytes('524288'))
 
     def test_convert_size_in_kbytes_to_bytes(self):
         self.assertEqual(512 * 1024, convert_size_to_bytes('512K'))
@@ -860,13 +933,23 @@ class TestPartitionSetup(TestCaseWithFixtures):
         vfat_size, vfat_offset, linux_size, linux_offset = (
             calculate_partition_size_and_offset(tmpfile))
         self.assertEqual(
-            [8061952L, 8388608L, 14680064L, 16777216L],
-            [vfat_size, vfat_offset, linux_size, linux_offset])
+            self.linux_offsets_and_sizes,
+            [(vfat_offset, vfat_size), (linux_offset, linux_size)])
+
+    def test_calculate_android_partition_size_and_offset(self):
+        tmpfile = self._create_android_tmpfile()
+        device_info = calculate_android_partition_size_and_offset(tmpfile)
+        # We use map(None, ...) since it would catch if the lists are not of
+        # equal length and zip() would not in all cases.
+        for device_pair, expected_pair in map(None, device_info,
+                                              self.android_offsets_and_sizes):
+            self.assertEqual(device_pair, expected_pair)
 
     def test_partition_numbering(self):
         # another Linux partition at +24 MiB after the boot/root parts
         tmpfile = self._create_qemu_img_with_partitions(
-            '16384,15746,0x0C,*\n32768,15427,,-\n49152,,,-')
+            '16384,15746,0x0C,*\n32768,15427,,-\n49152,,,-',
+            '%s' % self.linux_image_size)
         vfat_size, vfat_offset, linux_size, linux_offset = (
             calculate_partition_size_and_offset(tmpfile))
         # check that the linux partition offset starts at +16 MiB so that it's
@@ -896,11 +979,11 @@ class TestPartitionSetup(TestCaseWithFixtures):
             ("%s%d" % (tmpfile, 2), "%s%d" % (tmpfile, 3)),
             get_boot_and_root_partitions_for_media(media, boards.Mx5Config))
 
-    def _create_qemu_img_with_partitions(self, sfdisk_commands):
+    def _create_qemu_img_with_partitions(self, sfdisk_commands, tempfile_size):
         tmpfile = self.createTempFileAsFixture()
         proc = cmd_runner.run(
-            ['qemu-img', 'create', '-f', 'raw', tmpfile, '30M'],
-            stdout=subprocess.PIPE)
+            ['dd', 'of=%s' % tmpfile, 'bs=1', 'seek=%s' % tempfile_size, 'count=0'],
+            stderr=open('/dev/null', 'w'))
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
             sfdisk_commands, HEADS, SECTORS, '', tmpfile, as_root=False,
@@ -936,10 +1019,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # it calls losetup correctly.
         get_boot_and_root_loopback_devices(tmpfile)
         self.assertEqual(
-            ['%s losetup -f --show %s --offset 8388608 --sizelimit 8061952'
-                % (sudo_args, tmpfile),
-             '%s losetup -f --show %s --offset 16777216 --sizelimit 14680064'
-                % (sudo_args, tmpfile)],
+            ['%s losetup -f --show %s --offset %s --sizelimit %s'
+                % (sudo_args, tmpfile, offset, size) for (offset, size) in 
+             self.linux_offsets_and_sizes],
             popen_fixture.mock.commands_executed)
 
         # get_boot_and_root_loopback_devices will also setup two exit handlers
@@ -955,10 +1037,42 @@ class TestPartitionSetup(TestCaseWithFixtures):
              '%s losetup -d ' % sudo_args],
             popen_fixture.mock.commands_executed)
 
+    def test_get_android_loopback_devices(self):
+        tmpfile = self._create_android_tmpfile()
+        atexit_fixture = self.useFixture(MockSomethingFixture(
+            atexit, 'register', AtExitRegister()))
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        # We can't test the return value of get_boot_and_root_loopback_devices
+        # because it'd require running losetup as root, so we just make sure
+        # it calls losetup correctly.
+        get_android_loopback_devices(tmpfile)
+        self.assertEqual(
+            ['%s losetup -f --show %s --offset %s --sizelimit %s'
+                % (sudo_args, tmpfile, offset, size) for (offset, size) in 
+             self.android_offsets_and_sizes],
+            popen_fixture.mock.commands_executed)
+
+        # get_boot_and_root_loopback_devices will also setup two exit handlers
+        # to de-register the loopback devices set up above.
+        self.assertEqual(6, len(atexit_fixture.mock.funcs))
+        popen_fixture.mock.calls = []
+        atexit_fixture.mock.run_funcs()
+        # We did not really run losetup above (as it requires root) so here we
+        # don't have a device to pass to 'losetup -d', but when a device is
+        # setup it is passed to the atexit handler.
+        self.assertEquals(
+            ['%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args,
+             '%s losetup -d ' % sudo_args],
+            popen_fixture.mock.commands_executed)
+
     def test_setup_partitions_for_image_file(self):
         # In practice we could pass an empty image file to setup_partitions,
         # but here we mock Popen() and thanks to that the image is not setup
-        # (via qemu-img) inside setup_partitions.  That's why we pass an
+        # (via dd) inside setup_partitions.  That's why we pass an
         # already setup image file.
         tmpfile = self._create_tmpfile()
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
@@ -981,7 +1095,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             'root', 'ext3', True, True, True)
         self.assertEqual(
              # This is the call that would create a 2 GiB image file.
-            ['qemu-img create -f raw %s 2147483648' % tmpfile,
+            ['dd of=%s bs=1 seek=2147483648 count=0' % tmpfile,
              # This call would partition the image file.
              '%s sfdisk --force -D -uS -H %s -S %s -C 1024 %s' % (
                  sudo_args, HEADS, SECTORS, tmpfile),
@@ -1392,7 +1506,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
         prefer_dir = preferred_tools_dir()
 
         install_hwpacks(
-            chroot_dir, tmp_dir, prefer_dir, force_yes, 'hwpack1.tgz',
+            chroot_dir, tmp_dir, prefer_dir, force_yes, [], 'hwpack1.tgz',
             'hwpack2.tgz')
         linaro_hwpack_install = find_command(
             'linaro-hwpack-install', prefer_dir=prefer_dir)
@@ -1506,7 +1620,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
         exception_caught = False
         try:
             install_hwpacks(
-                'chroot', '/tmp/dir', preferred_tools_dir(), force_yes,
+                'chroot', '/tmp/dir', preferred_tools_dir(), force_yes, [],
                 'hwp.tgz', 'hwp2.tgz')
         except:
             exception_caught = True
