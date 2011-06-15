@@ -119,6 +119,11 @@ def get_args_parser():
         '--align-boot-part', dest='should_align_boot_part',
         action='store_true',
         help='Align boot partition too (might break older x-loaders).')
+    parser.add_argument(
+        '--yes-to-mmc-selection', dest='yes_to_mmc_selection',
+        action='store_true',
+        help='Assume yes to the question "Are you 100%% sure, on selecting [mmc]"')
+    
     return parser
 
 def get_android_args_parser():

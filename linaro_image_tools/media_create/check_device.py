@@ -110,7 +110,7 @@ def _ensure_device_partitions_not_mounted(device):
         partitions.ensure_partition_is_not_mounted(part)
 
 
-def confirm_device_selection_and_ensure_it_is_ready(device):
+def confirm_device_selection_and_ensure_it_is_ready(device, yes_to_mmc_selection):
     """Confirm this is the device to use and ensure it's ready.
 
     If the device exists, the user is asked to confirm that this is the
@@ -123,7 +123,7 @@ def confirm_device_selection_and_ensure_it_is_ready(device):
     if _does_device_exist(device):
         print '\nI see...'
         _print_devices()
-        if _select_device(device):
+        if yes_to_mmc_selection or _select_device(device):
             _ensure_device_partitions_not_mounted(device)
             return True
     else:
