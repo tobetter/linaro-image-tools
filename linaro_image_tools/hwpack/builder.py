@@ -25,7 +25,6 @@ import subprocess
 import tempfile
 import os
 import shutil
-import atexit
 
 from linaro_image_tools import cmd_runner
 

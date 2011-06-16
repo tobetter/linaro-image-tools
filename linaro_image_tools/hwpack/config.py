@@ -304,13 +304,17 @@ class Config(object):
             raise HwpackConfigError("Format version '%s' is not supported." % \
                                         format)
 
+    def _assert_matches_pattern(self, regex, config_item, error_message):
+            if re.match(regex, config_item) is None:
+                raise HwpackConfigError(error_message)
+
     def _validate_name(self):
         try:
             name = self.name
             if not name:
                 raise HwpackConfigError("Empty value for name")
-            if re.match(self.NAME_REGEX, name) is None:
-                raise HwpackConfigError("Invalid name: %s" % name)
+            self._assert_matches_pattern(self.NAME_REGEX, name, 
+                                    "Invalid name: %s" % name)
         except ConfigParser.NoOptionError:
             raise HwpackConfigError(
                 "No name in the [%s] section" % self.MAIN_SECTION)
@@ -320,8 +324,8 @@ class Config(object):
         if not u_boot_file:
             raise HwpackConfigError("No u_boot_file in the [%s] section" % \
                                         self.MAIN_SECTION)
-        if re.match(self.PATH_REGEX, u_boot_file) is None:
-            raise HwpackConfigError("Invalid path: %s" % u_boot_file)
+        self._assert_matches_pattern(self.PATH_REGEX, u_boot_file,
+                                "Invalid path: %s" % u_boot_file)
 
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty
@@ -372,7 +376,6 @@ class Config(object):
                 "Valid partition layouts are %s."
                 % (self.partition_layout, self.MAIN_SECTION,
                    ", ".join(defined_partition_layouts)))
-            
 
     def _validate_mmc_id(self):
         mmc_id = self.mmc_id
@@ -404,10 +407,11 @@ class Config(object):
                 "No %s in the [%s] section"
                 % (self.PACKAGES_KEY, self.MAIN_SECTION))
         for package in packages:
-            if re.match(self.PACKAGE_REGEX, package) is None:
-                raise HwpackConfigError(
-                    "Invalid value in %s in the [%s] section: %s"
-                    % (self.PACKAGES_KEY, self.MAIN_SECTION, package))
+            self._assert_matches_pattern(self.PACKAGE_REGEX, package,
+                                         "Invalid value in %s in the [%s] " \
+                                             "section: %s" % \
+                                             (self.PACKAGES_KEY,
+                                              self.MAIN_SECTION, package))
 
     def _validate_u_boot_package(self):
         u_boot_package = self.u_boot_package
@@ -415,10 +419,11 @@ class Config(object):
             raise HwpackConfigError(
                 "No %s in the [%s] section"
                 % (self.U_BOOT_PACKAGE_KEY, self.MAIN_SECTION))
-        if re.match(self.PACKAGE_REGEX, u_boot_package) is None:
-            raise HwpackConfigError(
-                "Invalid value in %s in the [%s] section: %s"
-                % (self.U_BOOT_PACKAGE_KEY, self.MAIN_SECTION, u_boot_package))
+        self._assert_matches_pattern(self.PACKAGE_REGEX, u_boot_package,
+                                     "Invalid value in %s in the [%s] " \
+                                         "section: %s" % \
+                                         (self.U_BOOT_PACKAGE_KEY,
+                                          self.MAIN_SECTION, u_boot_package))
 
     def _validate_architectures(self):
         architectures = self.architectures
@@ -430,11 +435,11 @@ class Config(object):
     def _validate_assume_installed(self):
         assume_installed = self.assume_installed
         for package in assume_installed:
-            if re.match(self.PACKAGE_REGEX, package) is None:
-                raise HwpackConfigError(
-                    "Invalid value in %s in the [%s] section: %s"
-                    % (self.ASSUME_INSTALLED_KEY, self.MAIN_SECTION,
-                        package))
+            self._assert_matches_pattern(self.PACKAGE_REGEX, package,
+                                         "Invalid value in %s in the [%s] " \
+                                             "section: %s" % \
+                                             (self.ASSUME_INSTALLED_KEY,
+                                              self.MAIN_SECTION, package))
 
     def _validate_section_sources_entry(self, section_name):
         try:
