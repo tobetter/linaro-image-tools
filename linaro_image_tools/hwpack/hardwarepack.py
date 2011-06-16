@@ -141,16 +141,8 @@ class Metadata(object):
         if float(self.format) < 2.0:
             return metadata
             
-        if self.cmdline_append is not None:
-            metadata += "CMDLINE_APPEND=%s\n" % self.cmdline_append
         if self.u_boot is not None:
             metadata += "U_BOOT=%s\n" % self.u_boot
-        if self.vmlinuz is not None:
-            metadata += "VMLINUZ=%s\n" % self.vmlinuz
-        if self.initrd is not None:
-            metadata += "INITRD=%s\n" % self.initrd
-        if self.omap_mlo is not None:
-            metadata += "OMAP_MLO=%s\n" % self.omap_mlo
         if self.serial_tty is not None:
             metadata += "SERIAL_TTY=%s\n" % self.serial_tty
         if self.kernel_addr is not None:

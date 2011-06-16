@@ -94,6 +94,23 @@ class HardwarePackBuilder(object):
         self.version = version
         self.local_debs = local_debs
 
+    def put_uboot_in_hwpack(self, packages, fetcher, file_in_package, hwpack):
+        u_boot_package = None
+        for package in packages:
+            if package.name == self.config.u_boot_package:
+                u_boot_package = package
+                break
+            else:
+                raise Exception(
+                    "U-boot package %s was not fetched." % \
+                        self.config.u_boot_package)
+        packages.remove(u_boot_package)
+        u_boot_package_path = os.path.join(fetcher.cache.tempdir,
+                                           u_boot_package.filepath)
+        return file_in_package.add_file_from_package(
+            u_boot_package_path, self.config.u_boot_file,
+            hwpack.U_BOOT_DIR, hwpack)
+
     def build(self):
         for architecture in self.config.architectures:
             logger.info("Building for %s" % architecture)
@@ -118,29 +135,14 @@ class HardwarePackBuilder(object):
                 fetcher = PackageFetcher(
                     sources, architecture=architecture,
                     prefer_label=LOCAL_ARCHIVE_LABEL)
-                with fetcher, PackageUnpacker() as debian_file_getter:
+                with fetcher, PackageUnpacker() as file_in_package:
                     fetcher.ignore_packages(self.config.assume_installed)
                     packages = fetcher.fetch_packages(
                         packages, download_content=self.config.include_debs)
 
                     if self.config.u_boot_package is not None:
-                        u_boot_package = None
-                        for package in packages:
-                            if package.name == self.config.u_boot_package:
-                                u_boot_package = package
-                                break
-                            else:
-                                raise Exception(
-                                    "U-boot package %s was not fetched." % \
-                                        self.config.u_boot_package)
-                        packages.remove(u_boot_package)
-
-                        u_boot_package_path = os.path.join(fetcher.cache.tempdir,
-                                                           u_boot_package.filepath)
-                        u_boot_target_file = debian_file_getter.add_file_from_package(
-                            u_boot_package_path, self.config.u_boot_file,
-                            hwpack.U_BOOT_DIR, hwpack)
-                        hwpack.metadata.u_boot = u_boot_target_file
+                        hwpack.metadata.u_boot = self.put_uboot_in_hwpack(
+                            packages, fetcher, file_in_package, hwpack)
 
                     logger.debug("Adding packages to hwpack")
                     hwpack.add_packages(packages)
