@@ -52,6 +52,34 @@ class ConfigFileMissing(Exception):
             "No such config file: '%s'" % self.filename)
 
 
+class PackageUnpacker:
+    def __enter__(self):
+        self.tempdir = tempfile.mkdtemp()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        if self.tempdir is not None and os.path.exists(self.tempdir):
+            shutil.rmtree(self.tempdir)
+            pass
+
+    def unpack_package(self, package_file_name):
+        p = cmd_runner.run(["tar", "--wildcards", "-C", self.tempdir, "-xf", "-"],
+                           stdin=subprocess.PIPE)
+        cmd_runner.run(["dpkg", "--fsys-tarfile", package_file_name],
+                       stdout=p.stdin).communicate()
+        p.communicate()
+
+    def add_file_from_package(self, package, file, target_dir, target_hwpack):
+        self.unpack_package(package)
+        temp_file = os.path.join(self.tempdir, file)
+        assert os.path.exists(temp_file), "The file '%s' was " \
+            "not found in the package '%s'." % (file, package)
+            
+        logger.debug("Unpacked %s from package %s." % (temp_file, package))
+        target_hwpack.add_file(target_dir, temp_file)
+        return os.path.join(target_dir, os.path.basename(temp_file))
+
+
 class HardwarePackBuilder(object):
 
     def __init__(self, config_path, version, local_debs):
@@ -66,31 +94,6 @@ class HardwarePackBuilder(object):
         self.format = self.config.format
         self.version = version
         self.local_debs = local_debs
-
-    def cleanup_tempdir(self, dir):
-        if dir is not None and os.path.exists(dir):
-            shutil.rmtree(dir)
-
-    def unpack_package(self, package_file_name):
-        tempdir = tempfile.mkdtemp()
-        atexit.register(self.cleanup_tempdir, tempdir)
-        p = cmd_runner.run(["tar", "--wildcards", "-C", tempdir, "-xf", "-"],
-                           stdin=subprocess.PIPE)
-        cmd_runner.run(["dpkg", "--fsys-tarfile", package_file_name],
-                       stdout=p.stdin).communicate()
-        p.communicate()
-        
-        return tempdir
-
-    def add_file_from_package(self, package, file, target_dir, target_hwpack):
-        temp_dir = self.unpack_package(package)
-        temp_file = os.path.join(temp_dir, file)
-        assert os.path.exists(temp_file), "The file '%s' was " \
-            "not found in the package '%s'." % (file, package)
-            
-        logger.debug("Unpacked %s from package %s." % (temp_file, package))
-        target_hwpack.add_file(target_dir, temp_file)
-        return os.path.join(target_dir, os.path.basename(temp_file))
 
     def build(self):
         for architecture in self.config.architectures:
@@ -116,7 +119,7 @@ class HardwarePackBuilder(object):
                 fetcher = PackageFetcher(
                     sources, architecture=architecture,
                     prefer_label=LOCAL_ARCHIVE_LABEL)
-                with fetcher:
+                with fetcher, PackageUnpacker() as debian_file_getter:
                     fetcher.ignore_packages(self.config.assume_installed)
                     packages = fetcher.fetch_packages(
                         packages, download_content=self.config.include_debs)
@@ -135,7 +138,7 @@ class HardwarePackBuilder(object):
 
                         u_boot_package_path = os.path.join(fetcher.cache.tempdir,
                                                            u_boot_package.filepath)
-                        u_boot_target_file = self.add_file_from_package(
+                        u_boot_target_file = debian_file_getter.add_file_from_package(
                             u_boot_package_path, self.config.u_boot_file,
                             hwpack.U_BOOT_DIR, hwpack)
                         hwpack.metadata.u_boot = u_boot_target_file
