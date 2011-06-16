@@ -92,28 +92,6 @@ class Metadata(object):
         self.partition_layout = partition_layout
         self.mmc_id = mmc_id
 
-        # To be implemented
-        self.fdt = None # similar to unpacking u-boot?
-        self.cmdline_append = None # simply pass-through?
-        self.cmdline_prepend = None # simply pass-through?
-        self.vmlinuz = None # found by inspecting kernel package?
-        self.initrd = None # similar to unpacking u-boot
-
-        # OMAP specific
-        self.omap_mlo = None
-        
-        # Samsung specific
-        self.spl = None # atm handled by unpacking u-boot deb
-        self.spl_offset = None # pass-through from config?
-        self.boot_env_offset = None # pass-through from config?
-
-        # ST-E specific
-        self.snowball_startfiles_cfg = None
-
-        # To be discussed
-        self.boot_partition_min_size = None # pass-through from config?
-        self.reserved_partition_min_size = None # pass-through from config?
-
     @classmethod
     def from_config(cls, config, version, architecture):
         """Create a Metadata from a Config object.
