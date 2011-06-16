@@ -55,6 +55,7 @@ class Config(object):
     MMC_ID_KEY = "mmc_id"
     FORMAT_KEY = "format"
 
+    # The format version cannot contain white spaces.
     SUPPORTED_FORMATS = ["1.0", "2.0"]
 
     def __init__(self, fp):
@@ -80,7 +81,7 @@ class Config(object):
         self._validate_architectures()
         self._validate_assume_installed()
 
-        if self.format > '1.0':
+        if float(self.format) > 1.0:
             self._validate_u_boot_package()
             self._validate_u_boot_file()
             self._validate_serial_tty()

@@ -138,7 +138,7 @@ class Metadata(object):
         if self.support is not None:
             metadata += "SUPPORT=%s\n" % self.support
 
-        if self.format < '2.0':
+        if float(self.format) < 2.0:
             return metadata
             
         if self.cmdline_append is not None:
@@ -180,7 +180,6 @@ class HardwarePack(object):
     :type FORMAT: str
     """
 
-    # The format version cannot contain white spaces. 
     FORMAT_FILENAME = "FORMAT"
     METADATA_FILENAME = "metadata"
     MANIFEST_FILENAME = "manifest"
