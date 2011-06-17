@@ -260,6 +260,7 @@ class HardwarePack(object):
     def add_file(self, dir, file):
         target_file = os.path.join(dir, os.path.basename(file))
         self.files.append((file, target_file))
+        return target_file
 
     def manifest_text(self):
         manifest_content = ""

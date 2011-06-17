@@ -51,7 +51,7 @@ class ConfigFileMissing(Exception):
             "No such config file: '%s'" % self.filename)
 
 
-class PackageUnpacker:
+class PackageUnpacker(object):
     def __enter__(self):
         self.tempdir = tempfile.mkdtemp()
         return self
@@ -59,7 +59,6 @@ class PackageUnpacker:
     def __exit__(self, type, value, traceback):
         if self.tempdir is not None and os.path.exists(self.tempdir):
             shutil.rmtree(self.tempdir)
-            pass
 
     def unpack_package(self, package_file_name):
         p = cmd_runner.run(["tar", "--wildcards", "-C", self.tempdir, "-xf", "-"],
@@ -68,15 +67,13 @@ class PackageUnpacker:
                        stdout=p.stdin).communicate()
         p.communicate()
 
-    def add_file_from_package(self, package, file, target_dir, target_hwpack):
+    def get_file(self, package, file):
         self.unpack_package(package)
+        logger.debug("Unpacked package %s." % package)
         temp_file = os.path.join(self.tempdir, file)
         assert os.path.exists(temp_file), "The file '%s' was " \
             "not found in the package '%s'." % (file, package)
-            
-        logger.debug("Unpacked %s from package %s." % (temp_file, package))
-        target_hwpack.add_file(target_dir, temp_file)
-        return os.path.join(target_dir, os.path.basename(temp_file))
+        return temp_file
 
 
 class HardwarePackBuilder(object):
@@ -94,7 +91,7 @@ class HardwarePackBuilder(object):
         self.version = version
         self.local_debs = local_debs
 
-    def put_uboot_in_hwpack(self, packages, fetcher, file_in_package, hwpack):
+    def add_uboot_to_hwpack(self, packages, fetcher, package_unpacker, hwpack):
         u_boot_package = None
         for package in packages:
             if package.name == self.config.u_boot_package:
@@ -107,9 +104,9 @@ class HardwarePackBuilder(object):
         packages.remove(u_boot_package)
         u_boot_package_path = os.path.join(fetcher.cache.tempdir,
                                            u_boot_package.filepath)
-        return file_in_package.add_file_from_package(
-            u_boot_package_path, self.config.u_boot_file,
-            hwpack.U_BOOT_DIR, hwpack)
+        tempfile_name = package_unpacker.get_file(
+            u_boot_package_path, self.config.u_boot_file)
+        return hwpack.add_file(hwpack.U_BOOT_DIR, tempfile_name)
 
     def build(self):
         for architecture in self.config.architectures:
@@ -135,14 +132,14 @@ class HardwarePackBuilder(object):
                 fetcher = PackageFetcher(
                     sources, architecture=architecture,
                     prefer_label=LOCAL_ARCHIVE_LABEL)
-                with fetcher, PackageUnpacker() as file_in_package:
+                with fetcher, PackageUnpacker() as package_unpacker:
                     fetcher.ignore_packages(self.config.assume_installed)
                     packages = fetcher.fetch_packages(
                         packages, download_content=self.config.include_debs)
 
                     if self.config.u_boot_package is not None:
-                        hwpack.metadata.u_boot = self.put_uboot_in_hwpack(
-                            packages, fetcher, file_in_package, hwpack)
+                        hwpack.metadata.u_boot = self.add_uboot_to_hwpack(
+                            packages, fetcher, package_unpacker, hwpack)
 
                     logger.debug("Adding packages to hwpack")
                     hwpack.add_packages(packages)
