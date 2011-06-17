@@ -59,7 +59,6 @@ class Config(object):
     MMC_ID_KEY = "mmc_id"
     FORMAT_KEY = "format"
 
-
     def __init__(self, fp):
         """Create a Config.
 
@@ -99,7 +98,8 @@ class Config(object):
 
     @property
     def format(self):
-        """The format of the hardware pack. A str."""
+        """The format of the hardware pack. A subclass of HardwarePackFormat.
+        """
         try:
             format_string = self.parser.get(self.MAIN_SECTION, self.FORMAT_KEY)
         except ConfigParser.NoOptionError:
