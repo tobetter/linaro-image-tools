@@ -963,10 +963,10 @@ class DB():
                                      int(date_chunks[2]))
 
         one_day = datetime.timedelta(days=1)
-        
+
         # In case of time zone issues we add 1 day to max_search_date
         max_search_date = datetime.date.today() + one_day
-        
+
         day_count = 0
         # Look in the future & past from the given date until we find a day
         # with a build on it
@@ -976,17 +976,17 @@ class DB():
 
         for in_the in ["future", "past"]:
             test_date[in_the] = None
-            
+
             if in_the == "future":
                 loop_date_increment = one_day
             else:
                 loop_date_increment = -one_day
-            
+
             test_date[in_the] = current_date
             
             while test_date[in_the] <= max_search_date:
                 test_date[in_the] += loop_date_increment
-            
+
                 builds = []
                 for hwpack in hwpacks:
                     builds = self.get_binary_builds_on_day_from_db(
