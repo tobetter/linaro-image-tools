@@ -26,7 +26,10 @@ import urlparse
 import logging
 import bz2
 
-sys.setrecursionlimit(300)
+RELEASES_WWW_DOCUMENT_ROOT  = "/srv/releases.linaro.org/www/platform/"
+RELEASE_URL                 = "http://releases.linaro.org/platform/"
+SNAPSHOTS_WWW_DOCUMENT_ROOT = "/srv/snapshots.linaro.org/www/"
+SNAPSHOTS_URL               = "http://snapshots.linaro.org/"
 
 class ServerIndexer():
     """Create a database of files on the linaro image servers for use by image
@@ -44,7 +47,8 @@ class ServerIndexer():
         logging.info(self.url_parse.items())
         
         for table, info in self.url_parse.items():
-            logging.info(info["base_dir"], ":", info["base_url"], table, info["url_validator"], info["url_chunks"])
+            logging.info(info["base_dir"], ":", info["base_url"], table,
+                         info["url_validator"], info["url_chunks"])
             self.go(info["base_dir"], info["base_url"], table)
             logging.info("")
 
@@ -53,7 +57,8 @@ class ServerIndexer():
             for file in files:
                 if(re.search('\.gz$', file)):
                     # Construct a URL to the file and save in the database
-                    relative_location = re.sub(root_dir_, "", os.path.join(root, file))
+                    relative_location = re.sub(root_dir_, "", 
+                                               os.path.join(root, file))
                     url = urlparse.urljoin(root_url_, relative_location)
                     url = urlparse.urljoin(url, file)
                    
@@ -67,25 +72,37 @@ class ServerIndexer():
         self.db.commit()
         
     def close_and_bzip2(self):
-        # After finishing creating the database, create a compressed version for more efficient downloads
+        # After finishing creating the database, create a compressed version
+        # for more efficient downloads
         self.db.close()
         bz2_db_file = bz2.BZ2File(self.db_file_name + ".bz2", "w")
         db_file = open(self.db_file_name)
         bz2_db_file.write(db_file.read())
         bz2_db_file.close()
 
-    def add_directory_parse_list(self, base_dir_, base_url_, url_validator_, id_, url_chunks_):
+    def add_directory_parse_list(self,
+                                 base_dir_,
+                                 base_url_,
+                                 url_validator_,
+                                 id_,
+                                 url_chunks_):
+        
         if(not id_ in self.url_parse):
             
             print base_dir_
-            self.url_parse[id_] = {"base_dir": base_dir_, "base_url": base_url_, "url_validator": url_validator_, "url_chunks": url_chunks_}
+            self.url_parse[id_] = {"base_dir":      base_dir_,
+                                   "base_url":      base_url_,
+                                   "url_validator": url_validator_,
+                                   "url_chunks":    url_chunks_}
             logging.info(self.url_parse[id_]["base_dir"])
 
             # Construct data needed to create the table
             items = []
             for item in url_chunks_:
                 if(item != ""):
-                    if(isinstance(item, tuple)): # If the entry is a tuple, it indicates it is of the form name, regexp
+                    # If the entry is a tuple, it indicates it is of the
+                    # form name, regexp
+                    if(isinstance(item, tuple)):
                         items.append(item[0])
                     else:
                         items.append(item)
@@ -98,36 +115,40 @@ class ServerIndexer():
 if __name__ == '__main__':
     crawler = ServerIndexer()
 
-    # The use of a zero width assertion here to look for links that don't contain /hwpacks/ is a bit scary and could
-    # be replaced by a tuple of (False, r"hwpacks"), where the first parameter could indicate that we want the regexp
-    # to fail if we are to use the URL. May be a bit nicer.
+    # The use of a zero width assertion here to look for links that don't 
+    # contain /hwpacks/ is a bit scary and could be replaced by a tuple of
+    # (False, r"hwpacks"), where the first parameter could indicate that we
+    # want the regexp to fail if we are to use the URL. May be a bit nicer.
+    
     #http://releases.linaro.org/platform/linaro-m/plasma/final/
-    crawler.add_directory_parse_list( "/srv/releases.linaro.org/www/platform/",
-                                "http://releases.linaro.org/platform/",
-                                r"^((?!hwpack).)*$",
-                                "release_binaries",
-                                ["platform", "image", "build"])
+    crawler.add_directory_parse_list(RELEASES_WWW_DOCUMENT_ROOT,
+                                     RELEASE_URL,
+                                     r"^((?!hwpack).)*$",
+                                     "release_binaries",
+                                     ["platform", "image", "build"])
 
     #http://releases.linaro.org/platform/linaro-m/hwpacks/final/hwpack_linaro-bsp-omap4_20101109-1_armel_unsupported.tar.gz
-    crawler.add_directory_parse_list( "/srv/releases.linaro.org/www/platform/",
-                                "http://releases.linaro.org/platform/",
-                                r"/hwpacks/",
-                                "release_hwpacks",
-                                ["platform", "", "build", ("hardware", r"hwpack_linaro-(.*?)_")])
-
+    crawler.add_directory_parse_list(RELEASES_WWW_DOCUMENT_ROOT,
+                                     RELEASE_URL,
+                                     r"/hwpacks/",
+                                     "release_hwpacks",
+                                     ["platform", "", "build",
+                                      ("hardware", r"hwpack_linaro-(.*?)_")])
+    
     #http://snapshots.linaro.org/11.05-daily/linaro-alip/20110420/0/images/tar/
-    crawler.add_directory_parse_list( "/srv/snapshots.linaro.org/www/",
-                                "http://snapshots.linaro.org/",
-                                r"^((?!hwpack).)*$",
-                                "snapshot_binaries",
-                                ["platform", "image", "date", "build"])
+    crawler.add_directory_parse_list(SNAPSHOTS_WWW_DOCUMENT_ROOT,
+                                     SNAPSHOTS_URL,
+                                     r"^((?!hwpack).)*$",
+                                     "snapshot_binaries",
+                                     ["platform", "image", "date", "build"])
 
     #http://snapshots.linaro.org/11.05-daily/linaro-hwpacks/omap3/20110420/0/images/hwpack/
-    crawler.add_directory_parse_list( "/srv/snapshots.linaro.org/www/",
-                                "http://snapshots.linaro.org/",
-                                r"/hwpack/",
-                                "snapshot_hwpacks",
-                                ["platform", "", "hardware", "date", "build"])
+    crawler.add_directory_parse_list(SNAPSHOTS_WWW_DOCUMENT_ROOT,
+                                     SNAPSHOTS_URL,
+                                     r"/hwpack/",
+                                     "snapshot_hwpacks",
+                                     ["platform", "", "hardware", "date",
+                                      "build"])
 
     crawler.crawl()
     crawler.clean_removed_urls_from_db()
