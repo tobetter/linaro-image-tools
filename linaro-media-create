@@ -124,7 +124,7 @@ if __name__ == '__main__':
                 "--image_file to create an image file for this board." % args.board
             sys.exit(1)
         if not confirm_device_selection_and_ensure_it_is_ready(args.device,
-                                                  args.yes_to_mmc_selection):
+                                                  args.nocheck_mmc):
             sys.exit(1)
     elif not args.should_format_rootfs or not args.should_format_bootfs:
         print ("Do not use --no-boot or --no-part in conjunction with "

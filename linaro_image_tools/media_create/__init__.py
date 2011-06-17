@@ -120,7 +120,7 @@ def get_args_parser():
         action='store_true',
         help='Align boot partition too (might break older x-loaders).')
     parser.add_argument(
-        '--nocheck-mmc', dest='yes_to_mmc_selection',
+        '--nocheck-mmc', dest='nocheck_mmc',
         action='store_true',
         help='Assume yes to the question "Are you 100%% sure, on selecting [mmc]"')
     
