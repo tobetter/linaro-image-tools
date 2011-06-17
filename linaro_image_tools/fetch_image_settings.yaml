@@ -1,0 +1,109 @@
+UI:
+  descriptions:
+    alip: ARM Internet Platform
+    choice:
+      build: The build (alpha-1 / beta / final) or date of snapshot (YYYYMMDD:build_number or 'latest')
+        to fetch.
+      hardware: The board you are building the image to run on.
+      hwpack: The hardware pack to use when building the image.
+      image: A distribuion image, e.g. headless.
+      platform: Which Linaro platform to build an image from. Specify 'snapshot' to
+        use a snapshot rather than a release.
+    developer: Developer Tools
+    graphics: Graphics
+    multimedia: Multimedia
+    nano: Nano
+    ubuntu-desktop: 'LEB: Linaro Ubuntu Desktop'
+    ubuntu-desktop::long: Linux for humans on low power machines
+    ubuntu-desktop::release_note: Shiny!
+  help:
+    latest snapshot: Latest Snapshot help text
+    release: Release help text
+    snapshot: Snapshot help text
+  translate:
+    linaro-m: '10.11'
+    linaro-n: '11.05'
+  cmdline short names:
+    build: b
+    hardware: w
+    platform: a
+    image: i
+    hwpack: p
+choice:
+  build: {}
+  hardware:
+    beagle: Beagle Board
+    igep: IGEPv2
+    panda: Panda Board
+    vexpress: Versatile Express
+    ux500: UX500
+    efikamx: EFIKA MX Smarttop 
+    efikasb: EFIKA MX Smartbook
+    mx51evk: i.MX51
+    mx53loco: i.MX53 Loco
+    # I don't have a --dev setting to linaro-media-create for a u8500 yet.
+    # u8500: U8500
+    overo: Overo
+    smdkv310: S5PV310
+  
+  hwpack:
+    beagle:
+    - omap3
+    - omap3-x11-base
+    
+    igep:
+    - igep
+    
+    panda:
+    - panda
+    - panda-x11-base
+    - bsp-omap4
+    
+    vexpress:
+    - vexpress
+    
+    ux500:
+    - bsp-ux500
+    
+    efikamx:
+    - efikamx
+    
+    efikasb:
+    - efikamx
+    
+    mx51evk:
+    - imx51
+    
+    mx53loco:
+    - lt-mx53loco
+    - s5pv310
+     
+    u8500:
+     - lt-u8500
+     
+    overo:
+    - overo
+     
+    smdkv310:
+     - lt-s5pv310
+     - s5pv310
+
+  image:
+  - alip
+  - developer
+  - headless
+  - ubuntu-desktop
+  platform:
+    linaro-m:
+    - final
+    linaro-n:
+    - alpha-1
+    - alpha-2
+    - alpha-3
+    - beta
+    - rc
+    - final
+
+platform: linaro-n
+repository: release
+

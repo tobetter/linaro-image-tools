@@ -35,7 +35,6 @@ import shutil
 import datetime
 import threading
 import subprocess
-import linaro_image_tools.utils
 
 
 class FileHandler():
@@ -78,6 +77,8 @@ class FileHandler():
         """Create a command line for linaro-media-create based on the settings
         provided then run linaro-media-create, either in a separate thread
         (GUI mode) or in the current one (CLI mode)."""
+
+        import linaro_image_tools.utils
 
         if event_handler == None:
             event_handler = self.DummyEventHandler()
@@ -594,7 +595,6 @@ class DB():
                 if(isinstance(name, tuple)):
                     # use stored regexp to extract data for the database
                     match = re.search(name[1], url_chunks[chunk_index])
-                    print name, url_chunks[chunk_index], match.group(1)
                     assert match, ("Unable to match regexp to string ",
                                   + url_chunks[chunk_index] + " " + name[1])
                     sqlparams.append(match.group(1))
