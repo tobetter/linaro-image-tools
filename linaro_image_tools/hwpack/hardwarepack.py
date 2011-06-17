@@ -77,8 +77,8 @@ class Metadata(object):
 
     @classmethod
     def add_v2_config(self, serial_tty=None, kernel_addr=None, initrd_addr=None,
-                      load_addr=None, fdt=None, wired_interfaces=None,
-                      wireless_interfaces=None, partition_layout=None,
+                      load_addr=None, fdt=None, wired_interfaces=[],
+                      wireless_interfaces=[], partition_layout=None,
                       mmc_id=None):
         """Add fields that are specific to the new format.
 

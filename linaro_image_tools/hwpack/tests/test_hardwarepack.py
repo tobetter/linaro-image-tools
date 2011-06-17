@@ -39,6 +39,7 @@ from linaro_image_tools.hwpack.testing import (
     )
 from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
+    HardwarePackFormatV2,
     )
 
 
@@ -108,6 +109,78 @@ class MetadataTests(TestCase):
         self.assertEqual(
             "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
             "SUPPORT=unsupported\n",
+            str(metadata))
+
+    def test_str_with_serial_tty(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(serial_tty='ttyO2')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "SERIAL_TTY=ttyO2\n",
+            str(metadata))
+
+    def test_str_with_kernel_addr(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(kernel_addr='0x80000000')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "KERNEL_ADDR=0x80000000\n",
+            str(metadata))
+
+    def test_str_with_initrd_addr(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(initrd_addr='0x80000000')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "INITRD_ADDR=0x80000000\n",
+            str(metadata))
+
+    def test_str_with_load_addr(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(load_addr='0x80000000')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "LOAD_ADDR=0x80000000\n",
+            str(metadata))
+
+    def test_str_with_wired_interfaces(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(wired_interfaces=['eth0', 'usb0'])
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "WIRED_INTERFACES=eth0 usb0\n",
+            str(metadata))
+
+    def test_str_with_wireless_interfaces(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(wireless_interfaces=['wlan0', 'wl0'])
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "WIRELESS_INTERFACES=wlan0 wl0\n",
+            str(metadata))
+
+    def test_str_with_partition_layout(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(partition_layout='bootfs_rootfs')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "PARTITION_LAYOUT=bootfs_rootfs\n",
+            str(metadata))
+
+    def test_str_with_mmc_id(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(mmc_id='1')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "MMC_ID=1\n",
             str(metadata))
 
     def test_from_config(self):
