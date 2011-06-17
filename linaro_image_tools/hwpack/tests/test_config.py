@@ -184,10 +184,6 @@ class ConfigTests(TestCase):
         self.assertValidationError(
             "Format version '0.9' is not supported.", config)
 
-    def test_validate_space_format(self):
-        for format in Config.SUPPORTED_FORMATS:
-            self.assertNotIn(" ", format)
-
     def test_validate_invalid_u_boot_package_name(self):
         config = self.get_config(
                 self.valid_start_v2 + "u-boot-package = ~~\n")

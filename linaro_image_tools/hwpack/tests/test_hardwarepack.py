@@ -37,29 +37,31 @@ from linaro_image_tools.hwpack.testing import (
     MatchesStructure,
     Not,
     )
+from linaro_image_tools.hwpack.hardwarepack_format import (
+    HardwarePackFormatV1,
+    )
 
 
 class MetadataTests(TestCase):
+    def setUp(self):
+        super(MetadataTests, self).setUp()
+        self.metadata = Metadata("ahwpack", "3", "armel")
 
     def test_name(self):
-        metadata = Metadata("ahwpack", "3", "armel")
-        self.assertEqual("ahwpack", metadata.name)
+        self.assertEqual("ahwpack", self.metadata.name)
 
     def test_version(self):
-        metadata = Metadata("ahwpack", "3", "armel")
-        self.assertEqual("3", metadata.version)
+        self.assertEqual("3", self.metadata.version)
 
     def test_version_with_whitespace(self):
         self.assertRaises(
             AssertionError, Metadata, "ahwpack", "3 (with extras)", "armel")
 
     def test_architecture(self):
-        metadata = Metadata("ahwpack", "3", "armel")
-        self.assertEqual("armel", metadata.architecture)
+        self.assertEqual("armel", self.metadata.architecture)
 
     def test_default_origin_is_None(self):
-        metadata = Metadata("ahwpack", "4", "armel")
-        self.assertEqual(None, metadata.origin)
+        self.assertEqual(None, self.metadata.origin)
 
     def test_origin(self):
         metadata = Metadata("ahwpack", "4", "armel", origin="linaro")
@@ -114,7 +116,7 @@ class MetadataTests(TestCase):
             origin = "linaro"
             maintainer = "someone"
             support = "supported"
-            format = '1.0'
+            format = HardwarePackFormatV1()
         config = Config()
         metadata = Metadata.from_config(config, "2.0", "i386")
         self.assertEqual(config.name, metadata.name)
@@ -132,27 +134,27 @@ class HardwarePackTests(TestCase):
         self.metadata = Metadata("ahwpack", "4", "armel")
 
     def test_format_is_correct(self):
-        format = '1.1'
-        hwpack = HardwarePack(self.metadata, format)
-        self.assertEqual(format, hwpack.format)
+        format = '1.0'
+        hwpack = HardwarePack(self.metadata)
+        self.assertEqual(format, hwpack.format.__str__())
 
     def test_format_has_no_spaces(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
-        self.assertIs(None, re.search('\s', hwpack.format),
+        hwpack = HardwarePack(self.metadata)
+        self.assertIs(None, re.search('\s', hwpack.format.__str__()),
                       "hwpack.format contains spaces.")
 
     def test_filename(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         self.assertEqual("hwpack_ahwpack_4_armel.tar.gz", hwpack.filename())
 
     def test_filename_with_support(self):
         metadata = Metadata("ahwpack", "4", "armel", support="supported")
-        hwpack = HardwarePack(metadata, '1.0')
+        hwpack = HardwarePack(metadata)
         self.assertEqual(
             "hwpack_ahwpack_4_armel_supported.tar.gz", hwpack.filename())
 
     def test_filename_with_extension(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         self.assertEqual(
             "hwpack_ahwpack_4_armel.txt", hwpack.filename('.txt'))
 
@@ -165,35 +167,35 @@ class HardwarePackTests(TestCase):
         return tf
 
     def test_creates_FORMAT_file(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
         self.assertThat(
             tf,
-            HardwarePackHasFile("FORMAT", content=hwpack.format+"\n"))
+            HardwarePackHasFile("FORMAT", content=hwpack.format.__str__()+"\n"))
 
     def test_creates_metadata_file(self):
         metadata = Metadata(
             "ahwpack", "4", "armel", origin="linaro",
             maintainer="Some Maintainer", support="unsupported")
-        hwpack = HardwarePack(metadata, '1.0')
+        hwpack = HardwarePack(metadata)
         tf = self.get_tarfile(hwpack)
         self.assertThat(
             tf, HardwarePackHasFile("metadata", content=str(metadata)))
 
     def test_creates_manifest_file(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
         self.assertThat(tf, HardwarePackHasFile("manifest"))
 
     def test_manifest_file_empty_with_no_packages(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
         self.assertThat(tf, HardwarePackHasFile("manifest", content=""))
 
     def test_manifest_contains_package_info(self):
         package1 = DummyFetchedPackage("foo", "1.1")
         package2 = DummyFetchedPackage("bar", "1.2")
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         hwpack.add_packages([package1, package2])
         tf = self.get_tarfile(hwpack)
         self.assertThat(
@@ -201,13 +203,13 @@ class HardwarePackTests(TestCase):
             HardwarePackHasFile("manifest", content="foo=1.1\nbar=1.2\n"))
 
     def test_creates_pkgs_dir(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
         self.assertThat(tf, HardwarePackHasFile("pkgs", type=tarfile.DIRTYPE))
 
     def test_adds_packages(self):
         package = DummyFetchedPackage("foo", "1.1")
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         hwpack.add_packages([package])
         tf = self.get_tarfile(hwpack)
         self.assertThat(
@@ -218,7 +220,7 @@ class HardwarePackTests(TestCase):
     def test_adds_multiple_packages_at_once(self):
         package1 = DummyFetchedPackage("foo", "1.1")
         package2 = DummyFetchedPackage("bar", "1.1")
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         hwpack.add_packages([package1, package2])
         tf = self.get_tarfile(hwpack)
         self.assertThat(
@@ -233,7 +235,7 @@ class HardwarePackTests(TestCase):
     def test_adds_multiple_in_multiple_steps(self):
         package1 = DummyFetchedPackage("foo", "1.1")
         package2 = DummyFetchedPackage("bar", "1.1")
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         hwpack.add_packages([package1])
         hwpack.add_packages([package2])
         tf = self.get_tarfile(hwpack)
@@ -248,7 +250,7 @@ class HardwarePackTests(TestCase):
 
     def test_add_packages_without_content_leaves_out_debs(self):
         package1 = DummyFetchedPackage("foo", "1.1", no_content=True)
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         hwpack.add_packages([package1])
         tf = self.get_tarfile(hwpack)
         self.assertThat(
@@ -256,7 +258,7 @@ class HardwarePackTests(TestCase):
             Not(HardwarePackHasFile("pkgs/%s" % package1.filename)))
 
     def test_add_dependency_package_adds_package(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         hwpack.add_dependency_package([])
         tf = self.get_tarfile(hwpack)
         self.assertThat(
@@ -273,7 +275,7 @@ class HardwarePackTests(TestCase):
                         version=Equals(self.metadata.version)))))
 
     def test_add_dependency_package_adds_package_with_dependency(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         hwpack.add_dependency_package(["foo", "bar (= 1.0)"])
         tf = self.get_tarfile(hwpack)
         self.assertThat(
@@ -291,7 +293,7 @@ class HardwarePackTests(TestCase):
                         version=Equals(self.metadata.version)))))
 
     def test_add_dependency_package_adds_package_to_Packages(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         hwpack.add_dependency_package(["foo", "bar (= 1.0)"])
         tf = self.get_tarfile(hwpack)
         self.assertThat(
@@ -307,19 +309,19 @@ class HardwarePackTests(TestCase):
                         version=Equals(self.metadata.version)))))
 
     def test_creates_Packages_file(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
         self.assertThat(tf, HardwarePackHasFile("pkgs/Packages"))
 
     def test_Packages_file_empty_with_no_packages(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
         self.assertThat(tf, HardwarePackHasFile("pkgs/Packages", content=""))
 
     def test_Packages_file_correct_contents_with_packages(self):
         package1 = DummyFetchedPackage("foo", "1.1")
         package2 = DummyFetchedPackage("bar", "1.1")
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         hwpack.add_packages([package1, package2])
         tf = self.get_tarfile(hwpack)
         self.assertThat(
@@ -331,7 +333,7 @@ class HardwarePackTests(TestCase):
     def test_Packages_file_empty_with_no_deb_content(self):
         package1 = DummyFetchedPackage("foo", "1.1", no_content=True)
         package2 = DummyFetchedPackage("bar", "1.1", no_content=True)
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         hwpack.add_packages([package1, package2])
         tf = self.get_tarfile(hwpack)
         self.assertThat(
@@ -341,7 +343,7 @@ class HardwarePackTests(TestCase):
     def test_Packages_file_correct_content_with_some_deb_content(self):
         package1 = DummyFetchedPackage("foo", "1.1", no_content=True)
         package2 = DummyFetchedPackage("bar", "1.1")
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         hwpack.add_packages([package1, package2])
         tf = self.get_tarfile(hwpack)
         self.assertThat(
@@ -351,13 +353,13 @@ class HardwarePackTests(TestCase):
                 content=get_packages_file([package2])))
 
     def test_creates_sources_list_dir(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
         self.assertThat(
             tf, HardwarePackHasFile("sources.list.d", type=tarfile.DIRTYPE))
 
     def test_adds_sources_list_file(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         source = 'http://example.org/ ubuntu'
         hwpack.add_apt_sources({'ubuntu': source})
         tf = self.get_tarfile(hwpack)
@@ -366,7 +368,7 @@ class HardwarePackTests(TestCase):
                 content="deb " + source + "\n"))
 
     def test_adds_multiple_sources_list_files(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         source1 = 'http://example.org/ ubuntu main universe'
         source2 = 'http://example.org/ linaro'
         hwpack.add_apt_sources({'ubuntu': source1, 'linaro': source2})
@@ -379,7 +381,7 @@ class HardwarePackTests(TestCase):
                 content="deb " + source2 + "\n"))
 
     def test_overwrites_sources_list_file(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         old_source = 'http://example.org/ ubuntu'
         hwpack.add_apt_sources({'ubuntu': old_source})
         new_source = 'http://example.org/ ubuntu main universe'
@@ -390,7 +392,7 @@ class HardwarePackTests(TestCase):
                 content="deb " + new_source + "\n"))
 
     def test_creates_sources_list_gpg_dir(self):
-        hwpack = HardwarePack(self.metadata, '1.0')
+        hwpack = HardwarePack(self.metadata)
         tf = self.get_tarfile(hwpack)
         self.assertThat(
             tf,

@@ -28,7 +28,9 @@ from linaro_image_tools.hwpack.packages import (
     get_packages_file,
     PackageMaker,
     )
-
+from linaro_image_tools.hwpack.hardwarepack_format import (
+    HardwarePackFormatV1,
+)
 
 class Metadata(object):
     """Metadata for a hardware pack.
@@ -56,7 +58,7 @@ class Metadata(object):
     """
 
     def __init__(self, name, version, architecture, origin=None,
-                 maintainer=None, support=None, format='1.0'):
+                 maintainer=None, support=None, format=HardwarePackFormatV1()):
         """Create the Metadata for a hardware pack.
 
         See the instance variables for a description of the arguments.
@@ -115,7 +117,7 @@ class Metadata(object):
             maintainer=config.maintainer, support=config.support,
             format=config.format)
 
-        if config.format >= '2.0':
+        if config.format.has_v2_fields:
             metadata.add_v2_config(serial_tty=config.serial_tty,
                                    kernel_addr=config.kernel_addr,
                                    initrd_addr=config.initrd_addr,
@@ -138,7 +140,7 @@ class Metadata(object):
         if self.support is not None:
             metadata += "SUPPORT=%s\n" % self.support
 
-        if float(self.format) < 2.0:
+        if not self.format.has_v2_fields:
             return metadata
             
         if self.u_boot is not None:
@@ -181,7 +183,7 @@ class HardwarePack(object):
     SOURCES_LIST_GPG_DIRNAME = "sources.list.d.gpg"
     U_BOOT_DIR = "u-boot"
 
-    def __init__(self, metadata, format):
+    def __init__(self, metadata):
         """Create a HardwarePack.
 
         :param metadata: the metadata to use.
@@ -190,7 +192,7 @@ class HardwarePack(object):
         self.metadata = metadata
         self.sources = {}
         self.packages = []
-        self.format = format
+        self.format = metadata.format
         self.files = []
 
     def filename(self, extension=".tar.gz"):
@@ -287,7 +289,7 @@ class HardwarePack(object):
         kwargs["default_mtime"] = time.time()
         with writeable_tarfile(fileobj, mode="w:gz", **kwargs) as tf:
             tf.create_file_from_string(
-                self.FORMAT_FILENAME, self.format + "\n")
+                self.FORMAT_FILENAME, "%s\n" % self.format)
             tf.create_file_from_string(
                 self.METADATA_FILENAME, str(self.metadata))
             for fs_file_name, arc_file_name in self.files:

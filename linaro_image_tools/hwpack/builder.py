@@ -112,7 +112,7 @@ class HardwarePackBuilder(object):
             logger.info("Building for %s" % architecture)
             metadata = Metadata.from_config(
                 self.config, self.version, architecture)
-            hwpack = HardwarePack(metadata, self.format)
+            hwpack = HardwarePack(metadata)
             sources = self.config.sources
             with LocalArchiveMaker() as local_archive_maker:
                 hwpack.add_apt_sources(sources)

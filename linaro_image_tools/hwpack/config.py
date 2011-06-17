@@ -22,6 +22,10 @@
 import ConfigParser
 import re
 
+from hardwarepack_format import (
+    HardwarePackFormatV1,
+    HardwarePackFormatV2,
+    )
 
 class HwpackConfigError(Exception):
     pass
@@ -55,8 +59,6 @@ class Config(object):
     MMC_ID_KEY = "mmc_id"
     FORMAT_KEY = "format"
 
-    # The format version cannot contain white spaces.
-    SUPPORTED_FORMATS = ["1.0", "2.0"]
 
     def __init__(self, fp):
         """Create a Config.
@@ -81,7 +83,7 @@ class Config(object):
         self._validate_architectures()
         self._validate_assume_installed()
 
-        if float(self.format) > 1.0:
+        if self.format.has_v2_fields:
             self._validate_u_boot_package()
             self._validate_u_boot_file()
             self._validate_serial_tty()
@@ -99,13 +101,20 @@ class Config(object):
     def format(self):
         """The format of the hardware pack. A str."""
         try:
-            return self.parser.get(self.MAIN_SECTION, self.FORMAT_KEY)
+            format_string = self.parser.get(self.MAIN_SECTION, self.FORMAT_KEY)
         except ConfigParser.NoOptionError:
             # Default to 1.0 to aviod breaking existing hwpack files.
             # When this code no longer supports 1.0, it effectively makes
             # explicitly specifying format in hwpack files mandatory.
-            return "1.0"
-        return 
+            format_string = "1.0"
+        
+        if format_string == '1.0':
+            return HardwarePackFormatV1()
+        elif format_string == '2.0':
+            return HardwarePackFormatV2()
+        else:
+            raise HwpackConfigError("Format version '%s' is not supported." % \
+                                     format_string)
 
     @property
     def name(self):
@@ -301,7 +310,7 @@ class Config(object):
         format = self.format
         if not format:
             raise HwpackConfigError("Empty value for format")
-        if format not in self.SUPPORTED_FORMATS:
+        if not format.is_supported:
             raise HwpackConfigError("Format version '%s' is not supported." % \
                                         format)
 

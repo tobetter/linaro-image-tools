@@ -34,7 +34,6 @@ from linaro_image_tools.hwpack.testing import (
 from linaro_image_tools.testing import TestCaseWithFixtures
 from linaro_image_tools.utils import find_command
 
-
 class ScriptTests(TestCaseWithFixtures):
     """Tests that execute the linaro-hwpack-create script."""
 
