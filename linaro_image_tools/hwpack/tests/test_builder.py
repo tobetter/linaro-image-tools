@@ -27,6 +27,7 @@ from testtools.matchers import Equals
 
 from linaro_image_tools.hwpack.builder import (
     ConfigFileMissing,
+    PackageUnpacker,
     HardwarePackBuilder,
     logger as builder_logger,
     )
@@ -50,6 +51,7 @@ from linaro_image_tools.hwpack.testing import (
     Not,
     )
 from linaro_image_tools.testing import TestCaseWithFixtures
+from linaro_image_tools.tests.fixtures import MockSomethingFixture
 
 
 class ConfigFileMissingTests(TestCase):
@@ -57,6 +59,39 @@ class ConfigFileMissingTests(TestCase):
     def test_str(self):
         exc = ConfigFileMissing("path")
         self.assertEqual("No such config file: 'path'", str(exc))
+
+class PackageUnpackerTests(TestCaseWithFixtures):
+
+    def test_creates_tempdir(self):
+        with PackageUnpacker() as package_unpacker:
+            self.assertTrue(os.path.exists(package_unpacker.tempdir))
+
+    def test_tempfiles_are_removed(self):
+        tempdir = None
+        with PackageUnpacker() as package_unpacker:
+            tempdir = package_unpacker.tempdir
+        self.assertFalse(os.path.exists(tempdir))
+
+    def test_get_file_returns_tempfile(self):
+        package = 'package'
+        file = 'dummyfile'
+        with PackageUnpacker() as package_unpacker:
+            self.useFixture(MockSomethingFixture(
+                    package_unpacker, 'unpack_package', lambda package: None))
+            self.useFixture(MockSomethingFixture(
+                    os.path, 'exists', lambda file: True))
+            tempfile = package_unpacker.get_file(package, file)
+            self.assertEquals(tempfile,
+                              os.path.join(package_unpacker.tempdir, file))
+
+    def test_get_file_raises(self):
+        package = 'package'
+        file = 'dummyfile'
+        with PackageUnpacker() as package_unpacker:
+            self.useFixture(MockSomethingFixture(
+                    package_unpacker, 'unpack_package', lambda package: None))
+            self.assertRaises(AssertionError, package_unpacker.get_file,
+                              package, file)
 
 
 class HardwarePackBuilderTests(TestCaseWithFixtures):
