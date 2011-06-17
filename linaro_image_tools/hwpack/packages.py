@@ -594,6 +594,9 @@ class PackageFetcher(object):
         self.cleanup()
         return False
 
+    def get_package_path(self, package):
+        return os.path.join(self.cache.tempdir, package.filepath)
+
     def ignore_packages(self, packages):
         """Ignore packages such that they will not be fetched.
 

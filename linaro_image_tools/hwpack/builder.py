@@ -102,8 +102,7 @@ class HardwarePackBuilder(object):
                     "U-boot package %s was not fetched." % \
                         self.config.u_boot_package)
         packages.remove(u_boot_package)
-        u_boot_package_path = os.path.join(fetcher.cache.tempdir,
-                                           u_boot_package.filepath)
+        u_boot_package_path = fetcher.get_package_path(u_boot_package)
         tempfile_name = package_unpacker.get_file(
             u_boot_package_path, self.config.u_boot_file)
         return hwpack.add_file(hwpack.U_BOOT_DIR, tempfile_name)
