@@ -32,6 +32,7 @@ from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
 )
 
+
 class Metadata(object):
     """Metadata for a hardware pack.
 

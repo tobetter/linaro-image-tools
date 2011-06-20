@@ -323,8 +323,8 @@ class Config(object):
             name = self.name
             if not name:
                 raise HwpackConfigError("Empty value for name")
-            self._assert_matches_pattern(self.NAME_REGEX, name, 
-                                    "Invalid name: %s" % name)
+            self._assert_matches_pattern(
+                self.NAME_REGEX, name, "Invalid name: %s" % name)
         except ConfigParser.NoOptionError:
             raise HwpackConfigError(
                 "No name in the [%s] section" % self.MAIN_SECTION)
@@ -334,8 +334,8 @@ class Config(object):
         if not u_boot_file:
             raise HwpackConfigError("No u_boot_file in the [%s] section" % \
                                         self.MAIN_SECTION)
-        self._assert_matches_pattern(self.PATH_REGEX, u_boot_file,
-                                "Invalid path: %s" % u_boot_file)
+        self._assert_matches_pattern(
+            self.PATH_REGEX, u_boot_file, "Invalid path: %s" % u_boot_file)
 
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty
@@ -417,11 +417,10 @@ class Config(object):
                 "No %s in the [%s] section"
                 % (self.PACKAGES_KEY, self.MAIN_SECTION))
         for package in packages:
-            self._assert_matches_pattern(self.PACKAGE_REGEX, package,
-                                         "Invalid value in %s in the [%s] " \
-                                             "section: %s" % \
-                                             (self.PACKAGES_KEY,
-                                              self.MAIN_SECTION, package))
+            self._assert_matches_pattern(
+                self.PACKAGE_REGEX, package, "Invalid value in %s in the " \
+                    "[%s] section: %s" % (self.PACKAGES_KEY, self.MAIN_SECTION,
+                                          package))
 
     def _validate_u_boot_package(self):
         u_boot_package = self.u_boot_package
@@ -429,11 +428,10 @@ class Config(object):
             raise HwpackConfigError(
                 "No %s in the [%s] section"
                 % (self.U_BOOT_PACKAGE_KEY, self.MAIN_SECTION))
-        self._assert_matches_pattern(self.PACKAGE_REGEX, u_boot_package,
-                                     "Invalid value in %s in the [%s] " \
-                                         "section: %s" % \
-                                         (self.U_BOOT_PACKAGE_KEY,
-                                          self.MAIN_SECTION, u_boot_package))
+        self._assert_matches_pattern(
+            self.PACKAGE_REGEX, u_boot_package, "Invalid value in %s in the " \
+                "[%s] section: %s" % (self.U_BOOT_PACKAGE_KEY,
+                                      self.MAIN_SECTION, u_boot_package))
 
     def _validate_architectures(self):
         architectures = self.architectures
@@ -445,11 +443,10 @@ class Config(object):
     def _validate_assume_installed(self):
         assume_installed = self.assume_installed
         for package in assume_installed:
-            self._assert_matches_pattern(self.PACKAGE_REGEX, package,
-                                         "Invalid value in %s in the [%s] " \
-                                             "section: %s" % \
-                                             (self.ASSUME_INSTALLED_KEY,
-                                              self.MAIN_SECTION, package))
+            self._assert_matches_pattern(
+                self.PACKAGE_REGEX, package, "Invalid value in %s in the " \
+                    "[%s] section: %s" % (self.ASSUME_INSTALLED_KEY,
+                                          self.MAIN_SECTION, package))
 
     def _validate_section_sources_entry(self, section_name):
         try:

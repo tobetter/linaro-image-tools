@@ -56,6 +56,7 @@ from linaro_image_tools.tests.fixtures import (
     MockCmdRunnerPopenFixture,
     )
 
+
 class ConfigFileMissingTests(TestCase):
 
     def test_str(self):
