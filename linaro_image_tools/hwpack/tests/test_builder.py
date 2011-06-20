@@ -145,6 +145,58 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         config = self.useFixture(ConfigFileFixture(config_text))
         return Metadata(hwpack_name, hwpack_version, architecture), config
 
+    def test_find_fetched_package_finds(self):
+        package_name = "dummy-package"
+        wanted_package_name = "wanted-package"
+        available_package = DummyFetchedPackage(package_name, "1.1")
+        wanted_package = DummyFetchedPackage(wanted_package_name, "1.1")
+
+        sources_dict = self.sourcesDictForPackages([available_package,
+                                                    wanted_package])
+        _, config = self.makeMetaDataAndConfigFixture(
+            [package_name, wanted_package_name], sources_dict,
+            extra_config={'format': '2.0', 'u-boot-package': 'wanted-package',
+                          'u-boot-file': 'wanted-file', 
+                          'partition_layout': 'bootfs_rootfs'})
+        builder = HardwarePackBuilder(config.filename, "1.0", [])
+        found_package = builder.find_fetched_package(
+            [available_package, wanted_package], wanted_package_name)
+        self.assertEquals(wanted_package, found_package)
+
+    def test_find_fetched_package_removes(self):
+        package_name = "dummy-package"
+        wanted_package_name = "wanted-package"
+        available_package = DummyFetchedPackage(package_name, "1.1")
+        wanted_package = DummyFetchedPackage(wanted_package_name, "1.1")
+
+        sources_dict = self.sourcesDictForPackages([available_package,
+                                                    wanted_package])
+        _, config = self.makeMetaDataAndConfigFixture(
+            [package_name, wanted_package_name], sources_dict,
+            extra_config={'format': '2.0', 'u-boot-package': 'wanted-package',
+                          'u-boot-file': 'wanted-file', 
+                          'partition_layout': 'bootfs_rootfs'})
+        builder = HardwarePackBuilder(config.filename, "1.0", [])
+        packages = [available_package, wanted_package]
+        builder.find_fetched_package(packages, wanted_package_name)
+        self.assertEquals(packages, [available_package])
+
+    def test_find_fetched_package_raises(self):
+        package_name = "dummy-package"
+        wanted_package_name = "wanted-package"
+        available_package = DummyFetchedPackage(package_name, "1.1")
+
+        sources_dict = self.sourcesDictForPackages([available_package])
+        _, config = self.makeMetaDataAndConfigFixture(
+            [package_name], sources_dict,
+            extra_config={'format': '2.0', 'u-boot-package': 'wanted-package',
+                          'u-boot-file': 'wanted-file', 
+                          'partition_layout': 'bootfs_rootfs'})
+        builder = HardwarePackBuilder(config.filename, "1.0", [])
+        packages = [available_package]
+        self.assertRaises(AssertionError, builder.find_fetched_package,
+                          packages, wanted_package_name)
+
     def test_creates_external_manifest(self):
         available_package = DummyFetchedPackage("foo", "1.1")
         sources_dict = self.sourcesDictForPackages([available_package])

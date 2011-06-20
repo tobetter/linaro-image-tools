@@ -99,17 +99,15 @@ class HardwarePackBuilder(object):
             if package.name == wanted_package_name:
                 wanted_package = package
                 break
-            else:
-                raise Exception(
-                    "Package %s was not fetched." % \
-                        wanted_package_name)
+        else:
+            raise AssertionError("Package '%s' was not fetched." % \
+                                wanted_package_name)
         packages.remove(wanted_package)
         return wanted_package
 
-    def add_file_to_hwpack(self, fetcher, package, wanted_file, package_unpacker, hwpack, target_path):
-        package_path = fetcher.get_package_path(package)
+    def add_file_to_hwpack(self, package, wanted_file, package_unpacker, hwpack, target_path):
         tempfile_name = package_unpacker.get_file(
-            package_path, wanted_file)
+            package.filepath, wanted_file)
         return hwpack.add_file(target_path, tempfile_name)
 
     def build(self):
@@ -145,7 +143,7 @@ class HardwarePackBuilder(object):
                         u_boot_package = self.find_fetched_package(
                             packages, self.config.u_boot_package)
                         hwpack.metadata.u_boot = self.add_file_to_hwpack(
-                            fetcher, u_boot_package, self.config.u_boot_file,
+                            u_boot_package, self.config.u_boot_file,
                             package_unpacker, hwpack, hwpack.U_BOOT_DIR)
 
                     logger.debug("Adding packages to hwpack")
