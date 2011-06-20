@@ -93,21 +93,24 @@ class HardwarePackBuilder(object):
         self.version = version
         self.local_debs = local_debs
 
-    def add_uboot_to_hwpack(self, packages, fetcher, package_unpacker, hwpack):
-        u_boot_package = None
+    def find_fetched_package(self, packages, wanted_package_name):
+        wanted_package = None
         for package in packages:
-            if package.name == self.config.u_boot_package:
-                u_boot_package = package
+            if package.name == wanted_package_name:
+                wanted_package = package
                 break
             else:
                 raise Exception(
-                    "U-boot package %s was not fetched." % \
-                        self.config.u_boot_package)
-        packages.remove(u_boot_package)
-        u_boot_package_path = fetcher.get_package_path(u_boot_package)
+                    "Package %s was not fetched." % \
+                        wanted_package_name)
+        packages.remove(wanted_package)
+        return wanted_package
+
+    def add_file_to_hwpack(self, fetcher, package, wanted_file, package_unpacker, hwpack, target_path):
+        package_path = fetcher.get_package_path(package)
         tempfile_name = package_unpacker.get_file(
-            u_boot_package_path, self.config.u_boot_file)
-        return hwpack.add_file(hwpack.U_BOOT_DIR, tempfile_name)
+            package_path, wanted_file)
+        return hwpack.add_file(target_path, tempfile_name)
 
     def build(self):
         for architecture in self.config.architectures:
@@ -139,8 +142,11 @@ class HardwarePackBuilder(object):
                         packages, download_content=self.config.include_debs)
 
                     if self.config.u_boot_package is not None:
-                        hwpack.metadata.u_boot = self.add_uboot_to_hwpack(
-                            packages, fetcher, package_unpacker, hwpack)
+                        u_boot_package = self.find_fetched_package(
+                            packages, self.config.u_boot_package)
+                        hwpack.metadata.u_boot = self.add_file_to_hwpack(
+                            fetcher, u_boot_package, self.config.u_boot_file,
+                            package_unpacker, hwpack, hwpack.U_BOOT_DIR)
 
                     logger.debug("Adding packages to hwpack")
                     hwpack.add_packages(packages)
