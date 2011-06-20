@@ -51,14 +51,17 @@ from linaro_image_tools.hwpack.testing import (
     Not,
     )
 from linaro_image_tools.testing import TestCaseWithFixtures
-from linaro_image_tools.tests.fixtures import MockSomethingFixture
-
+from linaro_image_tools.tests.fixtures import (
+    MockSomethingFixture,
+    MockCmdRunnerPopenFixture,
+    )
 
 class ConfigFileMissingTests(TestCase):
 
     def test_str(self):
         exc = ConfigFileMissing("path")
         self.assertEqual("No such config file: 'path'", str(exc))
+
 
 class PackageUnpackerTests(TestCaseWithFixtures):
 
@@ -71,6 +74,18 @@ class PackageUnpackerTests(TestCaseWithFixtures):
         with PackageUnpacker() as package_unpacker:
             tempdir = package_unpacker.tempdir
         self.assertFalse(os.path.exists(tempdir))
+
+    def test_unpack_package(self):
+        fixture = MockCmdRunnerPopenFixture(assert_child_finished=False)
+        self.useFixture(fixture)
+        package_file_name = "package-to-unpack"
+        with PackageUnpacker() as package_unpacker:
+            package_unpacker.unpack_package(package_file_name)
+            package_dir = package_unpacker.tempdir
+        self.assertEquals(
+            ["tar -C %s -xf -" % package_dir,
+             "dpkg --fsys-tarfile %s" % package_file_name],
+            fixture.mock.commands_executed)
 
     def test_get_file_returns_tempfile(self):
         package = 'package'
