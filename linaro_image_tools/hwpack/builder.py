@@ -61,7 +61,9 @@ class PackageUnpacker(object):
             shutil.rmtree(self.tempdir)
 
     def unpack_package(self, package_file_name):
-        p = cmd_runner.run(["tar", "--wildcards", "-C", self.tempdir, "-xf", "-"],
+        # We could extract only a single file, but since dpkg will pipe
+        # the entire package through tar anyway we might as well extract all.
+        p = cmd_runner.run(["tar", "-C", self.tempdir, "-xf", "-"],
                            stdin=subprocess.PIPE)
         cmd_runner.run(["dpkg", "--fsys-tarfile", package_file_name],
                        stdout=p.stdin).communicate()
