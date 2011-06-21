@@ -51,8 +51,6 @@ def verify_file_integrity(sig_file_list):
                                          stdout=subprocess.PIPE, cwd=sha_cwd
                                          ).communicate()
         verified_files.extend(sha1sums_out.replace(': OK', '').splitlines())
-    for verified_file in verified_files:
-        print 'Hash verification of file %s OK.' % verified_file
     return verified_files
 
 

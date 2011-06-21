@@ -111,6 +111,8 @@ if __name__ == '__main__':
     if args.binarysig is not None:
         sig_file_list.append(args.binarysig)
     verified_files = verify_file_integrity(sig_file_list)
+    for verified_file in verified_files:
+        print 'Hash verification of file %s OK.' % verified_file
 
     media = Media(args.device)
     if media.is_block_device:
