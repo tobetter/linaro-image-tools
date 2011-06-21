@@ -22,7 +22,6 @@ import atexit
 import os
 import sys
 import tempfile
-import subprocess
 
 from linaro_image_tools import cmd_runner
 
@@ -43,7 +42,11 @@ from linaro_image_tools.media_create.unpack_binary_tarball import (
     unpack_binary_tarball,
     )
 from linaro_image_tools.media_create import get_args_parser
-from linaro_image_tools.utils import ensure_command, is_arm_host
+from linaro_image_tools.utils import (
+    ensure_command,
+    is_arm_host,
+    verify_file_integrity,
+    )
 
 # Just define the global variables
 TMP_DIR = None
@@ -105,22 +108,9 @@ if __name__ == '__main__':
     ensure_required_commands(args)
 
     sig_file_list = args.hwpacksigs[:]
-    verified_files = []
     if args.binarysig is not None:
         sig_file_list.append(args.binarysig)
-    for sig_file in sig_file_list:
-        hash_file = sig_file[0:-len('.asc')]
-        cmd_runner.run(['gpg', '--verify', sig_file]).wait()
-        if os.path.dirname(hash_file) == '':
-            sha_cwd = None
-        else:
-            sha_cwd = os.path.dirname(hash_file)
-        sha1sums_out, _ = cmd_runner.run(['sha1sum', '-c', hash_file],
-                                         stdout=subprocess.PIPE, cwd=sha_cwd
-                                         ).communicate()
-        verified_files.extend(sha1sums_out.replace(': OK', '').splitlines())
-    for verified_file in verified_files:
-        print 'Hash verification of file %s OK.' % verified_file
+    verified_files = verify_file_integrity(sig_file_list)
 
     media = Media(args.device)
     if media.is_block_device:
