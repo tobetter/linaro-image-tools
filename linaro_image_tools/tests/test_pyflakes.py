@@ -29,8 +29,8 @@ class TestPyflakes(TestCase):
         (stdout, stderr) = proc.communicate()
         stdout = stdout.splitlines()
         stdout.sort()
-        expected = ["./linaro_image_tools/utils.py:26: redefinition of "
-                        "unused 'CommandNotFound' from line 24" ]
+        expected = ["./linaro_image_tools/utils.py:27: redefinition of "
+                        "unused 'CommandNotFound' from line 25" ]
         self.assertEquals(expected, stdout)
         self.assertEquals('', stderr)
 
