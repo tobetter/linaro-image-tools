@@ -20,6 +20,7 @@
 import os
 import shutil
 import tempfile
+from StringIO import StringIO
 
 from linaro_image_tools import cmd_runner
 
@@ -68,8 +69,11 @@ class MockCmdRunnerPopen(object):
     # used in tests to make sure all callsites wait for their child.
     child_finished = True
 
+    def __init__(self, assert_child_finished=True):
+        self.assert_child_finished = assert_child_finished
+
     def __call__(self, cmd, *args, **kwargs):
-        if not self.child_finished:
+        if self.assert_child_finished and not self.child_finished:
             raise AssertionError(
                 "You should call wait() or communicate() to ensure "
                 "the subprocess is finished before proceeding.")
@@ -97,6 +101,9 @@ class MockCmdRunnerPopen(object):
     def commands_executed(self):
         return [' '.join(args) for args in self.calls]
 
+    @property
+    def stdin(self):
+        return StringIO()
 
 class MockCmdRunnerPopenFixture(MockSomethingFixture):
     """A test fixture which mocks cmd_runner.do_run with the given mock.
@@ -104,13 +111,13 @@ class MockCmdRunnerPopenFixture(MockSomethingFixture):
     If no mock is given, a MockCmdRunnerPopen instance is used.
     """
 
-    def __init__(self):
+    def __init__(self, assert_child_finished=True):
         super(MockCmdRunnerPopenFixture, self).__init__(
-            cmd_runner, 'Popen', MockCmdRunnerPopen())
+            cmd_runner, 'Popen', MockCmdRunnerPopen(assert_child_finished))
 
     def tearDown(self):
         super(MockCmdRunnerPopenFixture, self).tearDown()
-        if not self.mock.child_finished:
+        if self.mock.assert_child_finished and not self.mock.child_finished:
             raise AssertionError(
                 "You should call wait() or communicate() to ensure "
                 "the subprocess is finished before proceeding.")

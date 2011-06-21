@@ -21,6 +21,12 @@
 
 import logging
 import errno
+import subprocess
+import tempfile
+import os
+import shutil
+
+from linaro_image_tools import cmd_runner
 
 from linaro_image_tools.hwpack.config import Config
 from linaro_image_tools.hwpack.hardwarepack import HardwarePack, Metadata
@@ -45,6 +51,33 @@ class ConfigFileMissing(Exception):
             "No such config file: '%s'" % self.filename)
 
 
+class PackageUnpacker(object):
+    def __enter__(self):
+        self.tempdir = tempfile.mkdtemp()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        if self.tempdir is not None and os.path.exists(self.tempdir):
+            shutil.rmtree(self.tempdir)
+
+    def unpack_package(self, package_file_name):
+        # We could extract only a single file, but since dpkg will pipe
+        # the entire package through tar anyway we might as well extract all.
+        p = cmd_runner.run(["tar", "-C", self.tempdir, "-xf", "-"],
+                           stdin=subprocess.PIPE)
+        cmd_runner.run(["dpkg", "--fsys-tarfile", package_file_name],
+                       stdout=p.stdin).communicate()
+        p.communicate()
+
+    def get_file(self, package, file):
+        self.unpack_package(package)
+        logger.debug("Unpacked package %s." % package)
+        temp_file = os.path.join(self.tempdir, file)
+        assert os.path.exists(temp_file), "The file '%s' was " \
+            "not found in the package '%s'." % (file, package)
+        return temp_file
+
+
 class HardwarePackBuilder(object):
 
     def __init__(self, config_path, version, local_debs):
@@ -56,8 +89,26 @@ class HardwarePackBuilder(object):
                 raise ConfigFileMissing(config_path)
             raise
         self.config.validate()
+        self.format = self.config.format
         self.version = version
         self.local_debs = local_debs
+
+    def find_fetched_package(self, packages, wanted_package_name):
+        wanted_package = None
+        for package in packages:
+            if package.name == wanted_package_name:
+                wanted_package = package
+                break
+        else:
+            raise AssertionError("Package '%s' was not fetched." % \
+                                wanted_package_name)
+        packages.remove(wanted_package)
+        return wanted_package
+
+    def add_file_to_hwpack(self, package, wanted_file, package_unpacker, hwpack, target_path):
+        tempfile_name = package_unpacker.get_file(
+            package.filepath, wanted_file)
+        return hwpack.add_file(target_path, tempfile_name)
 
     def build(self):
         for architecture in self.config.architectures:
@@ -70,6 +121,8 @@ class HardwarePackBuilder(object):
                 hwpack.add_apt_sources(sources)
                 sources = sources.values()
                 packages = self.config.packages[:]
+                if self.config.u_boot_package is not None:
+                    packages.append(self.config.u_boot_package)
                 local_packages = [
                     FetchedPackage.from_deb(deb)
                     for deb in self.local_debs]
@@ -81,10 +134,18 @@ class HardwarePackBuilder(object):
                 fetcher = PackageFetcher(
                     sources, architecture=architecture,
                     prefer_label=LOCAL_ARCHIVE_LABEL)
-                with fetcher:
+                with fetcher, PackageUnpacker() as package_unpacker:
                     fetcher.ignore_packages(self.config.assume_installed)
                     packages = fetcher.fetch_packages(
                         packages, download_content=self.config.include_debs)
+
+                    if self.config.u_boot_package is not None:
+                        u_boot_package = self.find_fetched_package(
+                            packages, self.config.u_boot_package)
+                        hwpack.metadata.u_boot = self.add_file_to_hwpack(
+                            u_boot_package, self.config.u_boot_file,
+                            package_unpacker, hwpack, hwpack.U_BOOT_DIR)
+
                     logger.debug("Adding packages to hwpack")
                     hwpack.add_packages(packages)
                     for local_package in local_packages:

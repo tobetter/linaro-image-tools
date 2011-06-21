@@ -724,4 +724,5 @@ class PackageFetcher(object):
                     "The item %r could not be fetched: %s" %
                     (acqfile.destfile, acqfile.error_text))
             result_package.content = open(destfile)
+            result_package._file_path = destfile
         return fetched.values()

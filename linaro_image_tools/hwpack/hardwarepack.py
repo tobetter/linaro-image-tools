@@ -20,6 +20,7 @@
 # USA.
 
 import time
+import os
 
 from linaro_image_tools.hwpack.better_tarfile import writeable_tarfile
 from linaro_image_tools.hwpack.packages import (
@@ -27,6 +28,9 @@ from linaro_image_tools.hwpack.packages import (
     get_packages_file,
     PackageMaker,
     )
+from linaro_image_tools.hwpack.hardwarepack_format import (
+    HardwarePackFormatV1,
+)
 
 
 class Metadata(object):
@@ -55,11 +59,12 @@ class Metadata(object):
     """
 
     def __init__(self, name, version, architecture, origin=None,
-                 maintainer=None, support=None):
+                 maintainer=None, support=None, format=HardwarePackFormatV1()):
         """Create the Metadata for a hardware pack.
 
         See the instance variables for a description of the arguments.
         """
+        self.format = format
         self.name = name
         if ' ' in version:
             raise AssertionError(
@@ -70,6 +75,25 @@ class Metadata(object):
         self.maintainer = maintainer
         self.support = support
         self.architecture = architecture
+
+    @classmethod
+    def add_v2_config(self, serial_tty=None, kernel_addr=None, initrd_addr=None,
+                      load_addr=None, fdt=None, wired_interfaces=[],
+                      wireless_interfaces=[], partition_layout=None,
+                      mmc_id=None):
+        """Add fields that are specific to the new format.
+
+        These fields are not present in earlier config files.
+        """
+        self.u_boot = None
+        self.serial_tty = serial_tty
+        self.kernel_addr = kernel_addr
+        self.initrd_addr = initrd_addr
+        self.load_addr = load_addr
+        self.wired_interfaces = wired_interfaces
+        self.wireless_interfaces = wireless_interfaces
+        self.partition_layout = partition_layout
+        self.mmc_id = mmc_id
 
     @classmethod
     def from_config(cls, config, version, architecture):
@@ -89,9 +113,21 @@ class Metadata(object):
             targetting.
         :type architecture: str
         """
-        return cls(
+        metadata = cls(
             config.name, version, architecture, origin=config.origin,
-            maintainer=config.maintainer, support=config.support)
+            maintainer=config.maintainer, support=config.support,
+            format=config.format)
+
+        if config.format.has_v2_fields:
+            metadata.add_v2_config(serial_tty=config.serial_tty,
+                                   kernel_addr=config.kernel_addr,
+                                   initrd_addr=config.initrd_addr,
+                                   load_addr=config.load_addr,
+                                   wired_interfaces=config.wired_interfaces,
+                                   wireless_interfaces=config.wireless_interfaces,
+                                   partition_layout=config.partition_layout,
+                                   mmc_id=config.mmc_id)
+        return metadata
 
     def __str__(self):
         """Get the contents of the metadata file."""
@@ -104,6 +140,29 @@ class Metadata(object):
             metadata += "MAINTAINER=%s\n" % self.maintainer
         if self.support is not None:
             metadata += "SUPPORT=%s\n" % self.support
+
+        if not self.format.has_v2_fields:
+            return metadata
+            
+        if self.u_boot is not None:
+            metadata += "U_BOOT=%s\n" % self.u_boot
+        if self.serial_tty is not None:
+            metadata += "SERIAL_TTY=%s\n" % self.serial_tty
+        if self.kernel_addr is not None:
+            metadata += "KERNEL_ADDR=%s\n" % self.kernel_addr
+        if self.initrd_addr is not None:
+            metadata += "INITRD_ADDR=%s\n" % self.initrd_addr
+        if self.load_addr is not None:
+            metadata += "LOAD_ADDR=%s\n" % self.load_addr
+        if self.wired_interfaces != []:
+            metadata += "WIRED_INTERFACES=%s\n" % " ".join(self.wired_interfaces)
+        if self.wireless_interfaces != []:
+            metadata += "WIRELESS_INTERFACES=%s\n" % " ".join(
+                self.wireless_interfaces)
+        if self.partition_layout is not None:
+            metadata += "PARTITION_LAYOUT=%s\n" % self.partition_layout
+        if self.mmc_id is not None:
+            metadata += "MMC_ID=%s\n" % self.mmc_id
         return metadata
 
 
@@ -116,8 +175,6 @@ class HardwarePack(object):
     :type FORMAT: str
     """
 
-    # The format version cannot contain white spaces. 
-    FORMAT = "1.0"
     FORMAT_FILENAME = "FORMAT"
     METADATA_FILENAME = "metadata"
     MANIFEST_FILENAME = "manifest"
@@ -125,6 +182,7 @@ class HardwarePack(object):
     PACKAGES_FILENAME = "%s/Packages" % PACKAGES_DIRNAME
     SOURCES_LIST_DIRNAME = "sources.list.d"
     SOURCES_LIST_GPG_DIRNAME = "sources.list.d.gpg"
+    U_BOOT_DIR = "u-boot"
 
     def __init__(self, metadata):
         """Create a HardwarePack.
@@ -135,6 +193,8 @@ class HardwarePack(object):
         self.metadata = metadata
         self.sources = {}
         self.packages = []
+        self.format = metadata.format
+        self.files = []
 
     def filename(self, extension=".tar.gz"):
         """The filename that this hardware pack should have.
@@ -200,6 +260,11 @@ class HardwarePack(object):
                 relationships, self.metadata.architecture)
             self.packages.append(FetchedPackage.from_deb(deb_file_path))
 
+    def add_file(self, dir, file):
+        target_file = os.path.join(dir, os.path.basename(file))
+        self.files.append((file, target_file))
+        return target_file
+
     def manifest_text(self):
         manifest_content = ""
         for package in self.packages:
@@ -225,9 +290,11 @@ class HardwarePack(object):
         kwargs["default_mtime"] = time.time()
         with writeable_tarfile(fileobj, mode="w:gz", **kwargs) as tf:
             tf.create_file_from_string(
-                self.FORMAT_FILENAME, self.FORMAT + "\n")
+                self.FORMAT_FILENAME, "%s\n" % self.format)
             tf.create_file_from_string(
                 self.METADATA_FILENAME, str(self.metadata))
+            for fs_file_name, arc_file_name in self.files:
+                tf.add(fs_file_name, arcname=arc_file_name)
             tf.create_dir(self.PACKAGES_DIRNAME)
             for package in self.packages:
                 if package.content is not None:

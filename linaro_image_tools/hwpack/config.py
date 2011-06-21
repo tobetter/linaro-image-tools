@@ -22,6 +22,10 @@
 import ConfigParser
 import re
 
+from hardwarepack_format import (
+    HardwarePackFormatV1,
+    HardwarePackFormatV2,
+    )
 
 class HwpackConfigError(Exception):
     pass
@@ -38,10 +42,22 @@ class Config(object):
     SOURCES_ENTRY_KEY = "sources-entry"
     PACKAGES_KEY = "packages"
     PACKAGE_REGEX = NAME_REGEX
+    PATH_REGEX = r"[a-z0-9][a-z0-9+\-./]+$"
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
     ASSUME_INSTALLED_KEY = "assume-installed"
+    U_BOOT_PACKAGE_KEY = "u-boot-package"
+    U_BOOT_FILE_KEY = "u-boot-file"
+    SERIAL_TTY_KEY = "serial_tty"
+    KERNEL_ADDR_KEY = "kernel_addr"
+    INITRD_ADDR_KEY = "initrd_addr"
+    LOAD_ADDR_KEY = "load_addr"
+    WIRED_INTERFACES_KEY = "wired_interfaces"
+    WIRELESS_INTERFACES_KEY = "wireless_interfaces"
+    PARTITION_LAYOUT_KEY = "partition_layout"
+    MMC_ID_KEY = "mmc_id"
+    FORMAT_KEY = "format"
 
     def __init__(self, fp):
         """Create a Config.
@@ -58,13 +74,47 @@ class Config(object):
         """
         if not self.parser.has_section(self.MAIN_SECTION):
             raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
+        self._validate_format()
         self._validate_name()
         self._validate_include_debs()
         self._validate_support()
         self._validate_packages()
         self._validate_architectures()
         self._validate_assume_installed()
+
+        if self.format.has_v2_fields:
+            self._validate_u_boot_package()
+            self._validate_u_boot_file()
+            self._validate_serial_tty()
+            self._validate_kernel_addr()
+            self._validate_initrd_addr()
+            self._validate_load_addr()
+            self._validate_wired_interfaces()
+            self._validate_wireless_interfaces()
+            self._validate_partition_layout()
+            self._validate_mmc_id()
+
         self._validate_sections()
+
+    @property
+    def format(self):
+        """The format of the hardware pack. A subclass of HardwarePackFormat.
+        """
+        try:
+            format_string = self.parser.get(self.MAIN_SECTION, self.FORMAT_KEY)
+        except ConfigParser.NoOptionError:
+            # Default to 1.0 to aviod breaking existing hwpack files.
+            # When this code no longer supports 1.0, it effectively makes
+            # explicitly specifying format in hwpack files mandatory.
+            format_string = "1.0"
+        
+        if format_string == '1.0':
+            return HardwarePackFormatV1()
+        elif format_string == '2.0':
+            return HardwarePackFormatV2()
+        else:
+            raise HwpackConfigError("Format version '%s' is not supported." % \
+                                     format_string)
 
     @property
     def name(self):
@@ -99,6 +149,72 @@ class Config(object):
             return result
         except ConfigParser.NoOptionError:
             return None
+
+    @property
+    def serial_tty(self):
+        """/dev device name of the serial console for this kernel 
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.SERIAL_TTY_KEY)
+
+    @property
+    def kernel_addr(self):
+        """address where u-boot should load the kernel 
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.KERNEL_ADDR_KEY)
+
+    @property
+    def initrd_addr(self):
+        """address where u-boot should load the kernel 
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.INITRD_ADDR_KEY)
+
+    @property
+    def load_addr(self):
+        """address for uImage generation
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.LOAD_ADDR_KEY)
+
+    @property
+    def wired_interfaces(self):
+        """The interfaces for wired networks
+
+        A list of str.
+        """
+        return self._get_list_from_main_section(self.WIRED_INTERFACES_KEY)
+
+    @property
+    def wireless_interfaces(self):
+        """The interfaces for wireless networks
+
+        A list of str.
+        """
+        return self._get_list_from_main_section(self.WIRELESS_INTERFACES_KEY)
+
+    @property
+    def partition_layout(self):
+        """bootfs16_rootfs, bootfs_rootfs and reserved_bootfs_rootfs; 
+        controls what kind of SD card partition layout we should use when 
+        writing images 
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.PARTITION_LAYOUT_KEY)
+
+    @property
+    def mmc_id(self):
+        """which MMC drive contains the boot filesystem 
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.MMC_ID_KEY)
 
     @property
     def origin(self):
@@ -144,6 +260,22 @@ class Config(object):
         return self._get_list_from_main_section(self.PACKAGES_KEY)
 
     @property
+    def u_boot_package(self):
+        """The u-boot package that contains the u-boot bin.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.U_BOOT_PACKAGE_KEY)
+
+    @property
+    def u_boot_file(self):
+        """The u-boot bin file that will be unpacked from the u-boot package.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.U_BOOT_FILE_KEY)
+
+    @property
     def architectures(self):
         """The architectures to build the hwpack for.
 
@@ -174,16 +306,95 @@ class Config(object):
                 section_name, self.SOURCES_ENTRY_KEY)
         return sources
 
+    def _validate_format(self):
+        format = self.format
+        if not format:
+            raise HwpackConfigError("Empty value for format")
+        if not format.is_supported:
+            raise HwpackConfigError("Format version '%s' is not supported." % \
+                                        format)
+
+    def _assert_matches_pattern(self, regex, config_item, error_message):
+            if re.match(regex, config_item) is None:
+                raise HwpackConfigError(error_message)
+
     def _validate_name(self):
         try:
             name = self.name
             if not name:
                 raise HwpackConfigError("Empty value for name")
-            if re.match(self.NAME_REGEX, name) is None:
-                raise HwpackConfigError("Invalid name: %s" % name)
+            self._assert_matches_pattern(
+                self.NAME_REGEX, name, "Invalid name: %s" % name)
         except ConfigParser.NoOptionError:
             raise HwpackConfigError(
                 "No name in the [%s] section" % self.MAIN_SECTION)
+
+    def _validate_u_boot_file(self):
+        u_boot_file = self.u_boot_file
+        if not u_boot_file:
+            raise HwpackConfigError("No u_boot_file in the [%s] section" % \
+                                        self.MAIN_SECTION)
+        self._assert_matches_pattern(
+            self.PATH_REGEX, u_boot_file, "Invalid path: %s" % u_boot_file)
+
+    def _validate_serial_tty(self):
+        serial_tty = self.serial_tty
+        if serial_tty is None:
+            return
+        if len(serial_tty) < 4 or serial_tty[:3] != 'tty':
+            raise HwpackConfigError("Invalid serial tty: %s" % serial_tty)
+
+    def _validate_addr(self, addr):
+        return re.match(r"^0x[a-fA-F0-9]{8}$", addr)
+
+    def _validate_kernel_addr(self):
+        addr = self.kernel_addr
+        if addr is None:
+            return
+        if not self._validate_addr(addr):
+            raise HwpackConfigError("Invalid kernel address: %s" % addr)
+
+    def _validate_initrd_addr(self):
+        addr = self.initrd_addr
+        if addr is None:
+            return
+        if not self._validate_addr(addr):
+            raise HwpackConfigError("Invalid initrd address: %s" % addr)
+
+    def _validate_load_addr(self):
+        addr = self.load_addr
+        if addr is None:
+            return
+        if not self._validate_addr(addr):
+            raise HwpackConfigError("Invalid load address: %s" % addr)
+
+    def _validate_wired_interfaces(self):
+        pass
+
+    def _validate_wireless_interfaces(self):
+        pass
+
+    def _validate_partition_layout(self):
+        defined_partition_layouts = [
+            #'bootfs16_rootfs',
+            'bootfs_rootfs',
+            #'reserved_bootfs_rootfs',
+            ]
+        if self.partition_layout not in defined_partition_layouts:
+            raise HwpackConfigError(
+                "Undefined partition layout %s in the [%s] section. "
+                "Valid partition layouts are %s."
+                % (self.partition_layout, self.MAIN_SECTION,
+                   ", ".join(defined_partition_layouts)))
+
+    def _validate_mmc_id(self):
+        mmc_id = self.mmc_id
+        if mmc_id is None:
+            return
+        try:
+            int(mmc_id)
+        except:
+            raise HwpackConfigError("Invalid mmc id %s" % (mmc_id))
 
     def _validate_include_debs(self):
         try:
@@ -206,10 +417,21 @@ class Config(object):
                 "No %s in the [%s] section"
                 % (self.PACKAGES_KEY, self.MAIN_SECTION))
         for package in packages:
-            if re.match(self.PACKAGE_REGEX, package) is None:
-                raise HwpackConfigError(
-                    "Invalid value in %s in the [%s] section: %s"
-                    % (self.PACKAGES_KEY, self.MAIN_SECTION, package))
+            self._assert_matches_pattern(
+                self.PACKAGE_REGEX, package, "Invalid value in %s in the " \
+                    "[%s] section: %s" % (self.PACKAGES_KEY, self.MAIN_SECTION,
+                                          package))
+
+    def _validate_u_boot_package(self):
+        u_boot_package = self.u_boot_package
+        if not u_boot_package:
+            raise HwpackConfigError(
+                "No %s in the [%s] section"
+                % (self.U_BOOT_PACKAGE_KEY, self.MAIN_SECTION))
+        self._assert_matches_pattern(
+            self.PACKAGE_REGEX, u_boot_package, "Invalid value in %s in the " \
+                "[%s] section: %s" % (self.U_BOOT_PACKAGE_KEY,
+                                      self.MAIN_SECTION, u_boot_package))
 
     def _validate_architectures(self):
         architectures = self.architectures
@@ -221,11 +443,10 @@ class Config(object):
     def _validate_assume_installed(self):
         assume_installed = self.assume_installed
         for package in assume_installed:
-            if re.match(self.PACKAGE_REGEX, package) is None:
-                raise HwpackConfigError(
-                    "Invalid value in %s in the [%s] section: %s"
-                    % (self.ASSUME_INSTALLED_KEY, self.MAIN_SECTION,
-                        package))
+            self._assert_matches_pattern(
+                self.PACKAGE_REGEX, package, "Invalid value in %s in the " \
+                    "[%s] section: %s" % (self.ASSUME_INSTALLED_KEY,
+                                          self.MAIN_SECTION, package))
 
     def _validate_section_sources_entry(self, section_name):
         try:
