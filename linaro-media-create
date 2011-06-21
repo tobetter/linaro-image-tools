@@ -111,8 +111,13 @@ if __name__ == '__main__':
     for sig_file in sig_file_list:
         hash_file = sig_file[0:-len('.asc')]
         cmd_runner.run(['gpg', '--verify', sig_file]).wait()
+        if os.path.dirname(hash_file) == '':
+            sha_cwd = None
+        else:
+            sha_cwd = os.path.dirname(hash_file)
         sha1sums_out, _ = cmd_runner.run(['sha1sum', '-c', hash_file],
-                                         stdout=subprocess.PIPE).communicate()
+                                         stdout=subprocess.PIPE, cwd=sha_cwd
+                                         ).communicate()
         verified_files.extend(sha1sums_out.replace(': OK', '').splitlines())
     for verified_file in verified_files:
         print 'Hash verification of file %s OK.' % verified_file

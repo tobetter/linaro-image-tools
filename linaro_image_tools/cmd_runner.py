@@ -36,7 +36,7 @@ def sanitize_path(env):
 
 
 def run(args, as_root=False, chroot=None, stdin=None, stdout=None,
-        stderr=None):
+        stderr=None, cwd=None):
     """Run the given command as a sub process.
 
     Return a Popen instance.
@@ -60,7 +60,7 @@ def run(args, as_root=False, chroot=None, stdin=None, stdout=None,
         as_root = True
     if as_root and os.getuid() != 0:
         args = SUDO_ARGS + args
-    return Popen(args, stdin=stdin, stdout=stdout, stderr=stderr)
+    return Popen(args, stdin=stdin, stdout=stdout, stderr=stderr, cwd=cwd)
 
 
 class Popen(subprocess.Popen):
