@@ -19,6 +19,7 @@
 
 import os
 import platform
+import subprocess
 
 try:
     from CommandNotFound import CommandNotFound
@@ -26,6 +27,31 @@ except ImportError:
     CommandNotFound = None
 
 from linaro_image_tools import cmd_runner
+
+
+def verify_file_integrity(sig_file_list):
+    """Verify a list of signature files.
+
+    The parameter is a list of filenames of gpg signature files which will be
+    verified using gpg. For each of the files it is assumed that there is an
+    sha1 hash file with the same file name minus the '.asc' extension.
+
+    Each of the sha1 files will be checked using sha1sums. All files listed in
+    the sha1 hash file must be found in the same directory as the hash file.
+    """
+    verified_files = []
+    for sig_file in sig_file_list:
+        hash_file = sig_file[0:-len('.asc')]
+        cmd_runner.run(['gpg', '--verify', sig_file]).wait()
+        if os.path.dirname(hash_file) == '':
+            sha_cwd = None
+        else:
+            sha_cwd = os.path.dirname(hash_file)
+        sha1sums_out, _ = cmd_runner.run(['sha1sum', '-c', hash_file],
+                                         stdout=subprocess.PIPE, cwd=sha_cwd
+                                         ).communicate()
+        verified_files.extend(sha1sums_out.replace(': OK', '').splitlines())
+    return verified_files
 
 
 def install_package_providing(command):

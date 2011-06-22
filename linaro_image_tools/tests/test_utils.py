@@ -35,10 +35,47 @@ from linaro_image_tools.utils import (
     install_package_providing,
     preferred_tools_dir,
     UnableToFindPackageProvidingCommand,
+    verify_file_integrity,
     )
 
 
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
+
+
+class TestVerifyFileIntegrity(TestCaseWithFixtures):
+
+    filenames_in_shafile = ['verified-file1', 'verified-file2']
+
+    class MockCmdRunnerPopen(object):
+        def __call__(self, cmd, *args, **kwargs):
+            self.returncode = 0
+            return self
+
+        def communicate(self, input=None):
+            self.wait()
+            return ': OK\n'.join(
+                TestVerifyFileIntegrity.filenames_in_shafile) + ': OK\n', ''
+
+        def wait(self):
+            return self.returncode
+
+    def test_verify_files(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        hash_filename = "dummy-file.txt"
+        signature_filename = hash_filename + ".asc"
+        verify_file_integrity([signature_filename])
+        self.assertEqual(
+            ['gpg --verify %s' % signature_filename,
+             'sha1sum -c %s' % hash_filename],
+            fixture.mock.commands_executed)
+        
+    def test_verify_files_returns_files(self):
+        self.useFixture(MockSomethingFixture(cmd_runner, 'Popen',
+                                             self.MockCmdRunnerPopen()))
+        hash_filename = "dummy-file.txt"
+        signature_filename = hash_filename + ".asc"
+        verified_files = verify_file_integrity([signature_filename])
+        self.assertEqual(self.filenames_in_shafile, verified_files)
 
 
 class TestEnsureCommand(TestCaseWithFixtures):
