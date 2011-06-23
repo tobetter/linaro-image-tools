@@ -222,7 +222,8 @@ class ConfigTests(TestCase):
                                      "partition_layout = apafs_bananfs\n")
         self.assertValidationError(
             "Undefined partition layout apafs_bananfs in the [hwpack] " \
-                "section. Valid partition layouts are bootfs_rootfs.", config)
+                "section. Valid partition layouts are bootfs16_rootfs, " \
+                "bootfs_rootfs.", config)
 
     def test_validate_wired_interfaces(self):
         self.assertTrue("XXX What is an invalid interface name?")

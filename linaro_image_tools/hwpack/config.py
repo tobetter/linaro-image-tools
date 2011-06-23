@@ -376,7 +376,7 @@ class Config(object):
 
     def _validate_partition_layout(self):
         defined_partition_layouts = [
-            #'bootfs16_rootfs',
+            'bootfs16_rootfs',
             'bootfs_rootfs',
             #'reserved_bootfs_rootfs',
             ]
