@@ -139,6 +139,7 @@ class classproperty(object):
 
 class HardwarepackHandler(object):
     metadata_filename = 'metadata'
+    format_filename = 'FORMAT'
     main_section = 'main'
     hwpack_tarfile = None
 
@@ -181,7 +182,8 @@ class HardwarepackHandler(object):
             return None
 
     def get_format(self):
-        format_string = self.get_field(self.main_section, 'format')
+        format_file = self.hwpack_tarfile.extractfile(self.format_filename)
+        format_string = format_file.read().strip()
         if format_string is None or format_string == '1.0':
             return HardwarePackFormatV1()
         elif format_string == '2.0':
