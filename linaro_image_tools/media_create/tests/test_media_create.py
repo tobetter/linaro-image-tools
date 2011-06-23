@@ -110,6 +110,7 @@ from linaro_image_tools.tests.fixtures import (
     )
 from linaro_image_tools.utils import find_command, preferred_tools_dir
 
+
 chroot_args = " ".join(cmd_runner.CHROOT_ARGS)
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
 
