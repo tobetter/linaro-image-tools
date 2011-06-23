@@ -57,6 +57,9 @@ from linaro_image_tools.media_create.boards import (
     _get_mlo_file,
     _run_mkimage,
     )
+from linaro_image_tools.media_create.android_boards import (
+    android_board_configs,
+    )
 from linaro_image_tools.media_create.chroot_utils import (
     copy_file,
     install_hwpack,
@@ -506,6 +509,26 @@ class TestGetBootCmd(TestCase):
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
                        'bootm 0x80000000 0x81600000 0x815f0000'}
+        self.assertEqual(expected, boot_commands)
+
+
+class TestGetBootCmdAndroid(TestCase):
+    def test_panda(self):
+        # XXX: To fix bug 697824 we have to change class attributes of our
+        # OMAP board configs, and some tests do that so to make sure they
+        # don't interfere with us we'll reset that before doing anything.
+        config = android_board_configs['panda']
+        config.serial_tty = config._serial_tty
+        boot_commands = config._get_boot_env(consoles=[])
+        expected = {
+            'bootargs': 'console=tty0 console=ttyO2,115200n8 '
+                        'rootwait ro earlyprintk fixrtc '
+                        'nocompcache vram=48M omapfb.vram=0:24M,1:24M '
+                        'mem=456M@0x80000000 mem=512M@0xA0000000 '
+                        'init=/init androidboot.console=ttyO2',
+            'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
+                       'fatload mmc 0:1 0x81600000 uInitrd; '
+                       'bootm 0x80200000 0x81600000'}
         self.assertEqual(expected, boot_commands)
 
 
