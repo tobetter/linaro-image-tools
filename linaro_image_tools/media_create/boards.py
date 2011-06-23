@@ -803,6 +803,18 @@ class SMDKV310Config(BoardConfig):
         spl_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
             'v310_mmc_spl.bin')
+
+        # The new upstream u-boot filename has changed
+        if not os.path.exists(spl_file):
+            spl_file = os.path.join(
+                chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+                'u-boot-mmc-spl.bin')
+
+        if not os.path.exists(spl_file):
+            # missing SPL loader
+            raise AssertionError("Couldn't find the SPL file "
+                                 "v310_mmc_spl.bin or u-boot-mmc-spl.bin" );
+
         # XXX need to check that the length of spl_file is smaller than
         # SAMSUNG_V310_BL1_LEN
         _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
