@@ -31,10 +31,18 @@ import re
 import tempfile
 import struct
 from binascii import crc32
+import tarfile
+import ConfigParser
 
 from linaro_image_tools import cmd_runner
 
 from linaro_image_tools.media_create.partitions import SECTOR_SIZE
+
+from linaro_image_tools.hwpack.hardwarepack_format import (
+    HardwarePackFormatV1,
+    HardwarePackFormatV2,
+)
+
 
 KERNEL_GLOB = 'vmlinuz-*-%(kernel_flavor)s'
 INITRD_GLOB = 'initrd.img-*-%(kernel_flavor)s'
@@ -129,6 +137,59 @@ class classproperty(object):
         return self.getter(cls)
 
 
+class HardwarepackHandler(object):
+    metadata_filename = 'metadata'
+    main_section = 'main'
+    hwpack_tarfile = None
+
+    def __init__(self, hwpack):
+        self.hwpack = hwpack
+    
+    class FakeSecHead(object):
+        """ Add a fake section header to the metadata file.
+
+        This is done so we can use ConfigParser to parse the file.
+        """
+        def __init__(self, fp):
+            self.fp = fp
+            self.sechead = '[%s]\n' % HardwarepackHandler.main_section
+
+        def readline(self):
+            if self.sechead:
+                try:
+                    return self.sechead
+                finally:
+                    self.sechead = None
+            else:
+                return self.fp.readline()
+
+    def __enter__(self):
+        self.hwpack_tarfile = tarfile.open(self.hwpack, mode='r:gz')
+        metadata = self.hwpack_tarfile.extractfile(self.metadata_filename)
+        self.parser = ConfigParser.RawConfigParser()
+        self.parser.readfp(self.FakeSecHead(metadata))
+
+    def __exit__(self, type, value, traceback):
+        if self.hwpack_tarfile is not None:
+            self.hwpack_tarfile.close()
+
+    def get_field(self, section, field):
+        try:
+            return self.parser.get(section, field)
+        except ConfigParser.NoOptionError:
+            return None
+
+    def get_format(self):
+        format_string = self.get_field(self.main_section, 'format')
+        if format_string is None or format_string == '1.0':
+            return HardwarePackFormatV1()
+        elif format_string == '2.0':
+            return HardwarePackFormatV2()
+        else:
+            raise AssertionError("Format version '%s' is not supported." % \
+                                     format_string)
+
+
 class BoardConfig(object):
     """The configuration used when building an image for a board."""
     # These attributes may not need to be redefined on some subclasses.
@@ -143,7 +204,9 @@ class BoardConfig(object):
     extra_boot_args_options = None
     supports_writing_to_mmc = True
 
-    # These attributes must be defined on all subclasses.
+    # These attributes must be defined on all subclasses for backwards
+    # compatibility with hwpacks v1 format. Hwpacks v2 format allows these to
+    # be specified in the hwpack metadata.
     kernel_addr = None
     initrd_addr = None
     load_addr = None
@@ -152,6 +215,30 @@ class BoardConfig(object):
     kernel_flavors = None
     boot_script = None
     serial_tty = None
+
+    @classmethod
+    def set_metadata(cls, hwpack):
+        hp = HardwarepackHandler(hwpack)
+        with hp:
+            if not hp.get_format().has_v2_fields:
+                return
+
+            cls.kernel_addr = hp.get_field(hp.main_section, 'kernel_addr')
+            cls.initrd_addr = hp.get_field(hp.main_section, 'initrd_addr')
+            cls.load_addr = hp.get_field(hp.main_section, 'load_addr')
+            cls.serial_tty = hp.get_field(hp.main_section, 'serial_tty')
+            cls.wired_interfaces = hp.get_field(hp.main_section, 'wired_interfaces')
+            cls.wireless_interfaces = hp.get_field(hp.main_section, 'wireless_interfaces')
+            cls.mmc_id = hp.get_field(hp.main_section, 'mmc_id')
+
+            partition_layout = hp.get_field(hp.main_section, 'partition_layout')
+            if partition_layout == 'bootfs_rootfs' or partition_layout is None:
+                cls.fat_size = 32
+            elif partition_layout == 'bootfs16_rootfs':
+                cls.fat_size = 16
+            else:
+                raise AssertionError("Unknown partition layout '%s'." % partition_layout)
+            
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):

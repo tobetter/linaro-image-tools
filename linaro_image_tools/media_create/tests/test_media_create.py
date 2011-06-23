@@ -56,6 +56,8 @@ from linaro_image_tools.media_create.boards import (
     _get_file_matching,
     _get_mlo_file,
     _run_mkimage,
+    HardwarepackHandler,
+    BoardConfig,
     )
 from linaro_image_tools.media_create.chroot_utils import (
     copy_file,
@@ -108,9 +110,161 @@ from linaro_image_tools.tests.fixtures import (
     )
 from linaro_image_tools.utils import find_command, preferred_tools_dir
 
-
 chroot_args = " ".join(cmd_runner.CHROOT_ARGS)
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
+
+
+class TestSetMetadata(TestCaseWithFixtures):
+
+    class MockHardwarepackHandler(HardwarepackHandler):
+        metadata_dict = {}
+
+        def __enter__(self):
+            pass
+
+        def get_field(self, section, field):
+            try:
+                return self.metadata_dict[field]
+            except:
+                return None
+
+    def test_does_not_set_if_old_format(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+
+        config = BoardConfig
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(None, config.kernel_addr)
+
+    def test_sets_kernel_addr(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'kernel_addr'
+        data_to_set = '0x8123ABCD'
+        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
+                                                      field_to_test: data_to_set,
+                                                      }
+        config = BoardConfig
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.kernel_addr)
+
+    def test_sets_initrd_addr(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'initrd_addr'
+        data_to_set = '0x8123ABCD'
+        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
+                                                      field_to_test: data_to_set,
+                                                      }
+        config = BoardConfig
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.initrd_addr)
+
+    def test_sets_load_addr(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'load_addr'
+        data_to_set = '0x8123ABCD'
+        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
+                                                      field_to_test: data_to_set,
+                                                      }
+        config = BoardConfig
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.load_addr)
+
+    def test_sets_serial_tty(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'serial_tty'
+        data_to_set = 'ttyAA'
+        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
+                                                      field_to_test: data_to_set,
+                                                      }
+        config = BoardConfig
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.serial_tty)
+
+    def test_sets_wired_interfaces(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'wired_interfaces'
+        data_to_set = 'eth0 eth1'
+        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
+                                                      field_to_test: data_to_set,
+                                                      }
+        config = BoardConfig
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.wired_interfaces)
+
+    def test_sets_wireless_interfaces(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'wireless_interfaces'
+        data_to_set = 'wlan0 wl1'
+        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
+                                                      field_to_test: data_to_set,
+                                                      }
+        config = BoardConfig
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.wireless_interfaces)
+
+    def test_sets_mmc_id(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'mmc_id'
+        data_to_set = '1'
+        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
+                                                      field_to_test: data_to_set,
+                                                      }
+        config = BoardConfig
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.mmc_id)
+
+    def test_sets_partition_layout_32(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'partition_layout'
+        data_to_set = 'bootfs_rootfs'
+        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
+                                                      field_to_test: data_to_set,
+                                                      }
+        config = BoardConfig
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(32, config.fat_size)
+
+    def test_sets_partition_layout_16(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'partition_layout'
+        data_to_set = 'bootfs16_rootfs'
+        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
+                                                      field_to_test: data_to_set,
+                                                      }
+        config = BoardConfig
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(16, config.fat_size)
+
+    def test_sets_partition_layout_raises(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'partition_layout'
+        data_to_set = 'bootfs_bogus_rootfs'
+        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
+                                                      field_to_test: data_to_set,
+                                                      }
+        config = BoardConfig
+        self.assertRaises(AssertionError, config.set_metadata, 'ahwpack.tar.gz')
 
 
 class TestGetMLOFile(TestCaseWithFixtures):
