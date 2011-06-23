@@ -168,6 +168,7 @@ class HardwarepackHandler(object):
         metadata = self.hwpack_tarfile.extractfile(self.metadata_filename)
         self.parser = ConfigParser.RawConfigParser()
         self.parser.readfp(self.FakeSecHead(metadata))
+        return self
 
     def __exit__(self, type, value, traceback):
         if self.hwpack_tarfile is not None:
@@ -189,6 +190,9 @@ class HardwarepackHandler(object):
             raise AssertionError("Format version '%s' is not supported." % \
                                      format_string)
 
+    def write_file(self, file_name, target_dir):
+        self.hwpack_tarfile.extract(file_name, target_dir)
+        
 
 class BoardConfig(object):
     """The configuration used when building an image for a board."""
@@ -216,10 +220,12 @@ class BoardConfig(object):
     boot_script = None
     serial_tty = None
 
+    hardwarepack_handler = None
+
     @classmethod
     def set_metadata(cls, hwpack):
-        hp = HardwarepackHandler(hwpack)
-        with hp:
+        cls.hardwarepack_handler = HardwarepackHandler(hwpack)
+        with cls.hardwarepack_handler as hp:
             if not hp.get_format().has_v2_fields:
                 return
 
@@ -238,7 +244,20 @@ class BoardConfig(object):
                 cls.fat_size = 16
             else:
                 raise AssertionError("Unknown partition layout '%s'." % partition_layout)
-            
+
+    @classmethod
+    def write_uboot_file(cls, target_dir, chroot_dir=None):
+        with cls.hardwarepack_handler as hp:
+            if isinstance(hp.get_format(), HardwarePackFormatV1):
+                assert cls.uboot_flavor is not None, (
+                    "uboot_in_boot_part is set but not uboot_flavor")
+                uboot_bin = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot',
+                                         cls.uboot_flavor, 'u-boot.bin')
+                cmd_runner.run(
+                    ['cp', '-v', uboot_bin, target_dir], as_root=True).wait()
+            else:
+                hp.write_file(
+                    hp.get_field(hp.main_section, 'u-boot'), target_dir)
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
@@ -384,12 +403,7 @@ class BoardConfig(object):
             as_root=True).wait()
 
         if cls.uboot_in_boot_part:
-            assert cls.uboot_flavor is not None, (
-                "uboot_in_boot_part is set but not uboot_flavor")
-            uboot_bin = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot',
-                cls.uboot_flavor, 'u-boot.bin')
-            cmd_runner.run(
-                ['cp', '-v', uboot_bin, boot_disk], as_root=True).wait()
+            cls.write_uboot_file(boot_disk, chroot_dir)
 
         cls.make_boot_files(
             uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,

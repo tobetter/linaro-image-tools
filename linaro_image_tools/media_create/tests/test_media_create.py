@@ -120,7 +120,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         metadata_dict = {}
 
         def __enter__(self):
-            pass
+            return self
 
         def get_field(self, section, field):
             try:
@@ -1313,6 +1313,8 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
         self.config = c
         self.config.boot_script = 'boot_script'
+        self.config.hardwarepack_handler = \
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz')
         self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             self.config, 'make_boot_files', self.save_args))
