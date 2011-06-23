@@ -41,6 +41,8 @@ from linaro_image_tools.media_create import (
     )
 from linaro_image_tools.media_create.boards import (
     LOADER_MIN_SIZE_S,
+    SAMSUNG_V310_BL1_START,
+    SAMSUNG_V310_BL2_START,
     SECTOR_SIZE,
     align_up,
     align_partition,
@@ -49,12 +51,15 @@ from linaro_image_tools.media_create.boards import (
     make_flashable_env,
     install_mx5_boot_loader,
     install_omap_boot_loader,
+    install_smdk_boot_loader,
     make_boot_script,
     make_uImage,
     make_uInitrd,
     make_dtb,
     _get_file_matching,
     _get_mlo_file,
+    _get_smdk_spl,
+    _get_smdk_uboot,
     _run_mkimage,
     )
 from linaro_image_tools.media_create.android_boards import (
@@ -153,6 +158,54 @@ class TestGetMLOFile(TestCaseWithFixtures):
             AssertionError, _get_mlo_file, tempdir)
 
 
+class TestGetSMDKSPL(TestCaseWithFixtures):
+
+    def test_no_file_present(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        uboot_flavor = "some_uboot_flavour"
+        self.assertRaises(
+            AssertionError, _get_smdk_spl, tempdir, uboot_flavor)
+
+    def test_old_file_present(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        uboot_flavor = "some_uboot_flavour"
+        path = os.path.join(tempdir, 'usr', 'lib', 'u-boot', uboot_flavor)
+        os.makedirs(path)
+        spl_path = os.path.join(path, 'v310_mmc_spl.bin')
+        open(spl_path, 'w').close()
+        self.assertEquals(spl_path, _get_smdk_spl(tempdir, uboot_flavor))
+
+    def test_new_file_present(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        uboot_flavor = "some_uboot_flavour"
+        path = os.path.join(tempdir, 'usr', 'lib', 'u-boot', uboot_flavor)
+        os.makedirs(path)
+        spl_path = os.path.join(path, 'u-boot-mmc-spl.bin')
+        open(spl_path, 'w').close()
+        self.assertEquals(spl_path, _get_smdk_spl(tempdir, uboot_flavor))
+
+    def test_prefers_old_path(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        uboot_flavor = "some_uboot_flavour"
+        path = os.path.join(tempdir, 'usr', 'lib', 'u-boot', uboot_flavor)
+        os.makedirs(path)
+        old_spl_path = os.path.join(path, 'v310_mmc_spl.bin')
+        new_spl_path = os.path.join(path, 'u-boot-mmc-spl.bin')
+        open(old_spl_path, 'w').close()
+        open(new_spl_path, 'w').close()
+        self.assertEquals(old_spl_path, _get_smdk_spl(tempdir, uboot_flavor))
+
+
+class TestGetSMDKUboot(TestCaseWithFixtures):
+
+    def test_uses_uboot_flavour(self):
+        chroot_dir = "chroot"
+        uboot_flavor = "some_uboot_flavour"
+        uboot_file = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor,
+            'u-boot.bin')
+        self.assertEquals(uboot_file, _get_smdk_uboot(chroot_dir, uboot_flavor))
+
+
 class TestBootSteps(TestCaseWithFixtures):
 
     def setUp(self):
@@ -211,7 +264,7 @@ class TestBootSteps(TestCaseWithFixtures):
     def test_smdkv310_steps(self):
         self.make_boot_files(boards.SMDKV310Config)
         expected = [
-            '_dd', '_dd', 'make_flashable_env', '_dd', 'make_uImage',
+            'install_smdk_boot_loader', 'make_flashable_env', '_dd', 'make_uImage',
             'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
@@ -651,6 +704,23 @@ class TestBoards(TestCaseWithFixtures):
         install_omap_boot_loader("chroot_dir", "boot_disk")
         expected = [
             '%s cp -v chroot_dir/MLO boot_disk' % sudo_args, 'sync']
+        self.assertEqual(expected, fixture.mock.commands_executed)
+
+    def test_install_smdk_u_boot(self):
+        fixture = self._mock_Popen()
+        uboot_flavor = "some_u_boot_flavour"
+        self.useFixture(MockSomethingFixture(
+            boards, '_get_smdk_spl',
+            lambda chroot_dir, uboot_flavor: "%s/%s/SPL" % (chroot_dir, uboot_flavor)))
+        self.useFixture(MockSomethingFixture(
+            boards, '_get_smdk_uboot',
+            lambda chroot_dir, uboot_flavor: "%s/%s/uboot" % (chroot_dir, uboot_flavor)))
+        install_smdk_boot_loader("chroot_dir", "boot_disk", uboot_flavor)
+        expected = [
+            '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
+            'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL1_START),
+            '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
+            'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL2_START)]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_get_plain_boot_script_contents(self):
