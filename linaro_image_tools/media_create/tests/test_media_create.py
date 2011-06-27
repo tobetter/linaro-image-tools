@@ -109,6 +109,10 @@ from linaro_image_tools.tests.fixtures import (
     MockSomethingFixture,
     )
 from linaro_image_tools.utils import find_command, preferred_tools_dir
+from linaro_image_tools.hwpack.hardwarepack_format import (
+    HardwarePackFormatV1,
+    HardwarePackFormatV2,
+)
 
 
 chroot_args = " ".join(cmd_runner.CHROOT_ARGS)
@@ -129,6 +133,9 @@ class TestSetMetadata(TestCaseWithFixtures):
             except:
                 return None
 
+        def get_format(self):
+            return HardwarePackFormatV2()
+
     def test_does_not_set_if_old_format(self):
         self.useFixture(MockSomethingFixture(
                 linaro_image_tools.media_create.boards, 'HardwarepackHandler',
@@ -144,9 +151,9 @@ class TestSetMetadata(TestCaseWithFixtures):
                 self.MockHardwarepackHandler))
         field_to_test = 'kernel_addr'
         data_to_set = '0x8123ABCD'
-        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
-                                                      field_to_test: data_to_set,
-                                                      }
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
         config = BoardConfig
         config.set_metadata('ahwpack.tar.gz')
         self.assertEquals(data_to_set, config.kernel_addr)
@@ -157,9 +164,9 @@ class TestSetMetadata(TestCaseWithFixtures):
                 self.MockHardwarepackHandler))
         field_to_test = 'initrd_addr'
         data_to_set = '0x8123ABCD'
-        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
-                                                      field_to_test: data_to_set,
-                                                      }
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
         config = BoardConfig
         config.set_metadata('ahwpack.tar.gz')
         self.assertEquals(data_to_set, config.initrd_addr)
@@ -170,9 +177,9 @@ class TestSetMetadata(TestCaseWithFixtures):
                 self.MockHardwarepackHandler))
         field_to_test = 'load_addr'
         data_to_set = '0x8123ABCD'
-        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
-                                                      field_to_test: data_to_set,
-                                                      }
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
         config = BoardConfig
         config.set_metadata('ahwpack.tar.gz')
         self.assertEquals(data_to_set, config.load_addr)
@@ -183,9 +190,9 @@ class TestSetMetadata(TestCaseWithFixtures):
                 self.MockHardwarepackHandler))
         field_to_test = 'serial_tty'
         data_to_set = 'ttyAA'
-        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
-                                                      field_to_test: data_to_set,
-                                                      }
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
         config = BoardConfig
         config.set_metadata('ahwpack.tar.gz')
         self.assertEquals(data_to_set, config.serial_tty)
@@ -196,9 +203,9 @@ class TestSetMetadata(TestCaseWithFixtures):
                 self.MockHardwarepackHandler))
         field_to_test = 'wired_interfaces'
         data_to_set = 'eth0 eth1'
-        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
-                                                      field_to_test: data_to_set,
-                                                      }
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
         config = BoardConfig
         config.set_metadata('ahwpack.tar.gz')
         self.assertEquals(data_to_set, config.wired_interfaces)
@@ -209,9 +216,9 @@ class TestSetMetadata(TestCaseWithFixtures):
                 self.MockHardwarepackHandler))
         field_to_test = 'wireless_interfaces'
         data_to_set = 'wlan0 wl1'
-        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
-                                                      field_to_test: data_to_set,
-                                                      }
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
         config = BoardConfig
         config.set_metadata('ahwpack.tar.gz')
         self.assertEquals(data_to_set, config.wireless_interfaces)
@@ -222,9 +229,9 @@ class TestSetMetadata(TestCaseWithFixtures):
                 self.MockHardwarepackHandler))
         field_to_test = 'mmc_id'
         data_to_set = '1'
-        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
-                                                      field_to_test: data_to_set,
-                                                      }
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
         config = BoardConfig
         config.set_metadata('ahwpack.tar.gz')
         self.assertEquals(data_to_set, config.mmc_id)
@@ -235,9 +242,9 @@ class TestSetMetadata(TestCaseWithFixtures):
                 self.MockHardwarepackHandler))
         field_to_test = 'partition_layout'
         data_to_set = 'bootfs_rootfs'
-        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
-                                                      field_to_test: data_to_set,
-                                                      }
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
         config = BoardConfig
         config.set_metadata('ahwpack.tar.gz')
         self.assertEquals(32, config.fat_size)
@@ -248,9 +255,9 @@ class TestSetMetadata(TestCaseWithFixtures):
                 self.MockHardwarepackHandler))
         field_to_test = 'partition_layout'
         data_to_set = 'bootfs16_rootfs'
-        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
-                                                      field_to_test: data_to_set,
-                                                      }
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
         config = BoardConfig
         config.set_metadata('ahwpack.tar.gz')
         self.assertEquals(16, config.fat_size)
@@ -261,9 +268,9 @@ class TestSetMetadata(TestCaseWithFixtures):
                 self.MockHardwarepackHandler))
         field_to_test = 'partition_layout'
         data_to_set = 'bootfs_bogus_rootfs'
-        self.MockHardwarepackHandler.metadata_dict = {'format': '2.0',
-                                                      field_to_test: data_to_set,
-                                                      }
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
         config = BoardConfig
         self.assertRaises(AssertionError, config.set_metadata, 'ahwpack.tar.gz')
 
@@ -1316,6 +1323,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.config.boot_script = 'boot_script'
         self.config.hardwarepack_handler = \
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz')
+        self.config.hardwarepack_handler.get_format = lambda: HardwarePackFormatV1()
         self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             self.config, 'make_boot_files', self.save_args))

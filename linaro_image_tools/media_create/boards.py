@@ -221,25 +221,37 @@ class BoardConfig(object):
     kernel_flavors = None
     boot_script = None
     serial_tty = None
+    wired_interfaces = None
+    wireless_interfaces = None
+    mmc_id = None
 
     hardwarepack_handler = None
 
     @classmethod
+    def get_metadata_field(cls, target, field_name):
+        data = cls.hardwarepack_handler.get_field(
+            cls.hardwarepack_handler.main_section, field_name)
+        if data is not None:
+            assert target is None, "Metadata field '%s' is already set to " \
+                "'%s'." % (field_name, target)
+        return data
+
+    @classmethod
     def set_metadata(cls, hwpack):
         cls.hardwarepack_handler = HardwarepackHandler(hwpack)
-        with cls.hardwarepack_handler as hp:
-            if not hp.get_format().has_v2_fields:
+        with cls.hardwarepack_handler:
+            if not cls.hardwarepack_handler.get_format().has_v2_fields:
                 return
 
-            cls.kernel_addr = hp.get_field(hp.main_section, 'kernel_addr')
-            cls.initrd_addr = hp.get_field(hp.main_section, 'initrd_addr')
-            cls.load_addr = hp.get_field(hp.main_section, 'load_addr')
-            cls.serial_tty = hp.get_field(hp.main_section, 'serial_tty')
-            cls.wired_interfaces = hp.get_field(hp.main_section, 'wired_interfaces')
-            cls.wireless_interfaces = hp.get_field(hp.main_section, 'wireless_interfaces')
-            cls.mmc_id = hp.get_field(hp.main_section, 'mmc_id')
+            cls.kernel_addr = cls.get_metadata_field(cls.kernel_addr, 'kernel_addr')
+            cls.initrd_addr = cls.get_metadata_field(cls.initrd_addr, 'initrd_addr')
+            cls.load_addr = cls.get_metadata_field(cls.load_addr, 'load_addr')
+            cls.serial_tty = cls.get_metadata_field(cls.serial_tty, 'serial_tty')
+            cls.wired_interfaces = cls.get_metadata_field(cls.wired_interfaces, 'wired_interfaces')
+            cls.wireless_interfaces = cls.get_metadata_field(cls.wireless_interfaces, 'wireless_interfaces')
+            cls.mmc_id = cls.get_metadata_field(cls.mmc_id, 'mmc_id')
 
-            partition_layout = hp.get_field(hp.main_section, 'partition_layout')
+            partition_layout = cls.get_metadata_field(None, 'partition_layout')
             if partition_layout == 'bootfs_rootfs' or partition_layout is None:
                 cls.fat_size = 32
             elif partition_layout == 'bootfs16_rootfs':
