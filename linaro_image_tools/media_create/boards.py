@@ -983,7 +983,9 @@ class SMDKV310Config(BoardConfig):
         # SAMSUNG_V310_BL1_LEN
         _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
 
-        uboot_file = cls._get_smdk_uboot(chroot_dir, uboot_flavor)
+        with cls.hardwarepack_handler:
+            uboot_file = cls.get_file('u_boot', default=cls._get_smdk_uboot(
+                    chroot_dir, uboot_flavor))
         # XXX need to check that the length of uboot_file is smaller than
         # SAMSUNG_V310_BL2_LEN
         _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)

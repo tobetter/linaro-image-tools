@@ -552,6 +552,10 @@ class TestBootSteps(TestCaseWithFixtures):
                 linaro_image_tools.media_create.boards.SMDKV310Config,
                 'install_smdk_boot_loader',
                 mock_func_creator('install_smdk_boot_loader')))
+        boards.SMDKV310Config.hardwarepack_handler = (
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
+        boards.SMDKV310Config.hardwarepack_handler.get_format = (
+            lambda: HardwarePackFormatV1())
         self.make_boot_files(boards.SMDKV310Config)
         expected = [
             'install_smdk_boot_loader', 'make_flashable_env', '_dd', 'make_uImage',
@@ -1001,11 +1005,18 @@ class TestBoards(TestCaseWithFixtures):
         uboot_flavor = "some_u_boot_flavour"
         self.useFixture(MockSomethingFixture(
             boards.SMDKV310Config, '_get_smdk_spl',
-            classmethod(lambda cls, chroot_dir, uboot_flavor: "%s/%s/SPL" % (chroot_dir, uboot_flavor))))
+            classmethod(lambda cls, chroot_dir, uboot_flavor: "%s/%s/SPL" % (
+                        chroot_dir, uboot_flavor))))
         self.useFixture(MockSomethingFixture(
             boards.SMDKV310Config, '_get_smdk_uboot',
-            classmethod(lambda cls, chroot_dir, uboot_flavor: "%s/%s/uboot" % (chroot_dir, uboot_flavor))))
-        boards.SMDKV310Config.install_smdk_boot_loader("chroot_dir", "boot_disk", uboot_flavor)
+            classmethod(lambda cls, chroot_dir, uboot_flavor: "%s/%s/uboot" % (
+                        chroot_dir, uboot_flavor))))
+        boards.SMDKV310Config.hardwarepack_handler = (
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
+        boards.SMDKV310Config.hardwarepack_handler.get_format = (
+            lambda: HardwarePackFormatV1())
+        boards.SMDKV310Config.install_smdk_boot_loader(
+            "chroot_dir", "boot_disk", uboot_flavor)
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
             'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL1_START),
