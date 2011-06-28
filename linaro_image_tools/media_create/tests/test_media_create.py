@@ -274,9 +274,9 @@ class TestSetMetadata(TestCaseWithFixtures):
 
         def get_field(self, section, field):
             try:
-                return self.metadata_dict[field]
+                return self.metadata_dict[field], None
             except:
-                return None
+                return None, None
 
         def get_format(self):
             return HardwarePackFormatV2()

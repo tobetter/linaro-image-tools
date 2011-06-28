@@ -178,6 +178,7 @@ class HardwarepackHandler(object):
         for hwpack_tarfile in self.hwpack_tarfiles:
             if hwpack_tarfile is not None:
                 hwpack_tarfile.close()
+        self.hwpack_tarfiles = []
         if self.tempdir is not None and os.path.exists(self.tempdir):
             shutil.rmtree(self.tempdir)
 
@@ -261,7 +262,12 @@ class BoardConfig(object):
 
     @classmethod
     def get_metadata_field(cls, target, field_name):
-        data = cls.hardwarepack_handler.get_field(
+        """ Return the metadata value for field_name if it can be found.
+
+        Also assert that target is None to make sure that no defaults have
+        come this far by mistake.
+        """
+        data, _ = cls.hardwarepack_handler.get_field(
             cls.hardwarepack_handler.main_section, field_name)
         if data is not None:
             assert target is None, "Metadata field '%s' is already set to " \
@@ -269,8 +275,8 @@ class BoardConfig(object):
         return data
 
     @classmethod
-    def set_metadata(cls, hwpack):
-        cls.hardwarepack_handler = HardwarepackHandler(hwpack)
+    def set_metadata(cls, hwpacks):
+        cls.hardwarepack_handler = HardwarepackHandler(hwpacks)
         with cls.hardwarepack_handler:
             if not cls.hardwarepack_handler.get_format().has_v2_fields:
                 return
@@ -280,18 +286,25 @@ class BoardConfig(object):
             cls.initrd_addr = None
             cls.load_addr = None
             cls.serial_tty = None
-            fat_size = None
+            cls.fat_size = None
 
             # Set new values from metadata.
-            cls.kernel_addr = cls.get_metadata_field(cls.kernel_addr, 'kernel_addr')
-            cls.initrd_addr = cls.get_metadata_field(cls.initrd_addr, 'initrd_addr')
-            cls.load_addr = cls.get_metadata_field(cls.load_addr, 'load_addr')
-            cls.serial_tty = cls.get_metadata_field(cls.serial_tty, 'serial_tty')
-            cls.wired_interfaces = cls.get_metadata_field(cls.wired_interfaces, 'wired_interfaces')
-            cls.wireless_interfaces = cls.get_metadata_field(cls.wireless_interfaces, 'wireless_interfaces')
-            cls.mmc_id = cls.get_metadata_field(cls.mmc_id, 'mmc_id')
+            cls.kernel_addr = cls.get_metadata_field(
+                cls.kernel_addr, 'kernel_addr')
+            cls.initrd_addr = cls.get_metadata_field(
+                cls.initrd_addr, 'initrd_addr')
+            cls.load_addr = cls.get_metadata_field(
+                cls.load_addr, 'load_addr')
+            cls.serial_tty = cls.get_metadata_field(
+                cls.serial_tty, 'serial_tty')
+            cls.wired_interfaces = cls.get_metadata_field(
+                cls.wired_interfaces, 'wired_interfaces')
+            cls.wireless_interfaces = cls.get_metadata_field(
+                cls.wireless_interfaces, 'wireless_interfaces')
+            cls.mmc_id = cls.get_metadata_field(
+                cls.mmc_id, 'mmc_id')
 
-            partition_layout = cls.get_metadata_field(fat_size, 'partition_layout')
+            partition_layout = cls.get_metadata_field(cls.fat_size, 'partition_layout')
             if partition_layout == 'bootfs_rootfs' or partition_layout is None:
                 cls.fat_size = 32
             elif partition_layout == 'bootfs16_rootfs':

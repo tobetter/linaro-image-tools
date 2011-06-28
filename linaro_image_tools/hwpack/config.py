@@ -42,7 +42,7 @@ class Config(object):
     SOURCES_ENTRY_KEY = "sources-entry"
     PACKAGES_KEY = "packages"
     PACKAGE_REGEX = NAME_REGEX
-    PATH_REGEX = r"[a-z0-9][a-z0-9+\-./]+$"
+    PATH_REGEX = r"[a-z0-9][a-z0-9+\-./_]+$"
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
