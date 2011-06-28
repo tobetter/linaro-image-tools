@@ -188,6 +188,35 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         hp = HardwarepackHandler(tarball)
         with hp:
             self.assertEqual(hp.get_field(hp.main_section, 'test'), data)
+
+    def test_creates_tempdir(self):
+        tarball = self.add_to_tarball(
+            [('metadata', self.metadata)])
+        hp = HardwarepackHandler(tarball)
+        with hp:
+            self.assertTrue(os.path.exists(hp.tempdir))
+
+    def test_tempfiles_are_removed(self):
+        tempdir = None
+        tarball = self.add_to_tarball(
+            [('metadata', self.metadata)])
+        hp = HardwarepackHandler(tarball)
+        with hp:
+            tempdir = hp.tempdir
+        self.assertFalse(os.path.exists(tempdir))
+
+    def test_get_file(self):
+        data = 'test file contents\n'
+        metadata_file = 'TESTFILE'
+        file_in_archive = 'testfile'
+        metadata = self.metadata + "%s=%s\n" % (metadata_file, file_in_archive)
+        tarball = self.add_to_tarball(
+            [('metadata', metadata),
+             (file_in_archive, data)])
+        hp = HardwarepackHandler(tarball)
+        with hp:
+            test_file = hp.get_file(metadata_file)
+            self.assertEquals(data, open(test_file, 'r').read())
         
 
 class TestSetMetadata(TestCaseWithFixtures):
@@ -206,6 +235,9 @@ class TestSetMetadata(TestCaseWithFixtures):
 
         def get_format(self):
             return HardwarePackFormatV2()
+
+        def get_file(self, file_alias):
+            return None
 
     def test_does_not_set_if_old_format(self):
         self.useFixture(MockSomethingFixture(

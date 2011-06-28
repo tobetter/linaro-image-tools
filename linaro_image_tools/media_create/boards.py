@@ -33,6 +33,7 @@ import struct
 from binascii import crc32
 import tarfile
 import ConfigParser
+import shutil
 
 from linaro_image_tools import cmd_runner
 
@@ -142,6 +143,7 @@ class HardwarepackHandler(object):
     format_filename = 'FORMAT'
     main_section = 'main'
     hwpack_tarfile = None
+    tempdir = None
 
     def __init__(self, hwpack):
         self.hwpack = hwpack
@@ -165,6 +167,7 @@ class HardwarepackHandler(object):
                 return self.fp.readline()
 
     def __enter__(self):
+        self.tempdir = tempfile.mkdtemp()
         self.hwpack_tarfile = tarfile.open(self.hwpack, mode='r:gz')
         metadata = self.hwpack_tarfile.extractfile(self.metadata_filename)
         # Use RawConfigParser which does not support the magical interpolation
@@ -176,6 +179,8 @@ class HardwarepackHandler(object):
     def __exit__(self, type, value, traceback):
         if self.hwpack_tarfile is not None:
             self.hwpack_tarfile.close()
+        if self.tempdir is not None and os.path.exists(self.tempdir):
+            shutil.rmtree(self.tempdir)
 
     def get_field(self, section, field):
         try:
@@ -196,7 +201,14 @@ class HardwarepackHandler(object):
 
     def write_file(self, file_name, target_dir):
         self.hwpack_tarfile.extract(file_name, target_dir)
-        
+
+    def get_file(self, file_alias):
+        file_name = self.get_field(self.main_section, file_alias)
+        if file_name is not None:
+            self.hwpack_tarfile.extract(file_name, self.tempdir)
+            file_name = os.path.join(self.tempdir, file_name)
+        return file_name
+
 
 class BoardConfig(object):
     """The configuration used when building an image for a board."""
@@ -245,6 +257,11 @@ class BoardConfig(object):
             if not cls.hardwarepack_handler.get_format().has_v2_fields:
                 return
 
+            cls.kernel_addr = None
+            cls.initrd_addr = None
+            cls.load_addr = None
+            cls.serial_tty = None
+           
             cls.kernel_addr = cls.get_metadata_field(cls.kernel_addr, 'kernel_addr')
             cls.initrd_addr = cls.get_metadata_field(cls.initrd_addr, 'initrd_addr')
             cls.load_addr = cls.get_metadata_field(cls.load_addr, 'load_addr')
@@ -262,18 +279,12 @@ class BoardConfig(object):
                 raise AssertionError("Unknown partition layout '%s'." % partition_layout)
 
     @classmethod
-    def write_uboot_file(cls, target_dir, chroot_dir=None):
-        with cls.hardwarepack_handler as hp:
-            if isinstance(hp.get_format(), HardwarePackFormatV1):
-                assert cls.uboot_flavor is not None, (
-                    "uboot_in_boot_part is set but not uboot_flavor")
-                uboot_bin = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot',
-                                         cls.uboot_flavor, 'u-boot.bin')
-                cmd_runner.run(
-                    ['cp', '-v', uboot_bin, target_dir], as_root=True).wait()
-            else:
-                hp.write_file(
-                    hp.get_field(hp.main_section, 'u-boot'), target_dir)
+    def get_file(cls, file_alias, default=None):
+        file_in_hwpack = cls.hardwarepack_handler.get_file(file_alias)
+        if file_in_hwpack is not None:
+            return file_in_hwpack
+        else:
+            return default
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
@@ -419,7 +430,14 @@ class BoardConfig(object):
             as_root=True).wait()
 
         if cls.uboot_in_boot_part:
-            cls.write_uboot_file(boot_disk, chroot_dir)
+            assert cls.uboot_flavor is not None, (
+                "uboot_in_boot_part is set but not uboot_flavor")
+            with cls.hardwarepack_handler:
+                uboot_bin = cls.get_file('u_boot', default=os.path.join(
+                        chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+                        'u-boot.bin'))
+                cmd_runner.run(
+                    ['cp', '-v', uboot_bin, boot_disk], as_root=True).wait()
 
         cls.make_boot_files(
             uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
