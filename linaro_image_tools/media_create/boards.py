@@ -937,19 +937,7 @@ class SMDKV310Config(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        spl_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
-            'v310_mmc_spl.bin')
-        # XXX need to check that the length of spl_file is smaller than
-        # SAMSUNG_V310_BL1_LEN
-        _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
-
-        uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.bin')
-        # XXX need to check that the length of uboot_file is smaller than
-        # SAMSUNG_V310_BL2_LEN
-        _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
-
+        install_smdk_boot_loader(chroot_dir, boot_device_or_file, cls.uboot_flavor)
         env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
         _dd(env_file, boot_device_or_file, seek=SAMSUNG_V310_ENV_START)
@@ -1146,3 +1134,38 @@ def make_boot_ini(boot_script_path, boot_disk):
         as_root=True)
     proc.wait()
 
+
+def _get_smdk_spl(chroot_dir, uboot_flavor):
+    spl_dir = os.path.join(
+        chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor)
+    old_spl_path = os.path.join(spl_dir, 'v310_mmc_spl.bin')
+    new_spl_path = os.path.join(spl_dir, 'u-boot-mmc-spl.bin')
+
+    spl_file = old_spl_path
+    # The new upstream u-boot filename has changed
+    if not os.path.exists(spl_file):
+        spl_file = new_spl_path
+
+    if not os.path.exists(spl_file):
+        # missing SPL loader
+        raise AssertionError("Couldn't find the SPL file, tried %s and %s"
+            % (old_spl_path, new_spl_path))
+    return spl_file
+
+
+def _get_smdk_uboot(chroot_dir, uboot_flavor):
+    uboot_file = os.path.join(
+        chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor, 'u-boot.bin')
+    return uboot_file
+
+
+def install_smdk_boot_loader(chroot_dir, boot_device_or_file, uboot_flavor):
+    spl_file = _get_smdk_spl(chroot_dir, uboot_flavor)
+    # XXX need to check that the length of spl_file is smaller than
+    # SAMSUNG_V310_BL1_LEN
+    _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
+
+    uboot_file = _get_smdk_uboot(chroot_dir, uboot_flavor)
+    # XXX need to check that the length of uboot_file is smaller than
+    # SAMSUNG_V310_BL2_LEN
+    _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
