@@ -104,7 +104,7 @@ if __name__ == '__main__':
     ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
 
     board_config = board_configs[args.board]
-    board_config.set_metadata(args.hwpacks[0])
+    board_config.set_metadata(args.hwpacks)
 
     ensure_required_commands(args)
 

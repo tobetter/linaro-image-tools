@@ -142,8 +142,9 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         self.metadata = (
             "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\nORIGIN=linaro\n")
 
-    def add_to_tarball(self, files):
-        tarball = self.tarball_fixture.get_tarball()
+    def add_to_tarball(self, files, tarball=None):
+        if tarball is None:
+            tarball = self.tarball_fixture.get_tarball()
         tar_file = tarfile.open(tarball, mode='w:gz')
         for filename, data in files:
             tarinfo = tarfile.TarInfo(filename)
@@ -157,7 +158,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         format = "%s\n" % data
         tarball = self.add_to_tarball(
             [('FORMAT', format), ('metadata', self.metadata)])
-        hp = HardwarepackHandler(tarball)
+        hp = HardwarepackHandler([tarball])
         with hp:
             self.assertIsInstance(hp.get_format(), HardwarePackFormatV1)
 
@@ -166,41 +167,77 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         format = "%s\n" % data
         tarball = self.add_to_tarball(
             [('FORMAT', format), ('metadata', self.metadata)])
-        hp = HardwarepackHandler(tarball)
+        hp = HardwarepackHandler([tarball])
         with hp:
             self.assertIsInstance(hp.get_format(), HardwarePackFormatV2)
 
-    def test_get_format_raises(self):
+    def test_get_unknown_format_raises(self):
         data = '9.9'
         format = "%s\n" % data
         tarball = self.add_to_tarball(
             [('FORMAT', format), ('metadata', self.metadata)])
-        hp = HardwarepackHandler(tarball)
+        hp = HardwarepackHandler([tarball])
         with hp:
             self.assertRaises(AssertionError, hp.get_format)
+
+    def test_conflicting_formats_raises(self):
+        format1 = "%s\n" % '1.0'
+        format2 = "%s\n" % '2.0'
+        tarball1 = self.add_to_tarball(
+            [('FORMAT', format1), ('metadata', self.metadata)],
+            tarball=self.tarball_fixture.get_tarball())
+        tarball_fixture2 = CreateTarballFixture(
+            self.tar_dir_fixture.get_temp_dir(), reldir='tarfile2',
+            filename='secondtarball.tar.gz')
+        self.useFixture(tarball_fixture2)
+        tarball2 = self.add_to_tarball(
+            [('FORMAT', format2), ('metadata', self.metadata)],
+            tarball=tarball_fixture2.get_tarball())
+        hp = HardwarepackHandler([tarball1, tarball2])
+        with hp:
+            self.assertRaises(AssertionError, hp.get_format)
+
+    def test_identical_formats_ok(self):
+        format1 = "%s\n" % '2.0'
+        format2 = "%s\n" % '2.0'
+        tarball1 = self.add_to_tarball(
+            [('FORMAT', format1), ('metadata', self.metadata)],
+            tarball=self.tarball_fixture.get_tarball())
+        tarball_fixture2 = CreateTarballFixture(
+            self.tar_dir_fixture.get_temp_dir(), reldir='tarfile2',
+            filename='secondtarball.tar.gz')
+        self.useFixture(tarball_fixture2)
+        tarball2 = self.add_to_tarball(
+            [('FORMAT', format2), ('metadata', self.metadata)],
+            tarball=tarball_fixture2.get_tarball())
+        hp = HardwarepackHandler([tarball1, tarball2])
+        with hp:
+            self.assertIsInstance(hp.get_format(), HardwarePackFormatV2)
 
     def test_get_metadata(self):
         data = 'data to test'
         metadata = self.metadata + "TEST=%s\n" % data
         tarball = self.add_to_tarball(
             [('metadata', metadata)])
-        hp = HardwarepackHandler(tarball)
+        hp = HardwarepackHandler([tarball])
         with hp:
-            self.assertEqual(hp.get_field(hp.main_section, 'test'), data)
+            test_data, _ = hp.get_field(hp.main_section, 'test')
+            self.assertEqual(test_data, data)
 
     def test_preserves_formatters(self):
         data = '%s%d'
         metadata = self.metadata + "TEST=%s\n" % data
         tarball = self.add_to_tarball(
             [('metadata', metadata)])
-        hp = HardwarepackHandler(tarball)
+        hp = HardwarepackHandler([tarball])
         with hp:
-            self.assertEqual(hp.get_field(hp.main_section, 'test'), data)
+            test_data, _ = hp.get_field(hp.main_section, 'test')
+            self.assertEqual(test_data, data)
 
     def test_creates_tempdir(self):
         tarball = self.add_to_tarball(
             [('metadata', self.metadata)])
-        hp = HardwarepackHandler(tarball)
+        hp = HardwarepackHandler([tarball])
         with hp:
             self.assertTrue(os.path.exists(hp.tempdir))
 
@@ -208,7 +245,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         tempdir = None
         tarball = self.add_to_tarball(
             [('metadata', self.metadata)])
-        hp = HardwarepackHandler(tarball)
+        hp = HardwarepackHandler([tarball])
         with hp:
             tempdir = hp.tempdir
         self.assertFalse(os.path.exists(tempdir))
@@ -221,7 +258,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         tarball = self.add_to_tarball(
             [('metadata', metadata),
              (file_in_archive, data)])
-        hp = HardwarepackHandler(tarball)
+        hp = HardwarepackHandler([tarball])
         with hp:
             test_file = hp.get_file(metadata_file)
             self.assertEquals(data, open(test_file, 'r').read())

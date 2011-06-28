@@ -142,11 +142,12 @@ class HardwarepackHandler(object):
     metadata_filename = 'metadata'
     format_filename = 'FORMAT'
     main_section = 'main'
-    hwpack_tarfile = None
+    hwpack_tarfiles = []
     tempdir = None
 
-    def __init__(self, hwpack):
-        self.hwpack = hwpack
+    def __init__(self, hwpacks):
+        self.hwpacks = hwpacks
+        self.hwpack_tarfiles = []
     
     class FakeSecHead(object):
         """ Add a fake section header to the metadata file.
@@ -168,29 +169,48 @@ class HardwarepackHandler(object):
 
     def __enter__(self):
         self.tempdir = tempfile.mkdtemp()
-        self.hwpack_tarfile = tarfile.open(self.hwpack, mode='r:gz')
-        metadata = self.hwpack_tarfile.extractfile(self.metadata_filename)
-        # Use RawConfigParser which does not support the magical interpolation
-        # behavior of ConfigParser so we don't mess up metadata accidentally.
-        self.parser = ConfigParser.RawConfigParser()
-        self.parser.readfp(self.FakeSecHead(metadata))
+        for hwpack in self.hwpacks:
+            hwpack_tarfile = tarfile.open(hwpack, mode='r:gz')
+            self.hwpack_tarfiles.append(hwpack_tarfile)
         return self
 
     def __exit__(self, type, value, traceback):
-        if self.hwpack_tarfile is not None:
-            self.hwpack_tarfile.close()
+        for hwpack_tarfile in self.hwpack_tarfiles:
+            if hwpack_tarfile is not None:
+                hwpack_tarfile.close()
         if self.tempdir is not None and os.path.exists(self.tempdir):
             shutil.rmtree(self.tempdir)
 
     def get_field(self, section, field):
-        try:
-            return self.parser.get(section, field)
-        except ConfigParser.NoOptionError:
-            return None
+        data = None
+        hwpack_with_data = None
+        for hwpack_tarfile in self.hwpack_tarfiles:
+            metadata = hwpack_tarfile.extractfile(self.metadata_filename)
+            # Use RawConfigParser which does not support the magical interpolation
+            # behavior of ConfigParser so we don't mess up metadata accidentally.
+            parser = ConfigParser.RawConfigParser()
+            parser.readfp(self.FakeSecHead(metadata))
+            try:
+                new_data = parser.get(section, field)
+                if new_data is not None:
+                    assert data is None, "The metadata field '%s' is set to " \
+                        "'%s' and new value '%s' is found" % (field, data, new_data)
+                    data = new_data
+                    hwpack_with_data = hwpack_tarfile
+            except ConfigParser.NoOptionError:
+                continue
+        return data, hwpack_with_data
 
     def get_format(self):
-        format_file = self.hwpack_tarfile.extractfile(self.format_filename)
-        format_string = format_file.read().strip()
+        format = None
+        for hwpack_tarfile in self.hwpack_tarfiles:
+            format_file = hwpack_tarfile.extractfile(self.format_filename)
+            format_string = format_file.read().strip()
+            if format is not None:
+                assert format == format_string, "Mixing hwpack formats is " \
+                    "not supported!"
+            else:
+                format = format_string
         if format_string is None or format_string == '1.0':
             return HardwarePackFormatV1()
         elif format_string == '2.0':
@@ -199,13 +219,11 @@ class HardwarepackHandler(object):
             raise AssertionError("Format version '%s' is not supported." % \
                                      format_string)
 
-    def write_file(self, file_name, target_dir):
-        self.hwpack_tarfile.extract(file_name, target_dir)
-
     def get_file(self, file_alias):
-        file_name = self.get_field(self.main_section, file_alias)
+        file_name, hwpack_tarfile = self.get_field(self.main_section,
+                                                   file_alias)
         if file_name is not None:
-            self.hwpack_tarfile.extract(file_name, self.tempdir)
+            hwpack_tarfile.extract(file_name, self.tempdir)
             file_name = os.path.join(self.tempdir, file_name)
         return file_name
 
@@ -257,12 +275,14 @@ class BoardConfig(object):
             if not cls.hardwarepack_handler.get_format().has_v2_fields:
                 return
 
+            # Clear V1 defaults.
             cls.kernel_addr = None
             cls.initrd_addr = None
             cls.load_addr = None
             cls.serial_tty = None
             fat_size = None
-           
+
+            # Set new values from metadata.
             cls.kernel_addr = cls.get_metadata_field(cls.kernel_addr, 'kernel_addr')
             cls.initrd_addr = cls.get_metadata_field(cls.initrd_addr, 'initrd_addr')
             cls.load_addr = cls.get_metadata_field(cls.load_addr, 'load_addr')
