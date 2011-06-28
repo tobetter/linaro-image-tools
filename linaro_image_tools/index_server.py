@@ -22,10 +22,10 @@
 
 import os
 import re
-import FetchImage
 import urlparse
 import logging
 import bz2
+import linaro_image_tools.hwpack.FetchImage
 
 RELEASES_WWW_DOCUMENT_ROOT  = "/srv/releases.linaro.org/www/platform/"
 RELEASE_URL                 = "http://releases.linaro.org/platform/"

@@ -22,7 +22,7 @@
 import ConfigParser
 import re
 
-from hardwarepack_format import (
+from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
     HardwarePackFormatV2,
     )
