@@ -237,8 +237,8 @@ class BoardConfig(object):
     mmc_option = '0:1'
     mmc_part_offset = 0
     fat_size = 32
-    extra_serial_opts = ''
-    live_serial_opts = ''
+    _extra_serial_opts = ''
+    _live_serial_opts = ''
     extra_boot_args_options = None
     supports_writing_to_mmc = True
 
@@ -627,8 +627,8 @@ class IgepConfig(BeagleConfig):
 
 class Ux500Config(BoardConfig):
     serial_tty = 'ttyAMA2'
-    extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
-    live_serial_opts = 'serialtty=%s' % serial_tty
+    _extra_serial_opts = 'console=tty0 console=%s,115200n8'
+    _live_serial_opts = 'serialtty=%s'
     kernel_addr = '0x00100000'
     initrd_addr = '0x08000000'
     load_addr = '0x00008000'
@@ -640,6 +640,14 @@ class Ux500Config(BoardConfig):
         'mem=30M@194M mem_mali=32M@224M pmem_hwb=54M@256M '
         'hwmem=48M@302M mem=152M@360M')
     mmc_option = '1:1'
+
+    @classproperty
+    def live_serial_opts(cls):
+        return cls._live_serial_opts % cls.serial_tty
+
+    @classproperty
+    def extra_serial_opts(cls):
+        return cls._extra_serial_opts % cls.serial_tty
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
@@ -798,11 +806,19 @@ class SnowballEmmcConfig(SnowballSdConfig):
 
 class Mx5Config(BoardConfig):
     serial_tty = 'ttymxc0'
-    extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
-    live_serial_opts = 'serialtty=%s' % serial_tty
+    _extra_serial_opts = 'console=tty0 console=%s,115200n8'
+    _live_serial_opts = 'serialtty=%s'
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
+
+    @classproperty
+    def live_serial_opts(cls):
+        return cls._live_serial_opts % cls.serial_tty
+
+    @classproperty
+    def extra_serial_opts(cls):
+        return cls._extra_serial_opts % cls.serial_tty
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=None):
@@ -888,8 +904,8 @@ class VexpressConfig(BoardConfig):
     uboot_flavor = 'ca9x4_ct_vxp'
     uboot_in_boot_part = True
     serial_tty = 'ttyAMA0'
-    extra_serial_opts = 'console=tty0 console=%s,38400n8' % serial_tty
-    live_serial_opts = 'serialtty=%s' % serial_tty
+    _extra_serial_opts = 'console=tty0 console=%s,38400n8'
+    _live_serial_opts = 'serialtty=%s'
     kernel_addr = '0x60008000'
     initrd_addr = '0x81000000'
     load_addr = kernel_addr
@@ -898,6 +914,14 @@ class VexpressConfig(BoardConfig):
     # ARM Boot Monitor is used to load u-boot, uImage etc. into flash and
     # only allows for FAT16
     fat_size = 16
+
+    @classproperty
+    def live_serial_opts(cls):
+        return cls._live_serial_opts % cls.serial_tty
+
+    @classproperty
+    def extra_serial_opts(cls):
+        return cls._extra_serial_opts % cls.serial_tty
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
@@ -909,7 +933,7 @@ class VexpressConfig(BoardConfig):
 class SMDKV310Config(BoardConfig):
     uboot_flavor = 'smdkv310'
     serial_tty = 'ttySAC1'
-    extra_serial_opts = 'console=%s,115200n8' % serial_tty
+    _extra_serial_opts = 'console=%s,115200n8'
     kernel_addr = '0x40007000'
     initrd_addr = '0x42000000'
     load_addr = '0x40008000'
@@ -917,6 +941,10 @@ class SMDKV310Config(BoardConfig):
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
+
+    @classproperty
+    def extra_serial_opts(cls):
+        return cls._extra_serial_opts % cls.serial_tty
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
