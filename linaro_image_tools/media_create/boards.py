@@ -167,6 +167,8 @@ class HardwarepackHandler(object):
     def __enter__(self):
         self.hwpack_tarfile = tarfile.open(self.hwpack, mode='r:gz')
         metadata = self.hwpack_tarfile.extractfile(self.metadata_filename)
+        # Use RawConfigParser which does not support the magical interpolation
+        # behavior of ConfigParser so we don't mess up metadata accidentally.
         self.parser = ConfigParser.RawConfigParser()
         self.parser.readfp(self.FakeSecHead(metadata))
         return self
