@@ -261,6 +261,7 @@ class BoardConfig(object):
             cls.initrd_addr = None
             cls.load_addr = None
             cls.serial_tty = None
+            fat_size = None
            
             cls.kernel_addr = cls.get_metadata_field(cls.kernel_addr, 'kernel_addr')
             cls.initrd_addr = cls.get_metadata_field(cls.initrd_addr, 'initrd_addr')
@@ -270,7 +271,7 @@ class BoardConfig(object):
             cls.wireless_interfaces = cls.get_metadata_field(cls.wireless_interfaces, 'wireless_interfaces')
             cls.mmc_id = cls.get_metadata_field(cls.mmc_id, 'mmc_id')
 
-            partition_layout = cls.get_metadata_field(None, 'partition_layout')
+            partition_layout = cls.get_metadata_field(fat_size, 'partition_layout')
             if partition_layout == 'bootfs_rootfs' or partition_layout is None:
                 cls.fat_size = 32
             elif partition_layout == 'bootfs16_rootfs':
