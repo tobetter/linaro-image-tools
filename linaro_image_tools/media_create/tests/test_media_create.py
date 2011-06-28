@@ -1015,6 +1015,8 @@ class TestBoards(TestCaseWithFixtures):
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         boards.SMDKV310Config.hardwarepack_handler.get_format = (
             lambda: HardwarePackFormatV1())
+        self.useFixture(MockSomethingFixture(os.path, 'getsize',
+                                             lambda file: 1))
         boards.SMDKV310Config.install_smdk_boot_loader(
             "chroot_dir", "boot_disk", uboot_flavor)
         expected = [

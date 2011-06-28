@@ -979,15 +979,15 @@ class SMDKV310Config(BoardConfig):
     def install_smdk_boot_loader(cls, chroot_dir, boot_device_or_file,
                                  uboot_flavor):
         spl_file = cls._get_smdk_spl(chroot_dir, uboot_flavor)
-        # XXX need to check that the length of spl_file is smaller than
-        # SAMSUNG_V310_BL1_LEN
+        assert os.path.getsize(spl_file) <= SAMSUNG_V310_BL1_LEN, (
+            "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
         _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
 
         with cls.hardwarepack_handler:
             uboot_file = cls.get_file('u_boot', default=cls._get_smdk_uboot(
                     chroot_dir, uboot_flavor))
-        # XXX need to check that the length of uboot_file is smaller than
-        # SAMSUNG_V310_BL2_LEN
+        assert os.path.getsize(uboot_file) <= SAMSUNG_V310_BL2_LEN, (
+            "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
         _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
 
 
