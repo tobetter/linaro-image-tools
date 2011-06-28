@@ -475,6 +475,10 @@ class TestBootSteps(TestCaseWithFixtures):
     def test_mx5_steps(self):
         class SomeMx5Config(boards.Mx5Config):
             uboot_flavor = 'uboot_flavor'
+        SomeMx5Config.hardwarepack_handler = (
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
+        SomeMx5Config.hardwarepack_handler.get_format = (
+            lambda: HardwarePackFormatV1())
         self.make_boot_files(SomeMx5Config)
         expected = [
             'install_mx5_boot_loader', 'make_uImage', 'make_uInitrd',

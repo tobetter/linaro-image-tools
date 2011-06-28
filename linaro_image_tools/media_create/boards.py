@@ -815,9 +815,11 @@ class Mx5Config(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
-        install_mx5_boot_loader(uboot_file, boot_device_or_file)
+        with cls.hardwarepack_handler:
+            uboot_file = cls.get_file('u_boot', default=os.path.join(
+                    chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+                    'u-boot.imx'))
+            install_mx5_boot_loader(uboot_file, boot_device_or_file)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         make_dtb(d_img_data, boot_dir)
