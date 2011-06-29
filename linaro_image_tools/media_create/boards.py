@@ -339,7 +339,7 @@ class BoardConfig(object):
 
 
 class OmapConfig(BoardConfig):
-    kernel_flavors = ['linaro-omap4', 'linaro-omap', 'omap4']
+    kernel_flavors = ['linaro-omap4', 'linaro-lt-omap', 'linaro-omap', 'omap4']
     uboot_in_boot_part = True
 
     # XXX: Here we define these things as dynamic properties because our
