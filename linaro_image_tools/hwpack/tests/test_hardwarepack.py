@@ -183,6 +183,33 @@ class MetadataTests(TestCase):
             "MMC_ID=1\n",
             str(metadata))
 
+    def test_str_with_boot_min_size(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(boot_min_size='50')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "BOOT_MIN_SIZE=50\n",
+            str(metadata))
+
+    def test_str_with_root_min_size(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(root_min_size='100')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "ROOT_MIN_SIZE=100\n",
+            str(metadata))
+
+    def test_str_with_loader_min_size(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(loader_min_size='1')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "LOADER_MIN_SIZE=1\n",
+            str(metadata))
+
     def test_from_config(self):
         class Config:
             name = "foo"
