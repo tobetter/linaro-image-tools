@@ -249,6 +249,21 @@ class ConfigTests(TestCase):
                                  "mmc_id = x\n")
         self.assertValidationError("Invalid mmc id x", config)
 
+    def test_validate_boot_min_size(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "boot_min_size = x\n")
+        self.assertValidationError("Invalid boot min size x", config)
+
+    def test_validate_root_min_size(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "root_min_size = x\n")
+        self.assertValidationError("Invalid root min size x", config)
+
+    def test_validate_loader_min_size(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "loader_min_size = x\n")
+        self.assertValidationError("Invalid loader min size x", config)
+
     def test_validate_kernel_addr(self):
         config = self.get_config(self.valid_complete_v2 + 
                                  "kernel_addr = 0x8000000\n")
@@ -329,6 +344,27 @@ class ConfigTests(TestCase):
                                  self.valid_end)
         config.validate()
         self.assertEqual("1", config.mmc_id)
+
+    def test_boot_min_size(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "boot_min_size = 50\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual("50", config.boot_min_size)
+
+    def test_root_min_size(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "root_min_size = 50\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual("50", config.root_min_size)
+
+    def test_loader_min_size(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "loader_min_size = 2\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual("2", config.loader_min_size)
 
     def test_kernel_addr(self):
         config = self.get_config(self.valid_complete_v2 + 

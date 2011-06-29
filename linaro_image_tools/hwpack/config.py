@@ -58,6 +58,9 @@ class Config(object):
     PARTITION_LAYOUT_KEY = "partition_layout"
     MMC_ID_KEY = "mmc_id"
     FORMAT_KEY = "format"
+    BOOT_MIN_SIZE_KEY = "boot_min_size"
+    ROOT_MIN_SIZE_KEY = "root_min_size"
+    LOADER_MIN_SIZE_KEY = "loader_min_size"
 
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
@@ -100,6 +103,9 @@ class Config(object):
             self._validate_wireless_interfaces()
             self._validate_partition_layout()
             self._validate_mmc_id()
+            self._validate_boot_min_size()
+            self._validate_root_min_size()
+            self._validate_loader_min_size()
 
         self._validate_sections()
 
@@ -222,6 +228,30 @@ class Config(object):
         An int.
         """
         return self._get_option_from_main_section(self.MMC_ID_KEY)
+
+    @property
+    def root_min_size(self):
+        """Minimum size of the root partition, in MiB.
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.ROOT_MIN_SIZE_KEY)
+
+    @property
+    def boot_min_size(self):
+        """Minimum size of the boot partition, in MiB.
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.BOOT_MIN_SIZE_KEY)
+
+    @property
+    def loader_min_size(self):
+        """Minimum size of the optional loader partition, in MiB.
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.LOADER_MIN_SIZE_KEY)
 
     @property
     def origin(self):
@@ -397,6 +427,36 @@ class Config(object):
             int(mmc_id)
         except:
             raise HwpackConfigError("Invalid mmc id %s" % (mmc_id))
+
+    def _validate_root_min_size(self):
+        root_min_size = self.root_min_size
+        if root_min_size is None:
+            return
+        try:
+            assert int(root_min_size) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid root min size %s" % (root_min_size))
+
+    def _validate_boot_min_size(self):
+        boot_min_size = self.boot_min_size
+        if boot_min_size is None:
+            return
+        try:
+            assert int(boot_min_size) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid boot min size %s" % (boot_min_size))
+
+    def _validate_loader_min_size(self):
+        loader_min_size = self.loader_min_size
+        if loader_min_size is None:
+            return
+        try:
+            assert int(loader_min_size) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid loader min size %s" % (loader_min_size))
 
     def _validate_include_debs(self):
         try:
