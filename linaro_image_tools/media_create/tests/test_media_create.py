@@ -180,7 +180,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         with hp:
             self.assertRaises(AssertionError, hp.get_format)
 
-    def test_conflicting_formats_raises(self):
+    def test_higher_format_sticks(self):
         format1 = "%s\n" % '1.0'
         format2 = "%s\n" % '2.0'
         tarball1 = self.add_to_tarball(
@@ -193,9 +193,9 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         tarball2 = self.add_to_tarball(
             [('FORMAT', format2), ('metadata', self.metadata)],
             tarball=tarball_fixture2.get_tarball())
-        hp = HardwarepackHandler([tarball1, tarball2])
+        hp = HardwarepackHandler([tarball2, tarball1])
         with hp:
-            self.assertRaises(AssertionError, hp.get_format)
+            self.assertIsInstance(hp.get_format(), HardwarePackFormatV2)
 
     def test_identical_formats_ok(self):
         format1 = "%s\n" % '2.0'

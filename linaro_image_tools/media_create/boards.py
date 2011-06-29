@@ -207,15 +207,13 @@ class HardwarepackHandler(object):
         for hwpack_tarfile in self.hwpack_tarfiles:
             format_file = hwpack_tarfile.extractfile(self.format_filename)
             format_string = format_file.read().strip()
-            if format is not None:
-                assert format == format_string, "Mixing hwpack formats is " \
-                    "not supported!"
+            if format_string == '2.0':
+                # Format is taken from the hwpack of highest format version.
+                return HardwarePackFormatV2()
             else:
                 format = format_string
-        if format_string is None or format_string == '1.0':
+        if format is None or format == '1.0':
             return HardwarePackFormatV1()
-        elif format_string == '2.0':
-            return HardwarePackFormatV2()
         else:
             raise AssertionError("Format version '%s' is not supported." % \
                                      format_string)
