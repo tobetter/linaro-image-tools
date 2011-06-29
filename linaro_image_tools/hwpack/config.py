@@ -59,6 +59,13 @@ class Config(object):
     MMC_ID_KEY = "mmc_id"
     FORMAT_KEY = "format"
 
+    DEFINED_PARTITION_LAYOUTS = [
+        'bootfs16_rootfs',
+        'bootfs_rootfs',
+        #'reserved_bootfs_rootfs',
+        ]
+
+
     def __init__(self, fp):
         """Create a Config.
 
@@ -375,17 +382,12 @@ class Config(object):
         pass
 
     def _validate_partition_layout(self):
-        defined_partition_layouts = [
-            'bootfs16_rootfs',
-            'bootfs_rootfs',
-            #'reserved_bootfs_rootfs',
-            ]
-        if self.partition_layout not in defined_partition_layouts:
+        if self.partition_layout not in self.DEFINED_PARTITION_LAYOUTS:
             raise HwpackConfigError(
                 "Undefined partition layout %s in the [%s] section. "
                 "Valid partition layouts are %s."
                 % (self.partition_layout, self.MAIN_SECTION,
-                   ", ".join(defined_partition_layouts)))
+                   ", ".join(self.DEFINED_PARTITION_LAYOUTS)))
 
     def _validate_mmc_id(self):
         mmc_id = self.mmc_id

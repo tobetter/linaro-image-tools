@@ -216,14 +216,16 @@ class ConfigTests(TestCase):
         self.assertValidationError("Invalid path: ~~", config)
 
     def test_validate_partition_layout(self):
-        config = self.get_config(self.valid_start_v2 + 
-                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
-                                     "u-boot-file = u-boot.bin\n" \
-                                     "partition_layout = apafs_bananfs\n")
+        partition_layout = 'apafs_bananfs'
+        config = self.get_config(self.valid_start_v2 + "u-boot-package = " \
+                                     "u-boot-linaro-s5pv310\nu-boot-file = " \
+                                     "u-boot.bin\npartition_layout = %s\n" % \
+                                     partition_layout)
         self.assertValidationError(
-            "Undefined partition layout apafs_bananfs in the [hwpack] " \
-                "section. Valid partition layouts are bootfs16_rootfs, " \
-                "bootfs_rootfs.", config)
+            "Undefined partition layout %s in the [%s] section. "
+            "Valid partition layouts are %s."
+            % (partition_layout, 'hwpack',
+               ", ".join(config.DEFINED_PARTITION_LAYOUTS)), config)
 
     def test_validate_wired_interfaces(self):
         self.assertTrue("XXX What is an invalid interface name?")
