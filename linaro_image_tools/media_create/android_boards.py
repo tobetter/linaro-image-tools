@@ -28,6 +28,8 @@ from linaro_image_tools.media_create.partitions import SECTOR_SIZE
 from linaro_image_tools.media_create.boards import PART_ALIGN_S
 from linaro_image_tools.media_create.boards import BeagleConfig
 from linaro_image_tools.media_create.boards import PandaConfig
+from linaro_image_tools.media_create.boards import SnowballSdConfig
+from linaro_image_tools.media_create.boards import SnowballEmmcConfig
 from linaro_image_tools.media_create.boards import (
     align_up,
     align_partition,
@@ -36,6 +38,7 @@ from linaro_image_tools.media_create.boards import (
 
 from linaro_image_tools import cmd_runner
 import os
+
 
 class AndroidBoardConfig(object):
     @classmethod
@@ -78,7 +81,7 @@ class AndroidBoardConfig(object):
             as_root=True).wait()
 
         boot_env = cls._get_boot_env(consoles)
-        cmdline_filepath = os.path.join(boot_disk, "cmdline") 
+        cmdline_filepath = os.path.join(boot_disk, "cmdline")
         cmdline_file = open(cmdline_filepath, 'r')
         android_kernel_cmdline = cmdline_file.read()
         boot_env['bootargs'] = boot_env['bootargs'] + ' ' + \
@@ -96,7 +99,7 @@ class AndroidBoardConfig(object):
             pass
 
     @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+    def get_sfdisk_cmd(cls, should_align_boot_part=False, start_addr=0):
         if cls.fat_size == 32:
             partition_type = '0x0C'
         else:
@@ -116,7 +119,7 @@ class AndroidBoardConfig(object):
 
         # can only start on sector 1 (sector 0 is MBR / partition table)
         boot_start, boot_end, boot_len = align_partition(
-            1, BOOT_MIN_SIZE_S, boot_align, PART_ALIGN_S)
+            start_addr + 1, BOOT_MIN_SIZE_S, boot_align, PART_ALIGN_S)
         # apparently OMAP3 ROMs require the vfat length to be an even number
         # of sectors (multiple of 1 KiB); decrease the length if it's odd,
         # there should still be enough room
@@ -131,11 +134,25 @@ class AndroidBoardConfig(object):
             _cache_end + 1, USERDATA_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
         sdcard_start, _sdcard_end, _sdcard_len = align_partition(
             _userdata_end + 1, SDCARD_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
- 
+
+        # Snowball board needs a raw partition added to the beginning of image.
+        # If start address isn't '0' an extra primary partition will be added.
+        # Due to a maximum of 4 primary partitions cache data will be placed in
+        # a extended partition
+        if start_addr != 0:
+            return '%s,%s,%s,*\n%s,%s,L\n%s,-,E\n%s,%s,L\n%s,%s,L\n%s,,,-' % (
+            boot_start, boot_len, partition_type, system_start, _system_len,
+            cache_start, cache_start, _cache_len, userdata_start,
+            _userdata_len, sdcard_start)
+
         return '%s,%s,%s,*\n%s,%s,L\n%s,%s,L\n%s,-,E\n%s,%s,L\n%s,,,-' % (
             boot_start, boot_len, partition_type, system_start, _system_len,
             cache_start, _cache_len, userdata_start, userdata_start,
             _userdata_len, sdcard_start)
+
+    @classmethod
+    def populate_startup_partition(cls, media, boot_dir):
+        pass
 
 
 class AndroidOmapConfig(AndroidBoardConfig):
@@ -155,7 +172,47 @@ class AndroidPandaConfig(AndroidOmapConfig, PandaConfig):
     android_specific_args = 'init=/init androidboot.console=ttyO2'
 
 
+class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
+    extra_boot_args_options = (
+        'earlyprintk rootdelay=1 fixrtc nocompcache '
+        'mem=128M@0 mali.mali_mem=64M@128M mem=24M@192M hwmem=167M@216M '
+        'mem_issw=1M@383M mem=640M@384M vmalloc=256M')
+    _extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
+    android_specific_args = 'init=/init androidboot.console=ttyAMA2'
+
+
+class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
+    extra_boot_args_options = (
+        'earlyprintk rootdelay=1 fixrtc nocompcache '
+        'mem=128M@0 mali.mali_mem=64M@128M mem=24M@192M hwmem=167M@216M '
+        'mem_issw=1M@383M mem=640M@384M vmalloc=256M')
+    _extra_serial_opts = 'console=tty0 console=ttyAMA2,115200n8'
+    android_specific_args = 'init=/init androidboot.console=ttyAMA2'
+
+    @classmethod
+    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+
+        LOADER_MIN_SIZE_S = align_up(
+            1 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+
+        loader_start, loader_end, loader_len = align_partition(
+            SnowballEmmcConfig.SNOWBALL_LOADER_START_S,
+            LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
+
+        command = super(AndroidSnowballEmmcConfig, cls).get_sfdisk_cmd(
+            should_align_boot_part=True, start_addr=loader_end)
+
+        return '%s,%s,0xDA\n%s' % (
+            loader_start, loader_len, command)
+
+    @classmethod
+    def populate_startup_partition(cls, media, boot_dir):
+        config_files_path = os.path.join(boot_dir, 'boot')
+        cls.populate_raw_partition(config_files_path, media)
+
 android_board_configs = {
     'beagle': AndroidBeagleConfig,
     'panda': AndroidPandaConfig,
+    'snowball_sd': AndroidSnowballSdConfig,
+    'snowball_emmc': AndroidSnowballEmmcConfig,
     }

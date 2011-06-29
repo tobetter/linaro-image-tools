@@ -58,6 +58,7 @@ DTB_GLOB = 'dt-*-%(kernel_flavor)s/%(dtb_name)s'
 # align on 4 MiB
 PART_ALIGN_S = 4 * 1024 * 1024 / SECTOR_SIZE
 
+
 def align_up(value, align):
     """Round value to the next multiple of align."""
     return (value + align - 1) / align * align
@@ -104,6 +105,7 @@ SAMSUNG_V310_BL2_LEN = 1024
 assert SAMSUNG_V310_BL2_LEN * SECTOR_SIZE == 512 * 1024, (
     "BL1 expects BL2 (u-boot) to be 512 KiB")
 
+
 def align_partition(min_start, min_length, start_alignment, end_alignment):
     """Compute partition start and end offsets based on specified constraints.
 
@@ -125,6 +127,7 @@ class classproperty(object):
     """A descriptor that provides @property behavior on class methods."""
     def __init__(self, getter):
         self.getter = getter
+
     def __get__(self, instance, cls):
         return self.getter(cls)
 
@@ -517,7 +520,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
        and u-boot.'''
     # Boot ROM looks for a boot table of contents (TOC) at 0x20000
     # Actually, it first looks at address 0, but that's where l-m-c
-    # puts the MBR, so the boot loader skips that address. 
+    # puts the MBR, so the boot loader skips that address.
     supports_writing_to_mmc = False
     SNOWBALL_LOADER_START_S = (128 * 1024) / SECTOR_SIZE
     SNOWBALL_STARTUP_FILES_CONFIG = 'startfiles.cfg'
@@ -537,11 +540,11 @@ class SnowballEmmcConfig(SnowballSdConfig):
         This is done since the boot rom always boots off the internal memory;
         there simply is no point to having a loader partition on SD card.
         """
-        # boot ROM expects bootloader at 0x20000, which is sector 0x100 
+        # boot ROM expects bootloader at 0x20000, which is sector 0x100
         # with the usual SECTOR_SIZE of 0x200.
         # (sector 0 is MBR / partition table)
         loader_start, loader_end, loader_len = align_partition(
-            SnowballEmmcConfig.SNOWBALL_LOADER_START_S, 
+            SnowballEmmcConfig.SNOWBALL_LOADER_START_S,
             LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
 
         boot_start, boot_end, boot_len = align_partition(
@@ -562,15 +565,22 @@ class SnowballEmmcConfig(SnowballSdConfig):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
-        _, toc_filename = tempfile.mkstemp()
-        atexit.register(os.unlink, toc_filename)
         config_files_path = os.path.join(chroot_dir, 'boot')
+        cls.populate_raw_partition(config_files_path, boot_device_or_file)
+
+    @classmethod
+    def populate_raw_partition(cls, config_files_path, boot_device_or_file):
+        # Populate create raw partition with TOC and startup files.
+        _, toc_filename = tempfile.mkstemp()
         new_files = cls.get_file_info(config_files_path)
         with open(toc_filename, 'wb') as toc:
             cls.create_toc(toc, new_files)
         cls.install_snowball_boot_loader(toc_filename, new_files,
                                      boot_device_or_file,
                                      cls.SNOWBALL_LOADER_START_S)
+        cls.delete_file(toc_filename)
+        cls.delete_file(os.path.join(config_files_path,
+                                     cls.SNOWBALL_STARTUP_FILES_CONFIG))
 
     @classmethod
     def install_snowball_boot_loader(cls, toc_file_name, files,
@@ -584,13 +594,21 @@ class SnowballEmmcConfig(SnowballSdConfig):
         for file in files:
             # XXX We need checks that these files do not overwrite each
             # other. This code assumes that offset and file sizes are ok.
+            filename = file['filename']
             if (file['offset'] % SECTOR_SIZE) != 0:
                 seek_bytes = start_sector * SECTOR_SIZE + file['offset']
-                _dd(file['filename'], boot_device_or_file, block_size=1,
+                _dd(filename, boot_device_or_file, block_size=1,
                     seek=seek_bytes)
             else:
-                seek_sectors = start_sector + file['offset']/SECTOR_SIZE
-                _dd(file['filename'], boot_device_or_file, seek=seek_sectors)
+                seek_sectors = start_sector + file['offset'] / SECTOR_SIZE
+                _dd(filename, boot_device_or_file, seek=seek_sectors)
+            cls.delete_file(filename)
+
+    @classmethod
+    def delete_file(cls, file_path):
+            cmd = ["rm", "%s" % file_path]
+            proc = cmd_runner.run(cmd, as_root=True)
+            proc.wait()
 
     @classmethod
     def create_toc(cls, f, files):
@@ -605,6 +623,9 @@ class SnowballEmmcConfig(SnowballSdConfig):
             # i; int; load_address,
             # 12s; string of char; name
             # http://igloocommunity.org/support/index.php/ConfigPartitionOverview
+            if len(file['section_name']) >= 12:
+                raise ValueError(
+                    "Section name %s too large" % file['section_name'])
             flags = 0
             load_adress = file['align']
             data = struct.pack('<IIIii12s', file['offset'], file['size'],
@@ -748,6 +769,7 @@ class VexpressConfig(BoardConfig):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
 
+
 class SMDKV310Config(BoardConfig):
     uboot_flavor = 'smdkv310'
     serial_tty = 'ttySAC1'
@@ -825,7 +847,7 @@ board_configs = {
     'efikamx': EfikamxConfig,
     'efikasb': EfikasbConfig,
     'mx51evk': Mx51evkConfig,
-    'mx53loco' : Mx53LoCoConfig,
+    'mx53loco': Mx53LoCoConfig,
     'overo': OveroConfig,
     'smdkv310': SMDKV310Config,
     }
