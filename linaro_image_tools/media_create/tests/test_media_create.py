@@ -42,7 +42,6 @@ from linaro_image_tools.media_create import (
     rootfs,
     )
 from linaro_image_tools.media_create.boards import (
-    LOADER_MIN_SIZE_S,
     SAMSUNG_V310_BL1_START,
     SAMSUNG_V310_BL2_START,
     SECTOR_SIZE,
@@ -391,6 +390,54 @@ class TestSetMetadata(TestCaseWithFixtures):
             pass
         config.set_metadata('ahwpack.tar.gz')
         self.assertEquals(data_to_set, config.mmc_id)
+
+    def test_sets_boot_min_size(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'boot_min_size'
+        data_to_set = '100'
+        expected = align_up(int(data_to_set) * 1024 * 1024,
+                            SECTOR_SIZE) / SECTOR_SIZE
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(expected, config.BOOT_MIN_SIZE_S)
+
+    def test_sets_root_min_size(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'root_min_size'
+        data_to_set = '3'
+        expected = align_up(int(data_to_set) * 1024 * 1024,
+                            SECTOR_SIZE) / SECTOR_SIZE
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(expected, config.ROOT_MIN_SIZE_S)
+
+    def test_sets_loader_min_size(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'loader_min_size'
+        data_to_set = '2'
+        expected = align_up(int(data_to_set) * 1024 * 1024,
+                            SECTOR_SIZE) / SECTOR_SIZE
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(expected, config.LOADER_MIN_SIZE_S)
 
     def test_sets_partition_layout_32(self):
         self.useFixture(MockSomethingFixture(
@@ -1000,7 +1047,8 @@ class TestBoards(TestCaseWithFixtures):
     def test_install_mx5_boot_loader(self):
         fixture = self._mock_Popen()
         imx_file = self.createTempFileAsFixture()
-        install_mx5_boot_loader(imx_file, "boot_device_or_file")
+        install_mx5_boot_loader(imx_file, "boot_device_or_file",
+                                BoardConfig.LOADER_MIN_SIZE_S)
         expected = [
             '%s dd if=%s of=boot_device_or_file bs=512 '
             'conv=notrunc seek=2' % (sudo_args, imx_file)]
@@ -1009,9 +1057,10 @@ class TestBoards(TestCaseWithFixtures):
     def test_install_mx5_boot_loader_too_large(self):
         self.useFixture(MockSomethingFixture(
             os.path, "getsize",
-            lambda s: (LOADER_MIN_SIZE_S - 1) * SECTOR_SIZE + 1))
+            lambda s: (BoardConfig.LOADER_MIN_SIZE_S - 1) * SECTOR_SIZE + 1))
         self.assertRaises(AssertionError,
-            install_mx5_boot_loader, "imx_file", "boot_device_or_file")
+            install_mx5_boot_loader, "imx_file", "boot_device_or_file",
+                          BoardConfig.LOADER_MIN_SIZE_S)
 
     def test_install_omap_boot_loader(self):
         fixture = self._mock_Popen()
