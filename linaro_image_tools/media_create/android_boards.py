@@ -99,7 +99,8 @@ class AndroidBoardConfig(object):
             pass
 
     @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False, start_addr=0):
+    def get_sfdisk_cmd(cls, should_align_boot_part=False,
+                       start_addr=0, extra_part=False):
         if cls.fat_size == 32:
             partition_type = '0x0C'
         else:
@@ -139,7 +140,9 @@ class AndroidBoardConfig(object):
         # If start address isn't '0' an extra primary partition will be added.
         # Due to a maximum of 4 primary partitions cache data will be placed in
         # a extended partition
-        if start_addr != 0:
+        if extra_part == True:
+            assert start_addr > 0, ("Not possible to add extra partition" \
+                                    "when boot partition starts at '0'")
             return '%s,%s,%s,*\n%s,%s,L\n%s,-,E\n%s,%s,L\n%s,%s,L\n%s,,,-' % (
             boot_start, boot_len, partition_type, system_start, _system_len,
             cache_start, cache_start, _cache_len, userdata_start,
@@ -151,8 +154,8 @@ class AndroidBoardConfig(object):
             _userdata_len, sdcard_start)
 
     @classmethod
-    def populate_startup_partition(cls, media, boot_dir):
-        pass
+    def populate_raw_partition(cls, media, boot_dir):
+        super(AndroidBoardConfig, cls).populate_raw_partition(boot_dir, media)
 
 
 class AndroidOmapConfig(AndroidBoardConfig):
@@ -200,15 +203,12 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
             LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
 
         command = super(AndroidSnowballEmmcConfig, cls).get_sfdisk_cmd(
-            should_align_boot_part=True, start_addr=loader_end)
+            should_align_boot_part=True, start_addr=loader_end, 
+            extra_part=True)
 
         return '%s,%s,0xDA\n%s' % (
             loader_start, loader_len, command)
 
-    @classmethod
-    def populate_startup_partition(cls, media, boot_dir):
-        config_files_path = os.path.join(boot_dir, 'boot')
-        cls.populate_raw_partition(config_files_path, media)
 
 android_board_configs = {
     'beagle': AndroidBeagleConfig,

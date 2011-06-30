@@ -1268,6 +1268,16 @@ class TestPartitionSetup(TestCaseWithFixtures):
             ((426047 + ext_part_size) * SECTOR_SIZE, 
              self.android_image_size - (426047 + ext_part_size) * SECTOR_SIZE)
             ]
+        
+        self.android_snowball_offsets_and_sizes = [
+            (8192 * SECTOR_SIZE, 24639 * SECTOR_SIZE),
+            (32831 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
+            ((98367  + ext_part_size)* SECTOR_SIZE, 
+             (65536 - ext_part_size) * SECTOR_SIZE),
+            (294975 * SECTOR_SIZE, 131072 * SECTOR_SIZE),
+            ((426047 + ext_part_size) * SECTOR_SIZE, 
+             self.android_image_size - (426047 + ext_part_size) * SECTOR_SIZE)
+            ]
 
     def tearDown(self):
         super(TestPartitionSetup, self).tearDown()
@@ -1287,9 +1297,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def _create_snowball_android_tmpfile(self):
         # raw, boot, system, cache, (extended), userdata and sdcard partitions
         return self._create_qemu_img_with_partitions(
-            '256,7936,0xDA\n8192,262144,0x0C,*\n270336,524288,L\n' \
-            '794624,-,E\n794624,524288,L\n1318912,1048576,L\n' \
-            '2367488,,,-', '%s' % self.android_image_size)
+            '256,7936,0xDA\n8192,24639,0x0C,*\n32831,65536,L\n' \
+            '98367,-,E\n98367,65536,L\n294975,131072,L\n' \
+            '426047,,,-', '%s' % self.android_image_size)
 
     def test_convert_size_no_suffix(self):
         self.assertEqual(524288, convert_size_to_bytes('524288'))
@@ -1321,12 +1331,12 @@ class TestPartitionSetup(TestCaseWithFixtures):
             self.assertEqual(device_pair, expected_pair)
 
     def test_calculate_snowball_android_partition_size_and_offset(self):
-        tmpfile = self._create_android_tmpfile()
+        tmpfile = self._create_snowball_android_tmpfile()
         device_info = calculate_android_partition_size_and_offset(tmpfile)
         # We use map(None, ...) since it would catch if the lists are not of
         # equal length and zip() would not in all cases.
         for device_pair, expected_pair in map(None, device_info,
-                                              self.android_offsets_and_sizes):
+                                              self.android_snowball_offsets_and_sizes):
             self.assertEqual(device_pair, expected_pair)
 
     def test_partition_numbering(self):

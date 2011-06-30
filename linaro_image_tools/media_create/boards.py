@@ -339,6 +339,11 @@ class BoardConfig(object):
         raise ValueError(
             "No kernel found matching %s for flavors %s" % (
                 KERNEL_GLOB, " ".join(cls.kernel_flavors)))
+        
+    @classmethod
+    def populate_raw_partition(cls, media, boot_dir):
+        # Override in subclass if needed
+        pass
 
 
 class OmapConfig(BoardConfig):
@@ -565,12 +570,12 @@ class SnowballEmmcConfig(SnowballSdConfig):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
-        config_files_path = os.path.join(chroot_dir, 'boot')
-        cls.populate_raw_partition(config_files_path, boot_device_or_file)
+        cls.populate_raw_partition(chroot_dir, boot_device_or_file)
 
     @classmethod
-    def populate_raw_partition(cls, config_files_path, boot_device_or_file):
-        # Populate create raw partition with TOC and startup files.
+    def populate_raw_partition(cls, chroot_dir, boot_device_or_file):
+        # Populate created raw partition with TOC and startup files.
+        config_files_path = os.path.join(chroot_dir, 'boot')
         _, toc_filename = tempfile.mkstemp()
         new_files = cls.get_file_info(config_files_path)
         with open(toc_filename, 'wb') as toc:
