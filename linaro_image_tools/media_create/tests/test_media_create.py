@@ -216,10 +216,6 @@ class TestCreateToc(TestCaseWithFixtures):
         super(TestCreateToc, self).setUp()
         self.tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         #Create the test's input data structures
-        self.correct_data = [(0, 0, 0, 0, 0, 'b'),
-                             (sys.maxint, sys.maxint, sys.maxint, -1, -1, \
-                              'hello'),
-                             (1, 100, 1000, 5, 10, 'hello')]
         zero = '\x00\x00\x00\x00'
         line1 = zero + zero + zero + zero + zero + 'b' + zero + zero + \
                  '\x00\x00\x00'
@@ -231,8 +227,6 @@ class TestCreateToc(TestCaseWithFixtures):
                  '\x05\x00\x00\x00' '\x05\x00\x00\x00' \
                  'hello' + zero + '\x00\x00\x00'
         self.expected = line1 + line2 + line3
-        self.illegal_name_data = [(0, 0, 0, 0, 0, 'Too_longName')]
-        self.illegal_unsigned_data = [(-3, 0, 0, 0, 0, 'xxx')]
 
     def create_files_structure(self, src_data):
         ''' Creates the data structure that the tested function
@@ -250,7 +244,11 @@ class TestCreateToc(TestCaseWithFixtures):
     def test_create_toc_normal_case(self):
         ''' Creates a toc file, and then reads the created
             file and compares it to precomputed data'''
-        files = self.create_files_structure(self.correct_data)
+        correct_data = [(0, 0, 0, 0, 0, 'b'),
+                             (0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF, -1, -1, \
+                              'hello'),
+                             (1, 100, 1000, 5, 10, 'hello')]
+        files = self.create_files_structure(correct_data)
         filename = os.path.join(self.tempdir, 'toc')
         with open(filename, 'w') as f:
             boards.SnowballEmmcConfig.create_toc(f, files)
@@ -264,16 +262,18 @@ class TestCreateToc(TestCaseWithFixtures):
     def test_create_toc_error_too_large_section_name(self):
         '''Verify that trying to write past the end of the
            section name field raises an exception'''
-        files = self.create_files_structure(self.illegal_name_data)
+        illegal_name_data = [(0, 0, 0, 0, 0, 'Too_longName')]
+        files = self.create_files_structure(illegal_name_data)
         with open(os.path.join(self.tempdir, 'toc'), 'w') as f:
-            self.assertRaises(ValueError,
+            self.assertRaises(AssertionError,
                               boards.SnowballEmmcConfig.create_toc,
                               f, files)
 
     def test_create_toc_error_negative_unsigned(self):
         '''Verify that trying to write a negative number to an unsigned
            field raises an exception'''
-        files = self.create_files_structure(self.illegal_unsigned_data)
+        illegal_unsigned_data = [(-3, 0, 0, 0, 0, 'xxx')]
+        files = self.create_files_structure(illegal_unsigned_data)
         with open(os.path.join(self.tempdir, 'toc'), 'w') as f:
             self.assertRaises(struct.error,
                               boards.SnowballEmmcConfig.create_toc,
@@ -325,8 +325,11 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                 f.write(line[0])
         #define the expected values read from the config file
         expected = []
-        ofs = [512, 512 + 4, 0x160000, 0x170000, 0xBA0000, 0xC1F000]
-        size = [4, 8, 8, 7, 6, 9]
+        ofs = [boards.SnowballEmmcConfig.TOC_SIZE, \
+               boards.SnowballEmmcConfig.TOC_SIZE + len('ISSW'), 0x160000, \
+               0x170000, 0xBA0000, 0xC1F000]
+        size = [len('ISSW'), len('X-LOADER'), len('MEM_INIT'), \
+                len('PWR_MGT'), len('NORMAL'), len('UBOOT_ENV')]
         i = 0
         for line in src_data:
             filename = os.path.join(self.temp_bootdir_path, line[1])
@@ -438,7 +441,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
             '%s dd if=%s/boot/u-boot-env.bin of=boot_device_or_file bs=512' \
             ' conv=notrunc seek=25080' % (sudo_args, self.tempdir),
             '%s rm %s/u-boot-env.bin' % (sudo_args, self.temp_bootdir_path),
-	    '%s rm /tmp/temp_snowball_make_boot_files' % (sudo_args),
+            '%s rm /tmp/temp_snowball_make_boot_files' % (sudo_args),
             '%s rm %s/startfiles.cfg' % (sudo_args, self.temp_bootdir_path)]
 
         self.assertEqual(expected, fixture.mock.commands_executed)

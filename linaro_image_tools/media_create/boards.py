@@ -339,7 +339,7 @@ class BoardConfig(object):
         raise ValueError(
             "No kernel found matching %s for flavors %s" % (
                 KERNEL_GLOB, " ".join(cls.kernel_flavors)))
-        
+
     @classmethod
     def populate_raw_partition(cls, media, boot_dir):
         # Override in subclass if needed
@@ -628,9 +628,8 @@ class SnowballEmmcConfig(SnowballSdConfig):
             # i; int; load_address,
             # 12s; string of char; name
             # http://igloocommunity.org/support/index.php/ConfigPartitionOverview
-            if len(file['section_name']) >= 12:
-                raise ValueError(
-                    "Section name %s too large" % file['section_name'])
+            assert len(file['section_name']) < 12, (
+                "Section name %s too large" % file['section_name'])
             flags = 0
             load_adress = file['align']
             data = struct.pack('<IIIii12s', file['offset'], file['size'],

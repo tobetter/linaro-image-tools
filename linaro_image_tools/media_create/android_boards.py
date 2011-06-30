@@ -203,7 +203,7 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
             LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
 
         command = super(AndroidSnowballEmmcConfig, cls).get_sfdisk_cmd(
-            should_align_boot_part=True, start_addr=loader_end, 
+            should_align_boot_part=True, start_addr=loader_end,
             extra_part=True)
 
         return '%s,%s,0xDA\n%s' % (
