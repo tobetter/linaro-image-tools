@@ -245,9 +245,8 @@ class TestCreateToc(TestCaseWithFixtures):
         ''' Creates a toc file, and then reads the created
             file and compares it to precomputed data'''
         correct_data = [(0, 0, 0, 0, 0, 'b'),
-                             (0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF, -1, -1, \
-                              'hello'),
-                             (1, 100, 1000, 5, 10, 'hello')]
+                        (0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF, -1, -1, 'hello'),
+                        (1, 100, 1000, 5, 10, 'hello')]
         files = self.create_files_structure(correct_data)
         filename = os.path.join(self.tempdir, 'toc')
         with open(filename, 'w') as f:
@@ -325,8 +324,8 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                 f.write(line[0])
         #define the expected values read from the config file
         expected = []
-        ofs = [boards.SnowballEmmcConfig.TOC_SIZE, \
-               boards.SnowballEmmcConfig.TOC_SIZE + len('ISSW'), 0x160000, \
+        ofs = [boards.SnowballEmmcConfig.TOC_SIZE,
+               boards.SnowballEmmcConfig.TOC_SIZE + len('ISSW'), 0x160000,
                0x170000, 0xBA0000, 0xC1F000]
         size = [len('ISSW'), len('X-LOADER'), len('MEM_INIT'), \
                 len('PWR_MGT'), len('NORMAL'), len('UBOOT_ENV')]

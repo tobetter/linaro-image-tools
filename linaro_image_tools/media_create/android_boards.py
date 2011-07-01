@@ -137,7 +137,7 @@ class AndroidBoardConfig(object):
             _userdata_end + 1, SDCARD_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
         # Snowball board needs a raw partition added to the beginning of image.
-        # If start address isn't '0' an extra primary partition will be added.
+        # If extra_part is True an extra primary partition will be added.
         # Due to a maximum of 4 primary partitions cache data will be placed in
         # a extended partition
         if extra_part == True:
