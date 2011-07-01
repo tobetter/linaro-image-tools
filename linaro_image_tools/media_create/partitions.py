@@ -3,7 +3,7 @@
 # Author: Guilherme Salgado <guilherme.salgado@linaro.org>
 #
 # This file is part of Linaro Image Tools.
-# 
+#
 # Linaro Image Tools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -28,6 +28,7 @@ from parted import (
     Device,
     Disk,
     PARTITION_NORMAL,
+    PARTITION_EXTENDED,
     )
 
 from linaro_image_tools import cmd_runner
@@ -71,9 +72,8 @@ def setup_android_partitions(board_config, media, image_size, bootfs_label,
         bootfs = partitions[0]
         system = partitions[1]
         cache = partitions[2]
-        data = partitions[4]
-        sdcard = partitions[5]
-            
+        data = partitions[3]
+        sdcard = partitions[4]
 
     print "\nFormating boot partition\n"
     proc = cmd_runner.run(
@@ -97,6 +97,7 @@ def setup_android_partitions(board_config, media, image_size, bootfs_label,
     proc.wait()
 
     return bootfs, system, cache, data, sdcard
+
 
 # I wonder if it'd make sense to convert this into a small shim which calls
 # the appropriate function for the given type of device?  I think it's still
@@ -296,18 +297,28 @@ def calculate_android_partition_size_and_offset(image_file):
     # Here we can use parted.Device to read the partitions because we're
     # reading from a regular file rather than a block device.  If it was a
     # block device we'd need root rights.
+    vfat_partition = None
     disk = Disk(Device(image_file))
     partition_info = []
     for partition in disk.partitions:
-        geometry = partition.geometry
-        partition_info.append((geometry.start * SECTOR_SIZE,
-                               geometry.length * SECTOR_SIZE))
+        # Will ignore any partitions before boot and of type EXTENDED
+        if 'boot' in partition.getFlagsAsString():
+            vfat_partition = partition
+            geometry = partition.geometry
+            partition_info.append((geometry.start * SECTOR_SIZE,
+                                   geometry.length * SECTOR_SIZE))
+        elif (vfat_partition is not None and
+              partition.type != PARTITION_EXTENDED):
+            geometry = partition.geometry
+            partition_info.append((geometry.start * SECTOR_SIZE,
+                                   geometry.length * SECTOR_SIZE))
         # NB: don't use vfat_partition.nextPartition() as that might return
         # a partition of type PARTITION_FREESPACE; it's much easier to
         # iterate disk.partitions which only returns
         # parted.PARTITION_NORMAL partitions
-
-    assert len(partition_info) == 6
+    assert vfat_partition is not None, (
+        "Couldn't find boot partition on %s" % image_file)
+    assert len(partition_info) == 5
     return partition_info
 
 
@@ -346,6 +357,7 @@ def get_android_partitions_for_media(media, board_config):
 
     return boot_partition, system_partition, cache_partition, \
         data_partition, sdcard_partition
+
 
 def get_boot_and_root_partitions_for_media(media, board_config):
     """Return the device files for the boot and root partitions of media.

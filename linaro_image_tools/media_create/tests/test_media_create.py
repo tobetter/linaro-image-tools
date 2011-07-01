@@ -28,6 +28,7 @@ import tempfile
 import textwrap
 import time
 import types
+import struct
 
 from testtools import TestCase
 
@@ -38,6 +39,7 @@ from linaro_image_tools.media_create import (
     boards,
     partitions,
     rootfs,
+    android_boards,
     )
 from linaro_image_tools.media_create.boards import (
     LOADER_MIN_SIZE_S,
@@ -204,6 +206,256 @@ class TestGetSMDKUboot(TestCaseWithFixtures):
         uboot_file = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor,
             'u-boot.bin')
         self.assertEquals(uboot_file, _get_smdk_uboot(chroot_dir, uboot_flavor))
+
+
+class TestCreateToc(TestCaseWithFixtures):
+    ''' Tests boards.SnowballEmmcConfig.create_toc()'''
+
+    def setUp(self):
+        ''' Create a temporary directory to work in'''
+        super(TestCreateToc, self).setUp()
+        self.tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        #Create the test's input data structures
+        zero = '\x00\x00\x00\x00'
+        line1 = zero + zero + zero + zero + zero + 'b' + zero + zero + \
+                 '\x00\x00\x00'
+        maxint = '\xFF\xFF\xFF\x7F'
+        minint = '\xFF\xFF\xFF\xFF'
+        line2 = maxint + maxint + zero + minint + minint + \
+                 'hello' + zero + '\x00\x00\x00'
+        line3 = '\x01\x00\x00\x00' '\x64\x00\x00\x00' + zero + \
+                 '\x05\x00\x00\x00' '\x05\x00\x00\x00' \
+                 'hello' + zero + '\x00\x00\x00'
+        self.expected = line1 + line2 + line3
+
+    def create_files_structure(self, src_data):
+        ''' Creates the data structure that the tested function
+            needs as input'''
+        files = []
+        for line in src_data:
+            files.append({'section_name': line[5],
+                  'filename': 'N/A',
+                  'align': line[3],
+                  'offset': line[0],
+                  'size': line[1],
+                  'load_adress': 'N/A'})
+        return files
+
+    def test_create_toc_normal_case(self):
+        ''' Creates a toc file, and then reads the created
+            file and compares it to precomputed data'''
+        correct_data = [(0, 0, 0, 0, 0, 'b'),
+                        (0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF, -1, -1, 'hello'),
+                        (1, 100, 1000, 5, 10, 'hello')]
+        files = self.create_files_structure(correct_data)
+        filename = os.path.join(self.tempdir, 'toc')
+        with open(filename, 'w') as f:
+            boards.SnowballEmmcConfig.create_toc(f, files)
+        with open(filename, 'r') as f:
+            actual = f.read()
+        self.assertEquals(96, len(actual))
+        for i in range(len(actual)):
+            self.assertEquals(self.expected[i], actual[i], 'Mismatch at ix' \
+                ' %d, ref=%c, actual=%c' % (i, self.expected[i], actual[i]))
+
+    def test_create_toc_error_too_large_section_name(self):
+        '''Verify that trying to write past the end of the
+           section name field raises an exception'''
+        illegal_name_data = [(0, 0, 0, 0, 0, 'Too_longName')]
+        files = self.create_files_structure(illegal_name_data)
+        with open(os.path.join(self.tempdir, 'toc'), 'w') as f:
+            self.assertRaises(AssertionError,
+                              boards.SnowballEmmcConfig.create_toc,
+                              f, files)
+
+    def test_create_toc_error_negative_unsigned(self):
+        '''Verify that trying to write a negative number to an unsigned
+           field raises an exception'''
+        illegal_unsigned_data = [(-3, 0, 0, 0, 0, 'xxx')]
+        files = self.create_files_structure(illegal_unsigned_data)
+        with open(os.path.join(self.tempdir, 'toc'), 'w') as f:
+            self.assertRaises(struct.error,
+                              boards.SnowballEmmcConfig.create_toc,
+                              f, files)
+
+
+class TestSnowballBootFiles(TestCaseWithFixtures):
+    ''' Tests boards.SnowballEmmcConfig.install_snowball_boot_loader()'''
+    ''' Tests boards.SnowballEmmcConfig._make_boot_files()'''
+    ''' Tests boards.SnowballEmmcConfig.get_file_info()'''
+
+    def setUp(self):
+        ''' Create temporary directory to work in'''
+        super(TestSnowballBootFiles, self).setUp()
+        self.tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        self.temp_bootdir_path = os.path.join(self.tempdir, 'boot')
+        if not os.path.exists(self.temp_bootdir_path):
+            os.makedirs(self.temp_bootdir_path)
+
+    def setupFiles(self):
+        ''' Adds some files in the temp dir that the tested function
+            can use as input:
+            * A config file, which the tested function reads to
+              discover which binary files should be written to
+              the loader partition.
+            * Test versions of the binary files themselves,
+              containing dummy data.
+            Returns the expected value that the tested function should
+            return, given these input files.  '''
+        src_data = [('ISSW', 'boot_image_issw.bin', -1, 0, '5'),
+                    ('X-LOADER', 'boot_image_x-loader.bin', -1, 0, '6'),
+                    ('MEM_INIT', 'mem_init.bin', 0, 0x160000, '7'),
+                    ('PWR_MGT', 'power_management.bin', 0, 0x170000, '8'),
+                    ('NORMAL', 'u-boot.bin', 0, 0xBA0000, '9'),
+                    ('UBOOT_ENV', 'u-boot-env.bin', 0, 0x00C1F000, '10')]
+        # Create a config file
+        cfg_file = os.path.join(self.temp_bootdir_path,
+        boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
+        with open(cfg_file, 'w') as f:
+            for line in src_data:
+                # Write comments, so we test that the parser can read them
+                f.write('#Yet another comment\n')
+                f.write('%s %s %i %#x %s\n' % line)
+        expected = []
+        # Define dummy binary files, containing nothing but their own
+        # section names.
+        for line in src_data:
+            with open(os.path.join(self.temp_bootdir_path, line[1]), 'w') as f:
+                f.write(line[0])
+        #define the expected values read from the config file
+        expected = []
+        ofs = [boards.SnowballEmmcConfig.TOC_SIZE,
+               boards.SnowballEmmcConfig.TOC_SIZE + len('ISSW'), 0x160000,
+               0x170000, 0xBA0000, 0xC1F000]
+        size = [len('ISSW'), len('X-LOADER'), len('MEM_INIT'), \
+                len('PWR_MGT'), len('NORMAL'), len('UBOOT_ENV')]
+        i = 0
+        for line in src_data:
+            filename = os.path.join(self.temp_bootdir_path, line[1])
+            expected.append({'section_name': line[0],
+                             'filename': filename,
+                             'align': int(line[2]),
+                             'offset': ofs[i],
+                             'size': long(size[i]),
+                             'load_adress': line[4]})
+            i += 1
+        return expected
+
+    def test_file_name_size(self):
+        ''' Test using a to large toc file '''
+        _, toc_filename = tempfile.mkstemp()
+        atexit.register(os.unlink, toc_filename)
+        filedata = 'X'
+        bytes = boards.SnowballEmmcConfig.TOC_SIZE + 1
+        tmpfile = open(toc_filename, 'wb')
+        for n in xrange(bytes):
+            tmpfile.write(filedata)
+        tmpfile.close()
+        files = self.setupFiles()
+        self.assertRaises(AssertionError,
+            boards.SnowballEmmcConfig.install_snowball_boot_loader,
+            toc_filename, files, "boot_device_or_file",
+            boards.SnowballEmmcConfig.SNOWBALL_LOADER_START_S)
+
+    def test_install_snowball_boot_loader_toc(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        toc_filename = self.createTempFileAsFixture()
+        files = self.setupFiles()
+        boards.SnowballEmmcConfig.install_snowball_boot_loader(toc_filename,
+            files, "boot_device_or_file",
+            boards.SnowballEmmcConfig.SNOWBALL_LOADER_START_S)
+        expected = [
+            '%s dd if=%s of=boot_device_or_file bs=512 conv=notrunc' \
+            ' seek=%s' % (sudo_args, toc_filename,
+            boards.SnowballEmmcConfig.SNOWBALL_LOADER_START_S),
+            '%s dd if=%s/boot_image_issw.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=257' % (sudo_args, self.temp_bootdir_path),
+            '%s rm %s/boot_image_issw.bin' % (sudo_args,
+            self.temp_bootdir_path),
+            '%s dd if=%s/boot_image_x-loader.bin of=boot_device_or_file' \
+            ' bs=1 conv=notrunc seek=131588'
+            % (sudo_args, self.temp_bootdir_path),
+            '%s rm %s/boot_image_x-loader.bin' % (sudo_args,
+            self.temp_bootdir_path),
+            '%s dd if=%s/mem_init.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=3072' % (sudo_args, self.temp_bootdir_path),
+            '%s rm %s/mem_init.bin' % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/power_management.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=3200' % (sudo_args, self.temp_bootdir_path),
+            '%s rm %s/power_management.bin' % (sudo_args,
+            self.temp_bootdir_path),
+            '%s dd if=%s/u-boot.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=24064' % (sudo_args, self.temp_bootdir_path),
+            '%s rm %s/u-boot.bin' % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/u-boot-env.bin of=boot_device_or_file bs=512'
+            ' conv=notrunc seek=25080' % (sudo_args, self.temp_bootdir_path),
+            '%s rm %s/u-boot-env.bin' % (sudo_args, self.temp_bootdir_path)]
+
+        self.assertEqual(expected, fixture.mock.commands_executed)
+
+    def test_snowball_make_boot_files(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        self.useFixture(MockSomethingFixture(tempfile, 'mkstemp',
+            lambda: (-1, '/tmp/temp_snowball_make_boot_files')))
+        self.setupFiles()
+        k_img_file = os.path.join(self.tempdir, 'vmlinuz-1-ux500')
+        i_img_file = os.path.join(self.tempdir, 'initrd.img-1-ux500')
+
+        boot_env = board_configs['snowball_emmc']._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=[],
+            rootfs_uuid="test_boot_env_uuid", d_img_data=None)
+        boards.SnowballEmmcConfig._make_boot_files(boot_env, self.tempdir,
+            self.temp_bootdir_path, 'boot_device_or_file', k_img_file,
+            i_img_file, None)
+        expected = [
+            '%s mkimage -A arm -O linux -T kernel -C none -a 0x00008000 -e' \
+            ' 0x00008000 -n Linux -d %s %s/boot/uImage' % (sudo_args,
+            k_img_file, self.tempdir),
+            '%s cp /tmp/temp_snowball_make_boot_files %s/boot/boot.txt'
+            % (sudo_args, self.tempdir),
+            '%s mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n boot' \
+            ' script -d %s/boot/boot.txt %s/boot/flash.scr'
+            % (sudo_args, self.tempdir, self.tempdir),
+            '%s dd if=/tmp/temp_snowball_make_boot_files' \
+            ' of=boot_device_or_file bs=512 conv=notrunc seek=256'
+            % (sudo_args),
+            '%s dd if=%s/boot/boot_image_issw.bin of=boot_device_or_file' \
+            ' bs=512 conv=notrunc seek=257' % (sudo_args, self.tempdir),
+            '%s rm %s/boot_image_issw.bin' % (sudo_args,
+            self.temp_bootdir_path),
+            '%s dd if=%s/boot/boot_image_x-loader.bin of=boot_device_or_file' \
+            ' bs=1 conv=notrunc seek=131588' % (sudo_args, self.tempdir),
+            '%s rm %s/boot_image_x-loader.bin' % (sudo_args,
+            self.temp_bootdir_path),
+            '%s dd if=%s/boot/mem_init.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=3072' % (sudo_args, self.tempdir),
+            '%s rm %s/mem_init.bin' % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/boot/power_management.bin of=boot_device_or_file' \
+            ' bs=512 conv=notrunc seek=3200' % (sudo_args, self.tempdir),
+            '%s rm %s/power_management.bin' % (sudo_args,
+            self.temp_bootdir_path),
+            '%s dd if=%s/boot/u-boot.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=24064' % (sudo_args, self.tempdir),
+            '%s rm %s/u-boot.bin' % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/boot/u-boot-env.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=25080' % (sudo_args, self.tempdir),
+            '%s rm %s/u-boot-env.bin' % (sudo_args, self.temp_bootdir_path),
+            '%s rm /tmp/temp_snowball_make_boot_files' % (sudo_args),
+            '%s rm %s/startfiles.cfg' % (sudo_args, self.temp_bootdir_path)]
+
+        self.assertEqual(expected, fixture.mock.commands_executed)
+
+    def test_missing_files(self):
+        '''When the files cannot be read, an IOError should be raised'''
+        self.assertRaises(IOError,
+                          boards.SnowballEmmcConfig.get_file_info,
+                          self.tempdir)
+
+    def test_normal_case(self):
+        expected = self.setupFiles()
+        actual = boards.SnowballEmmcConfig.get_file_info(
+            self.temp_bootdir_path)
+        self.assertEquals(expected, actual)
 
 
 class TestBootSteps(TestCaseWithFixtures):
@@ -410,6 +662,18 @@ class TestGetSfdiskCmd(TestCase):
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             board_configs['smdkv310'].get_sfdisk_cmd())
 
+    def test_panda_android(self):
+        self.assertEqual(
+            '63,270272,0x0C,*\n270336,524288,L\n794624,524288,L\n' \
+                '1318912,-,E\n1318912,1048576,L\n2367488,,,-', 
+                android_boards.AndroidPandaConfig.get_sfdisk_cmd())
+
+    def test_snowball_emmc_android(self):
+        self.assertEqual(
+            '256,7936,0xDA\n8192,262144,0x0C,*\n270336,524288,L\n' \
+                '794624,-,E\n794624,524288,L\n1318912,1048576,L\n2367488,,,-', 
+                android_boards.AndroidSnowballEmmcConfig.get_sfdisk_cmd())
+
 
 class TestGetBootCmd(TestCase):
 
@@ -582,6 +846,21 @@ class TestGetBootCmdAndroid(TestCase):
             'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'bootm 0x80200000 0x81600000'}
+        self.assertEqual(expected, boot_commands)
+	
+    def test_android_snowball_emmc(self):
+        boot_commands = (android_boards.AndroidSnowballEmmcConfig.
+                         _get_boot_env(consoles=[]))
+        expected = {
+            'bootargs': 'console=tty0 console=ttyAMA2,115200n8 '
+                        'rootwait ro earlyprintk '
+                        'rootdelay=1 fixrtc nocompcache '
+                        'mem=128M@0 mali.mali_mem=64M@128M mem=24M@192M '
+                        'hwmem=167M@216M mem_issw=1M@383M mem=640M@384M '
+                        'vmalloc=256M init=/init androidboot.console=ttyAMA2',
+            'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
+                       'fatload mmc 1:1 0x08000000 uInitrd; '
+                       'bootm 0x00100000 0x08000000'}
         self.assertEqual(expected, boot_commands)
 
 
@@ -986,10 +1265,18 @@ class TestPartitionSetup(TestCaseWithFixtures):
             (63 * SECTOR_SIZE, 32768 * SECTOR_SIZE),
             (32831 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
             (98367 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
-            (294975 * SECTOR_SIZE, (self.android_image_size - 
-                                     294975 * SECTOR_SIZE)),
             ((294975 + ext_part_size) * SECTOR_SIZE,
              (131072 - ext_part_size) * SECTOR_SIZE),
+            ((426047 + ext_part_size) * SECTOR_SIZE, 
+             self.android_image_size - (426047 + ext_part_size) * SECTOR_SIZE)
+            ]
+        
+        self.android_snowball_offsets_and_sizes = [
+            (8192 * SECTOR_SIZE, 24639 * SECTOR_SIZE),
+            (32831 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
+            ((98367  + ext_part_size)* SECTOR_SIZE, 
+             (65536 - ext_part_size) * SECTOR_SIZE),
+            (294975 * SECTOR_SIZE, 131072 * SECTOR_SIZE),
             ((426047 + ext_part_size) * SECTOR_SIZE, 
              self.android_image_size - (426047 + ext_part_size) * SECTOR_SIZE)
             ]
@@ -1008,6 +1295,13 @@ class TestPartitionSetup(TestCaseWithFixtures):
         return self._create_qemu_img_with_partitions(
             '63,32768,0x0C,*\n32831,65536,L\n98367,65536,L\n294975,-,E\n' \
                 '294975,131072,L\n426047,,,-', '%s' % self.android_image_size)
+
+    def _create_snowball_android_tmpfile(self):
+        # raw, boot, system, cache, (extended), userdata and sdcard partitions
+        return self._create_qemu_img_with_partitions(
+            '256,7936,0xDA\n8192,24639,0x0C,*\n32831,65536,L\n' \
+            '98367,-,E\n98367,65536,L\n294975,131072,L\n' \
+            '426047,,,-', '%s' % self.android_image_size)
 
     def test_convert_size_no_suffix(self):
         self.assertEqual(524288, convert_size_to_bytes('524288'))
@@ -1036,6 +1330,15 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # equal length and zip() would not in all cases.
         for device_pair, expected_pair in map(None, device_info,
                                               self.android_offsets_and_sizes):
+            self.assertEqual(device_pair, expected_pair)
+
+    def test_calculate_snowball_android_partition_size_and_offset(self):
+        tmpfile = self._create_snowball_android_tmpfile()
+        device_info = calculate_android_partition_size_and_offset(tmpfile)
+        # We use map(None, ...) since it would catch if the lists are not of
+        # equal length and zip() would not in all cases.
+        for device_pair, expected_pair in map(None, device_info,
+                                              self.android_snowball_offsets_and_sizes):
             self.assertEqual(device_pair, expected_pair)
 
     def test_partition_numbering(self):
@@ -1147,7 +1450,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
 
         # get_boot_and_root_loopback_devices will also setup two exit handlers
         # to de-register the loopback devices set up above.
-        self.assertEqual(6, len(atexit_fixture.mock.funcs))
+        self.assertEqual(5, len(atexit_fixture.mock.funcs))
         popen_fixture.mock.calls = []
         atexit_fixture.mock.run_funcs()
         # We did not really run losetup above (as it requires root) so here we
@@ -1155,7 +1458,6 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # setup it is passed to the atexit handler.
         self.assertEquals(
             ['%s losetup -d ' % sudo_args,
-             '%s losetup -d ' % sudo_args,
              '%s losetup -d ' % sudo_args,
              '%s losetup -d ' % sudo_args,
              '%s losetup -d ' % sudo_args,
