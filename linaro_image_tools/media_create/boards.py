@@ -67,17 +67,6 @@ def align_up(value, align):
     """Round value to the next multiple of align."""
     return (value + align - 1) / align * align
 
-# optional bootloader partition; at least 1 MiB; in theory, an i.MX5x
-# bootloader partition could hold RedBoot, FIS table, RedBoot config, kernel,
-# and initrd, but we typically use U-Boot which is about 167 KiB as of
-# 2011/02/11 and currently doesn't even store its environment there, so this
-# should be enough
-LOADER_MIN_SIZE_S = align_up(1 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-# boot partition; at least 50 MiB; XXX this shouldn't be hardcoded
-BOOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-# root partition; at least 50 MiB; XXX this shouldn't be hardcoded
-ROOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-
 # Samsung v310 implementation notes and terminology
 #
 # * BL0, BL1 etc. are the various bootloaders in order of execution
@@ -241,6 +230,9 @@ class BoardConfig(object):
     _live_serial_opts = ''
     extra_boot_args_options = None
     supports_writing_to_mmc = True
+    LOADER_MIN_SIZE_S = align_up(1 * 1024**2, SECTOR_SIZE) / SECTOR_SIZE
+    BOOT_MIN_SIZE_S = align_up(50 * 1024**2, SECTOR_SIZE) / SECTOR_SIZE
+    ROOT_MIN_SIZE_S = align_up(50 * 1024**2, SECTOR_SIZE) / SECTOR_SIZE
 
     # These attributes must be defined on all subclasses for backwards
     # compatibility with hwpacks v1 format. Hwpacks v2 format allows these to
@@ -283,6 +275,9 @@ class BoardConfig(object):
                 cls.load_addr = None
                 cls.serial_tty = None
                 cls.fat_size = None
+                cls.BOOT_MIN_SIZE_S = None
+                cls.ROOT_MIN_SIZE_S = None
+                cls.LOADER_MIN_SIZE_S = None
 
             # Set new values from metadata.
             cls.kernel_addr = cls.get_metadata_field(
@@ -308,6 +303,23 @@ class BoardConfig(object):
             else:
                 raise AssertionError("Unknown partition layout '%s'." % partition_layout)
 
+            boot_min_size = cls.get_metadata_field(
+                cls.BOOT_MIN_SIZE_S, 'boot_min_size')
+            if boot_min_size is not None:
+                cls.BOOT_MIN_SIZE_S = align_up(int(boot_min_size) * 1024**2,
+                                               SECTOR_SIZE) / SECTOR_SIZE
+            root_min_size = cls.get_metadata_field(
+                cls.ROOT_MIN_SIZE_S, 'root_min_size')
+            if root_min_size is not None:
+                cls.ROOT_MIN_SIZE_S = align_up(int(root_min_size) * 1024**2,
+                                               SECTOR_SIZE) / SECTOR_SIZE
+            loader_min_size = cls.get_metadata_field(
+                cls.LOADER_MIN_SIZE_S, 'loader_min_size')
+            if loader_min_size is not None:
+                cls.LOADER_MIN_SIZE_S = align_up(int(loader_min_size) * 1024**2,
+                                               SECTOR_SIZE) / SECTOR_SIZE
+
+
     @classmethod
     def get_file(cls, file_alias, default=None):
         file_in_hwpack = cls.hardwarepack_handler.get_file(file_alias)
@@ -330,9 +342,6 @@ class BoardConfig(object):
         else:
             partition_type = '0x0E'
 
-        BOOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        ROOT_MIN_SIZE_S = align_up(50 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-
         # align on sector 63 for compatibility with broken versions of x-loader
         # unless align_boot_part is set
         boot_align = 63
@@ -341,7 +350,7 @@ class BoardConfig(object):
 
         # can only start on sector 1 (sector 0 is MBR / partition table)
         boot_start, boot_end, boot_len = align_partition(
-            1, BOOT_MIN_SIZE_S, boot_align, PART_ALIGN_S)
+            1, cls.BOOT_MIN_SIZE_S, boot_align, PART_ALIGN_S)
         # apparently OMAP3 ROMs require the vfat length to be an even number
         # of sectors (multiple of 1 KiB); decrease the length if it's odd,
         # there should still be enough room
@@ -352,7 +361,7 @@ class BoardConfig(object):
         # instruct the use of all remaining space; XXX if we had some root size
         # config, we could do something more sensible
         root_start, _root_end, _root_len = align_partition(
-            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+            boot_end + 1, cls.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
         return '%s,%s,%s,*\n%s,,,-' % (
             boot_start, boot_len, partition_type, root_start)
@@ -720,15 +729,15 @@ class SnowballEmmcConfig(SnowballSdConfig):
         # (sector 0 is MBR / partition table)
         loader_start, loader_end, loader_len = align_partition(
             SnowballEmmcConfig.SNOWBALL_LOADER_START_S,
-            LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
+            cls.LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
 
         boot_start, boot_end, boot_len = align_partition(
-            loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+            loader_end + 1, cls.BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
         # we ignore _root_end / _root_len and return an sfdisk command to
         # instruct the use of all remaining space; XXX if we had some root size
         # config, we could do something more sensible
         root_start, _root_end, _root_len = align_partition(
-            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+            boot_end + 1, cls.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
         return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
         loader_start, loader_len, boot_start, boot_len, root_start)
@@ -866,15 +875,15 @@ class Mx5Config(BoardConfig):
         # onwards, so it's safer to just start at the first sector, sector 1
         # (sector 0 is MBR / partition table)
         loader_start, loader_end, loader_len = align_partition(
-            1, LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
+            1, cls.LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
 
         boot_start, boot_end, boot_len = align_partition(
-            loader_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+            loader_end + 1, cls.BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
         # we ignore _root_end / _root_len and return a sfdisk command to
         # instruct the use of all remaining space; XXX if we had some root size
         # config, we could do something more sensible
         root_start, _root_end, _root_len = align_partition(
-            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+            boot_end + 1, cls.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
         return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
             loader_start, loader_len, boot_start, boot_len, root_start)
@@ -887,7 +896,8 @@ class Mx5Config(BoardConfig):
             uboot_file = cls.get_file('u_boot', default=os.path.join(
                     chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
                     'u-boot.imx'))
-            install_mx5_boot_loader(uboot_file, boot_device_or_file)
+            install_mx5_boot_loader(uboot_file, boot_device_or_file,
+                                    cls.LOADER_MIN_SIZE_S)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         make_dtb(d_img_data, boot_dir)
@@ -991,14 +1001,14 @@ class SMDKV310Config(BoardConfig):
 
         # FAT boot partition
         boot_start, boot_end, boot_len = align_partition(
-            loaders_end + 1, BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+            loaders_end + 1, cls.BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
         # root partition
         # we ignore _root_end / _root_len and return a sfdisk command to
         # instruct the use of all remaining space; XXX if we had some root size
         # config, we could do something more sensible
         root_start, _root_end, _root_len = align_partition(
-            boot_end + 1, ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+            boot_end + 1, cls.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
         return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
             loaders_start, loaders_len, boot_start, boot_len, root_start)
@@ -1207,13 +1217,13 @@ def make_flashable_env(boot_env, env_size):
     return tmpfile
 
 
-def install_mx5_boot_loader(imx_file, boot_device_or_file):
+def install_mx5_boot_loader(imx_file, boot_device_or_file, loader_min_size):
     # bootloader partition starts at +1s but we write the file at +2s, so we
     # need to check that the bootloader partition minus 1s is at least as large
     # as the u-boot binary; note that the real bootloader partition might be
     # larger than LOADER_MIN_SIZE_S, but if u-boot is larger it's a sign we
     # need to bump LOADER_MIN_SIZE_S
-    max_size = (LOADER_MIN_SIZE_S - 1) * SECTOR_SIZE
+    max_size = (loader_min_size - 1) * SECTOR_SIZE
     assert os.path.getsize(imx_file) <= max_size, (
         "%s is larger than guaranteed bootloader partition size" % imx_file)
     _dd(imx_file, boot_device_or_file, seek=2)

@@ -80,7 +80,8 @@ class Metadata(object):
     def add_v2_config(self, serial_tty=None, kernel_addr=None, initrd_addr=None,
                       load_addr=None, fdt=None, wired_interfaces=[],
                       wireless_interfaces=[], partition_layout=None,
-                      mmc_id=None):
+                      mmc_id=None, boot_min_size=None, root_min_size=None,
+                      loader_min_size=None):
         """Add fields that are specific to the new format.
 
         These fields are not present in earlier config files.
@@ -94,6 +95,9 @@ class Metadata(object):
         self.wireless_interfaces = wireless_interfaces
         self.partition_layout = partition_layout
         self.mmc_id = mmc_id
+        self.boot_min_size = boot_min_size
+        self.root_min_size = root_min_size
+        self.loader_min_size = loader_min_size
 
     @classmethod
     def from_config(cls, config, version, architecture):
@@ -126,7 +130,10 @@ class Metadata(object):
                                    wired_interfaces=config.wired_interfaces,
                                    wireless_interfaces=config.wireless_interfaces,
                                    partition_layout=config.partition_layout,
-                                   mmc_id=config.mmc_id)
+                                   mmc_id=config.mmc_id,
+                                   boot_min_size=config.boot_min_size,
+                                   root_min_size=config.root_min_size,
+                                   loader_min_size=config.loader_min_size)
         return metadata
 
     def __str__(self):
@@ -163,6 +170,13 @@ class Metadata(object):
             metadata += "PARTITION_LAYOUT=%s\n" % self.partition_layout
         if self.mmc_id is not None:
             metadata += "MMC_ID=%s\n" % self.mmc_id
+        if self.boot_min_size is not None:
+            metadata += "BOOT_MIN_SIZE=%s\n" % self.boot_min_size
+        if self.root_min_size is not None:
+            metadata += "ROOT_MIN_SIZE=%s\n" % self.root_min_size
+        if self.loader_min_size is not None:
+            metadata += "LOADER_MIN_SIZE=%s\n" % self.loader_min_size
+
         return metadata
 
 
