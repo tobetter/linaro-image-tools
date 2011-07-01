@@ -22,10 +22,10 @@
 
 import os
 import re
-import FetchImage
 import urlparse
 import logging
 import bz2
+import linaro_image_tools.FetchImage
 
 RELEASES_WWW_DOCUMENT_ROOT  = "/srv/releases.linaro.org/www/platform/"
 RELEASE_URL                 = "http://releases.linaro.org/platform/"
@@ -41,7 +41,7 @@ class ServerIndexer():
     def __init__(self):
         self.reset()
         self.db_file_name = "server_index"
-        self.db = FetchImage.DB(self.db_file_name)
+        self.db = linaro_image_tools.FetchImage.DB(self.db_file_name)
 
     def crawl(self):
         self.db.set_url_parse_info(self.url_parse)
