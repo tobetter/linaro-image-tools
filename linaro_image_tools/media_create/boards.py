@@ -39,11 +39,6 @@ from linaro_image_tools import cmd_runner
 
 from linaro_image_tools.media_create.partitions import SECTOR_SIZE
 
-from linaro_image_tools.hwpack.hardwarepack_format import (
-    HardwarePackFormatV1,
-    HardwarePackFormatV2,
-)
-
 
 KERNEL_GLOB = 'vmlinuz-*-%(kernel_flavor)s'
 INITRD_GLOB = 'initrd.img-*-%(kernel_flavor)s'
@@ -139,6 +134,9 @@ class classproperty(object):
 
 
 class HardwarepackHandler(object):
+    FORMAT_1 = '1.0'
+    FORMAT_2 = '2.0'
+    FORMAT_MIXED = '1.0and2.0'
     metadata_filename = 'metadata'
     format_filename = 'FORMAT'
     main_section = 'main'
@@ -204,19 +202,19 @@ class HardwarepackHandler(object):
 
     def get_format(self):
         format = None
+        supported_formats = [self.FORMAT_1, self.FORMAT_2]
         for hwpack_tarfile in self.hwpack_tarfiles:
             format_file = hwpack_tarfile.extractfile(self.format_filename)
             format_string = format_file.read().strip()
-            if format_string == '2.0':
-                # Format is taken from the hwpack of highest format version.
-                return HardwarePackFormatV2()
-            else:
+            if not format_string in supported_formats:
+                raise AssertionError(
+                    "Format version '%s' is not supported." % \
+                        format_string)
+            if format is None:
                 format = format_string
-        if format is None or format == '1.0':
-            return HardwarePackFormatV1()
-        else:
-            raise AssertionError("Format version '%s' is not supported." % \
-                                     format_string)
+            elif format != format_string:
+                return self.FORMAT_MIXED
+        return format
 
     def get_file(self, file_alias):
         file_name, hwpack_tarfile = self.get_field(self.main_section,
@@ -261,30 +259,27 @@ class BoardConfig(object):
     @classmethod
     def get_metadata_field(cls, target, field_name):
         """ Return the metadata value for field_name if it can be found.
-
-        Also assert that target is None to make sure that no defaults have
-        come this far by mistake.
         """
         data, _ = cls.hardwarepack_handler.get_field(
             cls.hardwarepack_handler.main_section, field_name)
-        if data is not None:
-            assert target is None, "Metadata field '%s' is already set to " \
-                "'%s'." % (field_name, target)
         return data
 
     @classmethod
     def set_metadata(cls, hwpacks):
         cls.hardwarepack_handler = HardwarepackHandler(hwpacks)
         with cls.hardwarepack_handler:
-            if not cls.hardwarepack_handler.get_format().has_v2_fields:
+            if (cls.hardwarepack_handler.get_format() ==
+                cls.hardwarepack_handler.FORMAT_1):
                 return
 
-            # Clear V1 defaults.
-            cls.kernel_addr = None
-            cls.initrd_addr = None
-            cls.load_addr = None
-            cls.serial_tty = None
-            cls.fat_size = None
+            if (cls.hardwarepack_handler.get_format() ==
+                cls.hardwarepack_handler.FORMAT_2):
+                # Clear V1 defaults.
+                cls.kernel_addr = None
+                cls.initrd_addr = None
+                cls.load_addr = None
+                cls.serial_tty = None
+                cls.fat_size = None
 
             # Set new values from metadata.
             cls.kernel_addr = cls.get_metadata_field(

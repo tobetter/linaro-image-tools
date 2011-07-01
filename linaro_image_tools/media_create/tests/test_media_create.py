@@ -119,10 +119,6 @@ from linaro_image_tools.tests.fixtures import (
     MockSomethingFixture,
     )
 from linaro_image_tools.utils import find_command, preferred_tools_dir
-from linaro_image_tools.hwpack.hardwarepack_format import (
-    HardwarePackFormatV1,
-    HardwarePackFormatV2,
-)
 
 
 chroot_args = " ".join(cmd_runner.CHROOT_ARGS)
@@ -160,7 +156,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             [('FORMAT', format), ('metadata', self.metadata)])
         hp = HardwarepackHandler([tarball])
         with hp:
-            self.assertIsInstance(hp.get_format(), HardwarePackFormatV1)
+            self.assertEquals(hp.get_format(), data)
 
     def test_get_format_2(self):
         data = '2.0'
@@ -169,7 +165,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             [('FORMAT', format), ('metadata', self.metadata)])
         hp = HardwarepackHandler([tarball])
         with hp:
-            self.assertIsInstance(hp.get_format(), HardwarePackFormatV2)
+            self.assertEquals(hp.get_format(), data)
 
     def test_get_unknown_format_raises(self):
         data = '9.9'
@@ -180,7 +176,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         with hp:
             self.assertRaises(AssertionError, hp.get_format)
 
-    def test_higher_format_sticks(self):
+    def test_mixed_formats(self):
         format1 = "%s\n" % '1.0'
         format2 = "%s\n" % '2.0'
         tarball1 = self.add_to_tarball(
@@ -195,7 +191,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             tarball=tarball_fixture2.get_tarball())
         hp = HardwarepackHandler([tarball2, tarball1])
         with hp:
-            self.assertIsInstance(hp.get_format(), HardwarePackFormatV2)
+            self.assertEquals(hp.get_format(), '1.0and2.0')
 
     def test_identical_formats_ok(self):
         format1 = "%s\n" % '2.0'
@@ -212,7 +208,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             tarball=tarball_fixture2.get_tarball())
         hp = HardwarepackHandler([tarball1, tarball2])
         with hp:
-            self.assertIsInstance(hp.get_format(), HardwarePackFormatV2)
+            self.assertEquals(hp.get_format(), '2.0')
 
     def test_get_metadata(self):
         data = 'data to test'
@@ -279,7 +275,7 @@ class TestSetMetadata(TestCaseWithFixtures):
                 return None, None
 
         def get_format(self):
-            return HardwarePackFormatV2()
+            return '2.0'
 
         def get_file(self, file_alias):
             return None
@@ -571,7 +567,7 @@ class TestBootSteps(TestCaseWithFixtures):
         SomeMx5Config.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         SomeMx5Config.hardwarepack_handler.get_format = (
-            lambda: HardwarePackFormatV1())
+            lambda: '1.0')
         self.make_boot_files(SomeMx5Config)
         expected = [
             'install_mx5_boot_loader', 'make_uImage', 'make_uInitrd',
@@ -1571,7 +1567,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.config.boot_script = 'boot_script'
         self.config.hardwarepack_handler = \
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz')
-        self.config.hardwarepack_handler.get_format = lambda: HardwarePackFormatV1()
+        self.config.hardwarepack_handler.get_format = lambda: '1.0'
         self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             self.config, 'make_boot_files', self.save_args))
