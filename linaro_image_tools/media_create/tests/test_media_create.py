@@ -55,15 +55,12 @@ from linaro_image_tools.media_create.boards import (
     make_flashable_env,
     install_mx5_boot_loader,
     install_omap_boot_loader,
-    install_smdk_boot_loader,
     make_boot_script,
     make_uImage,
     make_uInitrd,
     make_dtb,
     _get_file_matching,
     _get_mlo_file,
-    _get_smdk_spl,
-    _get_smdk_uboot,
     _run_mkimage,
     HardwarepackHandler,
     BoardConfig,
@@ -475,7 +472,8 @@ class TestGetSMDKSPL(TestCaseWithFixtures):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         uboot_flavor = "some_uboot_flavour"
         self.assertRaises(
-            AssertionError, _get_smdk_spl, tempdir, uboot_flavor)
+            AssertionError, boards.SMDKV310Config._get_smdk_spl, tempdir,
+            uboot_flavor)
 
     def test_old_file_present(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
@@ -484,7 +482,8 @@ class TestGetSMDKSPL(TestCaseWithFixtures):
         os.makedirs(path)
         spl_path = os.path.join(path, 'v310_mmc_spl.bin')
         open(spl_path, 'w').close()
-        self.assertEquals(spl_path, _get_smdk_spl(tempdir, uboot_flavor))
+        self.assertEquals(spl_path, boards.SMDKV310Config._get_smdk_spl(
+                tempdir, uboot_flavor))
 
     def test_new_file_present(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
@@ -493,7 +492,8 @@ class TestGetSMDKSPL(TestCaseWithFixtures):
         os.makedirs(path)
         spl_path = os.path.join(path, 'u-boot-mmc-spl.bin')
         open(spl_path, 'w').close()
-        self.assertEquals(spl_path, _get_smdk_spl(tempdir, uboot_flavor))
+        self.assertEquals(spl_path, boards.SMDKV310Config._get_smdk_spl(
+                tempdir, uboot_flavor))
 
     def test_prefers_old_path(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
@@ -504,7 +504,8 @@ class TestGetSMDKSPL(TestCaseWithFixtures):
         new_spl_path = os.path.join(path, 'u-boot-mmc-spl.bin')
         open(old_spl_path, 'w').close()
         open(new_spl_path, 'w').close()
-        self.assertEquals(old_spl_path, _get_smdk_spl(tempdir, uboot_flavor))
+        self.assertEquals(old_spl_path, boards.SMDKV310Config._get_smdk_spl(
+                tempdir, uboot_flavor))
 
 
 class TestGetSMDKUboot(TestCaseWithFixtures):
@@ -514,7 +515,8 @@ class TestGetSMDKUboot(TestCaseWithFixtures):
         uboot_flavor = "some_uboot_flavour"
         uboot_file = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor,
             'u-boot.bin')
-        self.assertEquals(uboot_file, _get_smdk_uboot(chroot_dir, uboot_flavor))
+        self.assertEquals(uboot_file, boards.SMDKV310Config._get_smdk_uboot(
+                chroot_dir, uboot_flavor))
 
 
 class TestCreateToc(TestCaseWithFixtures):
@@ -827,6 +829,18 @@ class TestBootSteps(TestCaseWithFixtures):
         self.assertEqual(expected, self.funcs_calls)
 
     def test_smdkv310_steps(self):
+        def mock_func_creator(name):
+            return classmethod(
+                lambda *args, **kwargs: self.funcs_calls.append(name))
+
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards.SMDKV310Config,
+                'install_smdk_boot_loader',
+                mock_func_creator('install_smdk_boot_loader')))
+        boards.SMDKV310Config.hardwarepack_handler = (
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
+        boards.SMDKV310Config.hardwarepack_handler.get_format = (
+            lambda: '1.0')
         self.make_boot_files(boards.SMDKV310Config)
         expected = [
             'install_smdk_boot_loader', 'make_flashable_env', '_dd', 'make_uImage',
@@ -1302,12 +1316,21 @@ class TestBoards(TestCaseWithFixtures):
         fixture = self._mock_Popen()
         uboot_flavor = "some_u_boot_flavour"
         self.useFixture(MockSomethingFixture(
-            boards, '_get_smdk_spl',
-            lambda chroot_dir, uboot_flavor: "%s/%s/SPL" % (chroot_dir, uboot_flavor)))
+            boards.SMDKV310Config, '_get_smdk_spl',
+            classmethod(lambda cls, chroot_dir, uboot_flavor: "%s/%s/SPL" % (
+                        chroot_dir, uboot_flavor))))
         self.useFixture(MockSomethingFixture(
-            boards, '_get_smdk_uboot',
-            lambda chroot_dir, uboot_flavor: "%s/%s/uboot" % (chroot_dir, uboot_flavor)))
-        install_smdk_boot_loader("chroot_dir", "boot_disk", uboot_flavor)
+            boards.SMDKV310Config, '_get_smdk_uboot',
+            classmethod(lambda cls, chroot_dir, uboot_flavor: "%s/%s/uboot" % (
+                        chroot_dir, uboot_flavor))))
+        boards.SMDKV310Config.hardwarepack_handler = (
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
+        boards.SMDKV310Config.hardwarepack_handler.get_format = (
+            lambda: '1.0')
+        self.useFixture(MockSomethingFixture(os.path, 'getsize',
+                                             lambda file: 1))
+        boards.SMDKV310Config.install_smdk_boot_loader(
+            "chroot_dir", "boot_disk", uboot_flavor)
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
             'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL1_START),
