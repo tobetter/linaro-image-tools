@@ -31,10 +31,14 @@ import re
 import tempfile
 import struct
 from binascii import crc32
+import tarfile
+import ConfigParser
+import shutil
 
 from linaro_image_tools import cmd_runner
 
 from linaro_image_tools.media_create.partitions import SECTOR_SIZE
+
 
 KERNEL_GLOB = 'vmlinuz-*-%(kernel_flavor)s'
 INITRD_GLOB = 'initrd.img-*-%(kernel_flavor)s'
@@ -132,6 +136,98 @@ class classproperty(object):
         return self.getter(cls)
 
 
+class HardwarepackHandler(object):
+    FORMAT_1 = '1.0'
+    FORMAT_2 = '2.0'
+    FORMAT_MIXED = '1.0and2.0'
+    metadata_filename = 'metadata'
+    format_filename = 'FORMAT'
+    main_section = 'main'
+    hwpack_tarfiles = []
+    tempdir = None
+
+    def __init__(self, hwpacks):
+        self.hwpacks = hwpacks
+        self.hwpack_tarfiles = []
+    
+    class FakeSecHead(object):
+        """ Add a fake section header to the metadata file.
+
+        This is done so we can use ConfigParser to parse the file.
+        """
+        def __init__(self, fp):
+            self.fp = fp
+            self.sechead = '[%s]\n' % HardwarepackHandler.main_section
+
+        def readline(self):
+            if self.sechead:
+                try:
+                    return self.sechead
+                finally:
+                    self.sechead = None
+            else:
+                return self.fp.readline()
+
+    def __enter__(self):
+        self.tempdir = tempfile.mkdtemp()
+        for hwpack in self.hwpacks:
+            hwpack_tarfile = tarfile.open(hwpack, mode='r:gz')
+            self.hwpack_tarfiles.append(hwpack_tarfile)
+        return self
+
+    def __exit__(self, type, value, traceback):
+        for hwpack_tarfile in self.hwpack_tarfiles:
+            if hwpack_tarfile is not None:
+                hwpack_tarfile.close()
+        self.hwpack_tarfiles = []
+        if self.tempdir is not None and os.path.exists(self.tempdir):
+            shutil.rmtree(self.tempdir)
+
+    def get_field(self, section, field):
+        data = None
+        hwpack_with_data = None
+        for hwpack_tarfile in self.hwpack_tarfiles:
+            metadata = hwpack_tarfile.extractfile(self.metadata_filename)
+            # Use RawConfigParser which does not support the magical interpolation
+            # behavior of ConfigParser so we don't mess up metadata accidentally.
+            parser = ConfigParser.RawConfigParser()
+            parser.readfp(self.FakeSecHead(metadata))
+            try:
+                new_data = parser.get(section, field)
+                if new_data is not None:
+                    assert data is None, "The metadata field '%s' is set to " \
+                        "'%s' and new value '%s' is found" % (field, data, new_data)
+                    data = new_data
+                    hwpack_with_data = hwpack_tarfile
+            except ConfigParser.NoOptionError:
+                continue
+        return data, hwpack_with_data
+
+    def get_format(self):
+        format = None
+        supported_formats = [self.FORMAT_1, self.FORMAT_2]
+        for hwpack_tarfile in self.hwpack_tarfiles:
+            format_file = hwpack_tarfile.extractfile(self.format_filename)
+            format_string = format_file.read().strip()
+            if not format_string in supported_formats:
+                raise AssertionError(
+                    "Format version '%s' is not supported." % \
+                        format_string)
+            if format is None:
+                format = format_string
+            elif format != format_string:
+                return self.FORMAT_MIXED
+        return format
+
+    def get_file(self, file_alias):
+        file_name, hwpack_tarfile = self.get_field(self.main_section,
+                                                   file_alias)
+        if file_name is not None:
+            hwpack_tarfile.extract(file_name, self.tempdir)
+            file_name = os.path.join(self.tempdir, file_name)
+        return file_name
+
+
 class BoardConfig(object):
     """The configuration used when building an image for a board."""
     # These attributes may not need to be redefined on some subclasses.
@@ -141,12 +237,14 @@ class BoardConfig(object):
     mmc_option = '0:1'
     mmc_part_offset = 0
     fat_size = 32
-    extra_serial_opts = ''
-    live_serial_opts = ''
+    _extra_serial_opts = ''
+    _live_serial_opts = ''
     extra_boot_args_options = None
     supports_writing_to_mmc = True
 
-    # These attributes must be defined on all subclasses.
+    # These attributes must be defined on all subclasses for backwards
+    # compatibility with hwpacks v1 format. Hwpacks v2 format allows these to
+    # be specified in the hwpack metadata.
     kernel_addr = None
     initrd_addr = None
     load_addr = None
@@ -155,6 +253,68 @@ class BoardConfig(object):
     kernel_flavors = None
     boot_script = None
     serial_tty = None
+    wired_interfaces = None
+    wireless_interfaces = None
+    mmc_id = None
+
+    hardwarepack_handler = None
+
+    @classmethod
+    def get_metadata_field(cls, target, field_name):
+        """ Return the metadata value for field_name if it can be found.
+        """
+        data, _ = cls.hardwarepack_handler.get_field(
+            cls.hardwarepack_handler.main_section, field_name)
+        return data
+
+    @classmethod
+    def set_metadata(cls, hwpacks):
+        cls.hardwarepack_handler = HardwarepackHandler(hwpacks)
+        with cls.hardwarepack_handler:
+            if (cls.hardwarepack_handler.get_format() ==
+                cls.hardwarepack_handler.FORMAT_1):
+                return
+
+            if (cls.hardwarepack_handler.get_format() ==
+                cls.hardwarepack_handler.FORMAT_2):
+                # Clear V1 defaults.
+                cls.kernel_addr = None
+                cls.initrd_addr = None
+                cls.load_addr = None
+                cls.serial_tty = None
+                cls.fat_size = None
+
+            # Set new values from metadata.
+            cls.kernel_addr = cls.get_metadata_field(
+                cls.kernel_addr, 'kernel_addr')
+            cls.initrd_addr = cls.get_metadata_field(
+                cls.initrd_addr, 'initrd_addr')
+            cls.load_addr = cls.get_metadata_field(
+                cls.load_addr, 'load_addr')
+            cls.serial_tty = cls.get_metadata_field(
+                cls.serial_tty, 'serial_tty')
+            cls.wired_interfaces = cls.get_metadata_field(
+                cls.wired_interfaces, 'wired_interfaces')
+            cls.wireless_interfaces = cls.get_metadata_field(
+                cls.wireless_interfaces, 'wireless_interfaces')
+            cls.mmc_id = cls.get_metadata_field(
+                cls.mmc_id, 'mmc_id')
+
+            partition_layout = cls.get_metadata_field(cls.fat_size, 'partition_layout')
+            if partition_layout == 'bootfs_rootfs' or partition_layout is None:
+                cls.fat_size = 32
+            elif partition_layout == 'bootfs16_rootfs':
+                cls.fat_size = 16
+            else:
+                raise AssertionError("Unknown partition layout '%s'." % partition_layout)
+
+    @classmethod
+    def get_file(cls, file_alias, default=None):
+        file_in_hwpack = cls.hardwarepack_handler.get_file(file_alias)
+        if file_in_hwpack is not None:
+            return file_in_hwpack
+        else:
+            return default
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
@@ -302,10 +462,12 @@ class BoardConfig(object):
         if cls.uboot_in_boot_part:
             assert cls.uboot_flavor is not None, (
                 "uboot_in_boot_part is set but not uboot_flavor")
-            uboot_bin = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot',
-                cls.uboot_flavor, 'u-boot.bin')
-            cmd_runner.run(
-                ['cp', '-v', uboot_bin, boot_disk], as_root=True).wait()
+            with cls.hardwarepack_handler:
+                uboot_bin = cls.get_file('u_boot', default=os.path.join(
+                        chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+                        'u-boot.bin'))
+                cmd_runner.run(
+                    ['cp', '-v', uboot_bin, boot_disk], as_root=True).wait()
 
         cls.make_boot_files(
             uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
@@ -479,8 +641,8 @@ class IgepConfig(BeagleConfig):
 
 class Ux500Config(BoardConfig):
     serial_tty = 'ttyAMA2'
-    extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
-    live_serial_opts = 'serialtty=%s' % serial_tty
+    _extra_serial_opts = 'console=tty0 console=%s,115200n8'
+    _live_serial_opts = 'serialtty=%s'
     kernel_addr = '0x00100000'
     initrd_addr = '0x08000000'
     load_addr = '0x00008000'
@@ -492,6 +654,14 @@ class Ux500Config(BoardConfig):
         'mem=30M@194M mem_mali=32M@224M pmem_hwb=54M@256M '
         'hwmem=48M@302M mem=152M@360M')
     mmc_option = '1:1'
+
+    @classproperty
+    def live_serial_opts(cls):
+        return cls._live_serial_opts % cls.serial_tty
+
+    @classproperty
+    def extra_serial_opts(cls):
+        return cls._extra_serial_opts % cls.serial_tty
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
@@ -667,11 +837,19 @@ class SnowballEmmcConfig(SnowballSdConfig):
 
 class Mx5Config(BoardConfig):
     serial_tty = 'ttymxc0'
-    extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
-    live_serial_opts = 'serialtty=%s' % serial_tty
+    _extra_serial_opts = 'console=tty0 console=%s,115200n8'
+    _live_serial_opts = 'serialtty=%s'
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
+
+    @classproperty
+    def live_serial_opts(cls):
+        return cls._live_serial_opts % cls.serial_tty
+
+    @classproperty
+    def extra_serial_opts(cls):
+        return cls._extra_serial_opts % cls.serial_tty
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=None):
@@ -705,9 +883,11 @@ class Mx5Config(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor, 'u-boot.imx')
-        install_mx5_boot_loader(uboot_file, boot_device_or_file)
+        with cls.hardwarepack_handler:
+            uboot_file = cls.get_file('u_boot', default=os.path.join(
+                    chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+                    'u-boot.imx'))
+            install_mx5_boot_loader(uboot_file, boot_device_or_file)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         make_dtb(d_img_data, boot_dir)
@@ -755,8 +935,8 @@ class VexpressConfig(BoardConfig):
     uboot_flavor = 'ca9x4_ct_vxp'
     uboot_in_boot_part = True
     serial_tty = 'ttyAMA0'
-    extra_serial_opts = 'console=tty0 console=%s,38400n8' % serial_tty
-    live_serial_opts = 'serialtty=%s' % serial_tty
+    _extra_serial_opts = 'console=tty0 console=%s,38400n8'
+    _live_serial_opts = 'serialtty=%s'
     kernel_addr = '0x60008000'
     initrd_addr = '0x81000000'
     load_addr = kernel_addr
@@ -765,6 +945,14 @@ class VexpressConfig(BoardConfig):
     # ARM Boot Monitor is used to load u-boot, uImage etc. into flash and
     # only allows for FAT16
     fat_size = 16
+
+    @classproperty
+    def live_serial_opts(cls):
+        return cls._live_serial_opts % cls.serial_tty
+
+    @classproperty
+    def extra_serial_opts(cls):
+        return cls._extra_serial_opts % cls.serial_tty
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
@@ -777,7 +965,7 @@ class VexpressConfig(BoardConfig):
 class SMDKV310Config(BoardConfig):
     uboot_flavor = 'smdkv310'
     serial_tty = 'ttySAC1'
-    extra_serial_opts = 'console=%s,115200n8' % serial_tty
+    _extra_serial_opts = 'console=%s,115200n8'
     kernel_addr = '0x40007000'
     initrd_addr = '0x42000000'
     load_addr = '0x40008000'
@@ -785,6 +973,10 @@ class SMDKV310Config(BoardConfig):
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
+
+    @classproperty
+    def extra_serial_opts(cls):
+        return cls._extra_serial_opts % cls.serial_tty
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):

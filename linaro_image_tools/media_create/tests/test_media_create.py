@@ -29,7 +29,9 @@ import textwrap
 import time
 import types
 import struct
+import tarfile
 
+from StringIO import StringIO
 from testtools import TestCase
 
 from linaro_image_tools import cmd_runner
@@ -63,6 +65,8 @@ from linaro_image_tools.media_create.boards import (
     _get_smdk_spl,
     _get_smdk_uboot,
     _run_mkimage,
+    HardwarepackHandler,
+    BoardConfig,
     )
 from linaro_image_tools.media_create.android_boards import (
     android_board_configs,
@@ -121,6 +125,311 @@ from linaro_image_tools.utils import find_command, preferred_tools_dir
 
 chroot_args = " ".join(cmd_runner.CHROOT_ARGS)
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
+
+
+class TestHardwarepackHandler(TestCaseWithFixtures):
+    def setUp(self):
+        super(TestHardwarepackHandler, self).setUp()
+        self.tar_dir_fixture = CreateTempDirFixture()
+        self.useFixture(self.tar_dir_fixture)
+
+        self.tarball_fixture = CreateTarballFixture(
+            self.tar_dir_fixture.get_temp_dir())
+        self.useFixture(self.tarball_fixture)
+
+        self.metadata = (
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\nORIGIN=linaro\n")
+
+    def add_to_tarball(self, files, tarball=None):
+        if tarball is None:
+            tarball = self.tarball_fixture.get_tarball()
+        tar_file = tarfile.open(tarball, mode='w:gz')
+        for filename, data in files:
+            tarinfo = tarfile.TarInfo(filename)
+            tarinfo.size = len(data)
+            tar_file.addfile(tarinfo, StringIO(data))
+        tar_file.close()
+        return tarball
+
+    def test_get_format_1(self):
+        data = '1.0'
+        format = "%s\n" % data
+        tarball = self.add_to_tarball(
+            [('FORMAT', format), ('metadata', self.metadata)])
+        hp = HardwarepackHandler([tarball])
+        with hp:
+            self.assertEquals(hp.get_format(), data)
+
+    def test_get_format_2(self):
+        data = '2.0'
+        format = "%s\n" % data
+        tarball = self.add_to_tarball(
+            [('FORMAT', format), ('metadata', self.metadata)])
+        hp = HardwarepackHandler([tarball])
+        with hp:
+            self.assertEquals(hp.get_format(), data)
+
+    def test_get_unknown_format_raises(self):
+        data = '9.9'
+        format = "%s\n" % data
+        tarball = self.add_to_tarball(
+            [('FORMAT', format), ('metadata', self.metadata)])
+        hp = HardwarepackHandler([tarball])
+        with hp:
+            self.assertRaises(AssertionError, hp.get_format)
+
+    def test_mixed_formats(self):
+        format1 = "%s\n" % '1.0'
+        format2 = "%s\n" % '2.0'
+        tarball1 = self.add_to_tarball(
+            [('FORMAT', format1), ('metadata', self.metadata)],
+            tarball=self.tarball_fixture.get_tarball())
+        tarball_fixture2 = CreateTarballFixture(
+            self.tar_dir_fixture.get_temp_dir(), reldir='tarfile2',
+            filename='secondtarball.tar.gz')
+        self.useFixture(tarball_fixture2)
+        tarball2 = self.add_to_tarball(
+            [('FORMAT', format2), ('metadata', self.metadata)],
+            tarball=tarball_fixture2.get_tarball())
+        hp = HardwarepackHandler([tarball2, tarball1])
+        with hp:
+            self.assertEquals(hp.get_format(), '1.0and2.0')
+
+    def test_identical_formats_ok(self):
+        format1 = "%s\n" % '2.0'
+        format2 = "%s\n" % '2.0'
+        tarball1 = self.add_to_tarball(
+            [('FORMAT', format1), ('metadata', self.metadata)],
+            tarball=self.tarball_fixture.get_tarball())
+        tarball_fixture2 = CreateTarballFixture(
+            self.tar_dir_fixture.get_temp_dir(), reldir='tarfile2',
+            filename='secondtarball.tar.gz')
+        self.useFixture(tarball_fixture2)
+        tarball2 = self.add_to_tarball(
+            [('FORMAT', format2), ('metadata', self.metadata)],
+            tarball=tarball_fixture2.get_tarball())
+        hp = HardwarepackHandler([tarball1, tarball2])
+        with hp:
+            self.assertEquals(hp.get_format(), '2.0')
+
+    def test_get_metadata(self):
+        data = 'data to test'
+        metadata = self.metadata + "TEST=%s\n" % data
+        tarball = self.add_to_tarball(
+            [('metadata', metadata)])
+        hp = HardwarepackHandler([tarball])
+        with hp:
+            test_data, _ = hp.get_field(hp.main_section, 'test')
+            self.assertEqual(test_data, data)
+
+    def test_preserves_formatters(self):
+        data = '%s%d'
+        metadata = self.metadata + "TEST=%s\n" % data
+        tarball = self.add_to_tarball(
+            [('metadata', metadata)])
+        hp = HardwarepackHandler([tarball])
+        with hp:
+            test_data, _ = hp.get_field(hp.main_section, 'test')
+            self.assertEqual(test_data, data)
+
+    def test_creates_tempdir(self):
+        tarball = self.add_to_tarball(
+            [('metadata', self.metadata)])
+        hp = HardwarepackHandler([tarball])
+        with hp:
+            self.assertTrue(os.path.exists(hp.tempdir))
+
+    def test_tempfiles_are_removed(self):
+        tempdir = None
+        tarball = self.add_to_tarball(
+            [('metadata', self.metadata)])
+        hp = HardwarepackHandler([tarball])
+        with hp:
+            tempdir = hp.tempdir
+        self.assertFalse(os.path.exists(tempdir))
+
+    def test_get_file(self):
+        data = 'test file contents\n'
+        metadata_file = 'TESTFILE'
+        file_in_archive = 'testfile'
+        metadata = self.metadata + "%s=%s\n" % (metadata_file, file_in_archive)
+        tarball = self.add_to_tarball(
+            [('metadata', metadata),
+             (file_in_archive, data)])
+        hp = HardwarepackHandler([tarball])
+        with hp:
+            test_file = hp.get_file(metadata_file)
+            self.assertEquals(data, open(test_file, 'r').read())
+        
+
+class TestSetMetadata(TestCaseWithFixtures):
+
+    class MockHardwarepackHandler(HardwarepackHandler):
+        metadata_dict = {}
+
+        def __enter__(self):
+            return self
+
+        def get_field(self, section, field):
+            try:
+                return self.metadata_dict[field], None
+            except:
+                return None, None
+
+        def get_format(self):
+            return '2.0'
+
+        def get_file(self, file_alias):
+            return None
+
+    def test_does_not_set_if_old_format(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(None, config.kernel_addr)
+
+    def test_sets_kernel_addr(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'kernel_addr'
+        data_to_set = '0x8123ABCD'
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.kernel_addr)
+
+    def test_sets_initrd_addr(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'initrd_addr'
+        data_to_set = '0x8123ABCD'
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.initrd_addr)
+
+    def test_sets_load_addr(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'load_addr'
+        data_to_set = '0x8123ABCD'
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.load_addr)
+
+    def test_sets_serial_tty(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'serial_tty'
+        data_to_set = 'ttyAA'
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.serial_tty)
+
+    def test_sets_wired_interfaces(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'wired_interfaces'
+        data_to_set = 'eth0 eth1'
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.wired_interfaces)
+
+    def test_sets_wireless_interfaces(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'wireless_interfaces'
+        data_to_set = 'wlan0 wl1'
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.wireless_interfaces)
+
+    def test_sets_mmc_id(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'mmc_id'
+        data_to_set = '1'
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.mmc_id)
+
+    def test_sets_partition_layout_32(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'partition_layout'
+        data_to_set = 'bootfs_rootfs'
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(32, config.fat_size)
+
+    def test_sets_partition_layout_16(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'partition_layout'
+        data_to_set = 'bootfs16_rootfs'
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(16, config.fat_size)
+
+    def test_sets_partition_layout_raises(self):
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+                self.MockHardwarepackHandler))
+        field_to_test = 'partition_layout'
+        data_to_set = 'bootfs_bogus_rootfs'
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+        class config(BoardConfig):
+            pass
+        self.assertRaises(AssertionError, config.set_metadata, 'ahwpack.tar.gz')
 
 
 class TestGetMLOFile(TestCaseWithFixtures):
@@ -507,6 +816,10 @@ class TestBootSteps(TestCaseWithFixtures):
     def test_mx5_steps(self):
         class SomeMx5Config(boards.Mx5Config):
             uboot_flavor = 'uboot_flavor'
+        SomeMx5Config.hardwarepack_handler = (
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
+        SomeMx5Config.hardwarepack_handler.get_format = (
+            lambda: '1.0')
         self.make_boot_files(SomeMx5Config)
         expected = [
             'install_mx5_boot_loader', 'make_uImage', 'make_uInitrd',
@@ -1554,6 +1867,9 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
         self.config = c
         self.config.boot_script = 'boot_script'
+        self.config.hardwarepack_handler = \
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz')
+        self.config.hardwarepack_handler.get_format = lambda: '1.0'
         self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             self.config, 'make_boot_files', self.save_args))
