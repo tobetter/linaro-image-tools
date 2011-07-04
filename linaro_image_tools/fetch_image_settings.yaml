@@ -45,6 +45,7 @@ choice:
     # u8500: U8500
     overo: Overo
     smdkv310: S5PV310
+    origen: Origen
   
   hwpack:
     beagle:
@@ -87,6 +88,9 @@ choice:
     smdkv310:
      - lt-s5pv310
      - s5pv310
+
+    origen:
+     - lt-origen
 
   image:
   - alip
