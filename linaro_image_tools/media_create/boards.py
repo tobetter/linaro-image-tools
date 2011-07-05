@@ -1046,15 +1046,17 @@ class SamsungConfig(BoardConfig):
     @classmethod
     def install_samsung_boot_loader(cls, chroot_dir, boot_device_or_file):
         spl_file = cls._get_samsung_spl(chroot_dir)
-        assert os.path.getsize(spl_file) <= SAMSUNG_V310_BL1_LEN, (
-            "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
+        bl1_max_size = SAMSUNG_V310_BL1_LEN * SECTOR_SIZE
+        assert os.path.getsize(spl_file) <= bl1_max_size, (
+            "%s is larger than %s" % (spl_file, bl1_max_size))
         _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
 
         with cls.hardwarepack_handler:
             uboot_file = cls.get_file(
                 'u_boot', default=cls._get_samsung_uboot(chroot_dir))
-        assert os.path.getsize(uboot_file) <= SAMSUNG_V310_BL2_LEN, (
-            "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
+        bl2_max_size = SAMSUNG_V310_BL2_LEN * SECTOR_SIZE
+        assert os.path.getsize(uboot_file) <= bl2_max_size, (
+            "%s is larger than %s" % (uboot_file, bl2_max_size))
         _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
 
 
