@@ -1005,8 +1005,7 @@ class SamsungConfig(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        cls.install_samsung_boot_loader(chroot_dir, boot_device_or_file,
-                                     cls.uboot_flavor)
+        cls.install_samsung_boot_loader(chroot_dir, boot_device_or_file)
         env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
         _dd(env_file, boot_device_or_file, seek=SAMSUNG_V310_ENV_START)
