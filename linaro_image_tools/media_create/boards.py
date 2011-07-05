@@ -1020,9 +1020,9 @@ class SamsungConfig(BoardConfig):
         make_boot_script(boot_env, boot_script_path)
 
     @classmethod
-    def _get_samsung_spl(cls, chroot_dir, uboot_flavor):
+    def _get_samsung_spl(cls, chroot_dir):
         spl_dir = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor)
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor)
         old_spl_path = os.path.join(spl_dir, 'v310_mmc_spl.bin')
         new_spl_path = os.path.join(spl_dir, 'u-boot-mmc-spl.bin')
 
@@ -1038,22 +1038,22 @@ class SamsungConfig(BoardConfig):
         return spl_file
 
     @classmethod
-    def _get_samsung_uboot(cls, chroot_dir, uboot_flavor):
+    def _get_samsung_uboot(cls, chroot_dir):
         uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor, 'u-boot.bin')
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+            'u-boot.bin')
         return uboot_file
 
     @classmethod
-    def install_samsung_boot_loader(cls, chroot_dir, boot_device_or_file,
-                                 uboot_flavor):
-        spl_file = cls._get_samsung_spl(chroot_dir, uboot_flavor)
+    def install_samsung_boot_loader(cls, chroot_dir, boot_device_or_file):
+        spl_file = cls._get_samsung_spl(chroot_dir)
         assert os.path.getsize(spl_file) <= SAMSUNG_V310_BL1_LEN, (
             "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
         _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
 
         with cls.hardwarepack_handler:
-            uboot_file = cls.get_file('u_boot', default=cls._get_samsung_uboot(
-                    chroot_dir, uboot_flavor))
+            uboot_file = cls.get_file(
+                'u_boot', default=cls._get_samsung_uboot(chroot_dir))
         assert os.path.getsize(uboot_file) <= SAMSUNG_V310_BL2_LEN, (
             "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
         _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
