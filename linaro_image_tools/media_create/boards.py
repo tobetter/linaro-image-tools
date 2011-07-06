@@ -1005,8 +1005,7 @@ class SamsungConfig(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        cls.install_samsung_boot_loader(chroot_dir, boot_device_or_file,
-                                     cls.uboot_flavor)
+        cls.install_samsung_boot_loader(chroot_dir, boot_device_or_file)
         env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
         _dd(env_file, boot_device_or_file, seek=SAMSUNG_V310_ENV_START)
@@ -1047,14 +1046,14 @@ class SamsungConfig(BoardConfig):
     @classmethod
     def install_samsung_boot_loader(cls, chroot_dir, boot_device_or_file):
         spl_file = cls._get_samsung_spl(chroot_dir)
-        assert os.path.getsize(spl_file) <= SAMSUNG_V310_BL1_LEN, (
+        assert os.path.getsize(spl_file) <= (SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
             "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
         _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
 
         with cls.hardwarepack_handler:
             uboot_file = cls.get_file(
                 'u_boot', default=cls._get_samsung_uboot(chroot_dir))
-        assert os.path.getsize(uboot_file) <= SAMSUNG_V310_BL2_LEN, (
+        assert os.path.getsize(uboot_file) <= (SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
             "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
         _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
 

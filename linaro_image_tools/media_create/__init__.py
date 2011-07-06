@@ -123,6 +123,10 @@ def get_args_parser():
         '--nocheck-mmc', dest='nocheck_mmc',
         action='store_true',
         help='Assume yes to the question "Are you 100%% sure, on selecting [mmc]"')
+    parser.add_argument(
+        '--debug-tmpfs', dest='debug_tmpfs',
+        action='store_true',
+        help='Don\'t delete the temporary files - for debugging')
     
     return parser
 
