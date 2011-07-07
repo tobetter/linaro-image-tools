@@ -72,6 +72,49 @@ class FileHandler():
             list.append(setting_name)
             list.append(dictionary[key])
 
+    def download_os_and_hwpack(self,
+                               image_url,
+                               hwpack_url,
+                               settings,
+                               event_handler=None):
+        """Download the OS and hardware pack from the URLs specified"""
+        
+        if event_handler == None:
+            event_handler = self.DummyEventHandler()
+        
+        event_handler.event_start("download OS")
+        binary_file = None
+        try:
+            binary_file = self.download(image_url,
+                                        settings["force_download"],
+                                        show_wx_progress=True)
+        except Exception:
+            # Download error. Hardly matters what, we can't continue.
+            print "Unexpected error:", sys.exc_info()[0]
+            logging.error("Unable to download " + image_url + " - aborting.")
+        event_handler.event_end("download OS")
+
+        if binary_file == None:  # User hit cancel when downloading
+            sys.exit(0)
+
+        event_handler.event_start("download hwpack")
+        binary_file = None
+        try:
+            hwpack_file = self.download(hwpack_url,
+                                        settings["force_download"],
+                                        show_wx_progress=True)
+        except Exception:
+            # Download error. Hardly matters what, we can't continue.
+            print "Unexpected error:", sys.exc_info()[0]
+            logging.error("Unable to download " + hwpack_url + " - aborting.")
+        event_handler.event_end("download hwpack")
+
+        if hwpack_file == None:  # User hit cancel when downloading
+            sys.exit(0)
+
+        logging.info("Have downloaded OS binary to", binary_file,
+                     "and hardware pack to", hwpack_file)
+
     def create_media(self, image_url, hwpack_url, settings, tools_dir,
                      run_in_gui=False, event_handler=None):
         """Create a command line for linaro-media-create based on the settings
@@ -100,40 +143,7 @@ class FileHandler():
         if run_in_gui:
             args.append("--nocheck-mmc")
 
-        event_handler.event_start("download OS")
-        try:
-            binary_file = self.download(image_url,
-                                        settings["force_download"],
-                                        show_wx_progress=run_in_gui,
-                                        wx_progress_title=
-                                         "Downloading file 1 of 2")
-        except Exception:
-            # Download error. Hardly matters what, we can't continue.
-            print "Unexpected error:", sys.exc_info()[0]
-            logging.error("Unable to download " + image_url + " - aborting.")
-        event_handler.event_end("download OS")
-
-        if binary_file == None:  # User hit cancel when downloading
-            sys.exit(0)
-
-        event_handler.event_start("download hwpack")
-        try:
-            hwpack_file = self.download(hwpack_url,
-                                        settings["force_download"],
-                                        show_wx_progress=run_in_gui,
-                                        wx_progress_title=
-                                         "Downloading file 2 of 2")
-        except Exception:
-            # Download error. Hardly matters what, we can't continue.
-            print "Unexpected error:", sys.exc_info()[0]
-            logging.error("Unable to download " + hwpack_url + " - aborting.")
-        event_handler.event_end("download hwpack")
-
-        if hwpack_file == None:  # User hit cancel when downloading
-            sys.exit(0)
-
-        logging.info("Have downloaded OS binary to", binary_file,
-                     "and hardware pack to", hwpack_file)
+        self.download_os_and_hwpack(image_url, hwpack_url, settings, event_handler)
 
         if 'rootfs' in settings and settings['rootfs']:
             args.append("--rootfs")
@@ -310,8 +320,11 @@ class FileHandler():
         self.download_count = count
         (self.do_download, skip) = self.dlg.Update(count)
 
-    def download(self, url, force_download=False,
-                 show_wx_progress=False, wx_progress_title=None):
+    def download(self,
+                 url,
+                 force_download=False,
+                 show_wx_progress=False,
+                 wx_progress_title=None):
         """Downloads the file requested buy URL to the local cache and returns
         the full path to the downloaded file"""
 
@@ -411,7 +424,7 @@ class FileHandler():
             force_download = (force_download == True
                               or (    time.mktime(time.localtime())
                                     - os.path.getmtime(file_path_and_name)
-                                  > 60 * 60 * 24))
+                                  > 60 * 60))
         except OSError:
             force_download = True  # File not found...
 
@@ -420,8 +433,8 @@ class FileHandler():
     def update_files_from_server(self, force_download=False,
                                  show_wx_progress=False):
 
-        settings_url     = "http://z.nanosheep.org/fetch_image_settings.yaml"
-        server_index_url = "http://z.nanosheep.org/server_index.bz2"
+        settings_url     = "http://releases.linaro.org/fetch_image/fetch_image_settings.yaml"
+        server_index_url = "http://releases.linaro.org/fetch_image/server_index.bz2"
 
         self.settings_file = self.download_if_old(settings_url,
                                                   force_download,
