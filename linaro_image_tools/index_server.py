@@ -25,7 +25,7 @@ import re
 import urlparse
 import logging
 import bz2
-import linaro_image_tools.FetchImage
+import FetchImage
 
 RELEASES_WWW_DOCUMENT_ROOT  = "/srv/releases.linaro.org/www/platform/"
 RELEASE_URL                 = "http://releases.linaro.org/platform/"
@@ -41,7 +41,7 @@ class ServerIndexer():
     def __init__(self):
         self.reset()
         self.db_file_name = "server_index"
-        self.db = linaro_image_tools.FetchImage.DB(self.db_file_name)
+        self.db = FetchImage.DB(self.db_file_name)
 
     def crawl(self):
         self.db.set_url_parse_info(self.url_parse)
@@ -89,8 +89,6 @@ class ServerIndexer():
                                  url_chunks_):
         
         if(not id_ in self.url_parse):
-            
-            print base_dir_
             self.url_parse[id_] = {"base_dir":      base_dir_,
                                    "base_url":      base_url_,
                                    "url_validator": url_validator_,
