@@ -89,8 +89,6 @@ class ServerIndexer():
                                  url_chunks_):
         
         if(not id_ in self.url_parse):
-            
-            print base_dir_
             self.url_parse[id_] = {"base_dir":      base_dir_,
                                    "base_url":      base_url_,
                                    "url_validator": url_validator_,
