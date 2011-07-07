@@ -971,19 +971,7 @@ class VexpressConfig(BoardConfig):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
 
-
-class SMDKV310Config(BoardConfig):
-    uboot_flavor = 'smdkv310'
-    serial_tty = 'ttySAC1'
-    _extra_serial_opts = 'console=%s,115200n8'
-    kernel_addr = '0x40007000'
-    initrd_addr = '0x42000000'
-    load_addr = '0x40008000'
-    kernel_flavors = ['s5pv310']
-    boot_script = 'boot.scr'
-    mmc_part_offset = 1
-    mmc_option = '0:2'
-
+class SamsungConfig(BoardConfig):
     @classproperty
     def extra_serial_opts(cls):
         return cls._extra_serial_opts % cls.serial_tty
@@ -1014,22 +1002,10 @@ class SMDKV310Config(BoardConfig):
             loaders_start, loaders_len, boot_start, boot_len, root_start)
 
     @classmethod
-    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid,
-                      d_img_data):
-        boot_env = super(SMDKV310Config, cls)._get_boot_env(
-            is_live, is_lowmem, consoles, rootfs_uuid, d_img_data)
-
-        boot_env["ethact"] = "smc911x-0"
-        boot_env["ethaddr"] = "00:40:5c:26:0a:5b"
-
-        return boot_env
-
-    @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        cls.install_smdk_boot_loader(chroot_dir, boot_device_or_file,
-                                     cls.uboot_flavor)
+        cls.install_samsung_boot_loader(chroot_dir, boot_device_or_file)
         env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
         _dd(env_file, boot_device_or_file, seek=SAMSUNG_V310_ENV_START)
@@ -1043,9 +1019,9 @@ class SMDKV310Config(BoardConfig):
         make_boot_script(boot_env, boot_script_path)
 
     @classmethod
-    def _get_smdk_spl(cls, chroot_dir, uboot_flavor):
+    def _get_samsung_spl(cls, chroot_dir):
         spl_dir = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor)
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor)
         old_spl_path = os.path.join(spl_dir, 'v310_mmc_spl.bin')
         new_spl_path = os.path.join(spl_dir, 'u-boot-mmc-spl.bin')
 
@@ -1061,25 +1037,64 @@ class SMDKV310Config(BoardConfig):
         return spl_file
 
     @classmethod
-    def _get_smdk_uboot(cls, chroot_dir, uboot_flavor):
+    def _get_samsung_uboot(cls, chroot_dir):
         uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor, 'u-boot.bin')
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+            'u-boot.bin')
         return uboot_file
 
     @classmethod
-    def install_smdk_boot_loader(cls, chroot_dir, boot_device_or_file,
-                                 uboot_flavor):
-        spl_file = cls._get_smdk_spl(chroot_dir, uboot_flavor)
-        assert os.path.getsize(spl_file) <= SAMSUNG_V310_BL1_LEN, (
-            "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
+    def install_samsung_boot_loader(cls, chroot_dir, boot_device_or_file):
+        spl_file = cls._get_samsung_spl(chroot_dir)
+        bl1_max_size = SAMSUNG_V310_BL1_LEN * SECTOR_SIZE
+        assert os.path.getsize(spl_file) <= bl1_max_size, (
+            "%s is larger than %s" % (spl_file, bl1_max_size))
         _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
 
         with cls.hardwarepack_handler:
-            uboot_file = cls.get_file('u_boot', default=cls._get_smdk_uboot(
-                    chroot_dir, uboot_flavor))
-        assert os.path.getsize(uboot_file) <= SAMSUNG_V310_BL2_LEN, (
-            "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
+            uboot_file = cls.get_file(
+                'u_boot', default=cls._get_samsung_uboot(chroot_dir))
+        bl2_max_size = SAMSUNG_V310_BL2_LEN * SECTOR_SIZE
+        assert os.path.getsize(uboot_file) <= bl2_max_size, (
+            "%s is larger than %s" % (uboot_file, bl2_max_size))
         _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
+
+
+class SMDKV310Config(SamsungConfig):
+    uboot_flavor = 'smdkv310'
+    serial_tty = 'ttySAC1'
+    _extra_serial_opts = 'console=%s,115200n8'
+    kernel_addr = '0x40007000'
+    initrd_addr = '0x42000000'
+    load_addr = '0x40008000'
+    kernel_flavors = ['s5pv310']
+    boot_script = 'boot.scr'
+    mmc_part_offset = 1
+    mmc_option = '0:2'
+
+    @classmethod
+    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid,
+                      d_img_data):
+        boot_env = super(SamsungConfig, cls)._get_boot_env(
+            is_live, is_lowmem, consoles, rootfs_uuid, d_img_data)
+
+        boot_env["ethact"] = "smc911x-0"
+        boot_env["ethaddr"] = "00:40:5c:26:0a:5b"
+
+        return boot_env
+
+
+class OrigenConfig(SamsungConfig):
+    uboot_flavor = 'origen'
+    serial_tty = 'ttySAC2'
+    _extra_serial_opts = 'console=%s,115200n8'
+    kernel_addr = '0x40007000'
+    initrd_addr = '0x42000000'
+    load_addr = '0x40008000'
+    kernel_flavors = ['origen']
+    boot_script = 'boot.scr'
+    mmc_part_offset = 1
+    mmc_option = '0:2'
 
 
 board_configs = {
@@ -1096,6 +1111,7 @@ board_configs = {
     'mx53loco': Mx53LoCoConfig,
     'overo': OveroConfig,
     'smdkv310': SMDKV310Config,
+    'origen': OrigenConfig,
     }
 
 

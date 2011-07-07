@@ -513,57 +513,73 @@ class TestGetMLOFile(TestCaseWithFixtures):
             AssertionError, _get_mlo_file, tempdir)
 
 
+def _create_uboot_dir(root, flavor):
+    path = os.path.join(root, 'usr', 'lib', 'u-boot', flavor)
+    os.makedirs(path)
+    return path
+
+
 class TestGetSMDKSPL(TestCaseWithFixtures):
+    config = boards.SMDKV310Config
 
     def test_no_file_present(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
-        uboot_flavor = "some_uboot_flavour"
         self.assertRaises(
-            AssertionError, boards.SMDKV310Config._get_smdk_spl, tempdir,
-            uboot_flavor)
+            AssertionError, self.config._get_samsung_spl, tempdir)
 
     def test_old_file_present(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
-        uboot_flavor = "some_uboot_flavour"
-        path = os.path.join(tempdir, 'usr', 'lib', 'u-boot', uboot_flavor)
-        os.makedirs(path)
+        path = _create_uboot_dir(tempdir, self.config.uboot_flavor)
         spl_path = os.path.join(path, 'v310_mmc_spl.bin')
         open(spl_path, 'w').close()
-        self.assertEquals(spl_path, boards.SMDKV310Config._get_smdk_spl(
-                tempdir, uboot_flavor))
+        self.assertEquals(spl_path, self.config._get_samsung_spl(tempdir))
 
     def test_new_file_present(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
-        uboot_flavor = "some_uboot_flavour"
-        path = os.path.join(tempdir, 'usr', 'lib', 'u-boot', uboot_flavor)
-        os.makedirs(path)
+        path = _create_uboot_dir(tempdir, self.config.uboot_flavor)
         spl_path = os.path.join(path, 'u-boot-mmc-spl.bin')
         open(spl_path, 'w').close()
-        self.assertEquals(spl_path, boards.SMDKV310Config._get_smdk_spl(
-                tempdir, uboot_flavor))
+        self.assertEquals(spl_path, self.config._get_samsung_spl(tempdir))
 
     def test_prefers_old_path(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
-        uboot_flavor = "some_uboot_flavour"
-        path = os.path.join(tempdir, 'usr', 'lib', 'u-boot', uboot_flavor)
-        os.makedirs(path)
+        path = _create_uboot_dir(tempdir, self.config.uboot_flavor)
         old_spl_path = os.path.join(path, 'v310_mmc_spl.bin')
         new_spl_path = os.path.join(path, 'u-boot-mmc-spl.bin')
         open(old_spl_path, 'w').close()
         open(new_spl_path, 'w').close()
-        self.assertEquals(old_spl_path, boards.SMDKV310Config._get_smdk_spl(
-                tempdir, uboot_flavor))
+        self.assertEquals(old_spl_path, self.config._get_samsung_spl(tempdir))
 
 
 class TestGetSMDKUboot(TestCaseWithFixtures):
+    config = boards.SMDKV310Config
 
     def test_uses_uboot_flavour(self):
         chroot_dir = "chroot"
-        uboot_flavor = "some_uboot_flavour"
-        uboot_file = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot', uboot_flavor,
-            'u-boot.bin')
-        self.assertEquals(uboot_file, boards.SMDKV310Config._get_smdk_uboot(
-                chroot_dir, uboot_flavor))
+        uboot_file = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot',
+                                  self.config.uboot_flavor, 'u-boot.bin')
+        self.assertEquals(
+            uboot_file, self.config._get_samsung_uboot(chroot_dir))
+
+
+class TestGetOrigenSPL(TestCaseWithFixtures):
+    config = boards.OrigenConfig
+
+    def test_no_file_present(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        self.assertRaises(
+            AssertionError, self.config._get_samsung_spl, tempdir)
+
+    def test_new_file_present(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        path = _create_uboot_dir(tempdir, self.config.uboot_flavor)
+        spl_path = os.path.join(path, 'u-boot-mmc-spl.bin')
+        open(spl_path, 'w').close()
+        self.assertEquals(spl_path, self.config._get_samsung_spl(tempdir))
+
+
+class TestGetOrigenUboot(TestGetSMDKUboot):
+    config = boards.OrigenConfig
 
 
 class TestCreateToc(TestCaseWithFixtures):
@@ -882,15 +898,34 @@ class TestBootSteps(TestCaseWithFixtures):
 
         self.useFixture(MockSomethingFixture(
                 linaro_image_tools.media_create.boards.SMDKV310Config,
-                'install_smdk_boot_loader',
-                mock_func_creator('install_smdk_boot_loader')))
+                'install_samsung_boot_loader',
+                mock_func_creator('install_samsung_boot_loader')))
         boards.SMDKV310Config.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         boards.SMDKV310Config.hardwarepack_handler.get_format = (
             lambda: '1.0')
         self.make_boot_files(boards.SMDKV310Config)
         expected = [
-            'install_smdk_boot_loader', 'make_flashable_env', '_dd', 'make_uImage',
+            'install_samsung_boot_loader', 'make_flashable_env', '_dd', 'make_uImage',
+            'make_uInitrd', 'make_boot_script']
+        self.assertEqual(expected, self.funcs_calls)
+
+    def test_origen_steps(self):
+        def mock_func_creator(name):
+            return classmethod(
+                lambda *args, **kwargs: self.funcs_calls.append(name))
+
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards.OrigenConfig,
+                'install_samsung_boot_loader',
+                mock_func_creator('install_samsung_boot_loader')))
+        boards.OrigenConfig.hardwarepack_handler = (
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
+        boards.OrigenConfig.hardwarepack_handler.get_format = (
+            lambda: '1.0')
+        self.make_boot_files(boards.OrigenConfig)
+        expected = [
+            'install_samsung_boot_loader', 'make_flashable_env', '_dd', 'make_uImage',
             'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
@@ -1036,6 +1071,11 @@ class TestGetSfdiskCmd(TestCase):
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             board_configs['smdkv310'].get_sfdisk_cmd())
 
+    def test_origen(self):
+        self.assertEquals(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            board_configs['origen'].get_sfdisk_cmd())
+
     def test_panda_android(self):
         self.assertEqual(
             '63,270272,0x0C,*\n270336,524288,L\n794624,524288,L\n' \
@@ -1088,6 +1128,18 @@ class TestGetBootCmd(TestCase):
                         'bootm 0x40007000 0x42000000',
              'ethact': 'smc911x-0',
              'ethaddr': '00:40:5c:26:0a:5b'}
+        self.assertEqual(expected, boot_commands)
+
+    def test_origen(self):
+        boot_commands = board_configs['origen']._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=[],
+            rootfs_uuid="deadbeef", d_img_data=None)
+        expected = {
+            'bootargs': 'console=ttySAC2,115200n8  root=UUID=deadbeef '
+                        'rootwait ro',
+             'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
+                        'fatload mmc 0:2 0x42000000 uInitrd; '
+                        'bootm 0x40007000 0x42000000'}
         self.assertEqual(expected, boot_commands)
 
     def test_ux500(self):
@@ -1363,23 +1415,49 @@ class TestBoards(TestCaseWithFixtures):
 
     def test_install_smdk_u_boot(self):
         fixture = self._mock_Popen()
-        uboot_flavor = "some_u_boot_flavour"
+        uboot_flavor = boards.SMDKV310Config.uboot_flavor
         self.useFixture(MockSomethingFixture(
-            boards.SMDKV310Config, '_get_smdk_spl',
-            classmethod(lambda cls, chroot_dir, uboot_flavor: "%s/%s/SPL" % (
-                        chroot_dir, uboot_flavor))))
+            boards.SMDKV310Config, '_get_samsung_spl',
+            classmethod(lambda cls, chroot_dir: "%s/%s/SPL" % (
+                chroot_dir, uboot_flavor))))
         self.useFixture(MockSomethingFixture(
-            boards.SMDKV310Config, '_get_smdk_uboot',
-            classmethod(lambda cls, chroot_dir, uboot_flavor: "%s/%s/uboot" % (
-                        chroot_dir, uboot_flavor))))
+            boards.SMDKV310Config, '_get_samsung_uboot',
+            classmethod(lambda cls, chroot_dir: "%s/%s/uboot" % (
+                chroot_dir, uboot_flavor))))
         boards.SMDKV310Config.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         boards.SMDKV310Config.hardwarepack_handler.get_format = (
             lambda: '1.0')
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
                                              lambda file: 1))
-        boards.SMDKV310Config.install_smdk_boot_loader(
-            "chroot_dir", "boot_disk", uboot_flavor)
+        boards.SMDKV310Config.install_samsung_boot_loader(
+            "chroot_dir", "boot_disk")
+        expected = [
+            '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
+            'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL1_START),
+            '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
+            'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL2_START)]
+        self.assertEqual(expected, fixture.mock.commands_executed)
+
+    def test_install_origen_u_boot(self):
+        fixture = self._mock_Popen()
+        uboot_flavor = boards.OrigenConfig.uboot_flavor
+        self.useFixture(MockSomethingFixture(
+            boards.OrigenConfig, '_get_samsung_spl',
+            classmethod(lambda cls, chroot_dir: "%s/%s/SPL" % (
+                chroot_dir, uboot_flavor))))
+        self.useFixture(MockSomethingFixture(
+            boards.OrigenConfig, '_get_samsung_uboot',
+            classmethod(lambda cls, chroot_dir: "%s/%s/uboot" % (
+                chroot_dir, uboot_flavor))))
+        boards.OrigenConfig.hardwarepack_handler = (
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
+        boards.OrigenConfig.hardwarepack_handler.get_format = (
+            lambda: '1.0')
+        self.useFixture(MockSomethingFixture(os.path, 'getsize',
+                                             lambda file: 1))
+        boards.OrigenConfig.install_samsung_boot_loader(
+            "chroot_dir", "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
             'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL1_START),
@@ -1565,6 +1643,25 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
         create_partitions(
             board_configs['smdkv310'], self.media, HEADS, SECTORS, '')
+
+        self.assertEqual(
+            ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
+             'sync'],
+            popen_fixture.mock.commands_executed)
+        # Notice that we create all partitions in a single sfdisk run because
+        # every time we run sfdisk it actually repartitions the device,
+        # erasing any partitions created previously.
+        self.assertEqual(
+            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', HEADS,
+              SECTORS, '', self.media.path)], sfdisk_fixture.mock.calls)
+
+    def test_create_partitions_for_origen(self):
+        # For this board we create a one cylinder partition at the beginning.
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
+
+        create_partitions(
+            board_configs['origen'], self.media, HEADS, SECTORS, '')
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
