@@ -98,7 +98,7 @@ class FileHandler():
             sys.exit(0)
 
         event_handler.event_start("download hwpack")
-        binary_file = None
+        hwpack_file = None
         try:
             hwpack_file = self.download(hwpack_url,
                                         settings["force_download"],
@@ -114,17 +114,17 @@ class FileHandler():
 
         logging.info("Have downloaded OS binary to", binary_file,
                      "and hardware pack to", hwpack_file)
+        
+        return (binary_file, hwpack_file)
 
-    def create_media(self, image_url, hwpack_url, settings, tools_dir,
-                     run_in_gui=False, event_handler=None):
-        """Create a command line for linaro-media-create based on the settings
-        provided then run linaro-media-create, either in a separate thread
-        (GUI mode) or in the current one (CLI mode)."""
-
+    def build_linaro_media_create_command_line(self,
+                                               binary_file,
+                                               hwpack_file,
+                                               settings,
+                                               tools_dir,
+                                               run_in_gui):
+        
         import linaro_image_tools.utils
-
-        if event_handler == None:
-            event_handler = self.DummyEventHandler()
 
         args = []
         args.append("pkexec")
@@ -142,8 +142,6 @@ class FileHandler():
 
         if run_in_gui:
             args.append("--nocheck-mmc")
-
-        self.download_os_and_hwpack(image_url, hwpack_url, settings, event_handler)
 
         if 'rootfs' in settings and settings['rootfs']:
             args.append("--rootfs")
@@ -168,6 +166,25 @@ class FileHandler():
         args.append(hwpack_file)
 
         logging.info(args)
+
+        return args
+
+    def create_media(self, image_url, hwpack_url, settings, tools_dir,
+                     run_in_gui=False, event_handler=None):
+        """Create a command line for linaro-media-create based on the settings
+        provided then run linaro-media-create, either in a separate thread
+        (GUI mode) or in the current one (CLI mode)."""
+
+        binary_file, hwpack_file = self.download_os_and_hwpack(image_url,
+                                                               hwpack_url,
+                                                               settings,
+                                                               event_handler)
+
+        args = self.build_linaro_media_create_command_line(binary_file,
+                                                           hwpack_file,
+                                                           settings,
+                                                           tools_dir,
+                                                           run_in_gui)
 
         if run_in_gui:
             self.lmcargs        = args
