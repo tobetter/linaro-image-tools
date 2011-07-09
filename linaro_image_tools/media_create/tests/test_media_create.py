@@ -1469,6 +1469,8 @@ class TestBoards(TestCaseWithFixtures):
         boot_env = {'bootargs': 'mybootargs', 'bootcmd': 'mybootcmd'}
         boot_script_data = get_plain_boot_script_contents(boot_env)
         self.assertEqual(textwrap.dedent("""\
+            setenv initrd_high "0xffffffff"
+            setenv fdt_high "0xffffffff"
             setenv bootcmd "mybootcmd"
             setenv bootargs "mybootargs"
             boot"""), boot_script_data)
