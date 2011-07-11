@@ -1183,13 +1183,17 @@ class RunLMC(wiz.WizardPageSimple):
             tools_dir = os.path.dirname(__file__)
             if tools_dir == '':
                 tools_dir = None
+            
+            binary_file, hwpack_file = self.file_handler.download_os_and_hwpack(
+                                                                image_url,
+                                                                hwpack_url,
+                                                                self.settings,
+                                                                self)
 
-            self.file_handler.create_media(image_url,
-                                           hwpack_url,
-                                           self.settings,
-                                           tools_dir,
-                                           True,
-                                           self)
+            lmc_command = self.file_handler.build_lmc_command(binary_file,
+                                                              hwpack_file,
+                                                              self.settings,
+                                                              tools_dir)
 
             self.timer = wx.Timer(self)
             self.Bind(wx.EVT_TIMER, self.timer_ping, self.timer)
@@ -1197,7 +1201,11 @@ class RunLMC(wiz.WizardPageSimple):
 
             self.start_button.Disable()
             self.event_queue = Queue.Queue()
-            self.file_handler.start_lmc_gui_thread(self.event_queue)
+            self.lmc_thread = self.file_handler.LinaroMediaCreate(
+                                                    self,
+                                                    lmc_command,
+                                                    self.event_queue)
+            self.lmc_thread.start()
         else:
             print >> sys.stderr, ("Unable to find files that match the"
                                   "parameters specified")
@@ -1264,7 +1272,7 @@ class RunLMC(wiz.WizardPageSimple):
                 self.file_handler.kill_create_media()
                 sys.exit(1)
             else:
-                self.file_handler.send_to_create_process("y")
+                self.lmc_thread.send_to_create_process("y")
 
         elif event == "create file system":
             self.create_file_system_status.SetLabel("Running")

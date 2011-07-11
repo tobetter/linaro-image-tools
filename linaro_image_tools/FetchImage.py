@@ -117,12 +117,12 @@ class FileHandler():
         
         return (binary_file, hwpack_file)
 
-    def build_linaro_media_create_command_line(self,
-                                               binary_file,
-                                               hwpack_file,
-                                               settings,
-                                               tools_dir,
-                                               run_in_gui):
+    def build_lmc_command(self,
+                          binary_file,
+                          hwpack_file,
+                          settings,
+                          tools_dir,
+                          run_in_gui=False):
         
         import linaro_image_tools.utils
 
@@ -169,32 +169,23 @@ class FileHandler():
 
         return args
 
-    def create_media(self, image_url, hwpack_url, settings, tools_dir,
-                     run_in_gui=False, event_handler=None):
+    def create_media(self, image_url, hwpack_url, settings, tools_dir):
         """Create a command line for linaro-media-create based on the settings
         provided then run linaro-media-create, either in a separate thread
         (GUI mode) or in the current one (CLI mode)."""
 
         binary_file, hwpack_file = self.download_os_and_hwpack(image_url,
                                                                hwpack_url,
-                                                               settings,
-                                                               event_handler)
+                                                               settings)
 
-        args = self.build_linaro_media_create_command_line(binary_file,
-                                                           hwpack_file,
-                                                           settings,
-                                                           tools_dir,
-                                                           run_in_gui)
+        args = self.build_lmc_command(binary_file,
+                                      hwpack_file,
+                                      settings,
+                                      tools_dir)
 
-        if run_in_gui:
-            self.lmcargs        = args
-            self.event_handler  = event_handler
-            self.started_lmc    = False
-            return
-
-        else:
-            self.create_process = subprocess.Popen(args)
-            self.create_process.wait()
+        
+        self.create_process = subprocess.Popen(args)
+        self.create_process.wait()
 
     class LinaroMediaCreate(threading.Thread):
         """Thread class for running linaro-media-create"""
@@ -288,18 +279,6 @@ class FileHandler():
         def send_to_create_process(self, text):
             print >> self.create_process.stdin, text
             self.waiting_for_event_response = False
-
-    def start_lmc_gui_thread(self, event_queue):
-        self.lmc_thread = self.LinaroMediaCreate(self.event_handler,
-                                                 self.lmcargs, event_queue)
-        self.lmc_thread.start()
-
-    def kill_create_media(self):
-        pass  # TODO: Something!
-              # Need to make sure all child processes are terminated.
-
-    def send_to_create_process(self, text):
-        self.lmc_thread.send_to_create_process(text)
 
     def name_and_path_from_url(self, url):
         """Return the file name and the path at which the file will be stored
