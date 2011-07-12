@@ -35,6 +35,7 @@ import shutil
 import datetime
 import threading
 import subprocess
+import Queue
 
 
 class FileHandler():
@@ -52,15 +53,6 @@ class FileHandler():
                                      "image-tools",
                                      "fetch_image")
 
-    class DummyEventHandler():
-        """Just a sink for events if no event handler is provided to
-        create_media"""
-        def event_start(self, event):
-            pass
-
-        def event_end(self, event):
-            pass
-
     def has_key_and_evaluates_True(self, dictionary, key):
         return bool(key in dictionary and dictionary[key])
 
@@ -76,39 +68,39 @@ class FileHandler():
                                image_url,
                                hwpack_url,
                                settings,
-                               event_handler=None):
+                               event_queue=None):
         """Download the OS and hardware pack from the URLs specified"""
         
-        if event_handler == None:
-            event_handler = self.DummyEventHandler()
+        if event_queue == None:
+            event_queue = Queue.Queue()
         
-        event_handler.event_start("download OS")
+        event_queue.put(("start", "download OS"))
         binary_file = None
         try:
             binary_file = self.download(image_url,
-                                        event_handler,
+                                        event_queue,
                                         settings["force_download"])
         except Exception:
             # Download error. Hardly matters what, we can't continue.
             print "Unexpected error:", sys.exc_info()[0]
             logging.error("Unable to download " + image_url + " - aborting.")
-        event_handler.event_end("download OS")
+        event_queue.put(("end", "download OS"))
 
         if binary_file == None:  # User hit cancel when downloading
             sys.exit(0)
 
-        event_handler.event_start("download hwpack")
+        event_queue.put(("start", "download hwpack"))
         hwpack_file = None
         try:
             hwpack_file = self.download(hwpack_url,
-                                        event_handler,
+                                        event_queue,
                                         settings["force_download"])
         except Exception:
             # Download error. Hardly matters what, we can't continue.
             print "Unexpected error:", sys.exc_info()[0]
             logging.error("Unable to download " + hwpack_url + " - aborting.")
-        event_handler.event_end("download hwpack")
-
+        event_queue.put(("end", "download hwpack"))
+        
         if hwpack_file == None:  # User hit cancel when downloading
             sys.exit(0)
 
@@ -189,20 +181,47 @@ class FileHandler():
 
     class LinaroMediaCreate(threading.Thread):
         """Thread class for running linaro-media-create"""
-        def __init__(self, event_handler, lmcargs, event_queue):
+        def __init__(self,
+                     image_url,
+                     hwpack_url,
+                     file_handler,
+                     event_queue,
+                     settings,
+                     tools_dir):
+
             threading.Thread.__init__(self)
-            self.event_handler = event_handler
-            self.lmcargs = lmcargs
-            self.event_queue = event_queue
+
+            self.image_url      = image_url
+            self.hwpack_url     = hwpack_url
+            self.file_handler   = file_handler
+            self.event_queue    = event_queue
+            self.settings       = settings
+            self.tools_dir      = tools_dir
 
         def run(self):
-            """Start linaro-media-create and look for lines in the output that:
-            1. Tell us that an event has happened that we can use to update the
-               UI progress.
-            2. Tell us that linaro-media-create is asking a question that needs
-               to be re-directed to the GUI"""
+            """
+            1. Download required files.
+            2. Build linaro-media-create command
+            3. Start linaro-media-create and look for lines in the output that:
+               1. Tell us that an event has happened that we can use to update
+                  the UI progress.
+               2. Tell us that linaro-media-create is asking a question that
+                  needs to be re-directed to the GUI
+            """
 
-            self.create_process = subprocess.Popen(self.lmcargs,
+            binary_file, hwpack_file = self.file_handler.download_os_and_hwpack(
+                                                            self.image_url,
+                                                            self.hwpack_url,
+                                                            self.settings,
+                                                            self.event_queue)
+
+            lmc_command = self.file_handler.build_lmc_command(binary_file,
+                                                              hwpack_file,
+                                                              self.settings,
+                                                              self.tools_dir,
+                                                              True)
+
+            self.create_process = subprocess.Popen(lmc_command,
                                                    stdin=subprocess.PIPE,
                                                    stdout=subprocess.PIPE,
                                                    stderr=subprocess.STDOUT)
@@ -298,7 +317,7 @@ class FileHandler():
 
     def download(self,
                  url,
-                 event_handler,
+                 event_queue,
                  force_download=False):
         """Downloads the file requested buy URL to the local cache and returns
         the full path to the downloaded file"""
@@ -344,9 +363,12 @@ class FileHandler():
 
         if show_progress:
             chunk_size = download_size_in_bytes / 1000
-            if event_handler:
-                event_handler.event_update("download",
-                                           "Downloading {0}".format(url))
+            if event_queue:
+                event_queue.put(("update",
+                                 "download",
+                                 "url",
+                                 url))
+                
             else:
                 print "Fetching", url
         else:
@@ -358,10 +380,11 @@ class FileHandler():
             if len(chunk):
                 # Print a % download complete so we don't get too bored
                 if show_progress:
-                    if event_handler:
-                        foo = "downloaded {0} chunks".format(chunks_downloaded)
-                        event_handler.event_update("download",
-                                                   "downloaded {0} chunks".format(chunks_downloaded))
+                    if event_queue:
+                        event_queue.put(("update",
+                                         "download",
+                                         "progress",
+                                         chunks_downloaded))
                     else:
                         # Have 1000 chunks so div by 10 to get %...
                         sys.stdout.write("\r%d%%" % (chunks_downloaded / 10))
@@ -384,7 +407,7 @@ class FileHandler():
 
         return file_name
 
-    def download_if_old(self, url, event_handler, force_download):
+    def download_if_old(self, url, event_queue, force_download):
         file_name, file_path = self.name_and_path_from_url(url)
 
         file_path_and_name = file_path + os.sep + file_name
@@ -399,20 +422,20 @@ class FileHandler():
         except OSError:
             force_download = True  # File not found...
 
-        return self.download(url, event_handler, force_download)
+        return self.download(url, event_queue, force_download)
 
     def update_files_from_server(self, force_download=False,
-                                 event_handler=None):
+                                 event_queue=None):
 
         settings_url     = "http://releases.linaro.org/fetch_image/fetch_image_settings.yaml"
         server_index_url = "http://releases.linaro.org/fetch_image/server_index.bz2"
 
         self.settings_file = self.download_if_old(settings_url,
-                                                  event_handler,
+                                                  event_queue,
                                                   force_download)
 
         self.index_file = self.download_if_old(server_index_url,
-                                               event_handler,
+                                               event_queue,
                                                force_download)
 
         zip_search = re.search(r"^(.*)\.bz2$", self.index_file)

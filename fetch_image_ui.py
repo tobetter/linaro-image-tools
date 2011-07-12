@@ -1177,37 +1177,25 @@ class RunLMC(wiz.WizardPageSimple):
 
         if(image_url and hwpack_url):
 
-            print image_url
-            print hwpack_url
-
             self.file_handler = FetchImage.FileHandler()
-
-            tools_dir = os.path.dirname(__file__)
-            if tools_dir == '':
-                tools_dir = None
-            
-            binary_file, hwpack_file = self.file_handler.download_os_and_hwpack(
-                                                                image_url,
-                                                                hwpack_url,
-                                                                self.settings,
-                                                                self)
-
-            lmc_command = self.file_handler.build_lmc_command(binary_file,
-                                                              hwpack_file,
-                                                              self.settings,
-                                                              tools_dir,
-                                                              True)
 
             self.timer = wx.Timer(self)
             self.Bind(wx.EVT_TIMER, self.timer_ping, self.timer)
             self.timer.Start(milliseconds=100, oneShot=True)
 
+            tools_dir = os.path.dirname(__file__)
+            if tools_dir == '':
+                tools_dir = None
+
             self.start_button.Disable()
             self.event_queue = Queue.Queue()
             self.lmc_thread = self.file_handler.LinaroMediaCreate(
-                                                    self,
-                                                    lmc_command,
-                                                    self.event_queue)
+                                                    image_url,
+                                                    hwpack_url,
+                                                    self.file_handler,
+                                                    self.event_queue,
+                                                    self.settings,
+                                                    tools_dir)
             self.lmc_thread.start()
         else:
             print >> sys.stderr, ("Unable to find files that match the"
@@ -1218,27 +1206,28 @@ class RunLMC(wiz.WizardPageSimple):
         linaro-media-create every 100ms. This is the function which is called
         to do that polling."""
 
-        if self.event_queue.empty() == False:
+        while not self.event_queue.empty():
             event = self.event_queue.get()
 
             if event[0] == "start":
                 self.event_start(event[1])
-                self.timer.Start(milliseconds=100, oneShot=True)
 
             elif event[0] == "end":
                 self.event_end(event[1])
-                self.timer.Start(milliseconds=100, oneShot=True)
 
             elif event == "terminate":
                 # Process complete. Enable next button.
                 self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
                 self.populate_file_system_status.SetLabel("Done")
+                return # Even if queue isn't empty, stop processing it
+
+            elif event[0] == "update":
+                self.event_update(event[1], event[2], event[3])
 
             else:
                 print >> sys.stderr, "timer_ping: Unhandled event", event
 
-        else:
-            self.timer.Start(milliseconds=100, oneShot=True)
+        self.timer.Start(milliseconds=50, oneShot=True)
 
     def unsigned_packages_query(self, package_list):
         message = ('In order to continue, I need to install some unsigned'
@@ -1300,10 +1289,14 @@ class RunLMC(wiz.WizardPageSimple):
         else:
             print "Unhhandled end event:", event
 
-    def event_update(self, event, status):
-        print event, status
-        if event == "download":
-            self.downloading_files_status.SetLabel(status)
+    def event_update(self, task, update_type, value):
+        print task, update_type, value
+        if task == "download":
+            if update_type == "url":
+                self.downloading_files_status.SetLabel("Downloading" + value)
+            elif update_type == "progress":
+                self.downloading_files_status.SetLabel("{0}%".format(
+                                                            float(value)/10))
 
     def event_combo_box_release(self, evt):
         pass
