@@ -86,8 +86,8 @@ class FileHandler():
         binary_file = None
         try:
             binary_file = self.download(image_url,
-                                        settings["force_download"],
-                                        show_wx_progress=True)
+                                        event_handler,
+                                        settings["force_download"])
         except Exception:
             # Download error. Hardly matters what, we can't continue.
             print "Unexpected error:", sys.exc_info()[0]
@@ -101,8 +101,8 @@ class FileHandler():
         hwpack_file = None
         try:
             hwpack_file = self.download(hwpack_url,
-                                        settings["force_download"],
-                                        show_wx_progress=True)
+                                        event_handler,
+                                        settings["force_download"])
         except Exception:
             # Download error. Hardly matters what, we can't continue.
             print "Unexpected error:", sys.exc_info()[0]
@@ -112,8 +112,8 @@ class FileHandler():
         if hwpack_file == None:  # User hit cancel when downloading
             sys.exit(0)
 
-        logging.info("Have downloaded OS binary to", binary_file,
-                     "and hardware pack to", hwpack_file)
+        logging.info("Have downloaded OS binary to " + binary_file +
+                     "and hardware pack to " + hwpack_file)
         
         return (binary_file, hwpack_file)
 
@@ -165,7 +165,7 @@ class FileHandler():
         args.append("--hwpack")
         args.append(hwpack_file)
 
-        logging.info(args)
+        logging.info(" ".join(args))
 
         return args
 
@@ -296,31 +296,10 @@ class FileHandler():
 
         return file_name, file_path
 
-    def create_wx_progress(self, title, message):
-        """Create a standard WX progrss dialog"""
-        import wx
-        self.dlg = wx.ProgressDialog(title,
-                                     message,
-                                     maximum=1000,
-                                     parent=None,
-                                     style=wx.PD_CAN_ABORT
-                                      | wx.PD_APP_MODAL
-                                      | wx.PD_ELAPSED_TIME
-                                      | wx.PD_AUTO_HIDE
-                                      | wx.PD_REMAINING_TIME)
-
-    def timer_ping(self):
-        self.update_wx_process(self.download_count)
-
-    def update_wx_progress(self, count):
-        self.download_count = count
-        (self.do_download, skip) = self.dlg.Update(count)
-
     def download(self,
                  url,
-                 force_download=False,
-                 show_wx_progress=False,
-                 wx_progress_title=None):
+                 event_handler,
+                 force_download=False):
         """Downloads the file requested buy URL to the local cache and returns
         the full path to the downloaded file"""
 
@@ -337,7 +316,7 @@ class FileHandler():
                                      "--force-download to override).")
             return file_name
 
-        logging.info("Fetching", url)
+        logging.info("Fetching " + url)
 
         maxtries = 10
         for trycount in range(0, maxtries):
@@ -365,19 +344,13 @@ class FileHandler():
 
         if show_progress:
             chunk_size = download_size_in_bytes / 1000
-            if show_wx_progress:
-                if wx_progress_title == None:
-                    wx_progress_title = "Downloading File"
-                self.create_wx_progress(wx_progress_title,
-                                        "Downloading " + just_file_name)
+            if event_handler:
+                event_handler.event_update("download",
+                                           "Downloading {0}".format(url))
             else:
                 print "Fetching", url
         else:
             chunk_size = download_size_in_bytes
-
-        if show_progress and show_wx_progress:
-            # Just update the download box before we get the first %
-            self.update_wx_progress(0)
 
         printed_progress = False
         while self.do_download:
@@ -385,8 +358,10 @@ class FileHandler():
             if len(chunk):
                 # Print a % download complete so we don't get too bored
                 if show_progress:
-                    if show_wx_progress:
-                        self.update_wx_progress(chunks_downloaded)
+                    if event_handler:
+                        foo = "downloaded {0} chunks".format(chunks_downloaded)
+                        event_handler.event_update("download",
+                                                   "downloaded {0} chunks".format(chunks_downloaded))
                     else:
                         # Have 1000 chunks so div by 10 to get %...
                         sys.stdout.write("\r%d%%" % (chunks_downloaded / 10))
@@ -409,7 +384,7 @@ class FileHandler():
 
         return file_name
 
-    def download_if_old(self, url, force_download, show_wx_progress=False):
+    def download_if_old(self, url, event_handler, force_download):
         file_name, file_path = self.name_and_path_from_url(url)
 
         file_path_and_name = file_path + os.sep + file_name
@@ -424,21 +399,21 @@ class FileHandler():
         except OSError:
             force_download = True  # File not found...
 
-        return self.download(url, force_download, show_wx_progress)
+        return self.download(url, event_handler, force_download)
 
     def update_files_from_server(self, force_download=False,
-                                 show_wx_progress=False):
+                                 event_handler=None):
 
         settings_url     = "http://releases.linaro.org/fetch_image/fetch_image_settings.yaml"
         server_index_url = "http://releases.linaro.org/fetch_image/server_index.bz2"
 
         self.settings_file = self.download_if_old(settings_url,
-                                                  force_download,
-                                                  show_wx_progress)
+                                                  event_handler,
+                                                  force_download)
 
         self.index_file = self.download_if_old(server_index_url,
-                                               force_download,
-                                               show_wx_progress)
+                                               event_handler,
+                                               force_download)
 
         zip_search = re.search(r"^(.*)\.bz2$", self.index_file)
 

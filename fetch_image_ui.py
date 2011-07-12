@@ -32,6 +32,8 @@ import unittest
 import operator
 import Queue
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 def add_button(bind_to,
                sizer,
@@ -1193,7 +1195,8 @@ class RunLMC(wiz.WizardPageSimple):
             lmc_command = self.file_handler.build_lmc_command(binary_file,
                                                               hwpack_file,
                                                               self.settings,
-                                                              tools_dir)
+                                                              tools_dir,
+                                                              True)
 
             self.timer = wx.Timer(self)
             self.Bind(wx.EVT_TIMER, self.timer_ping, self.timer)
@@ -1297,6 +1300,11 @@ class RunLMC(wiz.WizardPageSimple):
         else:
             print "Unhhandled end event:", event
 
+    def event_update(self, event, status):
+        print event, status
+        if event == "download":
+            self.downloading_files_status.SetLabel(status)
+
     def event_combo_box_release(self, evt):
         pass
 
@@ -1386,7 +1394,7 @@ class TestDriveWizard(wx.wizard.Wizard):
         self.config.settings['compatable_hwpacks'] = ['foo']
 
         # If the settings file and server index need updating, grab them
-        file_handler.update_files_from_server(show_wx_progress = True)
+        file_handler.update_files_from_server()
 
         # Load settings YAML, which defines the parameters we ask for and
         # acceptable responses from the user
@@ -1467,7 +1475,7 @@ class TestURLLookupFunctions(unittest.TestCase):
 
     def setUp(self):
         self.file_handler   = FetchImage.FileHandler()
-        self.file_handler.update_files_from_server(show_wx_progress = True)
+        self.file_handler.update_files_from_server()
         self.config         = FetchImage.FetchImageConfig()
         self.config.settings["force_download"] = False
 
