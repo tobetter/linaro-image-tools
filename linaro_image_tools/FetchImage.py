@@ -64,51 +64,6 @@ class FileHandler():
             list.append(setting_name)
             list.append(dictionary[key])
 
-    def download_os_and_hwpack(self,
-                               image_url,
-                               hwpack_url,
-                               settings,
-                               event_queue=None):
-        """Download the OS and hardware pack from the URLs specified"""
-        
-        if event_queue == None:
-            event_queue = Queue.Queue()
-        
-        event_queue.put(("start", "download OS"))
-        binary_file = None
-        try:
-            binary_file = self.download(image_url,
-                                        event_queue,
-                                        settings["force_download"])
-        except Exception:
-            # Download error. Hardly matters what, we can't continue.
-            print "Unexpected error:", sys.exc_info()[0]
-            logging.error("Unable to download " + image_url + " - aborting.")
-        event_queue.put(("end", "download OS"))
-
-        if binary_file == None:  # User hit cancel when downloading
-            sys.exit(0)
-
-        event_queue.put(("start", "download hwpack"))
-        hwpack_file = None
-        try:
-            hwpack_file = self.download(hwpack_url,
-                                        event_queue,
-                                        settings["force_download"])
-        except Exception:
-            # Download error. Hardly matters what, we can't continue.
-            print "Unexpected error:", sys.exc_info()[0]
-            logging.error("Unable to download " + hwpack_url + " - aborting.")
-        event_queue.put(("end", "download hwpack"))
-        
-        if hwpack_file == None:  # User hit cancel when downloading
-            sys.exit(0)
-
-        logging.info("Have downloaded OS binary to " + binary_file +
-                     "and hardware pack to " + hwpack_file)
-        
-        return (binary_file, hwpack_file)
-
     def build_lmc_command(self,
                           binary_file,
                           hwpack_file,
@@ -166,12 +121,13 @@ class FileHandler():
         provided then run linaro-media-create, either in a separate thread
         (GUI mode) or in the current one (CLI mode)."""
 
-        binary_file, hwpack_file = self.download_os_and_hwpack(image_url,
-                                                               hwpack_url,
-                                                               settings)
+        to_download = [(image_url, "OS"),
+                       (hwpack_url, "hwpack")]
+        downloaded_files = self.download_files(to_download,
+                                               settings)
 
-        args = self.build_lmc_command(binary_file,
-                                      hwpack_file,
+        args = self.build_lmc_command(downloaded_files['OS'],
+                                      downloaded_files['hwpack'],
                                       settings,
                                       tools_dir)
 
@@ -209,17 +165,20 @@ class FileHandler():
                   needs to be re-directed to the GUI
             """
 
-            binary_file, hwpack_file = self.file_handler.download_os_and_hwpack(
-                                                            self.image_url,
-                                                            self.hwpack_url,
+            to_download = [(self.image_url, "OS"),
+                           (self.hwpack_url, "hwpack")]
+
+            downloaded_files = self.file_handler.download_files(
+                                                            to_download,
                                                             self.settings,
                                                             self.event_queue)
 
-            lmc_command = self.file_handler.build_lmc_command(binary_file,
-                                                              hwpack_file,
-                                                              self.settings,
-                                                              self.tools_dir,
-                                                              True)
+            lmc_command = self.file_handler.build_lmc_command(
+                                                    downloaded_files['OS'],
+                                                    downloaded_files['hwpack'],
+                                                    self.settings,
+                                                    self.tools_dir,
+                                                    True)
 
             self.create_process = subprocess.Popen(lmc_command,
                                                    stdin=subprocess.PIPE,
@@ -315,6 +274,75 @@ class FileHandler():
 
         return file_name, file_path
 
+    def urllib2_open(self, url):
+        maxtries = 10
+        for trycount in range(0, maxtries):
+            try:
+                response = urllib2.urlopen(url)
+            except:
+                if trycount < maxtries - 1:
+                    print "Unable to connect to", url, "retrying in 5 seconds..."
+                    time.sleep(5)
+                    continue
+                else:
+                    print "Connect failed:", url
+                    raise
+                    return None
+            else:
+                return response
+            
+        return None
+
+    def download_files(self,
+                       downloads_list,
+                       settings,
+                       event_queue=None):
+        """
+        Download files specified in the downloads_list, which is a list of
+        url, name tuples.
+        """
+        
+        downloaded_files = {}
+        
+        if event_queue == None:
+            event_queue = Queue.Queue()
+        
+        bytes_to_download = 0
+        
+        for url, name in downloads_list:
+            response = self.urllib2_open(url)
+            if response:
+                bytes_to_download += int(response.info()
+                                          .getheader('Content-Length').strip())
+                response.close()
+        
+        event_queue.put(("update",
+                         "download",
+                         "total bytes",
+                         bytes_to_download))
+        
+        for url, name in downloads_list:
+            event_queue.put(("start", "download " + name))
+            path = None
+            try:
+                path = self.download(url,
+                                     event_queue,
+                                     settings["force_download"])
+            except Exception:
+                # Download error. Hardly matters what, we can't continue.
+                print "Unexpected error:", sys.exc_info()[0]
+                logging.error("Unable to download " + url + " - aborting.")
+            event_queue.put(("end", "download " + name))
+    
+            if path == None:  # User hit cancel when downloading
+                sys.exit(0)
+            
+            downloaded_files[name] = path
+            logging.info("Have downloaded {0} to {1}".format(name, path))
+
+        return downloaded_files
+
+
     def download(self,
                  url,
                  event_queue,
@@ -337,21 +365,7 @@ class FileHandler():
 
         logging.info("Fetching " + url)
 
-        maxtries = 10
-        for trycount in range(0, maxtries):
-            try:
-                response = urllib2.urlopen(url)
-            except:
-                if trycount < maxtries - 1:
-                    print "Unable to download", url, "retrying in 5 seconds..."
-                    time.sleep(5)
-                    continue
-                else:
-                    print "Download failed for some reason:", url
-                    raise
-                    return
-            else:
-                break
+        response = self.urllib2_open(url)
 
         self.do_download = True
         file_out = open(file_name, 'w')
@@ -384,7 +398,7 @@ class FileHandler():
                         event_queue.put(("update",
                                          "download",
                                          "progress",
-                                         chunks_downloaded))
+                                         len(chunk)))
                     else:
                         # Have 1000 chunks so div by 10 to get %...
                         sys.stdout.write("\r%d%%" % (chunks_downloaded / 10))

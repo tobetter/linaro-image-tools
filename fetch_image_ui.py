@@ -1290,13 +1290,18 @@ class RunLMC(wiz.WizardPageSimple):
             print "Unhhandled end event:", event
 
     def event_update(self, task, update_type, value):
-        print task, update_type, value
         if task == "download":
             if update_type == "url":
                 self.downloading_files_status.SetLabel("Downloading" + value)
             elif update_type == "progress":
-                self.downloading_files_status.SetLabel("{0}%".format(
-                                                            float(value)/10))
+                self.total_bytes_downloaded += value
+                percent_complete = (  float(self.total_bytes_downloaded)
+                                    / float(self.total_bytes_to_download))
+                self.downloading_files_status.SetLabel("{0:.1%}".format(
+                                                            percent_complete))
+            elif update_type == "total bytes":
+                self.total_bytes_to_download = value
+                self.total_bytes_downloaded = 0
 
     def event_combo_box_release(self, evt):
         pass
