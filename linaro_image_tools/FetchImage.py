@@ -323,6 +323,11 @@ class FileHandler():
         
         for url, name in downloads_list:
             event_queue.put(("start", "download " + name))
+            event_queue.put(("update",
+                             "download",
+                             "name",
+                             name))
+                
             path = None
             try:
                 path = self.download(url,
@@ -377,13 +382,7 @@ class FileHandler():
 
         if show_progress:
             chunk_size = download_size_in_bytes / 1000
-            if event_queue:
-                event_queue.put(("update",
-                                 "download",
-                                 "url",
-                                 url))
-                
-            else:
+            if not event_queue:
                 print "Fetching", url
         else:
             chunk_size = download_size_in_bytes

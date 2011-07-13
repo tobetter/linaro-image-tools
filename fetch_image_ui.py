@@ -31,9 +31,9 @@ import string
 import unittest
 import operator
 import Queue
+import time
+import datetime
 
-import logging
-logging.basicConfig(level=logging.DEBUG)
 
 def add_button(bind_to,
                sizer,
@@ -1055,7 +1055,9 @@ class RunLMC(wiz.WizardPageSimple):
         self.start_button.SetSize(self.start_button.GetBestSize())
         self.box1.Add(self.start_button, 0, wx.ALIGN_LEFT | wx.ALL, 5)
 
-        self.status_grid = wx.FlexGridSizer(0, 2, 0, 0)
+        self.download_guage = wx.Gauge(self, -1, 1000, size=(self.width*2/3,25))
+
+        self.status_grid = wx.FlexGridSizer(0, 2)
 
         self.status_grid.Add(wx.StaticText(self, label="Downloading files"),
                              0,
@@ -1063,7 +1065,20 @@ class RunLMC(wiz.WizardPageSimple):
                              5)
 
         self.downloading_files_status = wx.StaticText(self, label="")
+        
         self.status_grid.Add(self.downloading_files_status,
+                             0,
+                             wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
+                             5)
+
+        self.status_grid.Add(self.download_guage,
+                             0,
+                             wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
+                             5)
+
+        self.downloading_files_info = wx.StaticText(self, label="")
+        
+        self.status_grid.Add(self.downloading_files_info,
                              0,
                              wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                              5)
@@ -1291,17 +1306,80 @@ class RunLMC(wiz.WizardPageSimple):
 
     def event_update(self, task, update_type, value):
         if task == "download":
-            if update_type == "url":
-                self.downloading_files_status.SetLabel("Downloading" + value)
+            if update_type == "name":
+                self.downloading_files_status.SetLabel("Downloading")
+                self.old_time = time.time()
+                self.old_bytes_downloaded = 0
+
             elif update_type == "progress":
                 self.total_bytes_downloaded += value
                 percent_complete = (  float(self.total_bytes_downloaded)
                                     / float(self.total_bytes_to_download))
-                self.downloading_files_status.SetLabel("{0:.1%}".format(
-                                                            percent_complete))
+                #self.downloading_files_info.SetLabel("{0:.1%}".format(
+                #                                            percent_complete))
+
+                time_difference = time.time() - self.old_time
+                
+                if time_difference > 1.0:
+                    self.old_time = time.time()
+                    
+                    # More than a second has passed since we calculated data
+                    # rate
+                    speed = (  float(  self.total_bytes_downloaded
+                                     - self.old_bytes_downloaded)
+                             / time_difference)
+                    
+                    self.old_bytes_downloaded = self.total_bytes_downloaded
+                    
+                    self.speeds.append(speed)
+                    
+                    average_speed = 0
+                    speeds_accumulated = 0
+                    for speed in reversed(self.speeds):
+                        average_speed += speed
+                        speeds_accumulated += 1
+                        
+                        if speeds_accumulated == 6:
+                            break # do rolling average of 6 seconds
+
+                    average_speed /= speeds_accumulated
+
+                    time_remaining = (  (  self.total_bytes_to_download
+                                         - self.total_bytes_downloaded)
+                                      / speed)
+
+                    pretty_time = str(datetime.timedelta(seconds=
+                                                         int(time_remaining)))
+
+                    # Following table assumes we don't get past TBps internet
+                    # connections soon :-)
+                    units = ["Bps", "kBps", "MBps", "GBps", "TBps"]
+                    units_index = 0
+                    while speed > 1024:
+                        speed /= 1024
+                        units_index += 1
+
+                    info = "Downloading at {0:.1f} {1}".format(
+                                                         speed,
+                                                         units[units_index])
+                    
+                    self.downloading_files_status.SetLabel(info)
+                    
+                    info = "{0} remaining".format(
+                                                         pretty_time)
+                    
+                    self.downloading_files_info.SetLabel(info)
+
+                self.download_guage.SetValue(  1000
+                                             * self.total_bytes_downloaded
+                                             / self.total_bytes_to_download)
+
             elif update_type == "total bytes":
                 self.total_bytes_to_download = value
                 self.total_bytes_downloaded = 0
+                self.speeds = [] # keep an array of speeds used to calculate
+                # the estimated time remaining - by not just using the
+                # current speed we can stop the ETA bouncing around too much.
 
     def event_combo_box_release(self, evt):
         pass
