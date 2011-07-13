@@ -301,12 +301,9 @@ class FileHandler():
         Download files specified in the downloads_list, which is a list of
         url, name tuples.
         """
-        
+
         downloaded_files = {}
-        
-        if event_queue == None:
-            event_queue = Queue.Queue()
-        
+
         bytes_to_download = 0
         
         for url, name in downloads_list:
@@ -315,19 +312,21 @@ class FileHandler():
                 bytes_to_download += int(response.info()
                                           .getheader('Content-Length').strip())
                 response.close()
-        
-        event_queue.put(("update",
-                         "download",
-                         "total bytes",
-                         bytes_to_download))
-        
-        for url, name in downloads_list:
-            event_queue.put(("start", "download " + name))
+
+        if event_queue:
             event_queue.put(("update",
                              "download",
-                             "name",
-                             name))
-                
+                             "total bytes",
+                             bytes_to_download))
+
+        for url, name in downloads_list:
+            if event_queue:
+                event_queue.put(("start", "download " + name))
+                event_queue.put(("update",
+                                 "download",
+                                 "name",
+                                 name))
+
             path = None
             try:
                 path = self.download(url,
@@ -337,8 +336,10 @@ class FileHandler():
                 # Download error. Hardly matters what, we can't continue.
                 print "Unexpected error:", sys.exc_info()[0]
                 logging.error("Unable to download " + url + " - aborting.")
-            event_queue.put(("end", "download " + name))
-    
+                
+            if event_queue:
+                event_queue.put(("end", "download " + name))
+
             if path == None:  # User hit cancel when downloading
                 sys.exit(0)
             
@@ -346,7 +347,6 @@ class FileHandler():
             logging.info("Have downloaded {0} to {1}".format(name, path))
 
         return downloaded_files
-
 
     def download(self,
                  url,
