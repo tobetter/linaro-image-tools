@@ -1265,10 +1265,8 @@ class RunLMC(wiz.WizardPageSimple):
 
     #--- Event(s) ---
     def event_start(self, event):
-        if event == "download OS":
-            self.downloading_files_status.SetLabel("Downloading OS")
-        elif event == "download hwpack":
-            self.downloading_files_status.SetLabel("Downloading Hardware Pack")
+        if event == "download":
+            self.downloading_files_status.SetLabel("Downloading")
         elif event == "unpack":
             self.unpacking_files_status.SetLabel("Running")
         elif event == "installing packages":
@@ -1293,9 +1291,7 @@ class RunLMC(wiz.WizardPageSimple):
             print "Unhandled start event:", event
 
     def event_end(self, event):
-        if event == "download OS":
-            self.downloading_files_status.SetLabel("Done (1/2)")
-        elif event == "download hwpack":
+        if event == "download":
             self.downloading_files_status.SetLabel("Done")
         elif event == "unpack":
             self.unpacking_files_status.SetLabel("Done")

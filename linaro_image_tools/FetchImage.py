@@ -35,6 +35,7 @@ import shutil
 import datetime
 import threading
 import subprocess
+import BeautifulSoup
 
 
 class FileHandler():
@@ -120,13 +121,15 @@ class FileHandler():
         provided then run linaro-media-create, either in a separate thread
         (GUI mode) or in the current one (CLI mode)."""
 
-        to_download = [(image_url, "OS"),
-                       (hwpack_url, "hwpack")]
+        to_download = self.generate_download_list(image_url,
+                                                  hwpack_url,
+                                                  settings)
+
         downloaded_files = self.download_files(to_download,
                                                settings)
 
-        args = self.build_lmc_command(downloaded_files['OS'],
-                                      downloaded_files['hwpack'],
+        args = self.build_lmc_command(downloaded_files[image_url],
+                                      downloaded_files[hwpack_url],
                                       settings,
                                       tools_dir)
 
@@ -163,8 +166,10 @@ class FileHandler():
                   needs to be re-directed to the GUI
             """
 
-            to_download = [(self.image_url, "OS"),
-                           (self.hwpack_url, "hwpack")]
+
+            to_download = self.generate_download_list(image_url,
+                                                      hwpack_url,
+                                                      settings)
 
             downloaded_files = self.file_handler.download_files(
                                                             to_download,
@@ -172,11 +177,11 @@ class FileHandler():
                                                             self.event_queue)
 
             lmc_command = self.file_handler.build_lmc_command(
-                                                    downloaded_files['OS'],
-                                                    downloaded_files['hwpack'],
-                                                    self.settings,
-                                                    self.tools_dir,
-                                                    True)
+                                                downloaded_files[image_url],
+                                                downloaded_files[hwpack_url],
+                                                self.settings,
+                                                self.tools_dir,
+                                                True)
 
             self.create_process = subprocess.Popen(lmc_command,
                                                    stdin=subprocess.PIPE,
@@ -291,6 +296,61 @@ class FileHandler():
 
         return None
 
+    def list_files_in_dir_of_url(self, url):
+        """
+        url points to a file
+        return a directory listing of the directory that url sits in
+        """
+
+        url = os.path.dirname(url)
+        response = self.urllib2_open(url)
+        page = response.read()
+
+        dir = []
+        # Use BeautifulSoup to parse the HTML and iterate over all 'a' tags
+        soup = BeautifulSoup.BeautifulSoup(page)
+        for link in soup.findAll('a'):
+            for attr, value in link.attrs:
+                if(    attr == "href"
+                   and not re.search(r'[\?=;/]', value)):
+                    # Ignore links that don't look like plain files
+                    dir.append(os.path.join(url, value))
+
+        return dir
+
+    def generate_download_list(self,
+                               image_url,
+                               hwpack_url,
+                               settings):
+        """
+        Need more than just the hwpack and OS image if we want signature
+        verification to work, we need sha1sums, signatures for sha1sums
+        and manifest files.
+        
+        Note that this code is a bit sloppy and may result in downloading
+        more sums and manifest files than are strictly required, but the
+        files are small and the wrong files won't be used.
+        """
+
+        downloads_list = [image_url, hwpack_url]
+
+        # Get list of files in OS image directory
+        image_dir  = self.list_files_in_dir_of_url(image_url)
+        hwpack_dir = self.list_files_in_dir_of_url(hwpack_url)
+
+        for link in image_dir:
+            if(   re.search("sha1sums", link)
+               or re.search("manifest", link)):
+                downloads_list.append(link)
+
+        for link in hwpack_dir:
+            if(    re.search(settings['hwpack'], link)
+               and (   re.search("sha1sums", link)
+                    or re.search("manifest", link))):
+                downloads_list.append(link)
+
+        return downloads_list
+
     def download_files(self,
                        downloads_list,
                        settings,
@@ -304,7 +364,7 @@ class FileHandler():
 
         bytes_to_download = 0
 
-        for url, name in downloads_list:
+        for url in downloads_list:
             file_name, file_path = self.name_and_path_from_url(url)
 
             file_name = file_path + os.sep + file_name
@@ -318,19 +378,13 @@ class FileHandler():
                 response.close()
 
         if event_queue:
+            event_queue.put(("start", "download"))
             event_queue.put(("update",
                              "download",
                              "total bytes",
                              bytes_to_download))
 
-        for url, name in downloads_list:
-            if event_queue:
-                event_queue.put(("start", "download " + name))
-                event_queue.put(("update",
-                                 "download",
-                                 "name",
-                                 name))
-
+        for url in downloads_list:
             path = None
             try:
                 path = self.download(url,
@@ -341,14 +395,14 @@ class FileHandler():
                 print "Unexpected error:", sys.exc_info()[0]
                 logging.error("Unable to download " + url + " - aborting.")
 
-            if event_queue:
-                event_queue.put(("end", "download " + name))
-
             if path == None:  # User hit cancel when downloading
                 sys.exit(0)
 
-            downloaded_files[name] = path
-            logging.info("Have downloaded {0} to {1}".format(name, path))
+            downloaded_files[url] = path
+            logging.info("Have downloaded {0} to {1}".format(url, path))
+
+        if event_queue:
+            event_queue.put(("end", "download"))
 
         return downloaded_files
 
