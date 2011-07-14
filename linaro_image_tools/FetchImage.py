@@ -305,8 +305,14 @@ class FileHandler():
         downloaded_files = {}
 
         bytes_to_download = 0
-        
+
         for url, name in downloads_list:
+            file_name, file_path = self.name_and_path_from_url(url)
+
+            file_name = file_path + os.sep + file_name
+            if os.path.exists(file_name):
+                continue  # If file already exists, don't download it
+            
             response = self.urllib2_open(url)
             if response:
                 bytes_to_download += int(response.info()
