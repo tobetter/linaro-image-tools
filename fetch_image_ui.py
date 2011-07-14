@@ -45,9 +45,9 @@ def add_button(bind_to,
 
     """Create a radio button with event bindings."""
     if(style != None):
-        radio_button = wx.RadioButton(bind_to, label = label, style = style)
+        radio_button = wx.RadioButton(bind_to, label=label, style=style)
     else:
-        radio_button = wx.RadioButton(bind_to, label = label)
+        radio_button = wx.RadioButton(bind_to, label=label)
 
     sizer.Add(radio_button, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP, 5)
     bind_to.Bind(wx.EVT_RADIOBUTTON, select_event, radio_button)
@@ -128,9 +128,9 @@ class AboutMyHardwarePage(wiz.WizardPageSimple):
         self.box2 = wx.BoxSizer(wx.VERTICAL)
 
         header = wx.StaticText(self,
-                               label = "Please select the hardware that you "
-                                       "would like to build an image for from "
-                                       "the following list")
+                               label="Please select the hardware that you "
+                                     "would like to build an image for from "
+                                     "the following list")
 
         header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
 
@@ -145,11 +145,12 @@ class AboutMyHardwarePage(wiz.WizardPageSimple):
         self.settings['hardware'] = default_hardware
         self.settings['compatable_hwpacks'] = (
                 self.settings['choice']['hwpack'][self.settings['hardware']])
-        
+
         self.cb_hardware = wx.ComboBox(self,
-                            value =
-                            self.settings['choice']['hardware'][default_hardware],
-                            style = wx.CB_DROPDOWN | wx.CB_READONLY)
+                            value=self.settings['choice']
+                                               ['hardware']
+                                               [default_hardware],
+                            style=wx.CB_DROPDOWN | wx.CB_READONLY)
 
         self.Bind(wx.EVT_COMBOBOX,
                   self.event_combo_box_hardware,
@@ -203,8 +204,8 @@ class SelectStableRelease(wiz.WizardPageSimple):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.wizard = parent
 
-        header = wx.StaticText(self, label = "Please select the stable Linaro "
-                                             "release you would like to use")
+        header = wx.StaticText(self, label="Please select the stable Linaro "
+                                           "release you would like to use")
 
         header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
 
@@ -217,8 +218,8 @@ class SelectStableRelease(wiz.WizardPageSimple):
 
         default_release = self.settings['UI']['translate'][platforms[-1]]
         self.cb_release = wx.ComboBox(self,
-                                      value = default_release,
-                                      style = wx.CB_DROPDOWN | wx.CB_READONLY)
+                                      value=default_release,
+                                      style=wx.CB_DROPDOWN | wx.CB_READONLY)
         self.Bind(wx.EVT_COMBOBOX,
                   self.event_combo_box_release,
                   self.cb_release)
@@ -236,12 +237,12 @@ class SelectStableRelease(wiz.WizardPageSimple):
             self.cb_release.Append(item, item.upper())
 
         self.cb_build = wx.ComboBox(self,
-                                    style = wx.CB_DROPDOWN | wx.CB_READONLY)
+                                    style=wx.CB_DROPDOWN | wx.CB_READONLY)
         self.Bind(wx.EVT_COMBOBOX, self.event_combo_box_build, self.cb_build)
 
         self.box1.Add(self.cb_release, 0,
                       wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP, 5)
-        self.box1.Add(self.cb_build,   0,
+        self.box1.Add(self.cb_build, 0,
                       wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP, 5)
         self.sizer.Add(self.box1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
         self.SetSizerAndFit(self.sizer)
@@ -257,7 +258,7 @@ class SelectStableRelease(wiz.WizardPageSimple):
         self.cb_build.SetValue("No build available")
 
         for build in builds:
-            if( self.db.hardware_is_available_for_platform_build(
+            if(self.db.hardware_is_available_for_platform_build(
                                           self.settings['compatable_hwpacks'],
                                           self.settings['platform'],
                                           build)
@@ -338,12 +339,12 @@ class SelectSnapshot(wiz.WizardPageSimple):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
         header = wx.StaticText(self,
-                               label = "Builds are created most days. First "
-                                       "please select the day on which the "
-                                       "build you would like to use was built,"
-                                       " then, if there was more than one "
-                                       "build that day you will be able to "
-                                       "select the build number.")
+                               label="Builds are created most days. First "
+                                     "please select the day on which the "
+                                     "build you would like to use was built,"
+                                     " then, if there was more than one "
+                                     "build that day you will be able to "
+                                     "select the build number.")
         header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
 
         box1 = wx.BoxSizer(wx.VERTICAL)
@@ -355,8 +356,8 @@ class SelectSnapshot(wiz.WizardPageSimple):
         self.today.SetToCurrent()
         self.settings['build_date'] = self.today.FormatISODate().encode('ascii')
 
-        dpc = wx.DatePickerCtrl(self, size = (120, -1),
-                                style = wx.DP_DEFAULT)
+        dpc = wx.DatePickerCtrl(self, size=(120, -1),
+                                style=wx.DP_DEFAULT)
         self.Bind(wx.EVT_DATE_CHANGED, self.on_date_changed, dpc)
 
         #--- Build number Combo Box ---
@@ -365,7 +366,7 @@ class SelectSnapshot(wiz.WizardPageSimple):
         self.settings['build_number'] = 0
         self.update_build()
         self.cb_build = wx.ComboBox(self,
-                                    style = wx.CB_DROPDOWN | wx.CB_READONLY)
+                                    style=wx.CB_DROPDOWN | wx.CB_READONLY)
         self.Bind(wx.EVT_COMBOBOX, self.event_combo_box_build, self.cb_build)
 
         #--- Layout ---
@@ -495,16 +496,16 @@ class SelectOS(wiz.WizardPageSimple):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.settings['image'] = None
 
-        header = wx.StaticText(self, label = "Please select the operating "
-                                             "system you would like to run on "
-                                             "your hardware.")
+        header = wx.StaticText(self, label="Please select the operating "
+                                           "system you would like to run on "
+                                           "your hardware.")
         header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
 
         self.box1 = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(header)
 
         self.cb_image = wx.ComboBox(self,
-                                    style = wx.CB_DROPDOWN | wx.CB_READONLY)
+                                    style=wx.CB_DROPDOWN | wx.CB_READONLY)
         self.Bind(wx.EVT_COMBOBOX, self.event_combo_box_os, self.cb_image)
 
         #--- Layout ---
@@ -681,7 +682,7 @@ class LMC_settings(wiz.WizardPageSimple):
         self.settings['path_selected'] = ""
 
         header = wx.StaticText(self,
-                               label = "Media Creation Settings\n\n"
+                               label="Media Creation Settings\n\n"
                                "Please select if you would like to write the "
                                "file system I am about to create to a memory "
                                "card, or to a file on the local file system.")
@@ -693,8 +694,8 @@ class LMC_settings(wiz.WizardPageSimple):
         default_target = file_systems[0]
         self.settings['rootfs'] = default_target
         cb_rootfs = wx.ComboBox(self,
-                                value = default_target,
-                                style = wx.CB_DROPDOWN | wx.CB_READONLY)
+                                value=default_target,
+                                style=wx.CB_DROPDOWN | wx.CB_READONLY)
 
         for item in file_systems:
             cb_rootfs.Append(item, item.upper())
@@ -739,14 +740,14 @@ class LMC_settings(wiz.WizardPageSimple):
 
         self.help_text_values = {"device": "Please select a device to write "
                                            "the file system to:",
+
                                  "file":   "Please select a file to write the "
                                            "file system to:"}
 
         self.help_text = wx.StaticText(
                              self,
-                             label =
-                             self.help_text_values[
-                                   self.settings['write_to_file_or_device']])
+                             label=self.help_text_values[
+                                     self.settings['write_to_file_or_device']])
         self.help_text.Wrap(width - 10)
 
         #-- File/dev picker --
@@ -776,7 +777,7 @@ class LMC_settings(wiz.WizardPageSimple):
         #-- Combo boxes for hardware and image selection --
         optional_settings_box_title = wx.StaticBox(
                                                 self,
-                                                label = " Optional Settings ")
+                                                label=" Optional Settings ")
 
         self.optional_settings_box = wx.StaticBoxSizer(
                                                 optional_settings_box_title,
@@ -792,7 +793,7 @@ class LMC_settings(wiz.WizardPageSimple):
         grid1.Add(cb_rootfs, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP, 5)
 
         grid1.Add(wx.StaticText(self,
-                                label = "The root file system of the image"),
+                                label="The root file system of the image"),
                                 0,
                                 wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                                 5)
@@ -813,14 +814,14 @@ class LMC_settings(wiz.WizardPageSimple):
         # Add a choice of MB or GB for size input
         units = ["GB", "MB"]
         self.size_unit = units[0]  # Set the default unit
-        unit_choice = wx.Choice(self, -1, (100, 50), choices = units)
+        unit_choice = wx.Choice(self, -1, (100, 50), choices=units)
         self.Bind(wx.EVT_CHOICE, self.event_chose_unit, unit_choice)
         file_size_grid.Add(unit_choice, 0, wx.ALIGN_RIGHT | wx.TOP, 5)
 
         # Back out of the extra grid, add some help text
         grid1.Add(wx.StaticText(
                             self,
-                            label = "Writing to file only: Image file size"),
+                            label="Writing to file only: Image file size"),
                             0,
                             wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                             5)
@@ -831,15 +832,15 @@ class LMC_settings(wiz.WizardPageSimple):
                   wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                   5)
 
-        grid1.Add(wx.StaticText(self, label = "Swap file size in MB"),
+        grid1.Add(wx.StaticText(self, label="Swap file size in MB"),
                   0,
                   wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                   5)
 
         self.cb_hwpacks = wx.ComboBox(
                                 self,
-                                value = self.settings['compatable_hwpacks'][0],
-                                style = wx.CB_DROPDOWN | wx.CB_READONLY)
+                                value=self.settings['compatable_hwpacks'][0],
+                                style=wx.CB_DROPDOWN | wx.CB_READONLY)
 
         self.Bind(wx.EVT_COMBOBOX,
                   self.event_combo_box_hwpack,
@@ -850,14 +851,14 @@ class LMC_settings(wiz.WizardPageSimple):
                   wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                   5)
 
-        grid1.Add(wx.StaticText(self, label = "Compatible hardware packs"),
+        grid1.Add(wx.StaticText(self, label="Compatible hardware packs"),
                   0,
                   wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                   5)
 
         self.optional_settings_box.Add(grid1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
 
-        confirm_mmc_usage_title = wx.StaticBox(self, label = " Are you sure? ")
+        confirm_mmc_usage_title = wx.StaticBox(self, label=" Are you sure? ")
 
         self.confirm_mmc_usage_box = wx.StaticBoxSizer(confirm_mmc_usage_title,
                                                        wx.VERTICAL)
@@ -1033,7 +1034,7 @@ class RunLMC(wiz.WizardPageSimple):
         self.width = width
         self.wizard = parent
 
-        header = wx.StaticText(self, label = """Installing...""")
+        header = wx.StaticText(self, label="""Installing...""")
         header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
 
         self.sizer.Add(header)
@@ -1041,7 +1042,7 @@ class RunLMC(wiz.WizardPageSimple):
 
         # We expect to print 4 lines of information, reserve space using blank
         # lines.
-        self.settings_summary_text = wx.StaticText(self, label = "\n\n\n\n")
+        self.settings_summary_text = wx.StaticText(self, label="\n\n\n\n")
         self.settings_summary_text.Wrap(width - 10)
 
         self.box1.Add(self.settings_summary_text, 0, wx.ALIGN_LEFT | wx.ALL, 5)
@@ -1055,7 +1056,10 @@ class RunLMC(wiz.WizardPageSimple):
         self.start_button.SetSize(self.start_button.GetBestSize())
         self.box1.Add(self.start_button, 0, wx.ALIGN_LEFT | wx.ALL, 5)
 
-        self.download_guage = wx.Gauge(self, -1, 1000, size=(self.width*2/3,25))
+        self.download_guage = wx.Gauge(self,
+                                       -1,
+                                       1000,
+                                       size=(self.width * 2 / 3, 25))
 
         self.status_grid = wx.FlexGridSizer(0, 2)
 
@@ -1065,7 +1069,7 @@ class RunLMC(wiz.WizardPageSimple):
                              5)
 
         self.downloading_files_status = wx.StaticText(self, label="")
-        
+
         self.status_grid.Add(self.downloading_files_status,
                              0,
                              wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
@@ -1077,7 +1081,7 @@ class RunLMC(wiz.WizardPageSimple):
                              5)
 
         self.downloading_files_info = wx.StaticText(self, label="")
-        
+
         self.status_grid.Add(self.downloading_files_info,
                              0,
                              wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
@@ -1164,7 +1168,7 @@ class RunLMC(wiz.WizardPageSimple):
 
         settings_summary += (  "Writing image to "
                              + self.settings['write_to_file_or_device']
-                             + " " 
+                             + " "
                              + path)
 
         self.settings_summary_text.SetLabel(settings_summary)
@@ -1234,7 +1238,7 @@ class RunLMC(wiz.WizardPageSimple):
                 # Process complete. Enable next button.
                 self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
                 self.populate_file_system_status.SetLabel("Done")
-                return # Even if queue isn't empty, stop processing it
+                return  # Even if queue isn't empty, stop processing it
 
             elif event[0] == "update":
                 self.event_update(event[1], event[2], event[3])
@@ -1313,34 +1317,30 @@ class RunLMC(wiz.WizardPageSimple):
 
             elif update_type == "progress":
                 self.total_bytes_downloaded += value
-                percent_complete = (  float(self.total_bytes_downloaded)
-                                    / float(self.total_bytes_to_download))
-                #self.downloading_files_info.SetLabel("{0:.1%}".format(
-                #                                            percent_complete))
 
                 time_difference = time.time() - self.old_time
-                
+
                 if time_difference > 1.0:
                     self.old_time = time.time()
-                    
+
                     # More than a second has passed since we calculated data
                     # rate
                     speed = (  float(  self.total_bytes_downloaded
                                      - self.old_bytes_downloaded)
                              / time_difference)
-                    
+
                     self.old_bytes_downloaded = self.total_bytes_downloaded
-                    
+
                     self.speeds.append(speed)
-                    
+
                     average_speed = 0
                     speeds_accumulated = 0
                     for speed in reversed(self.speeds):
                         average_speed += speed
                         speeds_accumulated += 1
-                        
+
                         if speeds_accumulated == 6:
-                            break # do rolling average of 6 seconds
+                            break  # do rolling average of 6 seconds
 
                     average_speed /= speeds_accumulated
 
@@ -1348,8 +1348,8 @@ class RunLMC(wiz.WizardPageSimple):
                                          - self.total_bytes_downloaded)
                                       / speed)
 
-                    pretty_time = str(datetime.timedelta(seconds=
-                                                         int(time_remaining)))
+                    pretty_time = str(datetime.timedelta(seconds=int(
+                                                              time_remaining)))
 
                     # Following table assumes we don't get past TBps internet
                     # connections soon :-)
@@ -1362,12 +1362,12 @@ class RunLMC(wiz.WizardPageSimple):
                     info = "Downloading at {0:.1f} {1}".format(
                                                          speed,
                                                          units[units_index])
-                    
+
                     self.downloading_files_status.SetLabel(info)
-                    
+
                     info = "{0} remaining".format(
                                                          pretty_time)
-                    
+
                     self.downloading_files_info.SetLabel(info)
 
                 self.download_guage.SetValue(  1000
@@ -1377,7 +1377,7 @@ class RunLMC(wiz.WizardPageSimple):
             elif update_type == "total bytes":
                 self.total_bytes_to_download = value
                 self.total_bytes_downloaded = 0
-                self.speeds = [] # keep an array of speeds used to calculate
+                self.speeds = []  # keep an array of speeds used to calculate
                 # the estimated time remaining - by not just using the
                 # current speed we can stop the ETA bouncing around too much.
 
@@ -1463,7 +1463,7 @@ class TestDriveWizard(wx.wizard.Wizard):
         else:  # Always enable the forward button if reversing into a page
             self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
 
-    def go(self, first_page):
+    def go(self):
         file_handler = FetchImage.FileHandler()
         self.config = FetchImage.FetchImageConfig()
         self.config.settings["force_download"] = False
@@ -1538,13 +1538,15 @@ class TestDriveWizard(wx.wizard.Wizard):
         self.wizard.RunWizard(self.pages['release_or_snapshot'])
 
 
-def run(start_page = None):
+def run():
     """Wrapper around the full wizard. Is encapsulated in its own function to
        allow a restart to be performed, as described in __main___, easily"""
     app = wx.PySimpleApp()  # Start the application
-    #logging.basicConfig(level=logging.INFO)
+    if app:
+        pass  # We don't use this directly. Stop pyflakes complaining!
+    
     w = TestDriveWizard('Simple Wizard')
-    return w.go(start_page)
+    return w.go()
 
 
 class TestURLLookupFunctions(unittest.TestCase):

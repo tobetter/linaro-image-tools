@@ -35,7 +35,6 @@ import shutil
 import datetime
 import threading
 import subprocess
-import Queue
 
 
 class FileHandler():
@@ -70,7 +69,7 @@ class FileHandler():
                           settings,
                           tools_dir,
                           run_in_gui=False):
-        
+
         import linaro_image_tools.utils
 
         args = []
@@ -131,7 +130,6 @@ class FileHandler():
                                       settings,
                                       tools_dir)
 
-        
         self.create_process = subprocess.Popen(args)
         self.create_process.wait()
 
@@ -290,7 +288,7 @@ class FileHandler():
                     return None
             else:
                 return response
-            
+
         return None
 
     def download_files(self,
@@ -312,7 +310,7 @@ class FileHandler():
             file_name = file_path + os.sep + file_name
             if os.path.exists(file_name):
                 continue  # If file already exists, don't download it
-            
+
             response = self.urllib2_open(url)
             if response:
                 bytes_to_download += int(response.info()
@@ -342,13 +340,13 @@ class FileHandler():
                 # Download error. Hardly matters what, we can't continue.
                 print "Unexpected error:", sys.exc_info()[0]
                 logging.error("Unable to download " + url + " - aborting.")
-                
+
             if event_queue:
                 event_queue.put(("end", "download " + name))
 
             if path == None:  # User hit cancel when downloading
                 sys.exit(0)
-            
+
             downloaded_files[name] = path
             logging.info("Have downloaded {0} to {1}".format(name, path))
 
@@ -362,8 +360,6 @@ class FileHandler():
         the full path to the downloaded file"""
 
         file_name, file_path = self.name_and_path_from_url(url)
-
-        just_file_name = file_name
         file_name = file_path + os.sep + file_name
 
         if not os.path.isdir(file_path):
@@ -510,9 +506,9 @@ class FetchImageConfig():
             self.settings['UI']['reverse-translate'][value] = key
 
     def parse_args(self, args):
-        parser = argparse.ArgumentParser(description=
-                                         "Create a board image, first "
-                                         "downloading any required files.")
+        parser = argparse.ArgumentParser(description="Create a board image, "
+                                         "first downloading any required "
+                                         "files.")
 
         for (key, value) in self.settings['choice'].items():
             parser.add_argument(
@@ -1009,7 +1005,7 @@ class DB():
                 loop_date_increment = -one_day
 
             test_date[in_the] = current_date
-            
+
             while test_date[in_the] <= max_search_date:
                 test_date[in_the] += loop_date_increment
 
