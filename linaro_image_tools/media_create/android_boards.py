@@ -28,6 +28,7 @@ from linaro_image_tools.media_create.partitions import SECTOR_SIZE
 from linaro_image_tools.media_create.boards import PART_ALIGN_S
 from linaro_image_tools.media_create.boards import BeagleConfig
 from linaro_image_tools.media_create.boards import PandaConfig
+from linaro_image_tools.media_create.boards import Mx53LoCoConfig
 from linaro_image_tools.media_create.boards import SnowballSdConfig
 from linaro_image_tools.media_create.boards import SnowballEmmcConfig
 from linaro_image_tools.media_create.boards import (
@@ -209,10 +210,16 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
         return '%s,%s,0xDA\n%s' % (
             loader_start, loader_len, command)
 
+class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
+    extra_boot_args_options = (
+        'earlyprintk rootdelay=1 fixrtc nocompcache')
+    _extra_serial_opts = 'console=ttymxc0,115200n8'
+    android_specific_args = 'init=/init androidboot.console=ttymxc0'
 
 android_board_configs = {
     'beagle': AndroidBeagleConfig,
     'panda': AndroidPandaConfig,
     'snowball_sd': AndroidSnowballSdConfig,
     'snowball_emmc': AndroidSnowballEmmcConfig,
+    'iMX53': AndroidMx53LoCoConfig,
     }
