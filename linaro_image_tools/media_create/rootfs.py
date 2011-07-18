@@ -19,6 +19,7 @@
 
 import glob
 import os
+import subprocess
 import tempfile
 
 from linaro_image_tools import cmd_runner
@@ -107,13 +108,26 @@ def create_flash_kernel_config(root_disk, boot_partition_number):
         flash_kernel, "UBOOT_PART=%s" % target_boot_dev)
 
 
+def _list_files(directory):
+    """List the files and dirs under the given directory.
+
+    Runs as root because we want to list everything, including stuff that may
+    not be world-readable.
+    """
+    p = cmd_runner.run(
+        ['find', directory, '-maxdepth', '1', '-mindepth', '1'],
+        stdout=subprocess.PIPE, as_root=True)
+    stdout, _ = p.communicate()
+    return stdout.split()
+
+
 def move_contents(from_, root_disk):
     """Move everything under from_ to the given root disk.
 
     Uses sudo for moving.
     """
     assert os.path.isdir(from_), "%s is not a directory" % from_
-    files = glob.glob(os.path.join(from_, '*'))
+    files = _list_files(from_)
     mv_cmd = ['mv']
     mv_cmd.extend(sorted(files))
     mv_cmd.append(root_disk)

@@ -2121,6 +2121,14 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         os.makedirs(contents_bin)
         os.makedirs(contents_etc)
 
+        # Must mock rootfs._list_files() because populate_rootfs() uses its
+        # return value but since we mock cmd_runner.run() _list_files() would
+        # return an invalid value.
+        def mock_list_files(directory):
+            return [contents_bin, contents_etc]
+        self.useFixture(MockSomethingFixture(
+            rootfs, '_list_files', mock_list_files))
+
         populate_rootfs(
             contents_dir, root_disk, partition='/dev/rootfs',
             rootfs_type='ext3', rootfs_uuid='uuid', should_create_swap=True,
@@ -2162,10 +2170,27 @@ class TestPopulateRootFS(TestCaseWithFixtures):
             fixture.mock.commands_executed[0])
         self.assertEqual('UBOOT_PART=/dev/mmcblk0p1', open(tmpfile).read())
 
+    def test_list_files(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        # We don't want to mock cmd_runner.run() because we're testing the
+        # command that it runs, but we need to monkey-patch SUDO_ARGS because
+        # we don't want to use 'sudo' in tests.
+        orig_sudo_args = cmd_runner.SUDO_ARGS
+        def restore_sudo_args():
+            cmd_runner.SUDO_ARGS = orig_sudo_args
+        self.addCleanup(restore_sudo_args)
+        cmd_runner.SUDO_ARGS = []
+        file1 = self.createTempFileAsFixture(dir=tempdir)
+        self.assertEqual([file1], rootfs._list_files(tempdir))
+
     def test_move_contents(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         file1 = self.createTempFileAsFixture(dir=tempdir)
+        def mock_list_files(directory):
+            return [file1]
+        self.useFixture(MockSomethingFixture(
+            rootfs, '_list_files', mock_list_files))
 
         move_contents(tempdir, '/tmp/')
 
