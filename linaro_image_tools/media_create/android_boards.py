@@ -215,6 +215,7 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
         'earlyprintk rootdelay=1 fixrtc nocompcache')
     _extra_serial_opts = 'console=ttymxc0,115200n8'
     android_specific_args = 'init=/init androidboot.console=ttymxc0'
+    mmc_part_offset = 0
 
 android_board_configs = {
     'beagle': AndroidBeagleConfig,
