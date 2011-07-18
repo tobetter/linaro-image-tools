@@ -212,7 +212,7 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
 
 class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
     extra_boot_args_options = (
-        'earlyprintk rootdelay=1 fixrtc nocompcache')
+        'earlyprintk rootdelay=1 fixrtc nocompcache di1_primary tve')
     _extra_serial_opts = 'console=tty0 console=%s,115200n8' % serial_tty
     android_specific_args = 'init=/init androidboot.console=%s' % serial_tty
     mmc_part_offset = 0
