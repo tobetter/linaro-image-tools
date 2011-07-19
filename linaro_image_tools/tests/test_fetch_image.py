@@ -127,7 +127,7 @@ class TestURLLookupFunctions(unittest.TestCase):
         self.settings['release_or_snapshot'] = "release"
         # -- Select hardware --
         for self.settings['hardware'] in (
-                                    self.settings['choice']['hardware'].keys()):
+                                   self.settings['choice']['hardware'].keys()):
             compatable_hwpacks = (
                   self.settings['choice']['hwpack'][self.settings['hardware']])
 
@@ -180,6 +180,7 @@ class TestURLLookupFunctions(unittest.TestCase):
 
                                     # - Run the function under test! -
                                     image_url, hwpack_url = (
-                                        self.db.get_image_and_hwpack_urls(self.settings))
+                                             self.db.get_image_and_hwpack_urls(
+                                                      self.settings))
                                     self.assertTrue(image_url)
                                     self.assertTrue(hwpack_url)
