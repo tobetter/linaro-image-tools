@@ -1540,7 +1540,7 @@ def run():
     app = wx.PySimpleApp()  # Start the application
     if app:
         pass  # We don't use this directly. Stop pyflakes complaining!
-    
+
     w = TestDriveWizard('Simple Wizard')
     return w.go()
 

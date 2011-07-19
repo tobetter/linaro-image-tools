@@ -130,9 +130,9 @@ class FileHandler():
         """
         Find .asc files in downloaded_files, return list
         """
-        
+
         sig_files = []
-        
+
         for filename in downloaded_files.values():
             if re.search(r"sha1sums\.txt\.asc$", filename):
                 sig_files.append(filename)
@@ -386,12 +386,12 @@ class FileHandler():
         Need more than just the hwpack and OS image if we want signature
         verification to work, we need sha1sums, signatures for sha1sums
         and manifest files.
-        
+
         Note that this code is a bit sloppy and may result in downloading
         more sums than are strictly required, but the
         files are small and the wrong files won't be used.
         """
-        
+
         downloads_list = []
 
         # Get list of files in OS image directory
@@ -419,7 +419,7 @@ class FileHandler():
         a rather sloppy file name match that we don't want to use. For the
         hwpack sig files, check to see if the hwpack listed matches the hwpack
         URL. If it doesn't ignore it.
-        
+
         1. Download sig file(s) that match the hardware spec (done by this
            point).
         2. Find which sig file really matches the hardware pack we have
@@ -437,12 +437,12 @@ class FileHandler():
             files = []
             for line in sha1sum_file:
                 line = line.split()    # line[1] is now the file name
-                
+
                 # keep a record of all urls seen. Later we will discard ones
                 # that come from files that don't match a chosen download
                 # (image_url or hwpack_url)
                 files.append(line[1])
-                
+
                 if line[1] == os.path.basename(image_url):
                     # Found a line that matches an image or hwpack URL - keep
                     # the contents of this sig file
