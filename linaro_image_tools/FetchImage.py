@@ -1026,7 +1026,7 @@ class DB():
                     test_date[in_the] = None
                     break
 
-            if test_date[in_the] > max_search_date:
+            if test_date[in_the] and test_date[in_the] > max_search_date:
                 test_date[in_the] = None
 
             if test_date[in_the]:
