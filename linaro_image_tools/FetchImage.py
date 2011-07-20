@@ -231,9 +231,8 @@ class FileHandler():
 
             verified_files = utils.verify_file_integrity(sig_files)
 
-            hwpack_verified = (   os.path.basename(
-                                           downloaded_files[self.hwpack_url])
-                               in verified_files)
+            hwpack = os.path.basename(downloaded_files[self.hwpack_url])
+            hwpack_verified = hwpack in verified_files
 
             lmc_command = self.file_handler.build_lmc_command(
                                             downloaded_files[self.image_url],
