@@ -111,7 +111,13 @@ if __name__ == '__main__':
     sig_file_list = args.hwpacksigs[:]
     if args.binarysig is not None:
         sig_file_list.append(args.binarysig)
-    verified_files = verify_file_integrity(sig_file_list)
+    verified_files, gpg_sig_pass = verify_file_integrity(sig_file_list)
+
+    if not gpg_sig_pass:
+        # Other users of verifiy_file_integrity find just a sha1sum pass
+        # useful, but here we are only interested in a complete pass or fail.
+        verified_files = []
+
     for verified_file in verified_files:
         print 'Hash verification of file %s OK.' % verified_file
 

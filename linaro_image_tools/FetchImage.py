@@ -128,14 +128,21 @@ class FileHandler():
 
     def get_sig_files(self, downloaded_files):
         """
-        Find .asc files in downloaded_files, return list
+        Find sha1sum.txt files in downloaded_files, append ".asc" and return
+        list.
+
+        The reason for not just searching for .asc files is because if they
+        don't exist, utils.verify_file_integrity(sig_files) won't check the
+        sha1sums that do exist, and they are useful to us. Trying to check
+        a GPG signature that doesn't exist just results in the signature check
+        failing, which is correct and we act accordingly.
         """
 
         sig_files = []
 
         for filename in downloaded_files.values():
-            if re.search(r"sha1sums\.txt\.asc$", filename):
-                sig_files.append(filename)
+            if re.search(r"sha1sums\.txt$", filename):
+                sig_files.append(filename + ".asc")
 
         return sig_files
 
@@ -160,10 +167,10 @@ class FileHandler():
 
         sig_files = self.get_sig_files(downloaded_files)
 
-        verified_files = utils.verify_file_integrity(sig_files)
+        verified_files, gpg_sig_ok = utils.verify_file_integrity(sig_files)
 
-        hwpack_verified = (os.path.basename(downloaded_files[hwpack_url])
-                           in verified_files)
+        hwpack = os.path.basename(downloaded_files[hwpack_url])
+        hwpack_verified = (hwpack in verified_files) and gpg_sig_ok
 
         lmc_command = self.build_lmc_command(downloaded_files[image_url],
                                              downloaded_files[hwpack_url],
@@ -229,10 +236,10 @@ class FileHandler():
 
             sig_files = self.file_handler.get_sig_files(downloaded_files)
 
-            verified_files = utils.verify_file_integrity(sig_files)
+            verified_files, gpg_sig_ok = utils.verify_file_integrity(sig_files)
 
             hwpack = os.path.basename(downloaded_files[self.hwpack_url])
-            hwpack_verified = hwpack in verified_files
+            hwpack_verified = (hwpack in verified_files) and gpg_sig_ok
 
             lmc_command = self.file_handler.build_lmc_command(
                                             downloaded_files[self.image_url],
@@ -437,11 +444,6 @@ class FileHandler():
             for line in sha1sum_file:
                 line = line.split()    # line[1] is now the file name
 
-                # keep a record of all urls seen. Later we will discard ones
-                # that come from files that don't match a chosen download
-                # (image_url or hwpack_url)
-                files.append(line[1])
-
                 if line[1] == os.path.basename(image_url):
                     # Found a line that matches an image or hwpack URL - keep
                     # the contents of this sig file
@@ -459,6 +461,12 @@ class FileHandler():
 
                 dir = self.list_files_in_dir_of_url(common_prefix + '/')
 
+                # We include the sha1sum files that pointed to the files that
+                # we are going to download so the full file list can be parsed
+                # later. The files won't be re-downloaded because they will be
+                # cached.
+                file_name = os.path.basename(sha1sum_file_name)
+                downloads_list.append('/'.join([common_prefix, file_name]))
                 signed_sums = os.path.basename(sha1sum_file_name) + ".asc"
 
                 for link in dir:
