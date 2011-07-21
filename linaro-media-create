@@ -45,7 +45,7 @@ from linaro_image_tools.media_create import get_args_parser
 from linaro_image_tools.utils import (
     ensure_command,
     is_arm_host,
-    verify_file_integrity,
+    check_file_integrity_and_log_errors,
     )
 
 # Just define the global variables
@@ -110,27 +110,13 @@ if __name__ == '__main__':
     sig_file_list = args.hwpacksigs[:]
     if args.binarysig is not None:
         sig_file_list.append(args.binarysig)
-    verified_files, gpg_sig_pass = verify_file_integrity(sig_file_list)
 
-    # Check the outputs from verify_file_integrity
-    # Abort if anything fails.
-    if len(sig_file_list):
-        if not gpg_sig_pass:
-            print >> sys.stderr, "GPG signature verification failed. Aborting." 
-            sys.exit(1)
-    
-        if not os.path.basename(args.binary) in verified_files:
-            print >> sys.stderr, "OS Binary verification failed"
-            sys.exit(1)
-        
-        for hwpack in args.hwpacks:
-            if not os.path.basename(hwpack) in verified_files:
-                print >> sys.stderr, "Hwpack {0} verification failed".format(
-                                                                        hwpack)
-                sys.exit(1)
-    
-        for verified_file in verified_files:
-            print 'Hash verification of file %s OK.' % verified_file
+    # Check that the signatures that we have been provided (if any) match
+    # the hwpack and OS binaries we have been provided. If they don't, quit.
+    files_ok, verified_files = check_file_integrity_and_log_errors(
+                                    sig_file_list, args.binary, args.hwpacks)
+    if not files_ok:
+        sys.exit(1)
     
     atexit.register(cleanup_tempdir)
     media = Media(args.device)

@@ -21,6 +21,7 @@ import os
 import platform
 import subprocess
 import re
+import logging
 
 try:
     from CommandNotFound import CommandNotFound
@@ -74,6 +75,34 @@ def verify_file_integrity(sig_file_list):
 
     return verified_files, gpg_sig_ok
 
+def check_file_integrity_and_log_errors(sig_file_list, binary, hwpacks):
+    """
+    Wrapper around verify_file_integrity that prints error messages to stderr
+    if verify_file_integrity finds any problems.
+    """
+    verified_files, gpg_sig_pass = verify_file_integrity(sig_file_list)
+
+    # Check the outputs from verify_file_integrity
+    # Abort if anything fails.
+    if len(sig_file_list):
+        if not gpg_sig_pass:
+            logging.error("GPG signature verification failed.")
+            return False, []
+    
+        if not os.path.basename(binary) in verified_files:
+            logging.error("OS Binary verification failed")
+            return False, []
+        
+        for hwpack in hwpacks:
+            if not os.path.basename(hwpack) in verified_files:
+                logging.error("Hwpack {0} verification failed".format(hwpack))
+                return False, []
+    
+        for verified_file in verified_files:
+            logging.info('Hash verification of file {0} OK.'.format(
+                                                                verified_file))
+    
+    return True, verified_files
 
 def install_package_providing(command):
     """Install a package which provides the given command.

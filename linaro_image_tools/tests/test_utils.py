@@ -21,6 +21,7 @@ import os
 import stat
 import subprocess
 import sys
+import logging
 
 from linaro_image_tools import cmd_runner, utils
 from linaro_image_tools.testing import TestCaseWithFixtures
@@ -36,6 +37,7 @@ from linaro_image_tools.utils import (
     preferred_tools_dir,
     UnableToFindPackageProvidingCommand,
     verify_file_integrity,
+    check_file_integrity_and_log_errors,
     )
 
 
@@ -59,6 +61,37 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
         def wait(self):
             return self.returncode
 
+
+    class MockCmdRunnerPopen_sha1sum_fail(object):
+        def __call__(self, cmd, *args, **kwargs):
+            self.returncode = 0
+            return self
+
+        def communicate(self, input=None):
+            self.wait()
+            return ': ERROR\n'.join(
+                TestVerifyFileIntegrity.filenames_in_shafile) + ': ERROR\n', ''
+
+        def wait(self):
+            return self.returncode
+
+
+    class MockCmdRunnerPopen_wait_fails(object):
+        def __call__(self, cmd, *args, **kwargs):
+            self.returncode = 0
+            return self
+
+        def communicate(self, input=None):
+            self.wait()
+            return ': OK\n'.join(
+                TestVerifyFileIntegrity.filenames_in_shafile) + ': OK\n', ''
+
+        def wait(self):
+            stdout = ': OK\n'.join(
+                TestVerifyFileIntegrity.filenames_in_shafile) + ': OK\n'
+            raise cmd_runner.SubcommandNonZeroReturnValue([], 1, stdout, None)
+
+
     def test_verify_files(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         hash_filename = "dummy-file.txt"
@@ -77,6 +110,54 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
         verified_files, _ = verify_file_integrity([signature_filename])
         self.assertEqual(self.filenames_in_shafile, verified_files)
 
+    def test_check_file_integrity_and_print_errors(self):
+        self.useFixture(MockSomethingFixture(cmd_runner, 'Popen',
+                                             self.MockCmdRunnerPopen()))
+        hash_filename = "dummy-file.txt"
+        signature_filename = hash_filename + ".asc"
+        result, verified_files = check_file_integrity_and_log_errors(
+                                                [signature_filename],
+                                                self.filenames_in_shafile[0],
+                                                [self.filenames_in_shafile[1]])
+        self.assertEqual(self.filenames_in_shafile, verified_files)
+
+        # The sha1sums are faked as passing and all commands return 0, so
+        # it should look like GPG passed
+        self.assertTrue(result)
+
+    def test_check_file_integrity_and_print_errors_fail_sha1sum(self):
+        logging.getLogger().setLevel(100)  # Disable logging messages to screen
+        self.useFixture(MockSomethingFixture(cmd_runner, 'Popen',
+                                    self.MockCmdRunnerPopen_sha1sum_fail()))
+        hash_filename = "dummy-file.txt"
+        signature_filename = hash_filename + ".asc"
+        result, verified_files = check_file_integrity_and_log_errors(
+                                                [signature_filename],
+                                                self.filenames_in_shafile[0],
+                                                [self.filenames_in_shafile[1]])
+        self.assertEqual([], verified_files)
+
+        # The sha1sums are faked as failing and all commands return 0, so
+        # it should look like GPG passed
+        self.assertFalse(result)
+        logging.getLogger().setLevel(logging.WARNING)
+
+    def test_check_file_integrity_and_print_errors_fail_gpg(self):
+        logging.getLogger().setLevel(100)  # Disable logging messages to screen
+        self.useFixture(MockSomethingFixture(cmd_runner, 'Popen',
+                                    self.MockCmdRunnerPopen_wait_fails()))
+        hash_filename = "dummy-file.txt"
+        signature_filename = hash_filename + ".asc"
+        result, verified_files = check_file_integrity_and_log_errors(
+                                                [signature_filename],
+                                                self.filenames_in_shafile[0],
+                                                [self.filenames_in_shafile[1]])
+        self.assertEqual([], verified_files)
+
+        # The sha1sums are faked as passing and all commands return 1, so
+        # it should look like GPG failed
+        self.assertFalse(result)
+        logging.getLogger().setLevel(logging.WARNING)
 
 class TestEnsureCommand(TestCaseWithFixtures):
 

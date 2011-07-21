@@ -364,7 +364,6 @@ class FileHandler():
 
     def list_files_in_dir_of_url(self, url):
         """
-        url points to a file
         return a directory listing of the directory that url sits in
         """
 
