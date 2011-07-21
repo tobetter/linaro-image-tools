@@ -122,6 +122,8 @@ class FileHandler():
         args.append("--hwpack")
         args.append(hwpack_file)
 
+        print " ".join(args)
+
         logging.info(" ".join(args))
 
         return args
@@ -431,6 +433,15 @@ class FileHandler():
         2. Find which sig file really matches the hardware pack we have
            downloaded. (this function calculates this list)
         3. Download all the files listed in the sig file (done by another func)
+        
+        We go through this process because sometimes a directory will have
+        more than one hardware pack that will match the hardware pack name,
+        for example panda and panda-x11 will both match "panda". These checks
+        make sure we only try and validate the signatures of the files that
+        we should be downloading and not try and validatate a signature of a
+        file that there is no reason for us to download, which would result in
+        an an invalid warning about installing unsigned packages when running
+        linaro-media-create.
         """
 
         downloads_list = [image_url, hwpack_url]
