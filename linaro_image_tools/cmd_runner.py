@@ -110,5 +110,12 @@ class SubcommandNonZeroReturnValue(Exception):
         self.stderr = stderr
 
     def __str__(self):
-        return 'Sub process "%s" returned a non-zero value: %d' % (
+        message = 'Sub process "%s" returned a non-zero value: %d' % (
             self.command, self.retval)
+
+        if self.stdout:
+            message += '\nstdout was\n{0}'.format(self.stdout)
+        if self.stderr:
+            message += '\nstderr was\n{0}'.format(self.stderr)
+
+        return message
