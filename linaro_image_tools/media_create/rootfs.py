@@ -57,11 +57,11 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
     This consists of:
       1. Create a directory on the path specified by root_disk
       2. Mount the given partition onto the created directory.
-      3. Move the contents of content_dir to that directory.
-      4. If should_create_swap, then create it with the given size.
-      5. Add fstab entries for the / filesystem and swap (if created).
-      6. Create a /etc/flash-kernel.conf containing the target's boot device.
-      7. Unmount the partition we mounted on step 2.
+      3. Setup an atexit handler to unmount the partition mounted above.
+      4. Move the contents of content_dir to that directory.
+      5. If should_create_swap, then create it with the given size.
+      6. Add fstab entries for the / filesystem and swap (if created).
+      7. Create a /etc/flash-kernel.conf containing the target's boot device.
     """
     print "\nPopulating rootfs partition"
     print "Be patient, this may take a few minutes\n"
