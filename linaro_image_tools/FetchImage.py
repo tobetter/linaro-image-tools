@@ -35,6 +35,8 @@ import shutil
 import datetime
 import threading
 import subprocess
+import BeautifulSoup
+import utils
 
 
 class FileHandler():
@@ -68,12 +70,12 @@ class FileHandler():
                           hwpack_file,
                           settings,
                           tools_dir,
+                          hwpack_verified,
                           run_in_gui=False):
 
         import linaro_image_tools.utils
 
-        args = []
-        args.append("pkexec")
+        args = ["pkexec"]
 
         # Prefer a local linaro-media-create (from a bzr checkout for instance)
         # to an installed one
@@ -88,6 +90,15 @@ class FileHandler():
 
         if run_in_gui:
             args.append("--nocheck-mmc")
+
+        if hwpack_verified:
+            # We verify the hwpack before calling linaro-media-create because
+            # these tools run linaro-media-create as root and to get the GPG
+            # signature verification to work, root would need to have GPG set
+            # up with the Canonical Linaro Image Build Automatic Signing Key
+            # imported. It seems far more likely that users will import keys
+            # as themselves, not root!
+            args.append("--hwpack-force-yes")
 
         if 'rootfs' in settings and settings['rootfs']:
             args.append("--rootfs")
@@ -115,22 +126,59 @@ class FileHandler():
 
         return args
 
+    def get_sig_files(self, downloaded_files):
+        """
+        Find sha1sum.txt files in downloaded_files, append ".asc" and return
+        list.
+
+        The reason for not just searching for .asc files is because if they
+        don't exist, utils.verify_file_integrity(sig_files) won't check the
+        sha1sums that do exist, and they are useful to us. Trying to check
+        a GPG signature that doesn't exist just results in the signature check
+        failing, which is correct and we act accordingly.
+        """
+
+        sig_files = []
+
+        for filename in downloaded_files.values():
+            if re.search(r"sha1sums\.txt$", filename):
+                sig_files.append(filename + ".asc")
+
+        return sig_files
+
     def create_media(self, image_url, hwpack_url, settings, tools_dir):
         """Create a command line for linaro-media-create based on the settings
         provided then run linaro-media-create, either in a separate thread
         (GUI mode) or in the current one (CLI mode)."""
 
-        to_download = [(image_url, "OS"),
-                       (hwpack_url, "hwpack")]
+        sha1sums_urls = self.sha1sum_file_download_list(image_url,
+                                                        hwpack_url,
+                                                        settings)
+
+        sha1sum_files = self.download_files(sha1sums_urls,
+                                            settings)
+
+        to_download = self.generate_download_list(image_url,
+                                                  hwpack_url,
+                                                  sha1sum_files)
+
         downloaded_files = self.download_files(to_download,
                                                settings)
 
-        args = self.build_lmc_command(downloaded_files['OS'],
-                                      downloaded_files['hwpack'],
-                                      settings,
-                                      tools_dir)
+        sig_files = self.get_sig_files(downloaded_files)
 
-        self.create_process = subprocess.Popen(args)
+        verified_files, gpg_sig_ok = utils.verify_file_integrity(sig_files)
+
+        hwpack = os.path.basename(downloaded_files[hwpack_url])
+        hwpack_verified = (hwpack in verified_files) and gpg_sig_ok
+
+        lmc_command = self.build_lmc_command(downloaded_files[image_url],
+                                             downloaded_files[hwpack_url],
+                                             settings,
+                                             tools_dir,
+                                             hwpack_verified)
+
+        self.create_process = subprocess.Popen(lmc_command)
         self.create_process.wait()
 
     class LinaroMediaCreate(threading.Thread):
@@ -163,20 +211,43 @@ class FileHandler():
                   needs to be re-directed to the GUI
             """
 
-            to_download = [(self.image_url, "OS"),
-                           (self.hwpack_url, "hwpack")]
+            sha1sums_urls = self.file_handler.sha1sum_file_download_list(
+                                                               self.image_url,
+                                                               self.hwpack_url,
+                                                               self.settings)
+
+            self.event_queue.put(("update",
+                                  "download",
+                                  "message",
+                                  "Calculating download size"))
+
+            sha1sum_files = self.file_handler.download_files(sha1sums_urls,
+                                                             self.settings)
+
+            to_download = self.file_handler.generate_download_list(
+                                                            self.image_url,
+                                                            self.hwpack_url,
+                                                            sha1sum_files)
 
             downloaded_files = self.file_handler.download_files(
                                                             to_download,
                                                             self.settings,
                                                             self.event_queue)
 
+            sig_files = self.file_handler.get_sig_files(downloaded_files)
+
+            verified_files, gpg_sig_ok = utils.verify_file_integrity(sig_files)
+
+            hwpack = os.path.basename(downloaded_files[self.hwpack_url])
+            hwpack_verified = (hwpack in verified_files) and gpg_sig_ok
+
             lmc_command = self.file_handler.build_lmc_command(
-                                                    downloaded_files['OS'],
-                                                    downloaded_files['hwpack'],
-                                                    self.settings,
-                                                    self.tools_dir,
-                                                    True)
+                                            downloaded_files[self.image_url],
+                                            downloaded_files[self.hwpack_url],
+                                            self.settings,
+                                            self.tools_dir,
+                                            hwpack_verified,
+                                            True)
 
             self.create_process = subprocess.Popen(lmc_command,
                                                    stdin=subprocess.PIPE,
@@ -291,6 +362,129 @@ class FileHandler():
 
         return None
 
+    def list_files_in_dir_of_url(self, url):
+        """
+        return a directory listing of the directory that url sits in
+        """
+
+        url = os.path.dirname(url)
+        response = self.urllib2_open(url)
+        page = response.read()
+
+        dir = []
+        # Use BeautifulSoup to parse the HTML and iterate over all 'a' tags
+        soup = BeautifulSoup.BeautifulSoup(page)
+        for link in soup.findAll('a'):
+            for attr, value in link.attrs:
+                if(    attr == "href"
+                   and not re.search(r'[\?=;/]', value)):
+                    # Ignore links that don't look like plain files
+                    dir.append('/'.join([url, value]))
+
+        return dir
+
+    def sha1sum_file_download_list(self,
+                                     image_url,
+                                     hwpack_url,
+                                     settings):
+        """
+        Need more than just the hwpack and OS image if we want signature
+        verification to work, we need sha1sums, signatures for sha1sums
+        and manifest files.
+
+        Note that this code is a bit sloppy and may result in downloading
+        more sums than are strictly required, but the
+        files are small and the wrong files won't be used.
+        """
+
+        downloads_list = []
+
+        # Get list of files in OS image directory
+        image_dir  = self.list_files_in_dir_of_url(image_url)
+        hwpack_dir = self.list_files_in_dir_of_url(hwpack_url)
+
+        for link in image_dir:
+            if re.search("sha1sums\.txt$", link):
+                downloads_list.append(link)
+
+        for link in hwpack_dir:
+            if(    re.search(settings['hwpack'], link)
+               and re.search("sha1sums\.txt$", link)):
+                downloads_list.append(link)
+
+        return downloads_list
+
+    def generate_download_list(self,
+                               image_url,
+                               hwpack_url,
+                               sha1sum_file_names):
+        """
+        Generate a list of files based on what is in the sums files that
+        we have downloaded. We may have downloaded some sig files based on
+        a rather sloppy file name match that we don't want to use. For the
+        hwpack sig files, check to see if the hwpack listed matches the hwpack
+        URL. If it doesn't ignore it.
+
+        1. Download sig file(s) that match the hardware spec (done by this
+           point).
+        2. Find which sig file really matches the hardware pack we have
+           downloaded. (this function calculates this list)
+        3. Download all the files listed in the sig file (done by another func)
+        
+        We go through this process because sometimes a directory will have
+        more than one hardware pack that will match the hardware pack name,
+        for example panda and panda-x11 will both match "panda". These checks
+        make sure we only try and validate the signatures of the files that
+        we should be downloading and not try and validatate a signature of a
+        file that there is no reason for us to download, which would result in
+        an an invalid warning about installing unsigned packages when running
+        linaro-media-create.
+        """
+
+        downloads_list = [image_url, hwpack_url]
+
+        for sha1sum_file_name in sha1sum_file_names.values():
+            sha1sum_file = open(sha1sum_file_name)
+
+            common_prefix = None
+
+            files = []
+            for line in sha1sum_file:
+                line = line.split()    # line[1] is now the file name
+
+                if line[1] == os.path.basename(image_url):
+                    # Found a line that matches an image or hwpack URL - keep
+                    # the contents of this sig file
+                    common_prefix = os.path.dirname(image_url)
+
+                if line[1] == os.path.basename(hwpack_url):
+                    # Found a line that matches an image or hwpack URL - keep
+                    # the contents of this sig file
+                    common_prefix = os.path.dirname(hwpack_url)
+
+            if common_prefix:
+                for file_name in files:
+                    downloads_list.append('/'.join([common_prefix,
+                                                    file_name]))
+
+                dir = self.list_files_in_dir_of_url(common_prefix + '/')
+
+                # We include the sha1sum files that pointed to the files that
+                # we are going to download so the full file list can be parsed
+                # later. The files won't be re-downloaded because they will be
+                # cached.
+                file_name = os.path.basename(sha1sum_file_name)
+                downloads_list.append('/'.join([common_prefix, file_name]))
+                signed_sums = os.path.basename(sha1sum_file_name) + ".asc"
+
+                for link in dir:
+                    if re.search(signed_sums, link):
+                        downloads_list.append(link)
+
+            sha1sum_file.close()
+
+        return downloads_list
+
     def download_files(self,
                        downloads_list,
                        settings,
@@ -304,7 +498,7 @@ class FileHandler():
 
         bytes_to_download = 0
 
-        for url, name in downloads_list:
+        for url in downloads_list:
             file_name, file_path = self.name_and_path_from_url(url)
 
             file_name = file_path + os.sep + file_name
@@ -318,19 +512,13 @@ class FileHandler():
                 response.close()
 
         if event_queue:
+            event_queue.put(("start", "download"))
             event_queue.put(("update",
                              "download",
                              "total bytes",
                              bytes_to_download))
 
-        for url, name in downloads_list:
-            if event_queue:
-                event_queue.put(("start", "download " + name))
-                event_queue.put(("update",
-                                 "download",
-                                 "name",
-                                 name))
-
+        for url in downloads_list:
             path = None
             try:
                 path = self.download(url,
@@ -341,14 +529,14 @@ class FileHandler():
                 print "Unexpected error:", sys.exc_info()[0]
                 logging.error("Unable to download " + url + " - aborting.")
 
-            if event_queue:
-                event_queue.put(("end", "download " + name))
-
             if path == None:  # User hit cancel when downloading
                 sys.exit(0)
 
-            downloaded_files[name] = path
-            logging.info("Have downloaded {0} to {1}".format(name, path))
+            downloaded_files[url] = path
+            logging.info("Have downloaded {0} to {1}".format(url, path))
+
+        if event_queue:
+            event_queue.put(("end", "download"))
 
         return downloaded_files
 

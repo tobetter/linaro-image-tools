@@ -1264,10 +1264,8 @@ class RunLMC(wiz.WizardPageSimple):
 
     #--- Event(s) ---
     def event_start(self, event):
-        if event == "download OS":
-            self.downloading_files_status.SetLabel("Downloading OS")
-        elif event == "download hwpack":
-            self.downloading_files_status.SetLabel("Downloading Hardware Pack")
+        if event == "download":
+            self.downloading_files_status.SetLabel("Downloading")
         elif event == "unpack":
             self.unpacking_files_status.SetLabel("Running")
         elif event == "installing packages":
@@ -1279,7 +1277,7 @@ class RunLMC(wiz.WizardPageSimple):
             install_unsigned_packages = self.unsigned_packages_query(packages)
 
             if install_unsigned_packages == False:
-                self.file_handler.kill_create_media()
+                # TODO: Tidy up other threads
                 sys.exit(1)
             else:
                 self.lmc_thread.send_to_create_process("y")
@@ -1292,9 +1290,7 @@ class RunLMC(wiz.WizardPageSimple):
             print "Unhandled start event:", event
 
     def event_end(self, event):
-        if event == "download OS":
-            self.downloading_files_status.SetLabel("Done (1/2)")
-        elif event == "download hwpack":
+        if event == "download":
             self.downloading_files_status.SetLabel("Done")
         elif event == "unpack":
             self.unpacking_files_status.SetLabel("Done")
@@ -1309,12 +1305,7 @@ class RunLMC(wiz.WizardPageSimple):
 
     def event_update(self, task, update_type, value):
         if task == "download":
-            if update_type == "name":
-                self.downloading_files_status.SetLabel("Downloading")
-                self.old_time = time.time()
-                self.old_bytes_downloaded = 0
-
-            elif update_type == "progress":
+            if update_type == "progress":
                 self.total_bytes_downloaded += value
 
                 time_difference = time.time() - self.old_time
@@ -1374,11 +1365,16 @@ class RunLMC(wiz.WizardPageSimple):
                                              / self.total_bytes_to_download)
 
             elif update_type == "total bytes":
+                self.old_time = time.time()
+                self.old_bytes_downloaded = 0
                 self.total_bytes_to_download = value
                 self.total_bytes_downloaded = 0
                 self.speeds = []  # keep an array of speeds used to calculate
                 # the estimated time remaining - by not just using the
                 # current speed we can stop the ETA bouncing around too much.
+
+            elif update_type == "message":
+                self.downloading_files_status.SetLabel(value)
 
     def event_combo_box_release(self, evt):
         pass
@@ -1543,7 +1539,7 @@ def run():
     app = wx.PySimpleApp()  # Start the application
     if app:
         pass  # We don't use this directly. Stop pyflakes complaining!
-    
+
     w = TestDriveWizard('Simple Wizard')
     return w.go()
 
