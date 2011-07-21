@@ -612,7 +612,8 @@ class OveroConfig(OmapConfig):
     load_addr = '0x80008000'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'earlyprintk mpurate=${mpurate} vram=12M')
+        'earlyprintk mpurate=${mpurate} vram=12M '
+        'omapdss.def_disp=${defaultdisplay} omapfb.mode=dvi:${dvimode}')
 
 
 class PandaConfig(OmapConfig):
