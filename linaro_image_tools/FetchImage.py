@@ -122,8 +122,6 @@ class FileHandler():
         args.append("--hwpack")
         args.append(hwpack_file)
 
-        print " ".join(args)
-
         logging.info(" ".join(args))
 
         return args

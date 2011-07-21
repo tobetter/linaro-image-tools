@@ -114,22 +114,24 @@ if __name__ == '__main__':
 
     # Check the outputs from verify_file_integrity
     # Abort if anything fails.
-    if not gpg_sig_pass:
-        print >> sys.stderr, "GPG signature verification failed. Aborting." 
-        sys.exit(1)
-
-    if not os.path.basename(args.binary) in verified_files:
-        print >> sys.stderr, "OS Binary verification failed"
-        sys.exit(1)
-    
-    for hwpack in args.hwpacks:
-        if not os.path.basename(hwpack) in verified_files:
-            print >> sys.stderr, "Hwpack {0} verification failed".format(hwpack)
+    if len(sig_file_list):
+        if not gpg_sig_pass:
+            print >> sys.stderr, "GPG signature verification failed. Aborting." 
             sys.exit(1)
-
-    for verified_file in verified_files:
-        print 'Hash verification of file %s OK.' % verified_file
-
+    
+        if not os.path.basename(args.binary) in verified_files:
+            print >> sys.stderr, "OS Binary verification failed"
+            sys.exit(1)
+        
+        for hwpack in args.hwpacks:
+            if not os.path.basename(hwpack) in verified_files:
+                print >> sys.stderr, "Hwpack {0} verification failed".format(
+                                                                        hwpack)
+                sys.exit(1)
+    
+        for verified_file in verified_files:
+            print 'Hash verification of file %s OK.' % verified_file
+    
     atexit.register(cleanup_tempdir)
     media = Media(args.device)
     if media.is_block_device:
@@ -154,8 +156,8 @@ if __name__ == '__main__':
     lmc_dir = os.path.dirname(__file__)
     if lmc_dir == '':
         lmc_dir = None
-    install_hwpacks(
-        ROOTFS_DIR, TMP_DIR, lmc_dir, args.hwpack_force_yes, verified_files, *hwpacks)
+    install_hwpacks(ROOTFS_DIR, TMP_DIR, lmc_dir, args.hwpack_force_yes,
+                    verified_files, *hwpacks)
 
     if args.rootfs == 'btrfs':
         install_packages(ROOTFS_DIR, TMP_DIR, "btrfs-tools")

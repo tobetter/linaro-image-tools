@@ -57,11 +57,15 @@ def verify_file_integrity(sig_file_list):
         else:
             sha_cwd = os.path.dirname(hash_file)
         
-        sha1sums_out, _ = subprocess.Popen(['sha1sum', '-c', hash_file],
-                                             stdout=subprocess.PIPE,
-                                             stderr=subprocess.STDOUT,
-                                             cwd=sha_cwd
-                                             ).communicate()
+        try:
+            sha1sums_out, _ = cmd_runner.Popen(
+                                            ['sha1sum', '-c', hash_file],
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT,
+                                            cwd=sha_cwd
+                                            ).communicate()
+        except cmd_runner.SubcommandNonZeroReturnValue as inst:
+            sha1sums_out = inst.stdout
 
         for line in sha1sums_out.splitlines():
             sha1_check = re.search(r'^(.*):\s+OK', line)

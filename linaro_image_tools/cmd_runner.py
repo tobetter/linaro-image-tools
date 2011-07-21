@@ -72,6 +72,7 @@ class Popen(subprocess.Popen):
 
     def __init__(self, args, env=None, **kwargs):
         self._my_args = args
+        self.except_on_cmd_fail=True
         if env is None:
             env = os.environ.copy()
         env['LC_ALL'] = 'C'
@@ -81,18 +82,32 @@ class Popen(subprocess.Popen):
         sanitize_path(env)
         super(Popen, self).__init__(args, env=env, **kwargs)
 
+    def communicate(self, input=None):
+        self.except_on_cmd_fail = False
+        stdout, stderr = super(Popen, self).communicate(input)
+        self.except_on_cmd_fail = True
+
+        if self.returncode != 0:
+            raise SubcommandNonZeroReturnValue(self._my_args,
+                                               self.returncode,
+                                               stdout,
+                                               stderr)
+        return stdout, stderr
+
     def wait(self):
         returncode = super(Popen, self).wait()
-        if returncode != 0:
+        if returncode != 0 and self.except_on_cmd_fail:
             raise SubcommandNonZeroReturnValue(self._my_args, returncode)
         return returncode
 
 
 class SubcommandNonZeroReturnValue(Exception):
 
-    def __init__(self, command, return_value):
+    def __init__(self, command, return_value, stdout=None, stderr=None):
         self.command = command
         self.retval = return_value
+        self.stdout = stdout
+        self.stderr = stderr
 
     def __str__(self):
         return 'Sub process "%s" returned a non-zero value: %d' % (
