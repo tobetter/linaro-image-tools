@@ -17,19 +17,27 @@
 # You should have received a copy of the GNU General Public License
 # along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
-import glob
+import atexit
 import os
 import subprocess
 import tempfile
 
 from linaro_image_tools import cmd_runner
 
+
+def umount(device):
+    # The old code used to ignore failures here, but I don't think that's
+    # desirable so I'm using cmd_runner.run()'s standard behaviour, which will
+    # fail on a non-zero return value.
+    cmd_runner.run(['umount', device], as_root=True).wait()
+
+
 def populate_partition(content_dir, root_disk, partition):
     os.makedirs(root_disk)
     cmd_runner.run(['mount', partition, root_disk], as_root=True).wait()
+    atexit.register(umount, root_disk)
     move_contents(content_dir, root_disk)
     cmd_runner.run(['sync']).wait()
-    cmd_runner.run(['umount', root_disk], as_root=True).wait()
 
 
 def rootfs_mount_options(rootfs_type):
@@ -61,6 +69,9 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
     os.makedirs(root_disk)
 
     cmd_runner.run(['mount', partition, root_disk], as_root=True).wait()
+    # We use an atexit handler to umount the partition to make sure it's
+    # umounted even if something fails when it's being populated.
+    atexit.register(umount, root_disk)
 
     move_contents(content_dir, root_disk)
 
@@ -91,10 +102,6 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
     create_flash_kernel_config(root_disk, 1 + partition_offset)
 
     cmd_runner.run(['sync']).wait()
-    # The old code used to ignore failures here, but I don't think that's
-    # desirable so I'm using cmd_runner.run()'s standard behaviour, which will
-    # fail on a non-zero return value.
-    cmd_runner.run(['umount', root_disk], as_root=True).wait()
 
 
 def create_flash_kernel_config(root_disk, boot_partition_number):

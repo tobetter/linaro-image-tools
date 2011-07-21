@@ -101,6 +101,7 @@ from linaro_image_tools.media_create.rootfs import (
     move_contents,
     populate_rootfs,
     rootfs_mount_options,
+    umount,
     write_data_to_protected_file,
     )
 from linaro_image_tools.media_create.tests.fixtures import (
@@ -2104,6 +2105,8 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         def fake_create_flash_kernel_config(disk, partition_offset):
             self.create_flash_kernel_config_called = True
 
+        atexit_fixture = self.useFixture(MockSomethingFixture(
+            atexit, 'register', AtExitRegister()))
         # Mock stdout, cmd_runner.Popen(), append_to_fstab and
         # create_flash_kernel_config.
         self.useFixture(MockSomethingFixture(
@@ -2149,9 +2152,11 @@ class TestPopulateRootFS(TestCaseWithFixtures):
             '%s dd if=/dev/zero of=%s bs=1M count=100' % (
                sudo_args, swap_file),
             '%s mkswap %s' % (sudo_args, swap_file),
-            'sync',
-            '%s umount %s' % (sudo_args, root_disk)]
+            'sync']
         self.assertEqual(expected, popen_fixture.mock.commands_executed)
+        self.assertEqual(1, len(atexit_fixture.mock.funcs))
+        self.assertEqual(
+            (umount, (root_disk,), {}), atexit_fixture.mock.funcs[0])
 
     def test_create_flash_kernel_config(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
