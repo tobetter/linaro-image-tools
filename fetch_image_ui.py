@@ -1265,7 +1265,7 @@ class RunLMC(wiz.WizardPageSimple):
     #--- Event(s) ---
     def event_start(self, event):
         if event == "download":
-            self.downloading_files_status.SetLabel("Downloading")
+            pass
         elif event == "unpack":
             self.unpacking_files_status.SetLabel("Running")
         elif event == "installing packages":

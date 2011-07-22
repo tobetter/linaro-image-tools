@@ -146,10 +146,8 @@ class FileHandler():
 
         return sig_files
 
-    def create_media(self, image_url, hwpack_url, settings, tools_dir):
-        """Create a command line for linaro-media-create based on the settings
-        provided then run linaro-media-create, either in a separate thread
-        (GUI mode) or in the current one (CLI mode)."""
+    def download_files_and_verify(self, image_url, hwpack_url,
+                                  settings, event_queue=None):
 
         sha1sums_urls = self.sha1sum_file_download_list(image_url,
                                                         hwpack_url,
@@ -163,14 +161,50 @@ class FileHandler():
                                                   sha1sum_files)
 
         downloaded_files = self.download_files(to_download,
-                                               settings)
+                                               settings,
+                                               event_queue)
 
         sig_files = self.get_sig_files(downloaded_files)
 
         verified_files, gpg_sig_ok = utils.verify_file_integrity(sig_files)
 
+        # Expect to have 2 sha1sum files (one for hwpack, one for OS bin)
+        have_sha1sums = len(sha1sum_files) ==2
+
+        if have_sha1sums and gpg_sig_ok:
+            # The GPG signature is OK, so the sha1sums file and GPG sig are
+            # both good. 
+
+            to_retry = self.unverified_files(verified_files, sig_files,
+                                             to_download)
+
+            if len(to_retry):
+                if event_queue:
+                    event_queue.put(("update", "download", "message",
+                                     "Retrying bad files"))
+                else:
+                    print "Re-downloading corrupt files"
+                # There are some files to re-download
+                redownloaded_files = self.download_files(to_retry,
+                                                         settings,
+                                                         event_queue,
+                                                         True)
+                
+                verified_files, gpg_sig_ok = utils.verify_file_integrity(
+                                                    sig_files)
+
         hwpack = os.path.basename(downloaded_files[hwpack_url])
         hwpack_verified = (hwpack in verified_files) and gpg_sig_ok
+
+        return downloaded_files, hwpack_verified
+
+    def create_media(self, image_url, hwpack_url, settings, tools_dir):
+        """Create a command line for linaro-media-create based on the settings
+        provided then run linaro-media-create, either in a separate thread
+        (GUI mode) or in the current one (CLI mode)."""
+
+        downloaded_files, hwpack_verified = self.download_files_and_verify(
+                                               image_url, hwpack_url, settings)
 
         lmc_command = self.build_lmc_command(downloaded_files[image_url],
                                              downloaded_files[hwpack_url],
@@ -211,42 +245,21 @@ class FileHandler():
                   needs to be re-directed to the GUI
             """
 
-            sha1sums_urls = self.file_handler.sha1sum_file_download_list(
-                                                               self.image_url,
-                                                               self.hwpack_url,
-                                                               self.settings)
-
             self.event_queue.put(("update",
                                   "download",
                                   "message",
-                                  "Calculating download size"))
+                                  "Downloading"))
 
-            sha1sum_files = self.file_handler.download_files(sha1sums_urls,
-                                                             self.settings)
-
-            to_download = self.file_handler.generate_download_list(
-                                                            self.image_url,
-                                                            self.hwpack_url,
-                                                            sha1sum_files)
-
-            downloaded_files = self.file_handler.download_files(
-                                                            to_download,
-                                                            self.settings,
-                                                            self.event_queue)
-
-            sig_files = self.file_handler.get_sig_files(downloaded_files)
-
-            verified_files, gpg_sig_ok = utils.verify_file_integrity(sig_files)
-
-            hwpack = os.path.basename(downloaded_files[self.hwpack_url])
-            hwpack_verified = (hwpack in verified_files) and gpg_sig_ok
+            files, hwpack_ok = self.file_handler.download_files_and_verify(
+                                self.image_url, self.hwpack_url,
+                                self.settings, self.event_queue)
 
             lmc_command = self.file_handler.build_lmc_command(
-                                            downloaded_files[self.image_url],
-                                            downloaded_files[self.hwpack_url],
+                                            files[self.image_url],
+                                            files[self.hwpack_url],
                                             self.settings,
                                             self.tools_dir,
-                                            hwpack_verified,
+                                            hwpack_ok,
                                             True)
 
             self.create_process = subprocess.Popen(lmc_command,
@@ -485,14 +498,35 @@ class FileHandler():
 
         return downloads_list
 
+    def unverified_files(self, verified_files, sig_files, to_download):
+        """
+        Return a list of URLs of files that didn't get verified
+        """
+        unverified_files = []
+        for sig_file in sig_files:
+            name = os.path.basename(sig_file)
+            verified_files.append(name)
+            verified_files.append(name[0:-len('.asc')])
+        
+        # Generate a list of files that didn't verify
+        for url in to_download:
+            url_file = os.path.basename(url)
+            if url_file not in verified_files:
+                unverified_files.append(url)
+
+        return unverified_files
+
     def download_files(self,
                        downloads_list,
                        settings,
-                       event_queue=None):
+                       event_queue=None,
+                       force_download=False):
         """
         Download files specified in the downloads_list, which is a list of
         url, name tuples.
         """
+
+        force_download = settings["force_download"] or force_download
 
         downloaded_files = {}
 
@@ -502,7 +536,7 @@ class FileHandler():
             file_name, file_path = self.name_and_path_from_url(url)
 
             file_name = file_path + os.sep + file_name
-            if os.path.exists(file_name):
+            if os.path.exists(file_name) and not force_download:
                 continue  # If file already exists, don't download it
 
             response = self.urllib2_open(url)
@@ -523,7 +557,7 @@ class FileHandler():
             try:
                 path = self.download(url,
                                      event_queue,
-                                     settings["force_download"])
+                                     force_download)
             except Exception:
                 # Download error. Hardly matters what, we can't continue.
                 print "Unexpected error:", sys.exc_info()[0]
@@ -1153,9 +1187,13 @@ class DB():
                            (date, hwpack))
 
             if len(builds):
-                # A hardware pack exists for that date, return what we found
-                # for binaries
-                return binaries
+                # A hardware pack exists for that date, return a list of builds
+                # that exist for both hwpack and binary
+                ret = []
+                for build in builds:
+                    if build in binaries:
+                        ret.append(build)
+                return ret
 
         # No hardware pack exists for the date requested, return empty table
         return []
@@ -1243,16 +1281,43 @@ class DB():
             count = 0
             while(1):  # Just so we can try several times...
                 if(args['build'] == "latest"):
-                    # First result of SQL query is latest build (ORDER BY)
+                    # Start from today, add 1 day because
+                    # get_next_prev_day_with_builds aways searches from the
+                    # day passed to it, not including that day. This will give
+                    # us the latest build dated today or earlier with both
+                    # a hwpack and OS binary
+                    date = (datetime.date.today() +
+                            datetime.timedelta(days=1)).isoformat()
+
+                    _, past_date = self.get_next_prev_day_with_builds(
+                                           args['image'],
+                                           date,
+                                           [args['hwpack']])
+
+                    builds = self.get_binary_builds_on_day_from_db(
+                                    args['image'], past_date, [args['hwpack']])
+                    
+                    # Work out latest build
+                    build = None
+                    for b in builds:
+                        if build == None or b[0] > build:
+                            build = b[0]
+                        
+                    # We store dates in the DB in ISO format with the dashes
+                    # missing
+                    date = re.sub('-', '', past_date)
+
                     image_url = self.get_url("snapshot_binaries",
                                     [
-                                     ("image", args['image'])],
-                                    "ORDER BY date DESC, build DESC")
+                                     ("image", args['image']),
+                                     ("build", build),
+                                     ("date", date)])
 
                     hwpack_url = self.get_url("snapshot_hwpacks",
                                     [
-                                     ("hardware", args['hwpack'])],
-                                    "ORDER BY date DESC, build DESC")
+                                     ("hardware", args['hwpack']),
+                                     ("build", build),
+                                     ("date", date)])
 
                 else:
                     build_bits = args['build'].split(":")
