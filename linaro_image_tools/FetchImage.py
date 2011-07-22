@@ -79,7 +79,7 @@ class DownloadManager():
                 response = urllib2.urlopen(url)
             except:
                 if trycount < maxtries - 1:
-                    print "Unable to connect to", url, "retrying in 5 seconds..."
+                    print "Unable to connect to", url, "retrying in 5 seconds."
                     time.sleep(5)
                     continue
                 else:
@@ -445,6 +445,20 @@ class DownloadManager():
             self._download_sigs_gen_download_list(force_download=True)
             self._check_downloads()
 
+            if(self.have_sha1sums and self.have_gpg_sigs
+               and not self.gpg_sig_ok):
+                # If after re-trying the downloads we still can't get a GPG
+                # signature match on a sha1sum file (and both files exist)
+                # the abort.
+                message = "Package signature check failed. Aborting"
+                if self.event_queue:
+                    self.event_queue.put("message", message)
+                    self.event_queue.put("abort")
+                else:
+                    print >> sys.stderr, message
+
+                return [], False
+
         if(self.have_sha1sums and 
            self.gpg_sig_ok or not self.have_gpg_sigs):
             # The GPG signature is OK, so the sha1sums file and GPG sig are
@@ -471,10 +485,9 @@ class DownloadManager():
                 to_retry = self._unverified_files()
 
                 if len(to_retry):
-                    # We have a good GPG signature and can't get valid
-                    # package downloads. Either the sha1sums file was
-                    # incorrectly generated or the download is corrupt.
-                    # Display a message to the user and quit.
+                    # We can't get valid package downloads. Either the sha1sums
+                    # file was incorrectly generated or the download is
+                    # corrupt. Display a message to the user and quit.
                     message = "Download retry failed. Aborting"
                     if self.event_queue:
                         self.event_queue.put("message", message)
