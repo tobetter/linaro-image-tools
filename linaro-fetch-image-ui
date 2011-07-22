@@ -26,7 +26,7 @@ import wx.wizard as wiz
 import sys
 import re
 import os
-import linaro_image_tools.FetchImage as FetchImage
+import linaro_image_tools.fetch_image as fetch_image
 import string
 import operator
 import Queue
@@ -1202,7 +1202,7 @@ class RunLMC(wiz.WizardPageSimple):
 
         if(image_url and hwpack_url):
 
-            self.file_handler = FetchImage.FileHandler()
+            self.file_handler = fetch_image.FileHandler()
 
             self.timer = wx.Timer(self)
             self.Bind(wx.EVT_TIMER, self.timer_ping, self.timer)
@@ -1469,8 +1469,8 @@ class TestDriveWizard(wx.wizard.Wizard):
             self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
 
     def go(self):
-        file_handler = FetchImage.FileHandler()
-        self.config = FetchImage.FetchImageConfig()
+        file_handler = fetch_image.FileHandler()
+        self.config = fetch_image.FetchImageConfig()
         self.config.settings["force_download"] = False
         self.config.settings['compatable_hwpacks'] = ['foo']
 
@@ -1483,7 +1483,7 @@ class TestDriveWizard(wx.wizard.Wizard):
 
         # Using the config we have, look up URLs to download data from in
         # the server index
-        db = FetchImage.DB(file_handler.index_file)
+        db = fetch_image.DB(file_handler.index_file)
 
         # Create the wizard and the pages
         self.wizard = wiz.Wizard(self, -1, "Linaro Media Builder")
