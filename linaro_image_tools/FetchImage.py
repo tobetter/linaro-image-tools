@@ -375,7 +375,7 @@ class DownloadManager():
 
         to_download = self.sha1sum_file_download_list()
         self.sha1_files = self.download_files(
-                            to_download, self.settings, self.event_queue,
+                            to_download, self.settings,
                             force_download=force_download)
 
         self.to_download = self.generate_download_list()
@@ -445,9 +445,12 @@ class DownloadManager():
             self._download_sigs_gen_download_list(force_download=True)
             self._check_downloads()
 
-        if self.have_sha1sums and self.gpg_sig_ok:
+        if(self.have_sha1sums and 
+           self.gpg_sig_ok or not self.have_gpg_sigs):
             # The GPG signature is OK, so the sha1sums file and GPG sig are
-            # both good. 
+            # both good. OR We have sha1sum files and no GPG sigs. We can
+            # Still validate downloads against the sha1sums, just not mark
+            # the packages as signed.
 
             to_retry = self._unverified_files()
 
