@@ -1134,8 +1134,15 @@ class RunLMC(wiz.WizardPageSimple):
                              wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                              5)
 
+        self.box2 = wx.BoxSizer(wx.VERTICAL)
+        self.blank = wx.StaticText(self, label="")  # Just like a spacer GIF...
+        self.messages = wx.StaticText(self, label="")
+        self.box2.Add(self.blank, 0, wx.ALIGN_LEFT | wx.ALL, 5)
+        self.box2.Add(self.messages, 0, wx.ALIGN_LEFT | wx.ALL, 5)
+
         self.sizer.Add(self.box1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
         self.sizer.Add(self.status_grid, 0, wx.ALIGN_LEFT | wx.ALL, 5)
+        self.sizer.Add(self.box2, 0, wx.ALIGN_LEFT | wx.ALL, 5)
         self.SetSizerAndFit(self.sizer)
         self.sizer.Fit(self)
         self.Move((50, 50))
@@ -1233,7 +1240,7 @@ class RunLMC(wiz.WizardPageSimple):
             elif event[0] == "end":
                 self.event_end(event[1])
 
-            elif event == "terminate":
+            elif event == "terminate" or event[0] == "abort":
                 # Process complete. Enable next button.
                 self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
                 self.populate_file_system_status.SetLabel("Done")
@@ -1241,6 +1248,9 @@ class RunLMC(wiz.WizardPageSimple):
 
             elif event[0] == "update":
                 self.event_update(event[1], event[2], event[3])
+
+            elif event[0] == "message":
+                self.messages.SetLabel(event[1])
 
             else:
                 print >> sys.stderr, "timer_ping: Unhandled event", event
@@ -1265,7 +1275,7 @@ class RunLMC(wiz.WizardPageSimple):
     #--- Event(s) ---
     def event_start(self, event):
         if event == "download":
-            self.downloading_files_status.SetLabel("Downloading")
+            pass
         elif event == "unpack":
             self.unpacking_files_status.SetLabel("Running")
         elif event == "installing packages":

@@ -39,293 +39,22 @@ import BeautifulSoup
 import utils
 
 
-class FileHandler():
-    """Downloads files and creates images from them by calling
-    linaro-media-create"""
-    def __init__(self):
-        import xdg.BaseDirectory as xdgBaseDir
-        self.homedir = os.path.join(xdgBaseDir.xdg_config_home,
-                                     "linaro",
-                                     "image-tools",
-                                     "fetch_image")
-
-        self.cachedir = os.path.join(xdgBaseDir.xdg_cache_home,
-                                     "linaro",
-                                     "image-tools",
-                                     "fetch_image")
-
-    def has_key_and_evaluates_True(self, dictionary, key):
-        return bool(key in dictionary and dictionary[key])
-
-    def append_setting_to(self, list, dictionary, key, setting_name=None):
-        if not setting_name:
-            setting_name = "--" + key
-
-        if self.has_key_and_evaluates_True(dictionary, key):
-            list.append(setting_name)
-            list.append(dictionary[key])
-
-    def build_lmc_command(self,
-                          binary_file,
-                          hwpack_file,
-                          settings,
-                          tools_dir,
-                          hwpack_verified,
-                          run_in_gui=False):
-
-        import linaro_image_tools.utils
-
-        args = ["pkexec"]
-
-        # Prefer a local linaro-media-create (from a bzr checkout for instance)
-        # to an installed one
-        lmc_command = linaro_image_tools.utils.find_command(
-                                                    'linaro-media-create',
-                                                    tools_dir)
-
-        if lmc_command:
-            args.append(os.path.abspath(lmc_command))
-        else:
-            args.append("linaro-media-create")
-
-        if run_in_gui:
-            args.append("--nocheck-mmc")
-
-        if hwpack_verified:
-            # We verify the hwpack before calling linaro-media-create because
-            # these tools run linaro-media-create as root and to get the GPG
-            # signature verification to work, root would need to have GPG set
-            # up with the Canonical Linaro Image Build Automatic Signing Key
-            # imported. It seems far more likely that users will import keys
-            # as themselves, not root!
-            args.append("--hwpack-force-yes")
-
-        if 'rootfs' in settings and settings['rootfs']:
-            args.append("--rootfs")
-            args.append(settings['rootfs'])
-
-        assert(self.has_key_and_evaluates_True(settings, 'image_file') ^
-               self.has_key_and_evaluates_True(settings, 'mmc')), ("Please "
-               "specify either an image file, or an mmc target, not both.")
-
-        self.append_setting_to(args, settings, 'mmc')
-        self.append_setting_to(args, settings, 'image_file')
-        self.append_setting_to(args, settings, 'swap_size')
-        self.append_setting_to(args, settings, 'swap_file')
-        self.append_setting_to(args, settings, 'yes_to_mmc_selection',
-                                               '--nocheck_mmc')
-
-        args.append("--dev")
-        args.append(settings['hardware'])
-        args.append("--binary")
-        args.append(binary_file)
-        args.append("--hwpack")
-        args.append(hwpack_file)
-
-        logging.info(" ".join(args))
-
-        return args
-
-    def get_sig_files(self, downloaded_files):
-        """
-        Find sha1sum.txt files in downloaded_files, append ".asc" and return
-        list.
-
-        The reason for not just searching for .asc files is because if they
-        don't exist, utils.verify_file_integrity(sig_files) won't check the
-        sha1sums that do exist, and they are useful to us. Trying to check
-        a GPG signature that doesn't exist just results in the signature check
-        failing, which is correct and we act accordingly.
-        """
-
-        sig_files = []
-
-        for filename in downloaded_files.values():
-            if re.search(r"sha1sums\.txt$", filename):
-                sig_files.append(filename + ".asc")
-
-        return sig_files
-
-    def create_media(self, image_url, hwpack_url, settings, tools_dir):
-        """Create a command line for linaro-media-create based on the settings
-        provided then run linaro-media-create, either in a separate thread
-        (GUI mode) or in the current one (CLI mode)."""
-
-        sha1sums_urls = self.sha1sum_file_download_list(image_url,
-                                                        hwpack_url,
-                                                        settings)
-
-        sha1sum_files = self.download_files(sha1sums_urls,
-                                            settings)
-
-        to_download = self.generate_download_list(image_url,
-                                                  hwpack_url,
-                                                  sha1sum_files)
-
-        downloaded_files = self.download_files(to_download,
-                                               settings)
-
-        sig_files = self.get_sig_files(downloaded_files)
-
-        verified_files, gpg_sig_ok = utils.verify_file_integrity(sig_files)
-
-        hwpack = os.path.basename(downloaded_files[hwpack_url])
-        hwpack_verified = (hwpack in verified_files) and gpg_sig_ok
-
-        lmc_command = self.build_lmc_command(downloaded_files[image_url],
-                                             downloaded_files[hwpack_url],
-                                             settings,
-                                             tools_dir,
-                                             hwpack_verified)
-
-        self.create_process = subprocess.Popen(lmc_command)
-        self.create_process.wait()
-
-    class LinaroMediaCreate(threading.Thread):
-        """Thread class for running linaro-media-create"""
-        def __init__(self,
-                     image_url,
-                     hwpack_url,
-                     file_handler,
-                     event_queue,
-                     settings,
-                     tools_dir):
-
-            threading.Thread.__init__(self)
-
-            self.image_url      = image_url
-            self.hwpack_url     = hwpack_url
-            self.file_handler   = file_handler
-            self.event_queue    = event_queue
-            self.settings       = settings
-            self.tools_dir      = tools_dir
-
-        def run(self):
-            """
-            1. Download required files.
-            2. Build linaro-media-create command
-            3. Start linaro-media-create and look for lines in the output that:
-               1. Tell us that an event has happened that we can use to update
-                  the UI progress.
-               2. Tell us that linaro-media-create is asking a question that
-                  needs to be re-directed to the GUI
-            """
-
-            sha1sums_urls = self.file_handler.sha1sum_file_download_list(
-                                                               self.image_url,
-                                                               self.hwpack_url,
-                                                               self.settings)
-
-            self.event_queue.put(("update",
-                                  "download",
-                                  "message",
-                                  "Calculating download size"))
-
-            sha1sum_files = self.file_handler.download_files(sha1sums_urls,
-                                                             self.settings)
-
-            to_download = self.file_handler.generate_download_list(
-                                                            self.image_url,
-                                                            self.hwpack_url,
-                                                            sha1sum_files)
-
-            downloaded_files = self.file_handler.download_files(
-                                                            to_download,
-                                                            self.settings,
-                                                            self.event_queue)
-
-            sig_files = self.file_handler.get_sig_files(downloaded_files)
-
-            verified_files, gpg_sig_ok = utils.verify_file_integrity(sig_files)
-
-            hwpack = os.path.basename(downloaded_files[self.hwpack_url])
-            hwpack_verified = (hwpack in verified_files) and gpg_sig_ok
-
-            lmc_command = self.file_handler.build_lmc_command(
-                                            downloaded_files[self.image_url],
-                                            downloaded_files[self.hwpack_url],
-                                            self.settings,
-                                            self.tools_dir,
-                                            hwpack_verified,
-                                            True)
-
-            self.create_process = subprocess.Popen(lmc_command,
-                                                   stdin=subprocess.PIPE,
-                                                   stdout=subprocess.PIPE,
-                                                   stderr=subprocess.STDOUT)
-
-            self.line                       = ""
-            self.saved_lines                = ""
-            self.save_lines                 = False
-            self.state                      = None
-            self.waiting_for_event_response = False
-            self.event_queue.put(("start", "unpack"))
-
-            while(1):
-                if self.create_process.poll() != None:   # linaro-media-create
-                                                         # has finished.
-                    self.event_queue.put(("terminate"))  # Tell the GUI
-                    return                               # Terminate the thread
-
-                self.input = self.create_process.stdout.read(1)
-
-                # We build up lines by extracting data from linaro-media-create
-                # a single character at a time. This is because if we fetch
-                # whole lines, using Popen.communicate a character is
-                # automatically sent back to the running process, which if the
-                # process is waiting for user input, can trigger a default
-                # action. By using stdout.read(1) we pick off a character at a
-                # time and avoid this problem.
-                if self.input == '\n':
-                    if self.save_lines:
-                        self.saved_lines += self.line
-
-                    self.line = ""
-                else:
-                    self.line += self.input
-
-                if self.line == "Updating apt package lists ...":
-                    self.event_queue.put(("end", "unpack"))
-                    self.event_queue.put(("start", "installing packages"))
-                    self.state = "apt"
-
-                elif(self.line ==
-                     "WARNING: The following packages cannot be authenticated!"):
-                    self.saved_lines = ""
-                    self.save_lines = True
-
-                elif(self.line ==
-                     "Install these packages without verification [y/N]? "):
-                    self.saved_lines = re.sub("WARNING: The following packages"
-                                              " cannot be authenticated!",
-                                              "", self.saved_lines)
-                    self.event_queue.put(("start",
-                                          "unverified_packages:"
-                                          + self.saved_lines))
-                    self.line = ""
-                    self.waiting_for_event_response = True  # Wait for restart
-
-                elif self.line == "Do you want to continue [Y/n]? ":
-                    self.send_to_create_process("y")
-                    self.line = ""
-
-                elif self.line == "Done" and self.state == "apt":
-                    self.state = "create file system"
-                    self.event_queue.put(("end", "installing packages"))
-                    self.event_queue.put(("start", "create file system"))
-
-                elif(    self.line == "Created:"
-                     and self.state == "create file system"):
-                    self.event_queue.put(("end", "create file system"))
-                    self.event_queue.put(("start", "populate file system"))
-                    self.state = "populate file system"
-
-                while self.waiting_for_event_response:
-                    time.sleep(0.2)
-
-        def send_to_create_process(self, text):
-            print >> self.create_process.stdin, text
-            self.waiting_for_event_response = False
+class DownloadManager():
+    def __init__(self, cachedir):
+        self.cachedir           = cachedir
+        self.image_url          = None
+        self.hwpack_url         = None
+        self.settings           = None
+        self.event_queue        = None
+        self.to_download        = None
+        self.sha1_files         = None
+        self.gpg_files          = None
+        self.downloaded_files   = None
+        self.sig_files          = None
+        self.verified_files     = None
+        self.gpg_sig_ok         = None
+        self.have_sha1sums      = None
+        self.have_gpg_sigs      = None
 
     def name_and_path_from_url(self, url):
         """Return the file name and the path at which the file will be stored
@@ -350,7 +79,7 @@ class FileHandler():
                 response = urllib2.urlopen(url)
             except:
                 if trycount < maxtries - 1:
-                    print "Unable to connect to", url, "retrying in 5 seconds..."
+                    print "Unable to connect to", url, "retrying in 5 seconds."
                     time.sleep(5)
                     continue
                 else:
@@ -383,10 +112,7 @@ class FileHandler():
 
         return dir
 
-    def sha1sum_file_download_list(self,
-                                     image_url,
-                                     hwpack_url,
-                                     settings):
+    def sha1sum_file_download_list(self):
         """
         Need more than just the hwpack and OS image if we want signature
         verification to work, we need sha1sums, signatures for sha1sums
@@ -400,24 +126,21 @@ class FileHandler():
         downloads_list = []
 
         # Get list of files in OS image directory
-        image_dir  = self.list_files_in_dir_of_url(image_url)
-        hwpack_dir = self.list_files_in_dir_of_url(hwpack_url)
+        image_dir  = self.list_files_in_dir_of_url(self.image_url)
+        hwpack_dir = self.list_files_in_dir_of_url(self.hwpack_url)
 
         for link in image_dir:
             if re.search("sha1sums\.txt$", link):
                 downloads_list.append(link)
 
         for link in hwpack_dir:
-            if(    re.search(settings['hwpack'], link)
+            if(    re.search(self.settings['hwpack'], link)
                and re.search("sha1sums\.txt$", link)):
                 downloads_list.append(link)
 
         return downloads_list
 
-    def generate_download_list(self,
-                               image_url,
-                               hwpack_url,
-                               sha1sum_file_names):
+    def generate_download_list(self):
         """
         Generate a list of files based on what is in the sums files that
         we have downloaded. We may have downloaded some sig files based on
@@ -441,9 +164,9 @@ class FileHandler():
         linaro-media-create.
         """
 
-        downloads_list = [image_url, hwpack_url]
+        downloads_list = [self.image_url, self.hwpack_url]
 
-        for sha1sum_file_name in sha1sum_file_names.values():
+        for sha1sum_file_name in self.sha1_files.values():
             sha1sum_file = open(sha1sum_file_name)
 
             common_prefix = None
@@ -452,15 +175,15 @@ class FileHandler():
             for line in sha1sum_file:
                 line = line.split()    # line[1] is now the file name
 
-                if line[1] == os.path.basename(image_url):
+                if line[1] == os.path.basename(self.image_url):
                     # Found a line that matches an image or hwpack URL - keep
                     # the contents of this sig file
-                    common_prefix = os.path.dirname(image_url)
+                    common_prefix = os.path.dirname(self.image_url)
 
-                if line[1] == os.path.basename(hwpack_url):
+                if line[1] == os.path.basename(self.hwpack_url):
                     # Found a line that matches an image or hwpack URL - keep
                     # the contents of this sig file
-                    common_prefix = os.path.dirname(hwpack_url)
+                    common_prefix = os.path.dirname(self.hwpack_url)
 
             if common_prefix:
                 for file_name in files:
@@ -488,11 +211,14 @@ class FileHandler():
     def download_files(self,
                        downloads_list,
                        settings,
-                       event_queue=None):
+                       event_queue=None,
+                       force_download=False):
         """
         Download files specified in the downloads_list, which is a list of
         url, name tuples.
         """
+
+        force_download = settings["force_download"] or force_download
 
         downloaded_files = {}
 
@@ -502,7 +228,7 @@ class FileHandler():
             file_name, file_path = self.name_and_path_from_url(url)
 
             file_name = file_path + os.sep + file_name
-            if os.path.exists(file_name):
+            if os.path.exists(file_name) and not force_download:
                 continue  # If file already exists, don't download it
 
             response = self.urllib2_open(url)
@@ -523,7 +249,7 @@ class FileHandler():
             try:
                 path = self.download(url,
                                      event_queue,
-                                     settings["force_download"])
+                                     force_download)
             except Exception:
                 # Download error. Hardly matters what, we can't continue.
                 print "Unexpected error:", sys.exc_info()[0]
@@ -627,19 +353,412 @@ class FileHandler():
 
         return self.download(url, event_queue, force_download)
 
+    def get_sig_files(self):
+        """
+        Find sha1sum.txt files in downloaded_files, append ".asc" and return
+        list.
+
+        The reason for not just searching for .asc files is because if they
+        don't exist, utils.verify_file_integrity(sig_files) won't check the
+        sha1sums that do exist, and they are useful to us. Trying to check
+        a GPG signature that doesn't exist just results in the signature check
+        failing, which is correct and we act accordingly.
+        """
+
+        self.sig_files = []
+
+        for filename in self.downloaded_files.values():
+            if re.search(r"sha1sums\.txt$", filename):
+                self.sig_files.append(filename + ".asc")
+
+    def _download_sigs_gen_download_list(self, force_download=False):
+
+        to_download = self.sha1sum_file_download_list()
+        self.sha1_files = self.download_files(
+                            to_download, self.settings,
+                            force_download=force_download)
+
+        self.to_download = self.generate_download_list()
+
+        gpg_urls = [f for f in self.to_download if re.search('\.asc$', f)]
+        gpg_files = self.download_files(gpg_urls, self.settings,
+                                        force_download=force_download)
+
+    def _check_downloads(self):
+        self.get_sig_files()
+
+        self.verified_files, self.gpg_sig_ok = utils.verify_file_integrity(
+                                                            self.sig_files)
+
+        # Expect to have 2 sha1sum files (one for hwpack, one for OS bin)
+        self.have_sha1sums = len(self.sha1_files) ==2
+
+        # We expect 2 GPG signatures. Check that we have both of them.
+
+        self.have_gpg_sigs = (len(self.sig_files) == 2 and
+                              os.path.exists(self.sig_files[0]) and
+                              os.path.exists(self.sig_files[1]))
+
+    def _unverified_files(self):
+        """
+        Return a list of URLs of files that didn't get verified
+        """
+        verified_files = self.verified_files
+
+        unverified_files = []
+        for sig_file in self.sig_files:
+            name = os.path.basename(sig_file)
+            verified_files.append(name)
+            verified_files.append(name[0:-len('.asc')])
+        
+        # Generate a list of files that didn't verify
+        for url in self.to_download:
+            url_file = os.path.basename(url)
+            if url_file not in verified_files:
+                unverified_files.append(url)
+
+        return unverified_files
+
+    def download_files_and_verify(self, image_url, hwpack_url,
+                                  settings, event_queue=None):
+
+        self.image_url      = image_url
+        self.hwpack_url     = hwpack_url
+        self.settings       = settings
+        self.event_queue    = event_queue
+
+        self._download_sigs_gen_download_list()
+
+        self.downloaded_files = self.download_files(self.to_download,
+                                                    self.settings,
+                                                    self.event_queue)
+
+        self._check_downloads()
+
+        if(self.have_sha1sums and self.have_gpg_sigs
+           and not self.gpg_sig_ok):
+            # GPG signatures failed for sha1sum files. Re-download the
+            # sha1sums and GPG signatues. If the GPG signature then
+            # matches the sha1sums we will re-download any failing hwpack
+            # and OS binary files in the if below.
+
+            self._download_sigs_gen_download_list(force_download=True)
+            self._check_downloads()
+
+            if(self.have_sha1sums and self.have_gpg_sigs
+               and not self.gpg_sig_ok):
+                # If after re-trying the downloads we still can't get a GPG
+                # signature match on a sha1sum file (and both files exist)
+                # the abort.
+                message = "Package signature check failed. Aborting"
+                if self.event_queue:
+                    self.event_queue.put("message", message)
+                    self.event_queue.put("abort")
+                else:
+                    print >> sys.stderr, message
+
+                return [], False
+
+        if(self.have_sha1sums and 
+           self.gpg_sig_ok or not self.have_gpg_sigs):
+            # The GPG signature is OK, so the sha1sums file and GPG sig are
+            # both good. OR We have sha1sum files and no GPG sigs. We can
+            # Still validate downloads against the sha1sums, just not mark
+            # the packages as signed.
+
+            to_retry = self._unverified_files()
+
+            if len(to_retry):
+                if self.event_queue:
+                    self.event_queue.put(("message", "Retrying bad files"))
+                else:
+                    print "Re-downloading corrupt files"
+                # There are some files to re-download
+                redownloaded_files = self.download_files(
+                                           to_retry, self.settings,
+                                           self.event_queue,
+                                           force_download=True)
+
+                (self.verified_files,
+                 self.gpg_sig_ok) = utils.verify_file_integrity(self.sig_files)
+
+                to_retry = self._unverified_files()
+
+                if len(to_retry):
+                    # We can't get valid package downloads. Either the sha1sums
+                    # file was incorrectly generated or the download is
+                    # corrupt. Display a message to the user and quit.
+                    message = "Download retry failed. Aborting"
+                    if self.event_queue:
+                        self.event_queue.put("message", message)
+                        self.event_queue.put("abort")
+                    else:
+                        print >> sys.stderr, message
+
+                    return [], False
+
+        hwpack = os.path.basename(self.downloaded_files[hwpack_url])
+        hwpack_verified = (hwpack in self.verified_files) and self.gpg_sig_ok
+
+        if self.event_queue:  # Clear messages, if any, from GUI
+            self.event_queue.put(("message", ""))
+
+        return self.downloaded_files, hwpack_verified
+
+
+class FileHandler():
+    """Downloads files and creates images from them by calling
+    linaro-media-create"""
+    def __init__(self):
+        import xdg.BaseDirectory as xdgBaseDir
+        self.homedir = os.path.join(xdgBaseDir.xdg_config_home,
+                                     "linaro",
+                                     "image-tools",
+                                     "fetch_image")
+
+        self.cachedir = os.path.join(xdgBaseDir.xdg_cache_home,
+                                     "linaro",
+                                     "image-tools",
+                                     "fetch_image")
+
+        self.downloader = DownloadManager(self.cachedir)
+
+    def has_key_and_evaluates_True(self, dictionary, key):
+        return bool(key in dictionary and dictionary[key])
+
+    def append_setting_to(self, list, dictionary, key, setting_name=None):
+        if not setting_name:
+            setting_name = "--" + key
+
+        if self.has_key_and_evaluates_True(dictionary, key):
+            list.append(setting_name)
+            list.append(dictionary[key])
+
+    def build_lmc_command(self,
+                          binary_file,
+                          hwpack_file,
+                          settings,
+                          tools_dir,
+                          hwpack_verified,
+                          run_in_gui=False):
+
+        import linaro_image_tools.utils
+
+        args = ["pkexec"]
+
+        # Prefer a local linaro-media-create (from a bzr checkout for instance)
+        # to an installed one
+        lmc_command = linaro_image_tools.utils.find_command(
+                                                    'linaro-media-create',
+                                                    tools_dir)
+
+        if lmc_command:
+            args.append(os.path.abspath(lmc_command))
+        else:
+            args.append("linaro-media-create")
+
+        if run_in_gui:
+            args.append("--nocheck-mmc")
+
+        if hwpack_verified:
+            # We verify the hwpack before calling linaro-media-create because
+            # these tools run linaro-media-create as root and to get the GPG
+            # signature verification to work, root would need to have GPG set
+            # up with the Canonical Linaro Image Build Automatic Signing Key
+            # imported. It seems far more likely that users will import keys
+            # as themselves, not root!
+            args.append("--hwpack-force-yes")
+
+        if 'rootfs' in settings and settings['rootfs']:
+            args.append("--rootfs")
+            args.append(settings['rootfs'])
+
+        assert(self.has_key_and_evaluates_True(settings, 'image_file') ^
+               self.has_key_and_evaluates_True(settings, 'mmc')), ("Please "
+               "specify either an image file, or an mmc target, not both.")
+
+        self.append_setting_to(args, settings, 'mmc')
+        self.append_setting_to(args, settings, 'image_file')
+        self.append_setting_to(args, settings, 'swap_size')
+        self.append_setting_to(args, settings, 'swap_file')
+        self.append_setting_to(args, settings, 'yes_to_mmc_selection',
+                                               '--nocheck_mmc')
+
+        args.append("--dev")
+        args.append(settings['hardware'])
+        args.append("--binary")
+        args.append(binary_file)
+        args.append("--hwpack")
+        args.append(hwpack_file)
+
+        logging.info(" ".join(args))
+
+        return args
+
+    def create_media(self, image_url, hwpack_url, settings, tools_dir):
+        """Create a command line for linaro-media-create based on the settings
+        provided then run linaro-media-create, either in a separate thread
+        (GUI mode) or in the current one (CLI mode)."""
+
+        downloaded_files, hwpack_verified = (
+            self.downloader.download_files_and_verify(image_url, hwpack_url,
+                                                      settings))
+
+        if len(downloaded_files) == 0:
+            return
+
+        lmc_command = self.build_lmc_command(downloaded_files[image_url],
+                                             downloaded_files[hwpack_url],
+                                             settings,
+                                             tools_dir,
+                                             hwpack_verified)
+
+        self.create_process = subprocess.Popen(lmc_command)
+        self.create_process.wait()
+
+    class LinaroMediaCreate(threading.Thread):
+        """Thread class for running linaro-media-create"""
+        def __init__(self,
+                     image_url,
+                     hwpack_url,
+                     file_handler,
+                     event_queue,
+                     settings,
+                     tools_dir):
+
+            threading.Thread.__init__(self)
+
+            self.image_url      = image_url
+            self.hwpack_url     = hwpack_url
+            self.file_handler   = file_handler
+            self.downloader     = file_handler.downloader
+            self.event_queue    = event_queue
+            self.settings       = settings
+            self.tools_dir      = tools_dir
+
+        def run(self):
+            """
+            1. Download required files.
+            2. Build linaro-media-create command
+            3. Start linaro-media-create and look for lines in the output that:
+               1. Tell us that an event has happened that we can use to update
+                  the UI progress.
+               2. Tell us that linaro-media-create is asking a question that
+                  needs to be re-directed to the GUI
+            """
+
+            self.event_queue.put(("update",
+                                  "download",
+                                  "message",
+                                  "Downloading"))
+
+            files, hwpack_ok = self.downloader.download_files_and_verify(
+                                self.image_url, self.hwpack_url,
+                                self.settings, self.event_queue)
+
+            if len(files) == 0:
+                return
+
+            lmc_command = self.file_handler.build_lmc_command(
+                                            files[self.image_url],
+                                            files[self.hwpack_url],
+                                            self.settings,
+                                            self.tools_dir,
+                                            hwpack_ok,
+                                            True)
+
+            self.create_process = subprocess.Popen(lmc_command,
+                                                   stdin=subprocess.PIPE,
+                                                   stdout=subprocess.PIPE,
+                                                   stderr=subprocess.STDOUT)
+
+            self.line                       = ""
+            self.saved_lines                = ""
+            self.save_lines                 = False
+            self.state                      = None
+            self.waiting_for_event_response = False
+            self.event_queue.put(("start", "unpack"))
+
+            while(1):
+                if self.create_process.poll() != None:   # linaro-media-create
+                                                         # has finished.
+                    self.event_queue.put(("terminate"))  # Tell the GUI
+                    return                               # Terminate the thread
+
+                self.input = self.create_process.stdout.read(1)
+
+                # We build up lines by extracting data from linaro-media-create
+                # a single character at a time. This is because if we fetch
+                # whole lines, using Popen.communicate a character is
+                # automatically sent back to the running process, which if the
+                # process is waiting for user input, can trigger a default
+                # action. By using stdout.read(1) we pick off a character at a
+                # time and avoid this problem.
+                if self.input == '\n':
+                    if self.save_lines:
+                        self.saved_lines += self.line
+
+                    self.line = ""
+                else:
+                    self.line += self.input
+
+                if self.line == "Updating apt package lists ...":
+                    self.event_queue.put(("end", "unpack"))
+                    self.event_queue.put(("start", "installing packages"))
+                    self.state = "apt"
+
+                elif(self.line ==
+                     "WARNING: The following packages cannot be authenticated!"):
+                    self.saved_lines = ""
+                    self.save_lines = True
+
+                elif(self.line ==
+                     "Install these packages without verification [y/N]? "):
+                    self.saved_lines = re.sub("WARNING: The following packages"
+                                              " cannot be authenticated!",
+                                              "", self.saved_lines)
+                    self.event_queue.put(("start",
+                                          "unverified_packages:"
+                                          + self.saved_lines))
+                    self.line = ""
+                    self.waiting_for_event_response = True  # Wait for restart
+
+                elif self.line == "Do you want to continue [Y/n]? ":
+                    self.send_to_create_process("y")
+                    self.line = ""
+
+                elif self.line == "Done" and self.state == "apt":
+                    self.state = "create file system"
+                    self.event_queue.put(("end", "installing packages"))
+                    self.event_queue.put(("start", "create file system"))
+
+                elif(    self.line == "Created:"
+                     and self.state == "create file system"):
+                    self.event_queue.put(("end", "create file system"))
+                    self.event_queue.put(("start", "populate file system"))
+                    self.state = "populate file system"
+
+                while self.waiting_for_event_response:
+                    time.sleep(0.2)
+
+        def send_to_create_process(self, text):
+            print >> self.create_process.stdin, text
+            self.waiting_for_event_response = False
+
+
     def update_files_from_server(self, force_download=False,
                                  event_queue=None):
 
         settings_url     = "http://releases.linaro.org/fetch_image/fetch_image_settings.yaml"
         server_index_url = "http://releases.linaro.org/fetch_image/server_index.bz2"
 
-        self.settings_file = self.download_if_old(settings_url,
-                                                  event_queue,
-                                                  force_download)
+        self.settings_file = self.downloader.download_if_old(settings_url,
+                                                             event_queue,
+                                                             force_download)
 
-        self.index_file = self.download_if_old(server_index_url,
-                                               event_queue,
-                                               force_download)
+        self.index_file = self.downloader.download_if_old(server_index_url,
+                                                          event_queue,
+                                                          force_download)
 
         zip_search = re.search(r"^(.*)\.bz2$", self.index_file)
 
@@ -1153,9 +1272,13 @@ class DB():
                            (date, hwpack))
 
             if len(builds):
-                # A hardware pack exists for that date, return what we found
-                # for binaries
-                return binaries
+                # A hardware pack exists for that date, return a list of builds
+                # that exist for both hwpack and binary
+                ret = []
+                for build in builds:
+                    if build in binaries:
+                        ret.append(build)
+                return ret
 
         # No hardware pack exists for the date requested, return empty table
         return []
@@ -1243,16 +1366,43 @@ class DB():
             count = 0
             while(1):  # Just so we can try several times...
                 if(args['build'] == "latest"):
-                    # First result of SQL query is latest build (ORDER BY)
+                    # Start from today, add 1 day because
+                    # get_next_prev_day_with_builds aways searches from the
+                    # day passed to it, not including that day. This will give
+                    # us the latest build dated today or earlier with both
+                    # a hwpack and OS binary
+                    date = (datetime.date.today() +
+                            datetime.timedelta(days=1)).isoformat()
+
+                    _, past_date = self.get_next_prev_day_with_builds(
+                                           args['image'],
+                                           date,
+                                           [args['hwpack']])
+
+                    builds = self.get_binary_builds_on_day_from_db(
+                                    args['image'], past_date, [args['hwpack']])
+                    
+                    # Work out latest build
+                    build = None
+                    for b in builds:
+                        if build == None or b[0] > build:
+                            build = b[0]
+                        
+                    # We store dates in the DB in ISO format with the dashes
+                    # missing
+                    date = re.sub('-', '', past_date)
+
                     image_url = self.get_url("snapshot_binaries",
                                     [
-                                     ("image", args['image'])],
-                                    "ORDER BY date DESC, build DESC")
+                                     ("image", args['image']),
+                                     ("build", build),
+                                     ("date", date)])
 
                     hwpack_url = self.get_url("snapshot_hwpacks",
                                     [
-                                     ("hardware", args['hwpack'])],
-                                    "ORDER BY date DESC, build DESC")
+                                     ("hardware", args['hwpack']),
+                                     ("build", build),
+                                     ("date", date)])
 
                 else:
                     build_bits = args['build'].split(":")
