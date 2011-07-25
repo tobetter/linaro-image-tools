@@ -37,7 +37,8 @@ import shutil
 
 from linaro_image_tools import cmd_runner
 
-from linaro_image_tools.media_create.partitions import SECTOR_SIZE
+from linaro_image_tools.media_create.partitions import (
+    partition_mounted, SECTOR_SIZE)
 
 
 KERNEL_GLOB = 'vmlinuz-*-%(kernel_flavor)s'
@@ -465,28 +466,22 @@ class BoardConfig(object):
         uboot_parts_dir = os.path.join(chroot_dir, parts_dir)
 
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
-        cmd_runner.run(['mount', boot_partition, boot_disk],
-            as_root=True).wait()
-
-        if cls.uboot_in_boot_part:
-            assert cls.uboot_flavor is not None, (
-                "uboot_in_boot_part is set but not uboot_flavor")
-            with cls.hardwarepack_handler:
-                uboot_bin = cls.get_file('u_boot', default=os.path.join(
+        with partition_mounted(boot_partition, boot_disk):
+            if cls.uboot_in_boot_part:
+                assert cls.uboot_flavor is not None, (
+                    "uboot_in_boot_part is set but not uboot_flavor")
+                with cls.hardwarepack_handler:
+                    default = os.path.join(
                         chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
-                        'u-boot.bin'))
-                cmd_runner.run(
-                    ['cp', '-v', uboot_bin, boot_disk], as_root=True).wait()
+                        'u-boot.bin')
+                    uboot_bin = cls.get_file('u_boot', default=default)
+                    proc = cmd_runner.run(
+                        ['cp', '-v', uboot_bin, boot_disk], as_root=True)
+                    proc.wait()
 
-        cls.make_boot_files(
-            uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
-            rootfs_uuid, boot_disk, boot_device_or_file)
-
-        cmd_runner.run(['sync']).wait()
-        try:
-            cmd_runner.run(['umount', boot_disk], as_root=True).wait()
-        except cmd_runner.SubcommandNonZeroReturnValue:
-            pass
+            cls.make_boot_files(
+                uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
+                rootfs_uuid, boot_disk, boot_device_or_file)
 
     @classmethod
     def _get_kflavor_files(cls, path):

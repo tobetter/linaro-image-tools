@@ -93,6 +93,8 @@ def install_packages(chroot_dir, tmp_dir, *packages):
     prepare_chroot(chroot_dir, tmp_dir)
 
     try:
+        # TODO: Use the partition_mounted() contextmanager here and get rid of
+        # mount_chroot_proc() altogether.
         mount_chroot_proc(chroot_dir)
         print "-" * 60
         print "Installing (apt-get) %s in target rootfs." % " ".join(packages)
