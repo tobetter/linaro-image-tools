@@ -1039,6 +1039,14 @@ class TestFixForBug697824(TestCaseWithFixtures):
         boards.BeagleConfig.set_appropriate_serial_tty(tempdir)
         self.assertEquals('ttyO2', boards.BeagleConfig.serial_tty)
 
+    def test_set_appropriate_serial_tty_three_dot_oh_kernel(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        boot_dir = os.path.join(tempdir, 'boot')
+        os.makedirs(boot_dir)
+        open(os.path.join(boot_dir, 'vmlinuz-3.0-13-foo'), 'w').close()
+        boards.BeagleConfig.set_appropriate_serial_tty(tempdir)
+        self.assertEquals('ttyO2', boards.BeagleConfig.serial_tty)
+
 
 class TestGetSfdiskCmd(TestCase):
 
