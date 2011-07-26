@@ -35,7 +35,6 @@ import shutil
 import datetime
 import threading
 import subprocess
-import BeautifulSoup
 import utils
 
 
@@ -95,6 +94,8 @@ class DownloadManager():
         """
         return a directory listing of the directory that url sits in
         """
+
+        import BeautifulSoup
 
         url = os.path.dirname(url)
         response = self.urllib2_open(url)
