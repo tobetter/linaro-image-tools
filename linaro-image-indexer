@@ -25,7 +25,7 @@ import re
 import urlparse
 import logging
 import bz2
-import linaro_image_tools.FetchImage
+import linaro_image_tools.fetch_image
 
 RELEASES_WWW_DOCUMENT_ROOT  = "/srv/releases.linaro.org/www/platform/"
 RELEASE_URL                 = "http://releases.linaro.org/platform/"
@@ -41,7 +41,7 @@ class ServerIndexer():
     def __init__(self):
         self.reset()
         self.db_file_name = "server_index"
-        self.db = linaro_image_tools.FetchImage.DB(self.db_file_name)
+        self.db = linaro_image_tools.fetch_image.DB(self.db_file_name)
 
     def crawl(self):
         self.db.set_url_parse_info(self.url_parse)
@@ -55,17 +55,23 @@ class ServerIndexer():
 
     def go(self, root_dir_, root_url_, table_):
         for root, subFolders, files in os.walk( root_dir_ ):
-            for file in files:
-                if(re.search('\.gz$', file)):
-                    # Construct a URL to the file and save in the database
-                    relative_location = re.sub(root_dir_, "", 
-                                               os.path.join(root, file))
-                    url = urlparse.urljoin(root_url_, relative_location)
-                    url = urlparse.urljoin(url, file)
-                   
-                    if not re.search('/leb-panda/', url):
-                        logging.info(url)
-                        self.db.record_url(url, table_)
+
+            # --- Temporary hack to work around bug:
+            # https://bugs.launchpad.net/linaro-image-tools/+bug/816015
+            # For the moment we just index platform == 11.05-daily when
+            # indexing the snapshots server.
+            if re.search("11.05-daily", root) or re.search("release", table_):
+                for file in files:
+                    if(re.search('\.gz$', file)):
+                        # Construct a URL to the file and save in the database
+                        relative_location = re.sub(root_dir_, "", 
+                                                   os.path.join(root, file))
+                        url = urlparse.urljoin(root_url_, relative_location)
+                        url = urlparse.urljoin(url, file)
+                       
+                        if not re.search('/leb-panda/', url):
+                            logging.info(url)
+                            self.db.record_url(url, table_)
                     
         self.dump() 
 
