@@ -20,15 +20,15 @@
 import wx
 import unittest
 import re
-import linaro_image_tools.FetchImage as FetchImage
+import linaro_image_tools.fetch_image as fetch_image
 
 
 class TestURLLookupFunctions(unittest.TestCase):
 
     def setUp(self):
-        self.file_handler   = FetchImage.FileHandler()
+        self.file_handler   = fetch_image.FileHandler()
         self.file_handler.update_files_from_server()
-        self.config         = FetchImage.FetchImageConfig()
+        self.config         = fetch_image.FetchImageConfig()
         self.config.settings["force_download"] = False
 
         # Load settings YAML, which defines the parameters we ask for and
@@ -37,7 +37,7 @@ class TestURLLookupFunctions(unittest.TestCase):
 
         # Using the config we have, look up URLs to download data from in the
         # server index
-        self.db = FetchImage.DB(self.file_handler.index_file)
+        self.db = fetch_image.DB(self.file_handler.index_file)
 
     def test_url_lookup(self):
         self.settings = self.config.settings
