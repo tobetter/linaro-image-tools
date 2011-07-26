@@ -20,6 +20,7 @@
 import atexit
 from contextlib import contextmanager
 import glob
+import logging
 import re
 import subprocess
 import time
@@ -194,7 +195,13 @@ def partition_mounted(device, path, *args):
         yield
     finally:
         cmd_runner.run(['sync']).wait()
-        umount(path)
+        try:
+            umount(path)
+        except cmd_runner.SubcommandNonZeroReturnValue, e:
+            logger = logging.getLogger("linaro_image_tools")
+            logger.warn("Failed to umount %s, but ignoring it because of a "
+                        "previous error" % path)
+            logger.warn(e)
 
 
 def get_uuid(partition):

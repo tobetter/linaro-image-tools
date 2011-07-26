@@ -92,7 +92,6 @@ from linaro_image_tools.media_create.partitions import (
     partition_mounted,
     run_sfdisk_commands,
     setup_partitions,
-    umount,
     get_uuid,
     _parse_blkid_output,
     )
@@ -2047,7 +2046,20 @@ class TestMountedPartitionContextManager(TestCaseWithFixtures):
                     'sync',
                     '%s umount bar' % sudo_args]
         self.assertEqual(expected, popen_fixture.mock.commands_executed)
-        pass
+
+    def test_umount_failure(self):
+        # We ignore a SubcommandNonZeroReturnValue from umount because
+        # otherwise it could shadow an exception raised inside the 'with'
+        # block.
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        def failing_umount(path):
+            raise cmd_runner.SubcommandNonZeroReturnValue('umount', 1)
+        self.useFixture(MockSomethingFixture(
+            partitions, 'umount', failing_umount))
+        def test_func():
+            with partition_mounted('foo', 'bar'):
+                pass
+        test_func()
 
 
 class TestPopulateBoot(TestCaseWithFixtures):
