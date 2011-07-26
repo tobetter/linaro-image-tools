@@ -372,8 +372,14 @@ def get_android_partitions_for_media(media, board_config):
         media.path, 1 + board_config.mmc_part_offset)
     system_partition = _get_device_file_for_partition_number(
         media.path, 2 + board_config.mmc_part_offset)
-    cache_partition = _get_device_file_for_partition_number(
-        media.path, 3 + board_config.mmc_part_offset)
+    if board_config.mmc_part_offset != 1:
+        cache_partition = _get_device_file_for_partition_number(
+            media.path, 3 + board_config.mmc_part_offset)
+    else:
+        # In the current setup, partition 4 is always the
+        # extended partition container, so we need to skip 4 
+        cache_partition = _get_device_file_for_partition_number(
+            media.path, 5)
     data_partition = _get_device_file_for_partition_number(
         media.path, 5 + board_config.mmc_part_offset)
     sdcard_partition = _get_device_file_for_partition_number(
