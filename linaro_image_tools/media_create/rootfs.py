@@ -17,27 +17,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
-import atexit
 import os
 import subprocess
 import tempfile
 
 from linaro_image_tools import cmd_runner
 
-
-def umount(device):
-    # The old code used to ignore failures here, but I don't think that's
-    # desirable so I'm using cmd_runner.run()'s standard behaviour, which will
-    # fail on a non-zero return value.
-    cmd_runner.run(['umount', device], as_root=True).wait()
+from linaro_image_tools.media_create.partitions import partition_mounted
 
 
 def populate_partition(content_dir, root_disk, partition):
     os.makedirs(root_disk)
-    cmd_runner.run(['mount', partition, root_disk], as_root=True).wait()
-    atexit.register(umount, root_disk)
-    move_contents(content_dir, root_disk)
-    cmd_runner.run(['sync']).wait()
+    with partition_mounted(partition, root_disk):
+        move_contents(content_dir, root_disk)
 
 
 def rootfs_mount_options(rootfs_type):
@@ -68,40 +60,34 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
     # Create a directory to mount the rootfs partition.
     os.makedirs(root_disk)
 
-    cmd_runner.run(['mount', partition, root_disk], as_root=True).wait()
-    # We use an atexit handler to umount the partition to make sure it's
-    # umounted even if something fails when it's being populated.
-    atexit.register(umount, root_disk)
+    with partition_mounted(partition, root_disk):
+        move_contents(content_dir, root_disk)
 
-    move_contents(content_dir, root_disk)
+        mount_options = rootfs_mount_options(rootfs_type)
+        fstab_additions = ["UUID=%s / %s  %s 0 1" % (
+                rootfs_uuid, rootfs_type, mount_options)]
+        if should_create_swap:
+            print "\nCreating SWAP File\n"
+            if has_space_left_for_swap(root_disk, swap_size):
+                proc = cmd_runner.run([
+                    'dd',
+                    'if=/dev/zero',
+                    'of=%s/SWAP.swap' % root_disk,
+                    'bs=1M',
+                    'count=%s' % swap_size], as_root=True)
+                proc.wait()
+                proc = cmd_runner.run(
+                    ['mkswap', '%s/SWAP.swap' % root_disk], as_root=True)
+                proc.wait()
+                fstab_additions.append("/SWAP.swap  none  swap  sw  0 0")
+            else:
+                print ("Swap file is bigger than space left on partition; "
+                       "continuing without swap.")
 
-    mount_options = rootfs_mount_options(rootfs_type)
-    fstab_additions = ["UUID=%s / %s  %s 0 1" % (
-            rootfs_uuid, rootfs_type, mount_options)]
-    if should_create_swap:
-        print "\nCreating SWAP File\n"
-        if has_space_left_for_swap(root_disk, swap_size):
-            proc = cmd_runner.run([
-                'dd',
-                'if=/dev/zero',
-                'of=%s/SWAP.swap' % root_disk,
-                'bs=1M',
-                'count=%s' % swap_size], as_root=True)
-            proc.wait()
-            proc = cmd_runner.run(
-                ['mkswap', '%s/SWAP.swap' % root_disk], as_root=True)
-            proc.wait()
-            fstab_additions.append("/SWAP.swap  none  swap  sw  0 0")
-        else:
-            print ("Swap file is bigger than space left on partition; "
-                   "continuing without swap.")
+        append_to_fstab(root_disk, fstab_additions)
 
-    append_to_fstab(root_disk, fstab_additions)
-
-    print "\nCreating /etc/flash-kernel.conf\n"
-    create_flash_kernel_config(root_disk, 1 + partition_offset)
-
-    cmd_runner.run(['sync']).wait()
+        print "\nCreating /etc/flash-kernel.conf\n"
+        create_flash_kernel_config(root_disk, 1 + partition_offset)
 
 
 def create_flash_kernel_config(root_disk, boot_partition_number):

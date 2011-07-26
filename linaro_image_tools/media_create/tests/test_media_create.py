@@ -89,6 +89,7 @@ from linaro_image_tools.media_create.partitions import (
     get_android_loopback_devices,
     get_boot_and_root_partitions_for_media,
     Media,
+    partition_mounted,
     run_sfdisk_commands,
     setup_partitions,
     get_uuid,
@@ -101,7 +102,6 @@ from linaro_image_tools.media_create.rootfs import (
     move_contents,
     populate_rootfs,
     rootfs_mount_options,
-    umount,
     write_data_to_protected_file,
     )
 from linaro_image_tools.media_create.tests.fixtures import (
@@ -2016,6 +2016,52 @@ class TestPartitionSetup(TestCaseWithFixtures):
             popen_fixture.mock.commands_executed)
 
 
+class TestException(Exception):
+    """Just a test exception."""
+
+
+class TestMountedPartitionContextManager(TestCaseWithFixtures):
+
+    def test_basic(self):
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        def test_func():
+            with partition_mounted('foo', 'bar', '-t', 'proc'):
+                pass
+        test_func()
+        expected = ['%s mount foo bar -t proc' % sudo_args,
+                    'sync',
+                    '%s umount bar' % sudo_args]
+        self.assertEqual(expected, popen_fixture.mock.commands_executed)
+
+    def test_exception_raised_inside_with_block(self):
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        def test_func():
+            with partition_mounted('foo', 'bar'):
+                raise TestException('something')
+        try:
+            test_func()
+        except TestException:
+            pass
+        expected = ['%s mount foo bar' % sudo_args,
+                    'sync',
+                    '%s umount bar' % sudo_args]
+        self.assertEqual(expected, popen_fixture.mock.commands_executed)
+
+    def test_umount_failure(self):
+        # We ignore a SubcommandNonZeroReturnValue from umount because
+        # otherwise it could shadow an exception raised inside the 'with'
+        # block.
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        def failing_umount(path):
+            raise cmd_runner.SubcommandNonZeroReturnValue('umount', 1)
+        self.useFixture(MockSomethingFixture(
+            partitions, 'umount', failing_umount))
+        def test_func():
+            with partition_mounted('foo', 'bar'):
+                pass
+        test_func()
+
+
 class TestPopulateBoot(TestCaseWithFixtures):
 
     expected_args = (
@@ -2105,8 +2151,6 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         def fake_create_flash_kernel_config(disk, partition_offset):
             self.create_flash_kernel_config_called = True
 
-        atexit_fixture = self.useFixture(MockSomethingFixture(
-            atexit, 'register', AtExitRegister()))
         # Mock stdout, cmd_runner.Popen(), append_to_fstab and
         # create_flash_kernel_config.
         self.useFixture(MockSomethingFixture(
@@ -2152,11 +2196,9 @@ class TestPopulateRootFS(TestCaseWithFixtures):
             '%s dd if=/dev/zero of=%s bs=1M count=100' % (
                sudo_args, swap_file),
             '%s mkswap %s' % (sudo_args, swap_file),
-            'sync']
+            'sync',
+            '%s umount %s' % (sudo_args, root_disk)]
         self.assertEqual(expected, popen_fixture.mock.commands_executed)
-        self.assertEqual(1, len(atexit_fixture.mock.funcs))
-        self.assertEqual(
-            (umount, (root_disk,), {}), atexit_fixture.mock.funcs[0])
 
     def test_create_flash_kernel_config(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())

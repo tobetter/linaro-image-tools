@@ -78,6 +78,8 @@ class AndroidBoardConfig(object):
     @classmethod
     def populate_boot_script(cls, boot_partition, boot_disk, consoles):
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
+        # TODO: Use partition_mounted() here to make sure the partition is
+        # always umounted after we're done.
         cmd_runner.run(['mount', boot_partition, boot_disk],
             as_root=True).wait()
 

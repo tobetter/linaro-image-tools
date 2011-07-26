@@ -18,7 +18,9 @@
 # along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
 import atexit
+from contextlib import contextmanager
 import glob
+import logging
 import re
 import subprocess
 import time
@@ -167,6 +169,39 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
         proc.wait()
 
     return bootfs, rootfs
+
+
+def umount(path):
+    # The old code used to ignore failures here, but I don't think that's
+    # desirable so I'm using cmd_runner.run()'s standard behaviour, which will
+    # fail on a non-zero return value.
+    cmd_runner.run(['umount', path], as_root=True).wait()
+
+
+@contextmanager
+def partition_mounted(device, path, *args):
+    """A context manager that mounts the given device and umounts when done.
+
+    We use a try/finally to make sure the device is umounted even if there's
+    an uncaught exception in the with block.  Also, before umounting we call
+    'sync'.
+
+    :param *args: Extra arguments to the mount command.
+    """
+    subprocess_args = ['mount', device, path]
+    subprocess_args.extend(args)
+    cmd_runner.run(subprocess_args, as_root=True).wait()
+    try:
+        yield
+    finally:
+        cmd_runner.run(['sync']).wait()
+        try:
+            umount(path)
+        except cmd_runner.SubcommandNonZeroReturnValue, e:
+            logger = logging.getLogger("linaro_image_tools")
+            logger.warn("Failed to umount %s, but ignoring it because of a "
+                        "previous error" % path)
+            logger.warn(e)
 
 
 def get_uuid(partition):
