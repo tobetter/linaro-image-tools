@@ -552,9 +552,12 @@ class OmapConfig(BoardConfig):
         vmlinuz = _get_file_matching(
             os.path.join(chroot_dir, 'boot', 'vmlinuz*'))
         basename = os.path.basename(vmlinuz)
-        minor_version = re.match('.*2\.6\.([0-9]{2}).*', basename).group(1)
-        if int(minor_version) < 36:
-            cls.serial_tty = classproperty(lambda cls: 'ttyS2')
+        match = re.match('.*2\.6\.([0-9]{2}).*', basename)
+        # Assume if it doesn't match that it is 3.0 or later.
+        if match is not None:
+            minor_version = match.group(1)
+            if int(minor_version) < 36:
+                cls.serial_tty = classproperty(lambda cls: 'ttyS2')
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
