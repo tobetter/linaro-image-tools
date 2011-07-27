@@ -580,6 +580,7 @@ class FileHandler():
 
         self.append_setting_to(args, settings, 'mmc')
         self.append_setting_to(args, settings, 'image_file')
+        self.append_setting_to(args, settings, 'image_size')
         self.append_setting_to(args, settings, 'swap_size')
         self.append_setting_to(args, settings, 'swap_file')
         self.append_setting_to(args, settings, 'yes_to_mmc_selection',
@@ -681,10 +682,14 @@ class FileHandler():
             self.event_queue.put(("start", "unpack"))
 
             while(1):
-                if self.create_process.poll() != None:   # linaro-media-create
-                                                         # has finished.
-                    self.event_queue.put(("terminate"))  # Tell the GUI
-                    return                               # Terminate the thread
+                if self.create_process.poll() != None:
+                    # linaro-media-create has finished. Tell the GUI the return
+                    # code so it can report pass/fail.
+                    if self.create_process.returncode:
+                        self.event_queue.put("abort")
+                    else:
+                        self.event_queue.put("terminate")
+                    return
 
                 self.input = self.create_process.stdout.read(1)
 

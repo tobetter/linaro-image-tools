@@ -1240,10 +1240,13 @@ class RunLMC(wiz.WizardPageSimple):
             elif event[0] == "end":
                 self.event_end(event[1])
 
-            elif event == "terminate" or event[0] == "abort":
+            elif event == "terminate" or event == "abort":
                 # Process complete. Enable next button.
                 self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
-                self.populate_file_system_status.SetLabel("Done")
+                if event == "terminate":
+                    self.populate_file_system_status.SetLabel("Done")
+                else:
+                    self.populate_file_system_status.SetLabel("Failed")
                 return  # Even if queue isn't empty, stop processing it
 
             elif event[0] == "update":
