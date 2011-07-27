@@ -583,8 +583,8 @@ class FileHandler():
         self.append_setting_to(args, settings, 'image_size')
         self.append_setting_to(args, settings, 'swap_size')
         self.append_setting_to(args, settings, 'swap_file')
-        args = self.append_setting_to(args, settings, 'yes_to_mmc_selection',
-                                                      '--nocheck_mmc')
+        self.append_setting_to(args, settings, 'yes_to_mmc_selection',
+                                               '--nocheck_mmc')
 
         args.append("--dev")
         args.append(settings['hardware'])
