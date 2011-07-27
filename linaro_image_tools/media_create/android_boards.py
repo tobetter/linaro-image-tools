@@ -26,10 +26,14 @@ android_board_configs at the bottom of this file.
 
 from linaro_image_tools.media_create.partitions import SECTOR_SIZE
 from linaro_image_tools.media_create.boards import PART_ALIGN_S
+from linaro_image_tools.media_create.boards import SAMSUNG_V310_BL1_START
+from linaro_image_tools.media_create.boards import SAMSUNG_V310_BL2_START
+from linaro_image_tools.media_create.boards import SAMSUNG_V310_BL2_LEN
 from linaro_image_tools.media_create.boards import BeagleConfig
 from linaro_image_tools.media_create.boards import PandaConfig
 from linaro_image_tools.media_create.boards import SnowballSdConfig
 from linaro_image_tools.media_create.boards import SnowballEmmcConfig
+from linaro_image_tools.media_create.boards import SMDKV310Config
 from linaro_image_tools.media_create.boards import (
     align_up,
     align_partition,
@@ -209,10 +213,32 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
         return '%s,%s,0xDA\n%s' % (
             loader_start, loader_len, command)
 
+class AndroidSMDKV310Config(AndroidBoardConfig, SMDKV310Config):
+    _extra_serial_opts = 'console=tty0 console=ttySAC1,115200n8'
+    android_specific_args = 'init=/init androidboot.console=ttySAC1'
+
+    @classmethod
+    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+
+        loaders_min_len = (
+            SAMSUNG_V310_BL2_START + SAMSUNG_V310_BL2_LEN -
+            SAMSUNG_V310_BL1_START)
+
+        loader_start, loader_end, loader_len = align_partition(
+            1, loaders_min_len, 1, PART_ALIGN_S)
+
+        command = super(AndroidSMDKV310Config, cls).get_sfdisk_cmd(
+            should_align_boot_part=False, start_addr=loader_end,
+            extra_part=True)
+
+        return '%s,%s,0xDA\n%s' % (
+            loader_start, loader_len, command)
+
 
 android_board_configs = {
     'beagle': AndroidBeagleConfig,
     'panda': AndroidPandaConfig,
     'snowball_sd': AndroidSnowballSdConfig,
     'snowball_emmc': AndroidSnowballEmmcConfig,
+    'smdkv310': AndroidSMDKV310Config,
     }

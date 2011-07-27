@@ -1043,6 +1043,20 @@ class SamsungConfig(BoardConfig):
             'u-boot.bin')
         return uboot_file
 
+
+    @classmethod
+    def populate_raw_partition(cls, chroot_dir, boot_device_or_file):
+        # Populate created raw partition with BL1, env and u-boot
+        spl_file = os.path.join(chroot_dir, 'boot', 'u-boot-mmc-spl.bin')
+        assert os.path.getsize(spl_file) <= (SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
+            "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
+        _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
+        uboot_file = os.path.join(chroot_dir, 'boot', 'u-boot.bin')
+        assert os.path.getsize(uboot_file) <= (SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
+            "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
+        _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
+
+
     @classmethod
     def install_samsung_boot_loader(cls, chroot_dir, boot_device_or_file):
         spl_file = cls._get_samsung_spl(chroot_dir)

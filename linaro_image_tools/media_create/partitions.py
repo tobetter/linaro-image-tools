@@ -337,8 +337,14 @@ def get_android_partitions_for_media(media, board_config):
         media.path, 1 + board_config.mmc_part_offset)
     system_partition = _get_device_file_for_partition_number(
         media.path, 2 + board_config.mmc_part_offset)
-    cache_partition = _get_device_file_for_partition_number(
-        media.path, 3 + board_config.mmc_part_offset)
+    # This is to skip the extened partition at position 4
+    # FIXME : the logic should be smarter here
+    if board_config.mmc_part_offset == 0 :
+        cache_partition = _get_device_file_for_partition_number(
+            media.path, 3 + board_config.mmc_part_offset)
+    else :
+        cache_partition = _get_device_file_for_partition_number(
+            media.path, 4 + board_config.mmc_part_offset)
     data_partition = _get_device_file_for_partition_number(
         media.path, 5 + board_config.mmc_part_offset)
     sdcard_partition = _get_device_file_for_partition_number(
