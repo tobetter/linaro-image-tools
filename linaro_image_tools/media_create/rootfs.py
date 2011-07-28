@@ -17,18 +17,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
-import glob
 import os
+import subprocess
 import tempfile
 
 from linaro_image_tools import cmd_runner
 
+from linaro_image_tools.media_create.partitions import partition_mounted
+
+
 def populate_partition(content_dir, root_disk, partition):
     os.makedirs(root_disk)
-    cmd_runner.run(['mount', partition, root_disk], as_root=True).wait()
-    move_contents(content_dir, root_disk)
-    cmd_runner.run(['sync']).wait()
-    cmd_runner.run(['umount', root_disk], as_root=True).wait()
+    with partition_mounted(partition, root_disk):
+        move_contents(content_dir, root_disk)
 
 
 def rootfs_mount_options(rootfs_type):
@@ -48,52 +49,45 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
     This consists of:
       1. Create a directory on the path specified by root_disk
       2. Mount the given partition onto the created directory.
-      3. Move the contents of content_dir to that directory.
-      4. If should_create_swap, then create it with the given size.
-      5. Add fstab entries for the / filesystem and swap (if created).
-      6. Create a /etc/flash-kernel.conf containing the target's boot device.
-      7. Unmount the partition we mounted on step 2.
+      3. Setup an atexit handler to unmount the partition mounted above.
+      4. Move the contents of content_dir to that directory.
+      5. If should_create_swap, then create it with the given size.
+      6. Add fstab entries for the / filesystem and swap (if created).
+      7. Create a /etc/flash-kernel.conf containing the target's boot device.
     """
     print "\nPopulating rootfs partition"
     print "Be patient, this may take a few minutes\n"
     # Create a directory to mount the rootfs partition.
     os.makedirs(root_disk)
 
-    cmd_runner.run(['mount', partition, root_disk], as_root=True).wait()
+    with partition_mounted(partition, root_disk):
+        move_contents(content_dir, root_disk)
 
-    move_contents(content_dir, root_disk)
+        mount_options = rootfs_mount_options(rootfs_type)
+        fstab_additions = ["UUID=%s / %s  %s 0 1" % (
+                rootfs_uuid, rootfs_type, mount_options)]
+        if should_create_swap:
+            print "\nCreating SWAP File\n"
+            if has_space_left_for_swap(root_disk, swap_size):
+                proc = cmd_runner.run([
+                    'dd',
+                    'if=/dev/zero',
+                    'of=%s/SWAP.swap' % root_disk,
+                    'bs=1M',
+                    'count=%s' % swap_size], as_root=True)
+                proc.wait()
+                proc = cmd_runner.run(
+                    ['mkswap', '%s/SWAP.swap' % root_disk], as_root=True)
+                proc.wait()
+                fstab_additions.append("/SWAP.swap  none  swap  sw  0 0")
+            else:
+                print ("Swap file is bigger than space left on partition; "
+                       "continuing without swap.")
 
-    mount_options = rootfs_mount_options(rootfs_type)
-    fstab_additions = ["UUID=%s / %s  %s 0 1" % (
-            rootfs_uuid, rootfs_type, mount_options)]
-    if should_create_swap:
-        print "\nCreating SWAP File\n"
-        if has_space_left_for_swap(root_disk, swap_size):
-            proc = cmd_runner.run([
-                'dd',
-                'if=/dev/zero',
-                'of=%s/SWAP.swap' % root_disk,
-                'bs=1M',
-                'count=%s' % swap_size], as_root=True)
-            proc.wait()
-            proc = cmd_runner.run(
-                ['mkswap', '%s/SWAP.swap' % root_disk], as_root=True)
-            proc.wait()
-            fstab_additions.append("/SWAP.swap  none  swap  sw  0 0")
-        else:
-            print ("Swap file is bigger than space left on partition; "
-                   "continuing without swap.")
+        append_to_fstab(root_disk, fstab_additions)
 
-    append_to_fstab(root_disk, fstab_additions)
-
-    print "\nCreating /etc/flash-kernel.conf\n"
-    create_flash_kernel_config(root_disk, 1 + partition_offset)
-
-    cmd_runner.run(['sync']).wait()
-    # The old code used to ignore failures here, but I don't think that's
-    # desirable so I'm using cmd_runner.run()'s standard behaviour, which will
-    # fail on a non-zero return value.
-    cmd_runner.run(['umount', root_disk], as_root=True).wait()
+        print "\nCreating /etc/flash-kernel.conf\n"
+        create_flash_kernel_config(root_disk, 1 + partition_offset)
 
 
 def create_flash_kernel_config(root_disk, boot_partition_number):
@@ -107,13 +101,26 @@ def create_flash_kernel_config(root_disk, boot_partition_number):
         flash_kernel, "UBOOT_PART=%s" % target_boot_dev)
 
 
+def _list_files(directory):
+    """List the files and dirs under the given directory.
+
+    Runs as root because we want to list everything, including stuff that may
+    not be world-readable.
+    """
+    p = cmd_runner.run(
+        ['find', directory, '-maxdepth', '1', '-mindepth', '1'],
+        stdout=subprocess.PIPE, as_root=True)
+    stdout, _ = p.communicate()
+    return stdout.split()
+
+
 def move_contents(from_, root_disk):
     """Move everything under from_ to the given root disk.
 
     Uses sudo for moving.
     """
     assert os.path.isdir(from_), "%s is not a directory" % from_
-    files = glob.glob(os.path.join(from_, '*'))
+    files = _list_files(from_)
     mv_cmd = ['mv']
     mv_cmd.extend(sorted(files))
     mv_cmd.append(root_disk)

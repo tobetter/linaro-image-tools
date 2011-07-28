@@ -35,6 +35,476 @@ import shutil
 import datetime
 import threading
 import subprocess
+import utils
+
+
+class DownloadManager():
+    def __init__(self, cachedir):
+        self.cachedir           = cachedir
+        self.image_url          = None
+        self.hwpack_url         = None
+        self.settings           = None
+        self.event_queue        = None
+        self.to_download        = None
+        self.sha1_files         = None
+        self.gpg_files          = None
+        self.downloaded_files   = None
+        self.sig_files          = None
+        self.verified_files     = None
+        self.gpg_sig_ok         = None
+        self.have_sha1sums      = None
+        self.have_gpg_sigs      = None
+
+    def name_and_path_from_url(self, url):
+        """Return the file name and the path at which the file will be stored
+        on the local system based on the URL we are downloading from"""
+        # Use urlparse to get rid of everything but the host and path
+        scheme, host, path, params, query, fragment = urlparse.urlparse(url)
+
+        url_search = re.search(r"^(.*)/(.*?)$", host + path)
+        assert url_search, "URL in unexpectd format" + host + path
+
+        # Everything in url_search.group(1) should be directories and the
+        # server name and url_search.group(2) the file name
+        file_path = self.cachedir + os.sep + url_search.group(1)
+        file_name = url_search.group(2)
+
+        return file_name, file_path
+
+    def urllib2_open(self, url):
+        maxtries = 10
+        for trycount in range(0, maxtries):
+            try:
+                response = urllib2.urlopen(url)
+            except:
+                if trycount < maxtries - 1:
+                    print "Unable to connect to", url, "retrying in 5 seconds."
+                    time.sleep(5)
+                    continue
+                else:
+                    print "Connect failed:", url
+                    raise
+                    return None
+            else:
+                return response
+
+        return None
+
+    def list_files_in_dir_of_url(self, url):
+        """
+        return a directory listing of the directory that url sits in
+        """
+
+        import BeautifulSoup
+
+        url = os.path.dirname(url)
+        response = self.urllib2_open(url)
+        page = response.read()
+
+        dir = []
+        # Use BeautifulSoup to parse the HTML and iterate over all 'a' tags
+        soup = BeautifulSoup.BeautifulSoup(page)
+        for link in soup.findAll('a'):
+            for attr, value in link.attrs:
+                if(    attr == "href"
+                   and not re.search(r'[\?=;/]', value)):
+                    # Ignore links that don't look like plain files
+                    dir.append('/'.join([url, value]))
+
+        return dir
+
+    def sha1sum_file_download_list(self):
+        """
+        Need more than just the hwpack and OS image if we want signature
+        verification to work, we need sha1sums, signatures for sha1sums
+        and manifest files.
+
+        Note that this code is a bit sloppy and may result in downloading
+        more sums than are strictly required, but the
+        files are small and the wrong files won't be used.
+        """
+
+        downloads_list = []
+
+        # Get list of files in OS image directory
+        image_dir  = self.list_files_in_dir_of_url(self.image_url)
+        hwpack_dir = self.list_files_in_dir_of_url(self.hwpack_url)
+
+        for link in image_dir:
+            if re.search("sha1sums\.txt$", link):
+                downloads_list.append(link)
+
+        for link in hwpack_dir:
+            if(    re.search(self.settings['hwpack'], link)
+               and re.search("sha1sums\.txt$", link)):
+                downloads_list.append(link)
+
+        return downloads_list
+
+    def generate_download_list(self):
+        """
+        Generate a list of files based on what is in the sums files that
+        we have downloaded. We may have downloaded some sig files based on
+        a rather sloppy file name match that we don't want to use. For the
+        hwpack sig files, check to see if the hwpack listed matches the hwpack
+        URL. If it doesn't ignore it.
+
+        1. Download sig file(s) that match the hardware spec (done by this
+           point).
+        2. Find which sig file really matches the hardware pack we have
+           downloaded. (this function calculates this list)
+        3. Download all the files listed in the sig file (done by another func)
+        
+        We go through this process because sometimes a directory will have
+        more than one hardware pack that will match the hardware pack name,
+        for example panda and panda-x11 will both match "panda". These checks
+        make sure we only try and validate the signatures of the files that
+        we should be downloading and not try and validatate a signature of a
+        file that there is no reason for us to download, which would result in
+        an an invalid warning about installing unsigned packages when running
+        linaro-media-create.
+        """
+
+        downloads_list = [self.image_url, self.hwpack_url]
+
+        for sha1sum_file_name in self.sha1_files.values():
+            sha1sum_file = open(sha1sum_file_name)
+
+            common_prefix = None
+
+            files = []
+            for line in sha1sum_file:
+                line = line.split()    # line[1] is now the file name
+
+                if line[1] == os.path.basename(self.image_url):
+                    # Found a line that matches an image or hwpack URL - keep
+                    # the contents of this sig file
+                    common_prefix = os.path.dirname(self.image_url)
+
+                if line[1] == os.path.basename(self.hwpack_url):
+                    # Found a line that matches an image or hwpack URL - keep
+                    # the contents of this sig file
+                    common_prefix = os.path.dirname(self.hwpack_url)
+
+            if common_prefix:
+                for file_name in files:
+                    downloads_list.append('/'.join([common_prefix,
+                                                    file_name]))
+
+                dir = self.list_files_in_dir_of_url(common_prefix + '/')
+
+                # We include the sha1sum files that pointed to the files that
+                # we are going to download so the full file list can be parsed
+                # later. The files won't be re-downloaded because they will be
+                # cached.
+                file_name = os.path.basename(sha1sum_file_name)
+                downloads_list.append('/'.join([common_prefix, file_name]))
+                signed_sums = os.path.basename(sha1sum_file_name) + ".asc"
+
+                for link in dir:
+                    if re.search(signed_sums, link):
+                        downloads_list.append(link)
+
+            sha1sum_file.close()
+
+        return downloads_list
+
+    def download_files(self,
+                       downloads_list,
+                       settings,
+                       event_queue=None,
+                       force_download=False):
+        """
+        Download files specified in the downloads_list, which is a list of
+        url, name tuples.
+        """
+
+        force_download = settings["force_download"] or force_download
+
+        downloaded_files = {}
+
+        bytes_to_download = 0
+
+        for url in downloads_list:
+            file_name, file_path = self.name_and_path_from_url(url)
+
+            file_name = file_path + os.sep + file_name
+            if os.path.exists(file_name) and not force_download:
+                continue  # If file already exists, don't download it
+
+            response = self.urllib2_open(url)
+            if response:
+                bytes_to_download += int(response.info()
+                                          .getheader('Content-Length').strip())
+                response.close()
+
+        if event_queue:
+            event_queue.put(("start", "download"))
+            event_queue.put(("update",
+                             "download",
+                             "total bytes",
+                             bytes_to_download))
+
+        for url in downloads_list:
+            path = None
+            try:
+                path = self.download(url,
+                                     event_queue,
+                                     force_download)
+            except Exception:
+                # Download error. Hardly matters what, we can't continue.
+                print "Unexpected error:", sys.exc_info()[0]
+                logging.error("Unable to download " + url + " - aborting.")
+
+            if path == None:  # User hit cancel when downloading
+                sys.exit(0)
+
+            downloaded_files[url] = path
+            logging.info("Have downloaded {0} to {1}".format(url, path))
+
+        if event_queue:
+            event_queue.put(("end", "download"))
+
+        return downloaded_files
+
+    def download(self,
+                 url,
+                 event_queue,
+                 force_download=False):
+        """Downloads the file requested buy URL to the local cache and returns
+        the full path to the downloaded file"""
+
+        file_name, file_path = self.name_and_path_from_url(url)
+        file_name = file_path + os.sep + file_name
+
+        if not os.path.isdir(file_path):
+            os.makedirs(file_path)
+
+        if force_download != True and os.path.exists(file_name):
+            logging.info(file_name + " already cached. Not downloading (use "
+                                     "--force-download to override).")
+            return file_name
+
+        logging.info("Fetching " + url)
+
+        response = self.urllib2_open(url)
+
+        self.do_download = True
+        file_out = open(file_name, 'w')
+        download_size_in_bytes = int(response.info()
+                                     .getheader('Content-Length').strip())
+        chunks_downloaded = 0
+
+        show_progress = download_size_in_bytes > 1024 * 200
+
+        if show_progress:
+            chunk_size = download_size_in_bytes / 1000
+            if not event_queue:
+                print "Fetching", url
+        else:
+            chunk_size = download_size_in_bytes
+
+        printed_progress = False
+        while self.do_download:
+            chunk = response.read(chunk_size)
+            if len(chunk):
+                # Print a % download complete so we don't get too bored
+                if show_progress:
+                    if event_queue:
+                        event_queue.put(("update",
+                                         "download",
+                                         "progress",
+                                         len(chunk)))
+                    else:
+                        # Have 1000 chunks so div by 10 to get %...
+                        sys.stdout.write("\r%d%%" % (chunks_downloaded / 10))
+                        printed_progress = True
+                sys.stdout.flush()
+
+                file_out.write(chunk)
+                chunks_downloaded += 1
+
+            else:
+                if printed_progress:
+                    print ""
+                break
+
+        file_out.close()
+
+        if self.do_download == False:
+            os.remove(file_name)
+            return None
+
+        return file_name
+
+    def download_if_old(self, url, event_queue, force_download):
+        file_name, file_path = self.name_and_path_from_url(url)
+
+        file_path_and_name = file_path + os.sep + file_name
+
+        if(not os.path.isdir(file_path)):
+            os.makedirs(file_path)
+        try:
+            force_download = (force_download == True
+                              or (    time.mktime(time.localtime())
+                                    - os.path.getmtime(file_path_and_name)
+                                  > 60 * 60))
+        except OSError:
+            force_download = True  # File not found...
+
+        return self.download(url, event_queue, force_download)
+
+    def get_sig_files(self):
+        """
+        Find sha1sum.txt files in downloaded_files, append ".asc" and return
+        list.
+
+        The reason for not just searching for .asc files is because if they
+        don't exist, utils.verify_file_integrity(sig_files) won't check the
+        sha1sums that do exist, and they are useful to us. Trying to check
+        a GPG signature that doesn't exist just results in the signature check
+        failing, which is correct and we act accordingly.
+        """
+
+        self.sig_files = []
+
+        for filename in self.downloaded_files.values():
+            if re.search(r"sha1sums\.txt$", filename):
+                self.sig_files.append(filename + ".asc")
+
+    def _download_sigs_gen_download_list(self, force_download=False):
+
+        to_download = self.sha1sum_file_download_list()
+        self.sha1_files = self.download_files(
+                            to_download, self.settings,
+                            force_download=force_download)
+
+        self.to_download = self.generate_download_list()
+
+        gpg_urls = [f for f in self.to_download if re.search('\.asc$', f)]
+        gpg_files = self.download_files(gpg_urls, self.settings,
+                                        force_download=force_download)
+
+    def _check_downloads(self):
+        self.get_sig_files()
+
+        self.verified_files, self.gpg_sig_ok = utils.verify_file_integrity(
+                                                            self.sig_files)
+
+        # Expect to have 2 sha1sum files (one for hwpack, one for OS bin)
+        self.have_sha1sums = len(self.sha1_files) ==2
+
+        # We expect 2 GPG signatures. Check that we have both of them.
+
+        self.have_gpg_sigs = (len(self.sig_files) == 2 and
+                              os.path.exists(self.sig_files[0]) and
+                              os.path.exists(self.sig_files[1]))
+
+    def _unverified_files(self):
+        """
+        Return a list of URLs of files that didn't get verified
+        """
+        verified_files = self.verified_files
+
+        unverified_files = []
+        for sig_file in self.sig_files:
+            name = os.path.basename(sig_file)
+            verified_files.append(name)
+            verified_files.append(name[0:-len('.asc')])
+        
+        # Generate a list of files that didn't verify
+        for url in self.to_download:
+            url_file = os.path.basename(url)
+            if url_file not in verified_files:
+                unverified_files.append(url)
+
+        return unverified_files
+
+    def download_files_and_verify(self, image_url, hwpack_url,
+                                  settings, event_queue=None):
+
+        self.image_url      = image_url
+        self.hwpack_url     = hwpack_url
+        self.settings       = settings
+        self.event_queue    = event_queue
+
+        self._download_sigs_gen_download_list()
+
+        self.downloaded_files = self.download_files(self.to_download,
+                                                    self.settings,
+                                                    self.event_queue)
+
+        self._check_downloads()
+
+        if(self.have_sha1sums and self.have_gpg_sigs
+           and not self.gpg_sig_ok):
+            # GPG signatures failed for sha1sum files. Re-download the
+            # sha1sums and GPG signatues. If the GPG signature then
+            # matches the sha1sums we will re-download any failing hwpack
+            # and OS binary files in the if below.
+
+            self._download_sigs_gen_download_list(force_download=True)
+            self._check_downloads()
+
+            if(self.have_sha1sums and self.have_gpg_sigs
+               and not self.gpg_sig_ok):
+                # If after re-trying the downloads we still can't get a GPG
+                # signature match on a sha1sum file (and both files exist)
+                # the abort.
+                message = "Package signature check failed. Aborting"
+                if self.event_queue:
+                    self.event_queue.put("message", message)
+                    self.event_queue.put("abort")
+                else:
+                    print >> sys.stderr, message
+
+                return [], False
+
+        if(self.have_sha1sums and 
+           self.gpg_sig_ok or not self.have_gpg_sigs):
+            # The GPG signature is OK, so the sha1sums file and GPG sig are
+            # both good. OR We have sha1sum files and no GPG sigs. We can
+            # Still validate downloads against the sha1sums, just not mark
+            # the packages as signed.
+
+            to_retry = self._unverified_files()
+
+            if len(to_retry):
+                if self.event_queue:
+                    self.event_queue.put(("message", "Retrying bad files"))
+                else:
+                    print "Re-downloading corrupt files"
+                # There are some files to re-download
+                redownloaded_files = self.download_files(
+                                           to_retry, self.settings,
+                                           self.event_queue,
+                                           force_download=True)
+
+                (self.verified_files,
+                 self.gpg_sig_ok) = utils.verify_file_integrity(self.sig_files)
+
+                to_retry = self._unverified_files()
+
+                if len(to_retry):
+                    # We can't get valid package downloads. Either the sha1sums
+                    # file was incorrectly generated or the download is
+                    # corrupt. Display a message to the user and quit.
+                    message = "Download retry failed. Aborting"
+                    if self.event_queue:
+                        self.event_queue.put("message", message)
+                        self.event_queue.put("abort")
+                    else:
+                        print >> sys.stderr, message
+
+                    return [], False
+
+        hwpack = os.path.basename(self.downloaded_files[hwpack_url])
+        hwpack_verified = (hwpack in self.verified_files) and self.gpg_sig_ok
+
+        if self.event_queue:  # Clear messages, if any, from GUI
+            self.event_queue.put(("message", ""))
+
+        return self.downloaded_files, hwpack_verified
 
 
 class FileHandler():
@@ -52,14 +522,7 @@ class FileHandler():
                                      "image-tools",
                                      "fetch_image")
 
-    class DummyEventHandler():
-        """Just a sink for events if no event handler is provided to
-        create_media"""
-        def event_start(self, event):
-            pass
-
-        def event_end(self, event):
-            pass
+        self.downloader = DownloadManager(self.cachedir)
 
     def has_key_and_evaluates_True(self, dictionary, key):
         return bool(key in dictionary and dictionary[key])
@@ -72,19 +535,17 @@ class FileHandler():
             list.append(setting_name)
             list.append(dictionary[key])
 
-    def create_media(self, image_url, hwpack_url, settings, tools_dir,
-                     run_in_gui=False, event_handler=None):
-        """Create a command line for linaro-media-create based on the settings
-        provided then run linaro-media-create, either in a separate thread
-        (GUI mode) or in the current one (CLI mode)."""
+    def build_lmc_command(self,
+                          binary_file,
+                          hwpack_file,
+                          settings,
+                          tools_dir,
+                          hwpack_verified,
+                          run_in_gui=False):
 
         import linaro_image_tools.utils
 
-        if event_handler == None:
-            event_handler = self.DummyEventHandler()
-
-        args = []
-        args.append("pkexec")
+        args = ["pkexec"]
 
         # Prefer a local linaro-media-create (from a bzr checkout for instance)
         # to an installed one
@@ -100,40 +561,14 @@ class FileHandler():
         if run_in_gui:
             args.append("--nocheck-mmc")
 
-        event_handler.event_start("download OS")
-        try:
-            binary_file = self.download(image_url,
-                                        settings["force_download"],
-                                        show_wx_progress=run_in_gui,
-                                        wx_progress_title=
-                                         "Downloading file 1 of 2")
-        except Exception:
-            # Download error. Hardly matters what, we can't continue.
-            print "Unexpected error:", sys.exc_info()[0]
-            logging.error("Unable to download " + image_url + " - aborting.")
-        event_handler.event_end("download OS")
-
-        if binary_file == None:  # User hit cancel when downloading
-            sys.exit(0)
-
-        event_handler.event_start("download hwpack")
-        try:
-            hwpack_file = self.download(hwpack_url,
-                                        settings["force_download"],
-                                        show_wx_progress=run_in_gui,
-                                        wx_progress_title=
-                                         "Downloading file 2 of 2")
-        except Exception:
-            # Download error. Hardly matters what, we can't continue.
-            print "Unexpected error:", sys.exc_info()[0]
-            logging.error("Unable to download " + hwpack_url + " - aborting.")
-        event_handler.event_end("download hwpack")
-
-        if hwpack_file == None:  # User hit cancel when downloading
-            sys.exit(0)
-
-        logging.info("Have downloaded OS binary to", binary_file,
-                     "and hardware pack to", hwpack_file)
+        if hwpack_verified:
+            # We verify the hwpack before calling linaro-media-create because
+            # these tools run linaro-media-create as root and to get the GPG
+            # signature verification to work, root would need to have GPG set
+            # up with the Canonical Linaro Image Build Automatic Signing Key
+            # imported. It seems far more likely that users will import keys
+            # as themselves, not root!
+            args.append("--hwpack-force-yes")
 
         if 'rootfs' in settings and settings['rootfs']:
             args.append("--rootfs")
@@ -145,6 +580,7 @@ class FileHandler():
 
         self.append_setting_to(args, settings, 'mmc')
         self.append_setting_to(args, settings, 'image_file')
+        self.append_setting_to(args, settings, 'image_size')
         self.append_setting_to(args, settings, 'swap_size')
         self.append_setting_to(args, settings, 'swap_file')
         self.append_setting_to(args, settings, 'yes_to_mmc_selection',
@@ -157,34 +593,83 @@ class FileHandler():
         args.append("--hwpack")
         args.append(hwpack_file)
 
-        logging.info(args)
+        logging.info(" ".join(args))
 
-        if run_in_gui:
-            self.lmcargs        = args
-            self.event_handler  = event_handler
-            self.started_lmc    = False
+        return args
+
+    def create_media(self, image_url, hwpack_url, settings, tools_dir):
+        """Create a command line for linaro-media-create based on the settings
+        provided then run linaro-media-create, either in a separate thread
+        (GUI mode) or in the current one (CLI mode)."""
+
+        downloaded_files, hwpack_verified = (
+            self.downloader.download_files_and_verify(image_url, hwpack_url,
+                                                      settings))
+
+        if len(downloaded_files) == 0:
             return
 
-        else:
-            self.create_process = subprocess.Popen(args)
-            self.create_process.wait()
+        lmc_command = self.build_lmc_command(downloaded_files[image_url],
+                                             downloaded_files[hwpack_url],
+                                             settings,
+                                             tools_dir,
+                                             hwpack_verified)
+
+        self.create_process = subprocess.Popen(lmc_command)
+        self.create_process.wait()
 
     class LinaroMediaCreate(threading.Thread):
         """Thread class for running linaro-media-create"""
-        def __init__(self, event_handler, lmcargs, event_queue):
+        def __init__(self,
+                     image_url,
+                     hwpack_url,
+                     file_handler,
+                     event_queue,
+                     settings,
+                     tools_dir):
+
             threading.Thread.__init__(self)
-            self.event_handler = event_handler
-            self.lmcargs = lmcargs
-            self.event_queue = event_queue
+
+            self.image_url      = image_url
+            self.hwpack_url     = hwpack_url
+            self.file_handler   = file_handler
+            self.downloader     = file_handler.downloader
+            self.event_queue    = event_queue
+            self.settings       = settings
+            self.tools_dir      = tools_dir
 
         def run(self):
-            """Start linaro-media-create and look for lines in the output that:
-            1. Tell us that an event has happened that we can use to update the
-               UI progress.
-            2. Tell us that linaro-media-create is asking a question that needs
-               to be re-directed to the GUI"""
+            """
+            1. Download required files.
+            2. Build linaro-media-create command
+            3. Start linaro-media-create and look for lines in the output that:
+               1. Tell us that an event has happened that we can use to update
+                  the UI progress.
+               2. Tell us that linaro-media-create is asking a question that
+                  needs to be re-directed to the GUI
+            """
 
-            self.create_process = subprocess.Popen(self.lmcargs,
+            self.event_queue.put(("update",
+                                  "download",
+                                  "message",
+                                  "Downloading"))
+
+            files, hwpack_ok = self.downloader.download_files_and_verify(
+                                self.image_url, self.hwpack_url,
+                                self.settings, self.event_queue)
+
+            if len(files) == 0:
+                return
+
+            lmc_command = self.file_handler.build_lmc_command(
+                                            files[self.image_url],
+                                            files[self.hwpack_url],
+                                            self.settings,
+                                            self.tools_dir,
+                                            hwpack_ok,
+                                            True)
+
+            self.create_process = subprocess.Popen(lmc_command,
                                                    stdin=subprocess.PIPE,
                                                    stdout=subprocess.PIPE,
                                                    stderr=subprocess.STDOUT)
@@ -197,10 +682,14 @@ class FileHandler():
             self.event_queue.put(("start", "unpack"))
 
             while(1):
-                if self.create_process.poll() != None:   # linaro-media-create
-                                                         # has finished.
-                    self.event_queue.put(("terminate"))  # Tell the GUI
-                    return                               # Terminate the thread
+                if self.create_process.poll() != None:
+                    # linaro-media-create has finished. Tell the GUI the return
+                    # code so it can report pass/fail.
+                    if self.create_process.returncode:
+                        self.event_queue.put("abort")
+                    else:
+                        self.event_queue.put("terminate")
+                    return
 
                 self.input = self.create_process.stdout.read(1)
 
@@ -262,174 +751,20 @@ class FileHandler():
             print >> self.create_process.stdin, text
             self.waiting_for_event_response = False
 
-    def start_lmc_gui_thread(self, event_queue):
-        self.lmc_thread = self.LinaroMediaCreate(self.event_handler,
-                                                 self.lmcargs, event_queue)
-        self.lmc_thread.start()
-
-    def kill_create_media(self):
-        pass  # TODO: Something!
-              # Need to make sure all child processes are terminated.
-
-    def send_to_create_process(self, text):
-        self.lmc_thread.send_to_create_process(text)
-
-    def name_and_path_from_url(self, url):
-        """Return the file name and the path at which the file will be stored
-        on the local system based on the URL we are downloading from"""
-        # Use urlparse to get rid of everything but the host and path
-        scheme, host, path, params, query, fragment = urlparse.urlparse(url)
-
-        url_search = re.search(r"^(.*)/(.*?)$", host + path)
-        assert url_search, "URL in unexpectd format" + host + path
-
-        # Everything in url_search.group(1) should be directories and the
-        # server name and url_search.group(2) the file name
-        file_path = self.cachedir + os.sep + url_search.group(1)
-        file_name = url_search.group(2)
-
-        return file_name, file_path
-
-    def create_wx_progress(self, title, message):
-        """Create a standard WX progrss dialog"""
-        import wx
-        self.dlg = wx.ProgressDialog(title,
-                                     message,
-                                     maximum=1000,
-                                     parent=None,
-                                     style=wx.PD_CAN_ABORT
-                                      | wx.PD_APP_MODAL
-                                      | wx.PD_ELAPSED_TIME
-                                      | wx.PD_AUTO_HIDE
-                                      | wx.PD_REMAINING_TIME)
-
-    def timer_ping(self):
-        self.update_wx_process(self.download_count)
-
-    def update_wx_progress(self, count):
-        self.download_count = count
-        (self.do_download, skip) = self.dlg.Update(count)
-
-    def download(self, url, force_download=False,
-                 show_wx_progress=False, wx_progress_title=None):
-        """Downloads the file requested buy URL to the local cache and returns
-        the full path to the downloaded file"""
-
-        file_name, file_path = self.name_and_path_from_url(url)
-
-        just_file_name = file_name
-        file_name = file_path + os.sep + file_name
-
-        if not os.path.isdir(file_path):
-            os.makedirs(file_path)
-
-        if force_download != True and os.path.exists(file_name):
-            logging.info(file_name + " already cached. Not downloading (use "
-                                     "--force-download to override).")
-            return file_name
-
-        logging.info("Fetching", url)
-
-        maxtries = 10
-        for trycount in range(0, maxtries):
-            try:
-                response = urllib2.urlopen(url)
-            except:
-                if trycount < maxtries - 1:
-                    print "Unable to download", url, "retrying in 5 seconds..."
-                    time.sleep(5)
-                    continue
-                else:
-                    print "Download failed for some reason:", url
-                    raise
-                    return
-            else:
-                break
-
-        self.do_download = True
-        file_out = open(file_name, 'w')
-        download_size_in_bytes = int(response.info()
-                                     .getheader('Content-Length').strip())
-        chunks_downloaded = 0
-
-        show_progress = download_size_in_bytes > 1024 * 200
-
-        if show_progress:
-            chunk_size = download_size_in_bytes / 1000
-            if show_wx_progress:
-                if wx_progress_title == None:
-                    wx_progress_title = "Downloading File"
-                self.create_wx_progress(wx_progress_title,
-                                        "Downloading " + just_file_name)
-            else:
-                print "Fetching", url
-        else:
-            chunk_size = download_size_in_bytes
-
-        if show_progress and show_wx_progress:
-            # Just update the download box before we get the first %
-            self.update_wx_progress(0)
-
-        printed_progress = False
-        while self.do_download:
-            chunk = response.read(chunk_size)
-            if len(chunk):
-                # Print a % download complete so we don't get too bored
-                if show_progress:
-                    if show_wx_progress:
-                        self.update_wx_progress(chunks_downloaded)
-                    else:
-                        # Have 1000 chunks so div by 10 to get %...
-                        sys.stdout.write("\r%d%%" % (chunks_downloaded / 10))
-                        printed_progress = True
-                sys.stdout.flush()
-
-                file_out.write(chunk)
-                chunks_downloaded += 1
-
-            else:
-                if printed_progress:
-                    print ""
-                break
-
-        file_out.close()
-
-        if self.do_download == False:
-            os.remove(file_name)
-            return None
-
-        return file_name
-
-    def download_if_old(self, url, force_download, show_wx_progress=False):
-        file_name, file_path = self.name_and_path_from_url(url)
-
-        file_path_and_name = file_path + os.sep + file_name
-
-        if(not os.path.isdir(file_path)):
-            os.makedirs(file_path)
-        try:
-            force_download = (force_download == True
-                              or (    time.mktime(time.localtime())
-                                    - os.path.getmtime(file_path_and_name)
-                                  > 60 * 60 * 24))
-        except OSError:
-            force_download = True  # File not found...
-
-        return self.download(url, force_download, show_wx_progress)
 
     def update_files_from_server(self, force_download=False,
-                                 show_wx_progress=False):
+                                 event_queue=None):
 
-        settings_url     = "http://z.nanosheep.org/fetch_image_settings.yaml"
-        server_index_url = "http://z.nanosheep.org/server_index.bz2"
+        settings_url     = "http://releases.linaro.org/fetch_image/fetch_image_settings.yaml"
+        server_index_url = "http://releases.linaro.org/fetch_image/server_index.bz2"
 
-        self.settings_file = self.download_if_old(settings_url,
-                                                  force_download,
-                                                  show_wx_progress)
+        self.settings_file = self.downloader.download_if_old(settings_url,
+                                                             event_queue,
+                                                             force_download)
 
-        self.index_file = self.download_if_old(server_index_url,
-                                               force_download,
-                                               show_wx_progress)
+        self.index_file = self.downloader.download_if_old(server_index_url,
+                                                          event_queue,
+                                                          force_download)
 
         zip_search = re.search(r"^(.*)\.bz2$", self.index_file)
 
@@ -484,9 +819,9 @@ class FetchImageConfig():
             self.settings['UI']['reverse-translate'][value] = key
 
     def parse_args(self, args):
-        parser = argparse.ArgumentParser(description=
-                                         "Create a board image, first "
-                                         "downloading any required files.")
+        parser = argparse.ArgumentParser(description="Create a board image, "
+                                         "first downloading any required "
+                                         "files.")
 
         for (key, value) in self.settings['choice'].items():
             parser.add_argument(
@@ -943,9 +1278,13 @@ class DB():
                            (date, hwpack))
 
             if len(builds):
-                # A hardware pack exists for that date, return what we found
-                # for binaries
-                return binaries
+                # A hardware pack exists for that date, return a list of builds
+                # that exist for both hwpack and binary
+                ret = []
+                for build in builds:
+                    if build in binaries:
+                        ret.append(build)
+                return ret
 
         # No hardware pack exists for the date requested, return empty table
         return []
@@ -983,7 +1322,7 @@ class DB():
                 loop_date_increment = -one_day
 
             test_date[in_the] = current_date
-            
+
             while test_date[in_the] <= max_search_date:
                 test_date[in_the] += loop_date_increment
 
@@ -1004,7 +1343,7 @@ class DB():
                     test_date[in_the] = None
                     break
 
-            if test_date[in_the] > max_search_date:
+            if test_date[in_the] and test_date[in_the] > max_search_date:
                 test_date[in_the] = None
 
             if test_date[in_the]:
@@ -1033,16 +1372,43 @@ class DB():
             count = 0
             while(1):  # Just so we can try several times...
                 if(args['build'] == "latest"):
-                    # First result of SQL query is latest build (ORDER BY)
+                    # Start from today, add 1 day because
+                    # get_next_prev_day_with_builds aways searches from the
+                    # day passed to it, not including that day. This will give
+                    # us the latest build dated today or earlier with both
+                    # a hwpack and OS binary
+                    date = (datetime.date.today() +
+                            datetime.timedelta(days=1)).isoformat()
+
+                    _, past_date = self.get_next_prev_day_with_builds(
+                                           args['image'],
+                                           date,
+                                           [args['hwpack']])
+
+                    builds = self.get_binary_builds_on_day_from_db(
+                                    args['image'], past_date, [args['hwpack']])
+                    
+                    # Work out latest build
+                    build = None
+                    for b in builds:
+                        if build == None or b[0] > build:
+                            build = b[0]
+                        
+                    # We store dates in the DB in ISO format with the dashes
+                    # missing
+                    date = re.sub('-', '', past_date)
+
                     image_url = self.get_url("snapshot_binaries",
                                     [
-                                     ("image", args['image'])],
-                                    "ORDER BY date DESC, build DESC")
+                                     ("image", args['image']),
+                                     ("build", build),
+                                     ("date", date)])
 
                     hwpack_url = self.get_url("snapshot_hwpacks",
                                     [
-                                     ("hardware", args['hwpack'])],
-                                    "ORDER BY date DESC, build DESC")
+                                     ("hardware", args['hwpack']),
+                                     ("build", build),
+                                     ("date", date)])
 
                 else:
                     build_bits = args['build'].split(":")

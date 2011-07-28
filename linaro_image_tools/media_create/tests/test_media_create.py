@@ -89,6 +89,7 @@ from linaro_image_tools.media_create.partitions import (
     get_android_loopback_devices,
     get_boot_and_root_partitions_for_media,
     Media,
+    partition_mounted,
     run_sfdisk_commands,
     setup_partitions,
     get_uuid,
@@ -1038,6 +1039,14 @@ class TestFixForBug697824(TestCaseWithFixtures):
         boards.BeagleConfig.set_appropriate_serial_tty(tempdir)
         self.assertEquals('ttyO2', boards.BeagleConfig.serial_tty)
 
+    def test_set_appropriate_serial_tty_three_dot_oh_kernel(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        boot_dir = os.path.join(tempdir, 'boot')
+        os.makedirs(boot_dir)
+        open(os.path.join(boot_dir, 'vmlinuz-3.0-13-foo'), 'w').close()
+        boards.BeagleConfig.set_appropriate_serial_tty(tempdir)
+        self.assertEquals('ttyO2', boards.BeagleConfig.serial_tty)
+
 
 class TestGetSfdiskCmd(TestCase):
 
@@ -1247,7 +1256,9 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk '
-                        'mpurate=${mpurate} vram=12M',
+                        'mpurate=${mpurate} vram=12M '
+                        'omapdss.def_disp=${defaultdisplay} '
+                        'omapfb.mode=dvi:${dvimode}',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
@@ -2013,6 +2024,52 @@ class TestPartitionSetup(TestCaseWithFixtures):
             popen_fixture.mock.commands_executed)
 
 
+class TestException(Exception):
+    """Just a test exception."""
+
+
+class TestMountedPartitionContextManager(TestCaseWithFixtures):
+
+    def test_basic(self):
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        def test_func():
+            with partition_mounted('foo', 'bar', '-t', 'proc'):
+                pass
+        test_func()
+        expected = ['%s mount foo bar -t proc' % sudo_args,
+                    'sync',
+                    '%s umount bar' % sudo_args]
+        self.assertEqual(expected, popen_fixture.mock.commands_executed)
+
+    def test_exception_raised_inside_with_block(self):
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        def test_func():
+            with partition_mounted('foo', 'bar'):
+                raise TestException('something')
+        try:
+            test_func()
+        except TestException:
+            pass
+        expected = ['%s mount foo bar' % sudo_args,
+                    'sync',
+                    '%s umount bar' % sudo_args]
+        self.assertEqual(expected, popen_fixture.mock.commands_executed)
+
+    def test_umount_failure(self):
+        # We ignore a SubcommandNonZeroReturnValue from umount because
+        # otherwise it could shadow an exception raised inside the 'with'
+        # block.
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        def failing_umount(path):
+            raise cmd_runner.SubcommandNonZeroReturnValue('umount', 1)
+        self.useFixture(MockSomethingFixture(
+            partitions, 'umount', failing_umount))
+        def test_func():
+            with partition_mounted('foo', 'bar'):
+                pass
+        test_func()
+
+
 class TestPopulateBoot(TestCaseWithFixtures):
 
     expected_args = (
@@ -2121,6 +2178,14 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         os.makedirs(contents_bin)
         os.makedirs(contents_etc)
 
+        # Must mock rootfs._list_files() because populate_rootfs() uses its
+        # return value but since we mock cmd_runner.run() _list_files() would
+        # return an invalid value.
+        def mock_list_files(directory):
+            return [contents_bin, contents_etc]
+        self.useFixture(MockSomethingFixture(
+            rootfs, '_list_files', mock_list_files))
+
         populate_rootfs(
             contents_dir, root_disk, partition='/dev/rootfs',
             rootfs_type='ext3', rootfs_uuid='uuid', should_create_swap=True,
@@ -2162,10 +2227,27 @@ class TestPopulateRootFS(TestCaseWithFixtures):
             fixture.mock.commands_executed[0])
         self.assertEqual('UBOOT_PART=/dev/mmcblk0p1', open(tmpfile).read())
 
+    def test_list_files(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).tempdir
+        # We don't want to mock cmd_runner.run() because we're testing the
+        # command that it runs, but we need to monkey-patch SUDO_ARGS because
+        # we don't want to use 'sudo' in tests.
+        orig_sudo_args = cmd_runner.SUDO_ARGS
+        def restore_sudo_args():
+            cmd_runner.SUDO_ARGS = orig_sudo_args
+        self.addCleanup(restore_sudo_args)
+        cmd_runner.SUDO_ARGS = []
+        file1 = self.createTempFileAsFixture(dir=tempdir)
+        self.assertEqual([file1], rootfs._list_files(tempdir))
+
     def test_move_contents(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         file1 = self.createTempFileAsFixture(dir=tempdir)
+        def mock_list_files(directory):
+            return [file1]
+        self.useFixture(MockSomethingFixture(
+            rootfs, '_list_files', mock_list_files))
 
         move_contents(tempdir, '/tmp/')
 

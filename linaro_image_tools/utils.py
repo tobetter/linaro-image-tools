@@ -20,6 +20,8 @@
 import os
 import platform
 import subprocess
+import re
+import logging
 
 try:
     from CommandNotFound import CommandNotFound
@@ -39,20 +41,68 @@ def verify_file_integrity(sig_file_list):
     Each of the sha1 files will be checked using sha1sums. All files listed in
     the sha1 hash file must be found in the same directory as the hash file.
     """
+
+    gpg_sig_ok = True
+
     verified_files = []
     for sig_file in sig_file_list:
         hash_file = sig_file[0:-len('.asc')]
-        cmd_runner.run(['gpg', '--verify', sig_file]).wait()
+
+        try:
+            cmd_runner.run(['gpg', '--verify', sig_file]).wait()
+        except cmd_runner.SubcommandNonZeroReturnValue:
+            gpg_sig_ok = False
+
         if os.path.dirname(hash_file) == '':
             sha_cwd = None
         else:
             sha_cwd = os.path.dirname(hash_file)
-        sha1sums_out, _ = cmd_runner.run(['sha1sum', '-c', hash_file],
-                                         stdout=subprocess.PIPE, cwd=sha_cwd
-                                         ).communicate()
-        verified_files.extend(sha1sums_out.replace(': OK', '').splitlines())
-    return verified_files
+        
+        try:
+            sha1sums_out, _ = cmd_runner.Popen(
+                                            ['sha1sum', '-c', hash_file],
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT,
+                                            cwd=sha_cwd
+                                            ).communicate()
+        except cmd_runner.SubcommandNonZeroReturnValue as inst:
+            sha1sums_out = inst.stdout
 
+        for line in sha1sums_out.splitlines():
+            sha1_check = re.search(r'^(.*):\s+OK', line)
+            if sha1_check:
+                verified_files.append(sha1_check.group(1))
+
+    return verified_files, gpg_sig_ok
+
+def check_file_integrity_and_log_errors(sig_file_list, binary, hwpacks):
+    """
+    Wrapper around verify_file_integrity that prints error messages to stderr
+    if verify_file_integrity finds any problems.
+    """
+    verified_files, gpg_sig_pass = verify_file_integrity(sig_file_list)
+
+    # Check the outputs from verify_file_integrity
+    # Abort if anything fails.
+    if len(sig_file_list):
+        if not gpg_sig_pass:
+            logging.error("GPG signature verification failed.")
+            return False, []
+    
+        if not os.path.basename(binary) in verified_files:
+            logging.error("OS Binary verification failed")
+            return False, []
+        
+        for hwpack in hwpacks:
+            if not os.path.basename(hwpack) in verified_files:
+                logging.error("Hwpack {0} verification failed".format(hwpack))
+                return False, []
+    
+        for verified_file in verified_files:
+            logging.info('Hash verification of file {0} OK.'.format(
+                                                                verified_file))
+    
+    return True, verified_files
 
 def install_package_providing(command):
     """Install a package which provides the given command.

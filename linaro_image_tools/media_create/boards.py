@@ -37,7 +37,8 @@ import shutil
 
 from linaro_image_tools import cmd_runner
 
-from linaro_image_tools.media_create.partitions import SECTOR_SIZE
+from linaro_image_tools.media_create.partitions import (
+    partition_mounted, SECTOR_SIZE)
 
 
 KERNEL_GLOB = 'vmlinuz-*-%(kernel_flavor)s'
@@ -465,28 +466,22 @@ class BoardConfig(object):
         uboot_parts_dir = os.path.join(chroot_dir, parts_dir)
 
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
-        cmd_runner.run(['mount', boot_partition, boot_disk],
-            as_root=True).wait()
-
-        if cls.uboot_in_boot_part:
-            assert cls.uboot_flavor is not None, (
-                "uboot_in_boot_part is set but not uboot_flavor")
-            with cls.hardwarepack_handler:
-                uboot_bin = cls.get_file('u_boot', default=os.path.join(
+        with partition_mounted(boot_partition, boot_disk):
+            if cls.uboot_in_boot_part:
+                assert cls.uboot_flavor is not None, (
+                    "uboot_in_boot_part is set but not uboot_flavor")
+                with cls.hardwarepack_handler:
+                    default = os.path.join(
                         chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
-                        'u-boot.bin'))
-                cmd_runner.run(
-                    ['cp', '-v', uboot_bin, boot_disk], as_root=True).wait()
+                        'u-boot.bin')
+                    uboot_bin = cls.get_file('u_boot', default=default)
+                    proc = cmd_runner.run(
+                        ['cp', '-v', uboot_bin, boot_disk], as_root=True)
+                    proc.wait()
 
-        cls.make_boot_files(
-            uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
-            rootfs_uuid, boot_disk, boot_device_or_file)
-
-        cmd_runner.run(['sync']).wait()
-        try:
-            cmd_runner.run(['umount', boot_disk], as_root=True).wait()
-        except cmd_runner.SubcommandNonZeroReturnValue:
-            pass
+            cls.make_boot_files(
+                uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
+                rootfs_uuid, boot_disk, boot_device_or_file)
 
     @classmethod
     def _get_kflavor_files(cls, path):
@@ -557,9 +552,12 @@ class OmapConfig(BoardConfig):
         vmlinuz = _get_file_matching(
             os.path.join(chroot_dir, 'boot', 'vmlinuz*'))
         basename = os.path.basename(vmlinuz)
-        minor_version = re.match('.*2\.6\.([0-9]{2}).*', basename).group(1)
-        if int(minor_version) < 36:
-            cls.serial_tty = classproperty(lambda cls: 'ttyS2')
+        match = re.match('.*2\.6\.([0-9]{2}).*', basename)
+        # Assume if it doesn't match that it is 3.0 or later.
+        if match is not None:
+            minor_version = match.group(1)
+            if int(minor_version) < 36:
+                cls.serial_tty = classproperty(lambda cls: 'ttyS2')
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
@@ -612,7 +610,8 @@ class OveroConfig(OmapConfig):
     load_addr = '0x80008000'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'earlyprintk mpurate=${mpurate} vram=12M')
+        'earlyprintk mpurate=${mpurate} vram=12M '
+        'omapdss.def_disp=${defaultdisplay} omapfb.mode=dvi:${dvimode}')
 
 
 class PandaConfig(OmapConfig):
@@ -1060,15 +1059,17 @@ class SamsungConfig(BoardConfig):
     @classmethod
     def install_samsung_boot_loader(cls, chroot_dir, boot_device_or_file):
         spl_file = cls._get_samsung_spl(chroot_dir)
-        assert os.path.getsize(spl_file) <= (SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
-            "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
+        bl1_max_size = SAMSUNG_V310_BL1_LEN * SECTOR_SIZE
+        assert os.path.getsize(spl_file) <= bl1_max_size, (
+            "%s is larger than %s" % (spl_file, bl1_max_size))
         _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
 
         with cls.hardwarepack_handler:
             uboot_file = cls.get_file(
                 'u_boot', default=cls._get_samsung_uboot(chroot_dir))
-        assert os.path.getsize(uboot_file) <= (SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
-            "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
+        bl2_max_size = SAMSUNG_V310_BL2_LEN * SECTOR_SIZE
+        assert os.path.getsize(uboot_file) <= bl2_max_size, (
+            "%s is larger than %s" % (uboot_file, bl2_max_size))
         _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
 
 

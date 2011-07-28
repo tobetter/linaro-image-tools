@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+
+  <vendor>Linaro</vendor>
+  <vendor_url>http://www.linaro.org</vendor_url>
+
+  <action id="org.linaro.linaro-image-tools.pkexec.run-linaro-media-create">
+    <description>Create a disk image by combining an OS image and a hardware pack.</description>
+    <message>Authentication is required to run linaro-media-create as $(user)</message>
+    <defaults>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/linaro-media-create</annotate>
+  </action>
+
+</policyconfig>
