@@ -2068,6 +2068,8 @@ class TestMountedPartitionContextManager(TestCaseWithFixtures):
             with partition_mounted('foo', 'bar'):
                 pass
         test_func()
+        expected = ['sudo -E mount foo bar', 'sync']
+        self.assertEqual(expected, popen_fixture.mock.commands_executed)
 
 
 class TestPopulateBoot(TestCaseWithFixtures):

@@ -134,28 +134,30 @@ class HardwarePackBuilder(object):
                 fetcher = PackageFetcher(
                     sources, architecture=architecture,
                     prefer_label=LOCAL_ARCHIVE_LABEL)
-                with fetcher, PackageUnpacker() as package_unpacker:
-                    fetcher.ignore_packages(self.config.assume_installed)
-                    packages = fetcher.fetch_packages(
-                        packages, download_content=self.config.include_debs)
+                with fetcher:
+                    with PackageUnpacker() as package_unpacker:
+                        fetcher.ignore_packages(self.config.assume_installed)
+                        packages = fetcher.fetch_packages(
+                            packages,
+                            download_content=self.config.include_debs)
 
-                    if self.config.u_boot_package is not None:
-                        u_boot_package = self.find_fetched_package(
-                            packages, self.config.u_boot_package)
-                        hwpack.metadata.u_boot = self.add_file_to_hwpack(
-                            u_boot_package, self.config.u_boot_file,
-                            package_unpacker, hwpack, hwpack.U_BOOT_DIR)
+                        if self.config.u_boot_package is not None:
+                            u_boot_package = self.find_fetched_package(
+                                packages, self.config.u_boot_package)
+                            hwpack.metadata.u_boot = self.add_file_to_hwpack(
+                                u_boot_package, self.config.u_boot_file,
+                                package_unpacker, hwpack, hwpack.U_BOOT_DIR)
 
-                    logger.debug("Adding packages to hwpack")
-                    hwpack.add_packages(packages)
-                    for local_package in local_packages:
-                        if local_package not in packages:
-                            logger.warning(
-                                "Local package '%s' not included",
-                                local_package.name)
-                    hwpack.add_dependency_package(self.config.packages)
-                    with open(hwpack.filename(), 'w') as f:
-                        hwpack.to_file(f)
-                        logger.info("Wrote %s" % hwpack.filename())
-                    with open(hwpack.filename('.manifest.txt'), 'w') as f:
-                        f.write(hwpack.manifest_text())
+                        logger.debug("Adding packages to hwpack")
+                        hwpack.add_packages(packages)
+                        for local_package in local_packages:
+                            if local_package not in packages:
+                                logger.warning(
+                                    "Local package '%s' not included",
+                                    local_package.name)
+                        hwpack.add_dependency_package(self.config.packages)
+                        with open(hwpack.filename(), 'w') as f:
+                            hwpack.to_file(f)
+                            logger.info("Wrote %s" % hwpack.filename())
+                        with open(hwpack.filename('.manifest.txt'), 'w') as f:
+                            f.write(hwpack.manifest_text())

@@ -47,7 +47,6 @@ class DownloadManager():
         self.event_queue        = None
         self.to_download        = None
         self.sha1_files         = None
-        self.gpg_files          = None
         self.downloaded_files   = None
         self.sig_files          = None
         self.verified_files     = None
@@ -382,8 +381,8 @@ class DownloadManager():
         self.to_download = self.generate_download_list()
 
         gpg_urls = [f for f in self.to_download if re.search('\.asc$', f)]
-        gpg_files = self.download_files(gpg_urls, self.settings,
-                                        force_download=force_download)
+        self.download_files(
+            gpg_urls, self.settings, force_download=force_download)
 
     def _check_downloads(self):
         self.get_sig_files()
@@ -475,10 +474,10 @@ class DownloadManager():
                 else:
                     print "Re-downloading corrupt files"
                 # There are some files to re-download
-                redownloaded_files = self.download_files(
-                                           to_retry, self.settings,
-                                           self.event_queue,
-                                           force_download=True)
+                self.download_files(to_retry,
+                                    self.settings,
+                                    self.event_queue,
+                                    force_download=True)
 
                 (self.verified_files,
                  self.gpg_sig_ok) = utils.verify_file_integrity(self.sig_files)
