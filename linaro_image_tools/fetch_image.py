@@ -475,10 +475,10 @@ class DownloadManager():
                 else:
                     print "Re-downloading corrupt files"
                 # There are some files to re-download
-                redownloaded_files = self.download_files(
-                                           to_retry, self.settings,
-                                           self.event_queue,
-                                           force_download=True)
+                self.download_files(to_retry,
+                                    self.settings,
+                                    self.event_queue,
+                                    force_download=True)
 
                 (self.verified_files,
                  self.gpg_sig_ok) = utils.verify_file_integrity(self.sig_files)
