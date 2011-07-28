@@ -382,8 +382,8 @@ class DownloadManager():
         self.to_download = self.generate_download_list()
 
         gpg_urls = [f for f in self.to_download if re.search('\.asc$', f)]
-        gpg_files = self.download_files(gpg_urls, self.settings,
-                                        force_download=force_download)
+        self.gpg_files = self.download_files(gpg_urls, self.settings,
+                                             force_download=force_download)
 
     def _check_downloads(self):
         self.get_sig_files()
