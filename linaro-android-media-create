@@ -33,6 +33,7 @@ from linaro_image_tools.media_create.partitions import (
     setup_partitions,
     setup_android_partitions,
     get_uuid,
+    partition_mounted,
     )
 from linaro_image_tools.media_create.rootfs import populate_partition
 from linaro_image_tools.media_create.unpack_binary_tarball import (
@@ -142,7 +143,8 @@ if __name__ == '__main__':
     board_config.populate_raw_partition(args.device, BOOT_DIR)
     populate_partition(BOOT_DIR + "/boot", BOOT_DISK, boot_partition)
     board_config.populate_boot_script(boot_partition, BOOT_DISK, args.consoles)
-    board_config.install_boot_loader(args.device, BOOT_DISK)
+    with partition_mounted(boot_partition, BOOT_DISK):
+        board_config.install_boot_loader(args.device, BOOT_DISK)
     populate_partition(SYSTEM_DIR + "/system", SYSTEM_DISK, system_partition)
     populate_partition(DATA_DIR + "/data", DATA_DISK, data_partition)
     print "Done creating Linaro Android image on %s" % args.device
