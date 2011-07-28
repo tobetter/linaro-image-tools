@@ -232,6 +232,7 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
         loader_start, loader_end, loader_len = align_partition(
             1, cls.LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
+
         command = super(AndroidMx53LoCoConfig, cls).get_sfdisk_cmd(
             should_align_boot_part=True, start_addr=loader_end,
             extra_part=True)
