@@ -238,7 +238,7 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
 
     @classmethod
     def install_boot_loader(cls, boot_partition, boot_device_or_file):
-        install_mx5_boot_loader(os.path.join(boot_device_or_file, "u-boot.bin"), boot_partition, cls.LOADER_MIN_SIZE_S)
+        install_mx5_boot_loader(os.path.join(boot_device_or_file, "u-boot.imx"), boot_partition, cls.LOADER_MIN_SIZE_S)
 
 android_board_configs = {
     'beagle': AndroidBeagleConfig,
