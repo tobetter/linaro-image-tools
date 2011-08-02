@@ -98,6 +98,7 @@ class Metadata(object):
         self.boot_min_size = boot_min_size
         self.root_min_size = root_min_size
         self.loader_min_size = loader_min_size
+        self.x_loader = None
 
     @classmethod
     def from_config(cls, config, version, architecture):
@@ -176,6 +177,8 @@ class Metadata(object):
             metadata += "ROOT_MIN_SIZE=%s\n" % self.root_min_size
         if self.loader_min_size is not None:
             metadata += "LOADER_MIN_SIZE=%s\n" % self.loader_min_size
+        if self.x_loader is not None:
+            metadata += "X_LOADER=%s\n" % self.x_loader
 
         return metadata
 

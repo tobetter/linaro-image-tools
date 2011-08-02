@@ -42,7 +42,7 @@ class Config(object):
     SOURCES_ENTRY_KEY = "sources-entry"
     PACKAGES_KEY = "packages"
     PACKAGE_REGEX = NAME_REGEX
-    PATH_REGEX = r"[a-z0-9][a-z0-9+\-./_]+$"
+    PATH_REGEX = r"\w[\w+\-./_]+$"
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
@@ -61,6 +61,8 @@ class Config(object):
     BOOT_MIN_SIZE_KEY = "boot_min_size"
     ROOT_MIN_SIZE_KEY = "root_min_size"
     LOADER_MIN_SIZE_KEY = "loader_min_size"
+    X_LOADER_PACKAGE_KEY = "x_loader_package"
+    X_LOADER_FILE_KEY = "x_loader_file"
 
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
@@ -106,6 +108,8 @@ class Config(object):
             self._validate_boot_min_size()
             self._validate_root_min_size()
             self._validate_loader_min_size()
+            self._validate_x_loader_package()
+            self._validate_x_loader_file()
 
         self._validate_sections()
 
@@ -313,6 +317,22 @@ class Config(object):
         return self._get_option_from_main_section(self.U_BOOT_FILE_KEY)
 
     @property
+    def x_loader_package(self):
+        """The x-loader package that contains the x-loader bin.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.X_LOADER_PACKAGE_KEY)
+
+    @property
+    def x_loader_file(self):
+        """The x-loader bin file that will be unpacked from the x-loader package.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.X_LOADER_FILE_KEY)
+
+    @property
     def architectures(self):
         """The architectures to build the hwpack for.
 
@@ -373,6 +393,14 @@ class Config(object):
                                         self.MAIN_SECTION)
         self._assert_matches_pattern(
             self.PATH_REGEX, u_boot_file, "Invalid path: %s" % u_boot_file)
+
+    def _validate_x_loader_file(self):
+        x_loader_file = self.x_loader_file
+        if not x_loader_file:
+            raise HwpackConfigError("No x_loader_file in the [%s] section" % \
+                                        self.MAIN_SECTION)
+        self._assert_matches_pattern(
+            self.PATH_REGEX, x_loader_file, "Invalid path: %s" % x_loader_file)
 
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty
@@ -494,6 +522,17 @@ class Config(object):
             self.PACKAGE_REGEX, u_boot_package, "Invalid value in %s in the " \
                 "[%s] section: %s" % (self.U_BOOT_PACKAGE_KEY,
                                       self.MAIN_SECTION, u_boot_package))
+
+    def _validate_x_loader_package(self):
+        x_loader_package = self.x_loader_package
+        if not x_loader_package:
+            raise HwpackConfigError(
+                "No %s in the [%s] section"
+                % (self.X_LOADER_PACKAGE_KEY, self.MAIN_SECTION))
+        self._assert_matches_pattern(
+            self.PACKAGE_REGEX, x_loader_package, "Invalid value in %s in the " \
+                "[%s] section: %s" % (self.X_LOADER_PACKAGE_KEY,
+                                      self.MAIN_SECTION, x_loader_package))
 
     def _validate_architectures(self):
         architectures = self.architectures

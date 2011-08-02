@@ -35,7 +35,9 @@ class ConfigTests(TestCase):
                          "u-boot-package = u-boot-linaro-s5pv310\n" \
                              "u-boot-file = usr/lib/u-boot/smdkv310/" \
                              "u-boot.bin\nserial_tty=ttySAC1\n" \
-                             "partition_layout = bootfs_rootfs\n")
+                             "partition_layout = bootfs_rootfs\n"\
+                             "x_loader_package = x-loader-omap4-panda\n"\
+                             "x_loader_file = usr/lib/x-loader/omap4430panda/MLO\n")
     valid_end = "[ubuntu]\nsources-entry = foo bar\n"
 
     def test_create(self):
