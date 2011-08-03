@@ -53,6 +53,7 @@ class Config(object):
     KERNEL_ADDR_KEY = "kernel_addr"
     INITRD_ADDR_KEY = "initrd_addr"
     LOAD_ADDR_KEY = "load_addr"
+    DTB_ADDR_KEY = "dtb_addr"
     WIRED_INTERFACES_KEY = "wired_interfaces"
     WIRELESS_INTERFACES_KEY = "wireless_interfaces"
     PARTITION_LAYOUT_KEY = "partition_layout"
@@ -104,6 +105,7 @@ class Config(object):
             self._validate_kernel_addr()
             self._validate_initrd_addr()
             self._validate_load_addr()
+            self._validate_dtb_addr()
             self._validate_wired_interfaces()
             self._validate_wireless_interfaces()
             self._validate_partition_layout()
@@ -204,6 +206,14 @@ class Config(object):
         An int.
         """
         return self._get_option_from_main_section(self.LOAD_ADDR_KEY)
+
+    @property
+    def dtb_addr(self):
+        """address for dtb image generation
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.DTB_ADDR_KEY)
 
     @property
     def wired_interfaces(self):
@@ -486,6 +496,13 @@ class Config(object):
             return
         if not self._validate_addr(addr):
             raise HwpackConfigError("Invalid load address: %s" % addr)
+
+    def _validate_dtb_addr(self):
+        addr = self.dtb_addr
+        if addr is None:
+            return
+        if not self._validate_addr(addr):
+            raise HwpackConfigError("Invalid dtb address: %s" % addr)
 
     def _validate_wired_interfaces(self):
         pass

@@ -279,6 +279,8 @@ class BoardConfig(object):
                 cls.load_addr = None
                 cls.serial_tty = None
                 cls.fat_size = None
+                cls.dtb_name = None
+                cls.dtb_addr = None
 
             # Set new values from metadata.
             cls.kernel_addr = cls.get_metadata_field(
@@ -287,6 +289,8 @@ class BoardConfig(object):
                 cls.initrd_addr, 'initrd_addr')
             cls.load_addr = cls.get_metadata_field(
                 cls.load_addr, 'load_addr')
+            cls.dtb_addr = cls.get_metadata_field(
+                cls.dtb_addr, 'dtb_addr')
             cls.serial_tty = cls.get_metadata_field(
                 cls.serial_tty, 'serial_tty')
             cls.wired_interfaces = cls.get_metadata_field(

@@ -81,7 +81,8 @@ class Metadata(object):
                       load_addr=None, fdt=None, wired_interfaces=[],
                       wireless_interfaces=[], partition_layout=None,
                       mmc_id=None, boot_min_size=None, root_min_size=None,
-                      loader_min_size=None, vmlinuz=None, initrd=None):
+                      loader_min_size=None, vmlinuz=None, initrd=None,
+                      dtb_addr=None):
         """Add fields that are specific to the new format.
 
         These fields are not present in earlier config files.
@@ -102,6 +103,7 @@ class Metadata(object):
         self.vmlinuz = vmlinuz
         self.initrd = initrd
         self.fdt = fdt
+        self.dtb_addr = dtb_addr
 
     @classmethod
     def from_config(cls, config, version, architecture):
@@ -140,7 +142,8 @@ class Metadata(object):
                                    loader_min_size=config.loader_min_size,
                                    vmlinuz=config.vmlinuz,
                                    initrd=config.initrd,
-                                   fdt=config.fdt)
+                                   fdt=config.fdt,
+                                   dtb_addr=config.dtb_addr)
         return metadata
 
     def __str__(self):
@@ -168,6 +171,8 @@ class Metadata(object):
             metadata += "INITRD_ADDR=%s\n" % self.initrd_addr
         if self.load_addr is not None:
             metadata += "LOAD_ADDR=%s\n" % self.load_addr
+        if self.dtb_addr is not None:
+            metadata += "DTB_ADDR=%s\n" % self.dtb_addr
         if self.wired_interfaces != []:
             metadata += "WIRED_INTERFACES=%s\n" % " ".join(self.wired_interfaces)
         if self.wireless_interfaces != []:
