@@ -135,11 +135,12 @@ def modify_Packages_info(debpack_dirname, new_debpack_info):
     f = open(debpack_Packages_fname, "r+")
     try:
         output = []
+        def should_remove(package_name):
+            return package_name == new_debpack_info.name
         for stanza in Packages.iter_paragraphs(f):
-            if stanza["Package"] == new_debpack_info.name:
-                output.append(DummyStanza(new_debpack_info))
-            else:
+            if not should_remove(stanza["Package"]):
                 output.append(stanza)
+        output.append(DummyStanza(new_debpack_info))
         f.seek(0,0)
 
         for stanza in output:
