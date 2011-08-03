@@ -217,6 +217,52 @@ class ConfigTests(TestCase):
                                      "u-boot-file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
+    def test_validate_invalid_x_loader_package_name(self):
+        config = self.get_config(
+            self.valid_start_v2 + "u-boot-package = u-boot-linaro-s5pv310\n" \
+                "u-boot-file = usr/bin/version/MLO\n" \
+                "partition_layout = bootfs_rootfs\n"\
+                "x_loader_package = ~~\n")
+        self.assertValidationError(
+            "Invalid value in x_loader_package in the [hwpack] section: ~~",
+            config)
+
+    def test_validate_empty_x_loader_package(self):
+        config = self.get_config(
+            self.valid_start_v2 + "u-boot-package = u-boot-linaro-s5pv310\n" \
+                "u-boot-file = usr/bin/version/MLO\n" \
+                "partition_layout = bootfs_rootfs\n"\
+                "x_loader_package = \n")
+        self.assertValidationError(
+            "No x_loader_package in the [hwpack] section", config)
+
+    def test_validate_no_x_loader_file(self):
+        config = self.get_config(self.valid_start_v2 +
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = usr/bin/version/MLO\n" \
+                                     "partition_layout = bootfs_rootfs\n" \
+                                     "x_loader_package = x-loader-linaro-s5pv310\n")
+        self.assertValidationError("No x_loader_file in the [hwpack] section",
+                                   config)
+
+    def test_validate_empty_x_loader__file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = usr/bin/version/MLO\n" \
+                                     "partition_layout = bootfs_rootfs\n" \
+                                     "x_loader_package = x-loader-linaro-s5pv310\n" \
+                                     "x_loader_file = \n")
+        self.assertValidationError("No x_loader_file in the [hwpack] section", config)
+
+    def test_validate_invalid_x_loader_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = usr/bin/version/MLO\n" \
+                                     "partition_layout = bootfs_rootfs\n" \
+                                     "x_loader_package = x-loader--linaro-s5pv310\n" \
+                                     "x_loader_file = ~~\n")
+        self.assertValidationError("Invalid path: ~~", config)
+
     def test_validate_partition_layout(self):
         partition_layout = 'apafs_bananfs'
         config = self.get_config(self.valid_start_v2 + "u-boot-package = " \
@@ -334,6 +380,24 @@ class ConfigTests(TestCase):
         config.validate()
         self.assertEqual("usr/lib/u-boot/smdkv310/u-boot.bin",
                          config.u_boot_file)
+
+    def test_u_boot_package(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("u-boot-linaro-s5pv310",
+                         config.u_boot_package)
+
+    def test_x_loader_file(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("usr/lib/x-loader/omap4430panda/MLO",
+                         config.x_loader_file)
+
+    def test_x_loader_package(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("x-loader-omap4-panda",
+                         config.x_loader_package)
 
     def test_serial_tty(self):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)
