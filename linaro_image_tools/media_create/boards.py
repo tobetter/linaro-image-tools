@@ -249,6 +249,9 @@ class BoardConfig(object):
     wired_interfaces = None
     wireless_interfaces = None
     mmc_id = None
+    vmlinuz = None
+    initrd = None
+    fdt = None
 
     hardwarepack_handler = None
 
@@ -292,6 +295,12 @@ class BoardConfig(object):
                 cls.wireless_interfaces, 'wireless_interfaces')
             cls.mmc_id = cls.get_metadata_field(
                 cls.mmc_id, 'mmc_id')
+            cls.vmlinuz = cls.get_metadata_field(
+                cls.vmlinuz, 'vmlinuz')
+            cls.initrd = cls.get_metadata_field(
+                cls.initrd, 'initrd')
+            cls.fdt = cls.get_metadata_field(
+                cls.fdt, 'fdt')
 
             partition_layout = cls.get_metadata_field(cls.fat_size, 'partition_layout')
             if partition_layout == 'bootfs_rootfs' or partition_layout is None:
@@ -435,8 +444,14 @@ class BoardConfig(object):
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
-        (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
-                                                   uboot_parts_dir)
+        if cls.vmlinuz is None:
+            (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
+                uboot_parts_dir)
+        else:
+            k_img_data = os.path.join(chroot_dir, cls.vmlinuz)
+            i_img_data = os.path.join(chroot_dir, cls.initrd)
+            d_img_data = os.path.join(chroot_dir, cls.fdt)
+
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
                                      d_img_data)
         cls._make_boot_files(

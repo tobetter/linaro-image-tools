@@ -63,6 +63,9 @@ class Config(object):
     LOADER_MIN_SIZE_KEY = "loader_min_size"
     X_LOADER_PACKAGE_KEY = "x_loader_package"
     X_LOADER_FILE_KEY = "x_loader_file"
+    VMLINUZ_KEY = "vmlinuz"
+    INITRD_KEY = "initrd"
+    FDT_KEY = "fdt"
 
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
@@ -110,6 +113,9 @@ class Config(object):
             self._validate_loader_min_size()
             self._validate_x_loader_package()
             self._validate_x_loader_file()
+            self._validate_vmlinuz()
+            self._validate_initrd()
+            self._validate_fdt()
 
         self._validate_sections()
 
@@ -333,6 +339,30 @@ class Config(object):
         return self._get_option_from_main_section(self.X_LOADER_FILE_KEY)
 
     @property
+    def vmlinuz(self):
+        """The path to the vmlinuz kernel.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.VMLINUZ_KEY)
+
+    @property
+    def initrd(self):
+        """The path to initrd
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.INITRD_KEY)
+
+    @property
+    def fdt(self):
+        """The path to the device tree binary.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.FDT_KEY)
+
+    @property
     def architectures(self):
         """The architectures to build the hwpack for.
 
@@ -401,6 +431,30 @@ class Config(object):
                                         self.MAIN_SECTION)
         self._assert_matches_pattern(
             self.PATH_REGEX, x_loader_file, "Invalid path: %s" % x_loader_file)
+
+    def _validate_vmlinuz(self):
+        vmlinuz = self.vmlinuz
+        if not vmlinuz:
+            raise HwpackConfigError("No vmlinuz in the [%s] section" % \
+                                        self.MAIN_SECTION)
+        self._assert_matches_pattern(
+            self.PATH_REGEX, vmlinuz, "Invalid path: %s" % vmlinuz)
+
+    def _validate_initrd(self):
+        initrd = self.initrd
+        if not initrd:
+            raise HwpackConfigError("No initrd in the [%s] section" % \
+                                        self.MAIN_SECTION)
+        self._assert_matches_pattern(
+            self.PATH_REGEX, initrd, "Invalid path: %s" % initrd)
+
+    def _validate_fdt(self):
+        fdt = self.fdt
+        if not fdt:
+            raise HwpackConfigError("No fdt in the [%s] section" % \
+                                        self.MAIN_SECTION)
+        self._assert_matches_pattern(
+            self.PATH_REGEX, fdt, "Invalid path: %s" % fdt)
 
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty

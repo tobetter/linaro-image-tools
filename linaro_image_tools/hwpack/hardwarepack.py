@@ -81,7 +81,7 @@ class Metadata(object):
                       load_addr=None, fdt=None, wired_interfaces=[],
                       wireless_interfaces=[], partition_layout=None,
                       mmc_id=None, boot_min_size=None, root_min_size=None,
-                      loader_min_size=None):
+                      loader_min_size=None, vmlinuz=None, initrd=None):
         """Add fields that are specific to the new format.
 
         These fields are not present in earlier config files.
@@ -99,6 +99,9 @@ class Metadata(object):
         self.root_min_size = root_min_size
         self.loader_min_size = loader_min_size
         self.x_loader = None
+        self.vmlinuz = vmlinuz
+        self.initrd = initrd
+        self.fdt = fdt
 
     @classmethod
     def from_config(cls, config, version, architecture):
@@ -134,7 +137,10 @@ class Metadata(object):
                                    mmc_id=config.mmc_id,
                                    boot_min_size=config.boot_min_size,
                                    root_min_size=config.root_min_size,
-                                   loader_min_size=config.loader_min_size)
+                                   loader_min_size=config.loader_min_size,
+                                   vmlinuz=config.vmlinuz,
+                                   initrd=config.initrd,
+                                   fdt=config.fdt)
         return metadata
 
     def __str__(self):
@@ -179,6 +185,12 @@ class Metadata(object):
             metadata += "LOADER_MIN_SIZE=%s\n" % self.loader_min_size
         if self.x_loader is not None:
             metadata += "X_LOADER=%s\n" % self.x_loader
+        if self.vmlinuz is not None:
+            metadata += "VMLINUZ=%s\n" % self.vmlinuz
+        if self.initrd is not None:
+            metadata += "INITRD=%s\n" % self.initrd
+        if self.fdt is not None:
+            metadata += "FDT=%s\n" % self.fdt
 
         return metadata
 
