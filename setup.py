@@ -13,6 +13,7 @@ DistUtilsExtra.auto.setup(
         author_email="linaro-dev@lists.linaro.org",
 
         scripts=[
+            "initrd-do",
             "linaro-hwpack-create", "linaro-hwpack-install",
             "linaro-media-create", "linaro-android-media-create",
             "linaro-hwpack-replace", "linaro-fetch-image",
