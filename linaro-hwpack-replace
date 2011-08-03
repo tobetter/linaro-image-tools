@@ -23,6 +23,7 @@
 import os
 import sys
 import shutil
+import glob
 import logging
 import tarfile
 import tempfile
@@ -201,7 +202,8 @@ def main():
         #tar the hardware pack with the new debian file included in it
         tar = tarfile.open( hwpack_name , "w:gz")
         os.chdir(tempdir)
-        tar.add('.', recursive=True)
+        for file_name in glob.glob('*'):
+            tar.add(file_name, recursive=True)
         tar.close()
     except Exception, details:
         logger.error("Error Details: %s", details)
