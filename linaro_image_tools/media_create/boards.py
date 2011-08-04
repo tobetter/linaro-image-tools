@@ -34,6 +34,7 @@ from binascii import crc32
 import tarfile
 import ConfigParser
 import shutil
+import string
 
 from linaro_image_tools import cmd_runner
 
@@ -282,6 +283,7 @@ class BoardConfig(object):
                 cls.dtb_name = None
                 cls.dtb_addr = None
                 cls.extra_boot_args_options = None
+                cls.boot_script = None
 
             # Set new values from metadata.
             cls.kernel_addr = cls.get_metadata_field(
@@ -308,7 +310,9 @@ class BoardConfig(object):
                 cls.dtb_file, 'dtb_file')
             cls.extra_boot_args_options = cls.get_metadata_field(
                 cls.extra_boot_args_options, 'extra_boot_options')
-
+            cls.boot_script = cls.get_metadata_field(
+                cls.boot_script, 'boot_script')
+            
             partition_layout = cls.get_metadata_field(cls.fat_size, 'partition_layout')
             if partition_layout == 'bootfs_rootfs' or partition_layout is None:
                 cls.fat_size = 32
@@ -333,6 +337,14 @@ class BoardConfig(object):
                 cls.LOADER_MIN_SIZE_S = align_up(int(loader_min_size) * 1024**2,
                                                SECTOR_SIZE) / SECTOR_SIZE
 
+            uboot_in_boot_part = cls.get_metadata_field(
+                cls.uboot_in_boot_part, 'u-boot_in_boot_part')
+            if uboot_in_boot_part is None:
+                cls.uboot_in_boot_part = None  
+            elif string.lower(uboot_in_boot_part) == 'yes':
+                cls.uboot_in_boot_part = True
+            elif string.lower(uboot_in_boot_part) == 'no':
+                cls.uboot_in_boot_part = False
 
     @classmethod
     def get_file(cls, file_alias, default=None):
@@ -412,7 +424,6 @@ class BoardConfig(object):
         In general subclasses should not have to override this.
         """
         boot_args_options = 'rootwait ro'
-        import pdb; pdb.set_trace()
         if cls.extra_boot_args_options is not None:
             boot_args_options += ' %s' % cls.extra_boot_args_options
         serial_opts = cls.extra_serial_opts
@@ -646,7 +657,8 @@ class PandaConfig(OmapConfig):
     load_addr = '0x80008000'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'apa')
+        'easdfsdfrlyprintk fixrtc nocompcache vram=48M '
+        'omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000')
 
 
 class IgepConfig(BeagleConfig):

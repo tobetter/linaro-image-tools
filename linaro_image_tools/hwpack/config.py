@@ -21,6 +21,7 @@
 
 import ConfigParser
 import re
+import string
 
 from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
@@ -68,6 +69,8 @@ class Config(object):
     INITRD_KEY = "initrd"
     DTB_FILE_KEY = "dtb_file"
     EXTRA_BOOT_OPTIONS_KEY = 'extra_boot_options'
+    BOOT_SCRIPT_KEY = 'boot_script'
+    UBOOT_IN_BOOT_PART_KEY = 'u-boot_in_boot_part'
 
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
@@ -120,6 +123,8 @@ class Config(object):
             self._validate_initrd()
             self._validate_dtb_file()
             self._validate_extra_boot_options()
+            self._validate_boot_script()
+            self._validate_uboot_in_boot_part()
 
         self._validate_sections()
 
@@ -160,6 +165,11 @@ class Config(object):
         except ConfigParser.NoOptionError:
             return True
 
+    @property
+    def uboot_in_boot_part(self):
+        """Whether uboot binary should be put in the boot partition. A bool."""
+        return self.parser.get(self.MAIN_SECTION, self.UBOOT_IN_BOOT_PART_KEY)
+
     def _get_option_from_main_section(self, key):
         """Get the value from the main section for the given key.
 
@@ -192,6 +202,14 @@ class Config(object):
         A str.
         """
         return self._get_option_from_main_section(self.EXTRA_BOOT_OPTIONS_KEY)
+
+    @property
+    def boot_script(self):
+        """File name of the target boot script.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.BOOT_SCRIPT_KEY)
 
     @property
     def kernel_addr(self):
@@ -483,6 +501,14 @@ class Config(object):
                 "No extra_boot_options in the [%s] section" % \
                     self.MAIN_SECTION)
 
+    def _validate_boot_script(self):
+        boot_script = self.boot_script
+        if not boot_script:
+            raise HwpackConfigError(
+                "No boot_script in the [%s] section" % \
+                    self.MAIN_SECTION)
+
+
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty
         if serial_tty is None:
@@ -581,6 +607,13 @@ class Config(object):
             raise HwpackConfigError(
                 "Invalid value for include-debs: %s"
                 % self.parser.get("hwpack", "include-debs"))
+
+    def _validate_uboot_in_boot_part(self):
+        uboot_in_boot_part = self.uboot_in_boot_part
+        if string.lower(uboot_in_boot_part) not in ['yes', 'no']:
+            raise HwpackConfigError(
+                "Invalid value for uboot_in_boot_part: %s"
+                % self.parser.get("hwpack", "uboot_in_boot_part"))
 
     def _validate_support(self):
         support = self.support

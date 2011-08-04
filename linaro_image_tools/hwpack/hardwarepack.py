@@ -82,7 +82,8 @@ class Metadata(object):
                       wireless_interfaces=[], partition_layout=None,
                       mmc_id=None, boot_min_size=None, root_min_size=None,
                       loader_min_size=None, vmlinuz=None, initrd=None,
-                      dtb_addr=None, extra_boot_options=None):
+                      dtb_addr=None, extra_boot_options=None,
+                      boot_script=None, uboot_in_boot_part=None):
         """Add fields that are specific to the new format.
 
         These fields are not present in earlier config files.
@@ -105,6 +106,8 @@ class Metadata(object):
         self.dtb_file = dtb_file
         self.dtb_addr = dtb_addr
         self.extra_boot_options = extra_boot_options
+        self.boot_script = boot_script
+        self.uboot_in_boot_part = uboot_in_boot_part
 
     @classmethod
     def from_config(cls, config, version, architecture):
@@ -145,7 +148,9 @@ class Metadata(object):
                                    initrd=config.initrd,
                                    dtb_file=config.dtb_file,
                                    dtb_addr=config.dtb_addr,
-                                   extra_boot_options=config.extra_boot_options)
+                                   extra_boot_options=config.extra_boot_options,
+                                   boot_script=config.boot_script,
+                                   uboot_in_boot_part=config.uboot_in_boot_part)
         return metadata
 
     def __str__(self):
@@ -200,6 +205,10 @@ class Metadata(object):
             metadata += "DTB_FILE=%s\n" % self.dtb_file
         if self.extra_boot_options is not None:
             metadata += "EXTRA_BOOT_OPTIONS=%s\n" % self.extra_boot_options
+        if self.boot_script is not None:
+            metadata += "BOOT_SCRIPT=%s\n" % self.boot_script
+        if self.uboot_in_boot_part is not None:
+            metadata += "U-BOOT_IN_BOOT_PART=%s\n" % self.uboot_in_boot_part
 
         return metadata
 
