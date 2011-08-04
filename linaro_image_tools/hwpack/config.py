@@ -67,6 +67,7 @@ class Config(object):
     VMLINUZ_KEY = "vmlinuz"
     INITRD_KEY = "initrd"
     DTB_FILE_KEY = "dtb_file"
+    EXTRA_BOOT_OPTIONS_KEY = 'extra_boot_options'
 
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
@@ -118,6 +119,7 @@ class Config(object):
             self._validate_vmlinuz()
             self._validate_initrd()
             self._validate_dtb_file()
+            self._validate_extra_boot_options()
 
         self._validate_sections()
 
@@ -182,6 +184,14 @@ class Config(object):
         A str.
         """
         return self._get_option_from_main_section(self.SERIAL_TTY_KEY)
+
+    @property
+    def extra_boot_options(self):
+        """Extra boot arg options.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.EXTRA_BOOT_OPTIONS_KEY)
 
     @property
     def kernel_addr(self):
@@ -465,6 +475,13 @@ class Config(object):
                                         self.MAIN_SECTION)
         self._assert_matches_pattern(
             self.PATH_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
+
+    def _validate_extra_boot_options(self):
+        extra_boot_options = self.extra_boot_options
+        if not extra_boot_options:
+            raise HwpackConfigError(
+                "No extra_boot_options in the [%s] section" % \
+                    self.MAIN_SECTION)
 
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty

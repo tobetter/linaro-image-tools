@@ -281,6 +281,7 @@ class BoardConfig(object):
                 cls.fat_size = None
                 cls.dtb_name = None
                 cls.dtb_addr = None
+                cls.extra_boot_args_options = None
 
             # Set new values from metadata.
             cls.kernel_addr = cls.get_metadata_field(
@@ -305,6 +306,8 @@ class BoardConfig(object):
                 cls.initrd, 'initrd')
             cls.dtb_file = cls.get_metadata_field(
                 cls.dtb_file, 'dtb_file')
+            cls.extra_boot_args_options = cls.get_metadata_field(
+                cls.extra_boot_args_options, 'extra_boot_options')
 
             partition_layout = cls.get_metadata_field(cls.fat_size, 'partition_layout')
             if partition_layout == 'bootfs_rootfs' or partition_layout is None:
@@ -409,6 +412,7 @@ class BoardConfig(object):
         In general subclasses should not have to override this.
         """
         boot_args_options = 'rootwait ro'
+        import pdb; pdb.set_trace()
         if cls.extra_boot_args_options is not None:
             boot_args_options += ' %s' % cls.extra_boot_args_options
         serial_opts = cls.extra_serial_opts
@@ -642,8 +646,7 @@ class PandaConfig(OmapConfig):
     load_addr = '0x80008000'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'earlyprintk fixrtc nocompcache vram=48M '
-        'omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000')
+        'apa')
 
 
 class IgepConfig(BeagleConfig):

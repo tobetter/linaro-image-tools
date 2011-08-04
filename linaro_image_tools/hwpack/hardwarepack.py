@@ -82,7 +82,7 @@ class Metadata(object):
                       wireless_interfaces=[], partition_layout=None,
                       mmc_id=None, boot_min_size=None, root_min_size=None,
                       loader_min_size=None, vmlinuz=None, initrd=None,
-                      dtb_addr=None):
+                      dtb_addr=None, extra_boot_options=None):
         """Add fields that are specific to the new format.
 
         These fields are not present in earlier config files.
@@ -104,6 +104,7 @@ class Metadata(object):
         self.initrd = initrd
         self.dtb_file = dtb_file
         self.dtb_addr = dtb_addr
+        self.extra_boot_options = extra_boot_options
 
     @classmethod
     def from_config(cls, config, version, architecture):
@@ -143,7 +144,8 @@ class Metadata(object):
                                    vmlinuz=config.vmlinuz,
                                    initrd=config.initrd,
                                    dtb_file=config.dtb_file,
-                                   dtb_addr=config.dtb_addr)
+                                   dtb_addr=config.dtb_addr,
+                                   extra_boot_options=config.extra_boot_options)
         return metadata
 
     def __str__(self):
@@ -196,6 +198,8 @@ class Metadata(object):
             metadata += "INITRD=%s\n" % self.initrd
         if self.dtb_file is not None:
             metadata += "DTB_FILE=%s\n" % self.dtb_file
+        if self.extra_boot_options is not None:
+            metadata += "EXTRA_BOOT_OPTIONS=%s\n" % self.extra_boot_options
 
         return metadata
 
