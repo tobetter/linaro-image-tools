@@ -66,7 +66,7 @@ class Config(object):
     X_LOADER_FILE_KEY = "x_loader_file"
     VMLINUZ_KEY = "vmlinuz"
     INITRD_KEY = "initrd"
-    FDT_KEY = "fdt"
+    DTB_FILE_KEY = "dtb_file"
 
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
@@ -117,7 +117,7 @@ class Config(object):
             self._validate_x_loader_file()
             self._validate_vmlinuz()
             self._validate_initrd()
-            self._validate_fdt()
+            self._validate_dtb_file()
 
         self._validate_sections()
 
@@ -365,12 +365,12 @@ class Config(object):
         return self._get_option_from_main_section(self.INITRD_KEY)
 
     @property
-    def fdt(self):
+    def dtb_file(self):
         """The path to the device tree binary.
 
         A str.
         """
-        return self._get_option_from_main_section(self.FDT_KEY)
+        return self._get_option_from_main_section(self.DTB_FILE_KEY)
 
     @property
     def architectures(self):
@@ -458,13 +458,13 @@ class Config(object):
         self._assert_matches_pattern(
             self.PATH_REGEX, initrd, "Invalid path: %s" % initrd)
 
-    def _validate_fdt(self):
-        fdt = self.fdt
-        if not fdt:
-            raise HwpackConfigError("No fdt in the [%s] section" % \
+    def _validate_dtb_file(self):
+        dtb_file = self.dtb_file
+        if not dtb_file:
+            raise HwpackConfigError("No dtb_file in the [%s] section" % \
                                         self.MAIN_SECTION)
         self._assert_matches_pattern(
-            self.PATH_REGEX, fdt, "Invalid path: %s" % fdt)
+            self.PATH_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
 
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty

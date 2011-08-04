@@ -78,7 +78,7 @@ class Metadata(object):
 
     @classmethod
     def add_v2_config(self, serial_tty=None, kernel_addr=None, initrd_addr=None,
-                      load_addr=None, fdt=None, wired_interfaces=[],
+                      load_addr=None, dtb_file=None, wired_interfaces=[],
                       wireless_interfaces=[], partition_layout=None,
                       mmc_id=None, boot_min_size=None, root_min_size=None,
                       loader_min_size=None, vmlinuz=None, initrd=None,
@@ -102,7 +102,7 @@ class Metadata(object):
         self.x_loader = None
         self.vmlinuz = vmlinuz
         self.initrd = initrd
-        self.fdt = fdt
+        self.dtb_file = dtb_file
         self.dtb_addr = dtb_addr
 
     @classmethod
@@ -142,7 +142,7 @@ class Metadata(object):
                                    loader_min_size=config.loader_min_size,
                                    vmlinuz=config.vmlinuz,
                                    initrd=config.initrd,
-                                   fdt=config.fdt,
+                                   dtb_file=config.dtb_file,
                                    dtb_addr=config.dtb_addr)
         return metadata
 
@@ -194,8 +194,8 @@ class Metadata(object):
             metadata += "VMLINUZ=%s\n" % self.vmlinuz
         if self.initrd is not None:
             metadata += "INITRD=%s\n" % self.initrd
-        if self.fdt is not None:
-            metadata += "FDT=%s\n" % self.fdt
+        if self.dtb_file is not None:
+            metadata += "DTB_FILE=%s\n" % self.dtb_file
 
         return metadata
 

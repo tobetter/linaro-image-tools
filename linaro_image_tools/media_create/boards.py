@@ -243,6 +243,7 @@ class BoardConfig(object):
     load_addr = None
     dtb_addr = None
     dtb_name = None
+    dtb_file = None
     kernel_flavors = None
     boot_script = None
     serial_tty = None
@@ -251,7 +252,6 @@ class BoardConfig(object):
     mmc_id = None
     vmlinuz = None
     initrd = None
-    fdt = None
 
     hardwarepack_handler = None
 
@@ -303,8 +303,8 @@ class BoardConfig(object):
                 cls.vmlinuz, 'vmlinuz')
             cls.initrd = cls.get_metadata_field(
                 cls.initrd, 'initrd')
-            cls.fdt = cls.get_metadata_field(
-                cls.fdt, 'fdt')
+            cls.dtb_file = cls.get_metadata_field(
+                cls.dtb_file, 'dtb_file')
 
             partition_layout = cls.get_metadata_field(cls.fat_size, 'partition_layout')
             if partition_layout == 'bootfs_rootfs' or partition_layout is None:
@@ -454,7 +454,7 @@ class BoardConfig(object):
         else:
             k_img_data = os.path.join(chroot_dir, cls.vmlinuz)
             i_img_data = os.path.join(chroot_dir, cls.initrd)
-            d_img_data = os.path.join(chroot_dir, cls.fdt)
+            d_img_data = os.path.join(chroot_dir, cls.dtb_file)
 
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
                                      d_img_data)
