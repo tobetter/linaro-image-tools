@@ -71,6 +71,7 @@ class Config(object):
     EXTRA_BOOT_OPTIONS_KEY = 'extra_boot_options'
     BOOT_SCRIPT_KEY = 'boot_script'
     UBOOT_IN_BOOT_PART_KEY = 'u-boot_in_boot_part'
+    EXTRA_SERIAL_OPTS_KEY = 'extra_serial_opts'
 
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
@@ -125,6 +126,7 @@ class Config(object):
             self._validate_extra_boot_options()
             self._validate_boot_script()
             self._validate_uboot_in_boot_part()
+            self._validate_extra_serial_opts()
 
         self._validate_sections()
 
@@ -202,6 +204,14 @@ class Config(object):
         A str.
         """
         return self._get_option_from_main_section(self.EXTRA_BOOT_OPTIONS_KEY)
+
+    @property
+    def extra_serial_opts(self):
+        """Extra serial options.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.EXTRA_SERIAL_OPTS_KEY)
 
     @property
     def boot_script(self):
@@ -499,6 +509,13 @@ class Config(object):
         if not extra_boot_options:
             raise HwpackConfigError(
                 "No extra_boot_options in the [%s] section" % \
+                    self.MAIN_SECTION)
+
+    def _validate_extra_serial_opts(self):
+        extra_serial_opts = self.extra_serial_opts
+        if not extra_serial_opts:
+            raise HwpackConfigError(
+                "No extra_serial_opts in the [%s] section" % \
                     self.MAIN_SECTION)
 
     def _validate_boot_script(self):

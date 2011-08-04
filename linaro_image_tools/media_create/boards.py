@@ -312,7 +312,9 @@ class BoardConfig(object):
                 cls.extra_boot_args_options, 'extra_boot_options')
             cls.boot_script = cls.get_metadata_field(
                 cls.boot_script, 'boot_script')
-            
+            cls.extra_serial_opts = cls.get_metadata_field(
+                cls.extra_serial_opts, 'extra_serial_opts')
+
             partition_layout = cls.get_metadata_field(cls.fat_size, 'partition_layout')
             if partition_layout == 'bootfs_rootfs' or partition_layout is None:
                 cls.fat_size = 32

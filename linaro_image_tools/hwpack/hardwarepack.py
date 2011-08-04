@@ -83,7 +83,8 @@ class Metadata(object):
                       mmc_id=None, boot_min_size=None, root_min_size=None,
                       loader_min_size=None, vmlinuz=None, initrd=None,
                       dtb_addr=None, extra_boot_options=None,
-                      boot_script=None, uboot_in_boot_part=None):
+                      boot_script=None, uboot_in_boot_part=None,
+                      extra_serial_opts=None):
         """Add fields that are specific to the new format.
 
         These fields are not present in earlier config files.
@@ -108,6 +109,7 @@ class Metadata(object):
         self.extra_boot_options = extra_boot_options
         self.boot_script = boot_script
         self.uboot_in_boot_part = uboot_in_boot_part
+        self.extra_serial_opts = extra_serial_opts
 
     @classmethod
     def from_config(cls, config, version, architecture):
@@ -150,7 +152,8 @@ class Metadata(object):
                                    dtb_addr=config.dtb_addr,
                                    extra_boot_options=config.extra_boot_options,
                                    boot_script=config.boot_script,
-                                   uboot_in_boot_part=config.uboot_in_boot_part)
+                                   uboot_in_boot_part=config.uboot_in_boot_part,
+                                   extra_serial_opts=config.extra_serial_opts)
         return metadata
 
     def __str__(self):
@@ -209,6 +212,8 @@ class Metadata(object):
             metadata += "BOOT_SCRIPT=%s\n" % self.boot_script
         if self.uboot_in_boot_part is not None:
             metadata += "U-BOOT_IN_BOOT_PART=%s\n" % self.uboot_in_boot_part
+        if self.extra_serial_opts is not None:
+            metadata += "EXTRA_SERIAL_OPTS=%s\n" % self.extra_serial_opts
 
         return metadata
 
