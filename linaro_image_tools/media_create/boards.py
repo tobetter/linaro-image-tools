@@ -257,7 +257,7 @@ class BoardConfig(object):
     hardwarepack_handler = None
 
     @classmethod
-    def get_metadata_field(cls, target, field_name):
+    def get_metadata_field(cls, field_name):
         """ Return the metadata value for field_name if it can be found.
         """
         data, _ = cls.hardwarepack_handler.get_field(
@@ -286,36 +286,23 @@ class BoardConfig(object):
                 cls.boot_script = None
 
             # Set new values from metadata.
-            cls.kernel_addr = cls.get_metadata_field(
-                cls.kernel_addr, 'kernel_addr')
-            cls.initrd_addr = cls.get_metadata_field(
-                cls.initrd_addr, 'initrd_addr')
-            cls.load_addr = cls.get_metadata_field(
-                cls.load_addr, 'load_addr')
-            cls.dtb_addr = cls.get_metadata_field(
-                cls.dtb_addr, 'dtb_addr')
-            cls.serial_tty = cls.get_metadata_field(
-                cls.serial_tty, 'serial_tty')
-            cls.wired_interfaces = cls.get_metadata_field(
-                cls.wired_interfaces, 'wired_interfaces')
-            cls.wireless_interfaces = cls.get_metadata_field(
-                cls.wireless_interfaces, 'wireless_interfaces')
-            cls.mmc_id = cls.get_metadata_field(
-                cls.mmc_id, 'mmc_id')
-            cls.vmlinuz = cls.get_metadata_field(
-                cls.vmlinuz, 'vmlinuz')
-            cls.initrd = cls.get_metadata_field(
-                cls.initrd, 'initrd')
-            cls.dtb_file = cls.get_metadata_field(
-                cls.dtb_file, 'dtb_file')
+            cls.kernel_addr = cls.get_metadata_field('kernel_addr')
+            cls.initrd_addr = cls.get_metadata_field('initrd_addr')
+            cls.load_addr = cls.get_metadata_field('load_addr')
+            cls.dtb_addr = cls.get_metadata_field('dtb_addr')
+            cls.serial_tty = cls.get_metadata_field('serial_tty')
+            cls.wired_interfaces = cls.get_metadata_field('wired_interfaces')
+            cls.wireless_interfaces = cls.get_metadata_field('wireless_interfaces')
+            cls.mmc_id = cls.get_metadata_field('mmc_id')
+            cls.vmlinuz = cls.get_metadata_field('vmlinuz')
+            cls.initrd = cls.get_metadata_field('initrd')
+            cls.dtb_file = cls.get_metadata_field('dtb_file')
             cls.extra_boot_args_options = cls.get_metadata_field(
-                cls.extra_boot_args_options, 'extra_boot_options')
-            cls.boot_script = cls.get_metadata_field(
-                cls.boot_script, 'boot_script')
-            cls.extra_serial_opts = cls.get_metadata_field(
-                cls.extra_serial_opts, 'extra_serial_opts')
+                'extra_boot_options')
+            cls.boot_script = cls.get_metadata_field('boot_script')
+            cls.extra_serial_opts = cls.get_metadata_field('extra_serial_opts')
 
-            partition_layout = cls.get_metadata_field(cls.fat_size, 'partition_layout')
+            partition_layout = cls.get_metadata_field('partition_layout')
             if partition_layout == 'bootfs_rootfs' or partition_layout is None:
                 cls.fat_size = 32
             elif partition_layout == 'bootfs16_rootfs':
@@ -323,24 +310,20 @@ class BoardConfig(object):
             else:
                 raise AssertionError("Unknown partition layout '%s'." % partition_layout)
 
-            boot_min_size = cls.get_metadata_field(
-                cls.BOOT_MIN_SIZE_S, 'boot_min_size')
+            boot_min_size = cls.get_metadata_field('boot_min_size')
             if boot_min_size is not None:
                 cls.BOOT_MIN_SIZE_S = align_up(int(boot_min_size) * 1024**2,
                                                SECTOR_SIZE) / SECTOR_SIZE
-            root_min_size = cls.get_metadata_field(
-                cls.ROOT_MIN_SIZE_S, 'root_min_size')
+            root_min_size = cls.get_metadata_field('root_min_size')
             if root_min_size is not None:
                 cls.ROOT_MIN_SIZE_S = align_up(int(root_min_size) * 1024**2,
                                                SECTOR_SIZE) / SECTOR_SIZE
-            loader_min_size = cls.get_metadata_field(
-                cls.LOADER_MIN_SIZE_S, 'loader_min_size')
+            loader_min_size = cls.get_metadata_field('loader_min_size')
             if loader_min_size is not None:
                 cls.LOADER_MIN_SIZE_S = align_up(int(loader_min_size) * 1024**2,
                                                SECTOR_SIZE) / SECTOR_SIZE
 
-            uboot_in_boot_part = cls.get_metadata_field(
-                cls.uboot_in_boot_part, 'u-boot_in_boot_part')
+            uboot_in_boot_part = cls.get_metadata_field('u-boot_in_boot_part')
             if uboot_in_boot_part is None:
                 cls.uboot_in_boot_part = None  
             elif string.lower(uboot_in_boot_part) == 'yes':
