@@ -41,7 +41,8 @@ parser.add_argument("-t", "--hwpack-name", dest="hwpack_name",
 parser.add_argument("-p", "--deb-pack", dest="deb_pack",
                     help="Specific debian package to replace (default: None).")
 parser.add_argument("-r", "--prefix-pkg-remove", dest="prefix_pkg_remove",
-                    help="Specific debian package to remove (default: None).")
+                    help="Specify the prefix of the old debian package to "\
+                          "replace (default: None).")
 parser.add_argument("-d", "--debug-output", action="store_true", dest="debug",
                     help="Verbose messages are displayed when specified")
 
@@ -108,7 +109,7 @@ def modify_manifest_info(tempdir, new_debpack_info, prefix_pkg_remove):
     new_debpack_line = '%s=%s\n' % (new_debpack_info.name, new_debpack_info.version)
 
     for line in fileinput.FileInput(debpack_manifest_fname, inplace=1):
-        if not (line.startswith("%s" % prefix_pkg_remove) or \
+        if not (line.startswith("%s" % prefix_pkg_remove) or 
                 line.startswith("hwpack-linaro")):
             sys.stdout.write(line)
 
@@ -129,9 +130,14 @@ def modify_Packages_info(debpack_dirname, new_debpack_info, prefix_pkg_remove):
 
         f = open(debpack_Packages_fname, "r+")
         for stanza in Packages.iter_paragraphs(f):
-            if not (should_remove(stanza["Package"]) or \
+            # hwpack-linaro* Package is a metadata package that contain reference to the 
+            # linux-linaro-omap that was previously present in the hwpack.
+            # We need to make sure we dont write the hwpack-linaro related
+            # package information into Package, otherwise it would try to download the old
+            # kernel package that was present in the hwpack than installing the new one.
+            if not (should_remove(stanza["Package"]) or 
                     stanza["Package"].startswith("hwpack-linaro")):
-                    output.append(stanza)
+                output.append(stanza)
         output.append(DummyStanza(new_debpack_info))
 
         f.seek(0,0)
@@ -155,7 +161,6 @@ def main():
 
     set_logging_param(args)
 
-    deb_pack_found = 0
     old_debpack_info = None
     old_hwpack = args.hwpack_name
     new_deb_file_to_copy = args.deb_pack
