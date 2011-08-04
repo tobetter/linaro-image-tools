@@ -152,7 +152,7 @@ def modify_Packages_info(debpack_dirname, new_debpack_info, prefix_pkg_remove):
 def main():
     # Validate that all the required information is passed on the command line
     args = parser.parse_args()
-    if args.hwpack_name == None or args.deb_pack == None or\
+    if args.hwpack_name == None or args.deb_pack == None or
        args.prefix_pkg_remove == None:
         parser.print_help()
         parser.error("You must specify both hwpack name "\
