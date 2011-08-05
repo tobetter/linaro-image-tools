@@ -368,11 +368,9 @@ class Config(object):
 
     def _validate_u_boot_file(self):
         u_boot_file = self.u_boot_file
-        if not u_boot_file:
-            raise HwpackConfigError("No u_boot_file in the [%s] section" % \
-                                        self.MAIN_SECTION)
-        self._assert_matches_pattern(
-            self.PATH_REGEX, u_boot_file, "Invalid path: %s" % u_boot_file)
+        if u_boot_file is not None:
+            self._assert_matches_pattern(
+                self.PATH_REGEX, u_boot_file, "Invalid path: %s" % u_boot_file)
 
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty
@@ -486,14 +484,11 @@ class Config(object):
 
     def _validate_u_boot_package(self):
         u_boot_package = self.u_boot_package
-        if not u_boot_package:
-            raise HwpackConfigError(
-                "No %s in the [%s] section"
-                % (self.U_BOOT_PACKAGE_KEY, self.MAIN_SECTION))
-        self._assert_matches_pattern(
-            self.PACKAGE_REGEX, u_boot_package, "Invalid value in %s in the " \
-                "[%s] section: %s" % (self.U_BOOT_PACKAGE_KEY,
-                                      self.MAIN_SECTION, u_boot_package))
+        if u_boot_package is not None:
+            self._assert_matches_pattern(
+                self.PACKAGE_REGEX, u_boot_package, "Invalid value in %s in " \
+                    "the [%s] section: %s" % (self.U_BOOT_PACKAGE_KEY,
+                                              self.MAIN_SECTION, u_boot_package))
 
     def _validate_architectures(self):
         architectures = self.architectures

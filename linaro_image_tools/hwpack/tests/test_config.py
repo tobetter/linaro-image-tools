@@ -191,24 +191,6 @@ class ConfigTests(TestCase):
             "Invalid value in u-boot-package in the [hwpack] section: ~~",
             config)
 
-    def test_validate_empty_u_boot_package(self):
-        config = self.get_config(
-            self.valid_start_v2 + "u-boot-package = \n")
-        self.assertValidationError(
-            "No u-boot-package in the [hwpack] section", config)
-
-    def test_validate_no_u_boot_file(self):
-        config = self.get_config(self.valid_start_v2 + 
-                                 "u-boot-package = u-boot-linaro-s5pv310\n")
-        self.assertValidationError("No u_boot_file in the [hwpack] section",
-                                   config)
-
-    def test_validate_empty_u_boot_file(self):
-        config = self.get_config(self.valid_start_v2 + 
-                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
-                                     "u-boot-file = \n")
-        self.assertValidationError("No u_boot_file in the [hwpack] section", config)
-
     def test_validate_invalid_u_boot_file(self):
         config = self.get_config(self.valid_start_v2 + 
                                  "u-boot-package = u-boot-linaro-s5pv310\n" \
