@@ -136,7 +136,7 @@ def modify_Packages_info(debpack_dirname, new_debpack_info, prefix_pkg_remove):
             # package information into Package, otherwise it would try to download the old
             # kernel package that was present in the hwpack than installing the new one.
             if not (should_remove(stanza["Package"]) or 
-                    stanza["Package"].startswith("hwpack-linaro")):
+                    stanza["Package"].startswith("hwpack-")):
                 output.append(stanza)
         output.append(DummyStanza(new_debpack_info))
 
@@ -152,8 +152,8 @@ def modify_Packages_info(debpack_dirname, new_debpack_info, prefix_pkg_remove):
 def main():
     # Validate that all the required information is passed on the command line
     args = parser.parse_args()
-    if args.hwpack_name == None or args.deb_pack == None or
-       args.prefix_pkg_remove == None:
+    if (args.hwpack_name == None or args.deb_pack == None or
+        args.prefix_pkg_remove == None):
         parser.print_help()
         parser.error("You must specify both hwpack name "\
                      "and the debian package information\n")
@@ -168,7 +168,6 @@ def main():
     status = 0
 
     try:
-
         # Get the new hardware pack name
         hwpack_name = get_hwpack_name(old_hwpack)
         if hwpack_name == None:
