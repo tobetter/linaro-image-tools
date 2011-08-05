@@ -506,12 +506,10 @@ class Config(object):
 
     def _validate_dtb_file(self):
         dtb_file = self.dtb_file
-        if not dtb_file:
-            raise HwpackConfigError("No dtb_file in the [%s] section" % \
-                                        self.MAIN_SECTION)
-        self._assert_matches_pattern(
-            self.PATH_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
-
+        if dtb_file is not None:
+            self._assert_matches_pattern(
+                self.PATH_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
+        
     def _validate_extra_boot_options(self):
         extra_boot_options = self.extra_boot_options
         if not extra_boot_options:
