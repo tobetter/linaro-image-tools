@@ -77,7 +77,7 @@ class Config(object):
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
         'bootfs_rootfs',
-        #'reserved_bootfs_rootfs',
+        'reserved_bootfs_rootfs',
         ]
 
 
