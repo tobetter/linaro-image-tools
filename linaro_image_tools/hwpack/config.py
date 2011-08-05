@@ -72,6 +72,7 @@ class Config(object):
     BOOT_SCRIPT_KEY = 'boot_script'
     UBOOT_IN_BOOT_PART_KEY = 'u-boot_in_boot_part'
     EXTRA_SERIAL_OPTS_KEY = 'extra_serial_opts'
+    SNOWBALL_STARTUP_FILES_CONFIG_KEY = 'snowball_startup_files_config'
 
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
@@ -127,6 +128,7 @@ class Config(object):
             self._validate_boot_script()
             self._validate_uboot_in_boot_part()
             self._validate_extra_serial_opts()
+            self._validate_snowball_startup_files_config()
 
         self._validate_sections()
 
@@ -220,6 +222,15 @@ class Config(object):
         A str.
         """
         return self._get_option_from_main_section(self.BOOT_SCRIPT_KEY)
+
+    @property
+    def snowball_startup_files_config(self):
+        """File name of the snowball startfiles config file.
+
+        A str.
+        """
+        return self._get_option_from_main_section(
+            self.SNOWBALL_STARTUP_FILES_CONFIG_KEY)
 
     @property
     def kernel_addr(self):
@@ -525,6 +536,12 @@ class Config(object):
                 "No boot_script in the [%s] section" % \
                     self.MAIN_SECTION)
 
+    def _validate_snowball_startup_files_config(self):
+        snowball_startup_files_config = self.snowball_startup_files_config
+        if snowball_startup_files_config is not None:
+            self._assert_matches_pattern(
+                self.PATH_REGEX, snowball_startup_files_config,
+                "Invalid path: %s" % snowball_startup_files_config)
 
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty
