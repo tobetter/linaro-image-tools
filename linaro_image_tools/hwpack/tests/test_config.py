@@ -209,33 +209,6 @@ class ConfigTests(TestCase):
             "Invalid value in x_loader_package in the [hwpack] section: ~~",
             config)
 
-    def test_validate_empty_x_loader_package(self):
-        config = self.get_config(
-            self.valid_start_v2 + "u-boot-package = u-boot-linaro-s5pv310\n" \
-                "u-boot-file = usr/bin/version/MLO\n" \
-                "partition_layout = bootfs_rootfs\n"\
-                "x_loader_package = \n")
-        self.assertValidationError(
-            "No x_loader_package in the [hwpack] section", config)
-
-    def test_validate_no_x_loader_file(self):
-        config = self.get_config(self.valid_start_v2 +
-                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
-                                     "u-boot-file = usr/bin/version/MLO\n" \
-                                     "partition_layout = bootfs_rootfs\n" \
-                                     "x_loader_package = x-loader-linaro-s5pv310\n")
-        self.assertValidationError("No x_loader_file in the [hwpack] section",
-                                   config)
-
-    def test_validate_empty_x_loader__file(self):
-        config = self.get_config(self.valid_start_v2 + 
-                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
-                                     "u-boot-file = usr/bin/version/MLO\n" \
-                                     "partition_layout = bootfs_rootfs\n" \
-                                     "x_loader_package = x-loader-linaro-s5pv310\n" \
-                                     "x_loader_file = \n")
-        self.assertValidationError("No x_loader_file in the [hwpack] section", config)
-
     def test_validate_invalid_x_loader_file(self):
         config = self.get_config(self.valid_start_v2 + 
                                  "u-boot-package = u-boot-linaro-s5pv310\n" \
