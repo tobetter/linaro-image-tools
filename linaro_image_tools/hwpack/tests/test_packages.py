@@ -874,6 +874,14 @@ class AptCacheTests(TestCaseWithFixtures):
             open(os.path.join(
                 cache.tempdir, "etc", "apt", "sources.list")).read())
 
+    def test_prepare_creates_etc_apt_sources_list_dot_d_dir(self):
+        cache = IsolatedAptCache([])
+        self.addCleanup(cache.cleanup)
+        cache.prepare()
+        self.assertTrue(
+            os.path.isdir(os.path.join(
+                cache.tempdir, "etc", "apt", "sources.list.d")))
+
     def test_prepare_with_arch_creates_etc_apt_apt_conf(self):
         cache = IsolatedAptCache([], architecture="arch")
         self.addCleanup(cache.cleanup)
