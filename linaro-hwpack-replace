@@ -79,27 +79,29 @@ def get_hwpack_name(old_hwpack):
     return('_'.join(hwpack_name_parts[:2] + timestamp + hwpack_name_parts[3:]))
 
 
-def verify_existing_debians(debpack_dirname, new_debpack_info):
+def should_remove(package_name, prefix_pkg_remove):
+    if (package_name.startswith("%s" % prefix_pkg_remove) or 
+        package_name.startswith("hwpack-")):
+        return True
+    return False
+
+def verify_existing_debians(debpack_dirname, prefix_pkg_remove):
     """
        Find if the debian file with the same name exists,
        if it exists then remove it and replace with the new deb file
        If similar debian file exists then remove it
     """
 
-    old_debpack_info = None
     deb_file_to_remove = None
 
     try:
         for deb_filename in os.listdir(debpack_dirname):
             root, ext = os.path.splitext(deb_filename)
-            if root.startswith("%s" %new_debpack_info) and ext == '.deb':
+            if should_remove(root, prefix_pkg_remove) and ext == '.deb':
                 deb_file_to_remove =  os.path.join(debpack_dirname, deb_filename)
-                old_debpack_info = FetchedPackage.from_deb(deb_file_to_remove)
                 os.remove(deb_file_to_remove)
     except Exception, details:
         logger.error("Error Details: %s", details)
-
-    return old_debpack_info
 
 
 def modify_manifest_info(tempdir, new_debpack_info, prefix_pkg_remove):
@@ -109,8 +111,7 @@ def modify_manifest_info(tempdir, new_debpack_info, prefix_pkg_remove):
     new_debpack_line = '%s=%s\n' % (new_debpack_info.name, new_debpack_info.version)
 
     for line in fileinput.FileInput(debpack_manifest_fname, inplace=1):
-        if not (line.startswith("%s" % prefix_pkg_remove) or 
-                line.startswith("hwpack-linaro")):
+        if not should_remove(line, prefix_pkg_remove):
             sys.stdout.write(line)
 
     logger.debug("Adding the new debian package info to manifest")
@@ -125,8 +126,6 @@ def modify_Packages_info(debpack_dirname, new_debpack_info, prefix_pkg_remove):
     debpack_Packages_fname = os.path.join(debpack_dirname, "Packages")
     try:
         output = []
-        def should_remove(package_name):
-            return package_name.startswith("%s" % prefix_pkg_remove)
 
         f = open(debpack_Packages_fname, "r+")
         for stanza in Packages.iter_paragraphs(f):
@@ -135,8 +134,7 @@ def modify_Packages_info(debpack_dirname, new_debpack_info, prefix_pkg_remove):
             # We need to make sure we dont write the hwpack-linaro related
             # package information into Package, otherwise it would try to download the old
             # kernel package that was present in the hwpack than installing the new one.
-            if not (should_remove(stanza["Package"]) or 
-                    stanza["Package"].startswith("hwpack-")):
+            if not should_remove(stanza["Package"], prefix_pkg_remove):
                 output.append(stanza)
         output.append(DummyStanza(new_debpack_info))
 
@@ -161,7 +159,6 @@ def main():
 
     set_logging_param(args)
 
-    old_debpack_info = None
     old_hwpack = args.hwpack_name
     new_deb_file_to_copy = args.deb_pack
     prefix_pkg_remove = args.prefix_pkg_remove
@@ -189,7 +186,7 @@ def main():
 
         new_debpack_info = FetchedPackage.from_deb(new_deb_file_to_copy)
 
-        old_debpack_info = verify_existing_debians(debpack_dirname, prefix_pkg_remove)
+        verify_existing_debians(debpack_dirname, prefix_pkg_remove)
 
         # Copy the new debian file to the pkgs dir,
         shutil.copy2(new_deb_file_to_copy, debpack_dirname)
@@ -211,6 +208,7 @@ def main():
     if status == 0:
         logger.info("The debian package '%s' has been been included in '%s'",
                      new_deb_file_to_copy, hwpack_name)
+        print hwpack_name
     else:
         logger.error("Injecting the debian package '%s' failed", new_deb_file_to_copy)
 
