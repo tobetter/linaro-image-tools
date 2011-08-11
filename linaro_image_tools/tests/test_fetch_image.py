@@ -16,28 +16,36 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import inspect
+import os
 import wx
-import unittest
+from linaro_image_tools.testing import TestCaseWithFixtures
 import re
 import linaro_image_tools.fetch_image as fetch_image
 
 
-class TestURLLookupFunctions(unittest.TestCase):
+class TestURLLookupFunctions(TestCaseWithFixtures):
 
     def setUp(self):
+        # We use local files for testing, so get paths sorted.
+        this_file = os.path.abspath(inspect.getfile(inspect.currentframe()))
+        this_dir = os.path.dirname(this_file)
+        yaml_file_location = os.path.join(this_dir, "../"
+                                          "fetch_image_settings.yaml")
+        sample_db_location = os.path.join(this_dir, "test_server_index.sqlite")
         self.file_handler   = fetch_image.FileHandler()
-        self.file_handler.update_files_from_server()
         self.config         = fetch_image.FetchImageConfig()
         self.config.settings["force_download"] = False
 
         # Load settings YAML, which defines the parameters we ask for and
         # acceptable responses from the user
-        self.config.read_config(self.file_handler.settings_file)
+        self.config.read_config(yaml_file_location)
 
         # Using the config we have, look up URLs to download data from in the
         # server index
-        self.db = fetch_image.DB(self.file_handler.index_file)
+        self.db = fetch_image.DB(sample_db_location)
+
+        super(TestURLLookupFunctions, self).setUp()
 
     def test_url_lookup(self):
         self.settings = self.config.settings
