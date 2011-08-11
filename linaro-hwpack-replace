@@ -4,7 +4,9 @@
 # Author: Deepti B. Kalakeri <deepti.kalakeri@linaro.org>
 #
 # This file is part of Linaro Image Tools. It adds the feature
-# to include/replace a debian package into the given hwpack
+# to include/replace a debian package into the given hwpack.
+# We might need to change the manifest and Packages file in the 
+# future to match the hardware pack v2 changes when available.
 #
 # Linaro Image Tools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -80,7 +82,12 @@ def get_hwpack_name(old_hwpack):
 
 
 def should_remove(package_name, prefix_pkg_remove):
-    if (package_name.startswith("%s" % prefix_pkg_remove) or 
+    # hwpack-* Package is a metadata package that contain reference to the 
+    # linux-linaro-omap that was previously present in the hwpack.
+    # We need to make sure we dont write the hwpack-* related
+    # package information into Package, otherwise it would try to download the old
+    # kernel package that was present in the hwpack than installing the new one.
+    if (package_name.startswith(prefix_pkg_remove) or 
         package_name.startswith("hwpack-")):
         return True
     return False
@@ -129,11 +136,6 @@ def modify_Packages_info(debpack_dirname, new_debpack_info, prefix_pkg_remove):
 
         f = open(debpack_Packages_fname, "r+")
         for stanza in Packages.iter_paragraphs(f):
-            # hwpack-linaro* Package is a metadata package that contain reference to the 
-            # linux-linaro-omap that was previously present in the hwpack.
-            # We need to make sure we dont write the hwpack-linaro related
-            # package information into Package, otherwise it would try to download the old
-            # kernel package that was present in the hwpack than installing the new one.
             if not should_remove(stanza["Package"], prefix_pkg_remove):
                 output.append(stanza)
         output.append(DummyStanza(new_debpack_info))
