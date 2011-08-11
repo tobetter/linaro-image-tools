@@ -18,7 +18,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import inspect
 import os
-import wx
 from linaro_image_tools.testing import TestCaseWithFixtures
 import re
 import linaro_image_tools.fetch_image as fetch_image
@@ -53,10 +52,14 @@ class TestURLLookupFunctions(TestCaseWithFixtures):
 
         #--- Test first with a snapshot build lookup ---
         # -- Fix a build date --
-        # We only need to look up a single snapshot date. Start with today and
-        # go with the day in the DB, build 0
-        today = wx.DateTime()
-        today.SetToCurrent()
+        # We only need to look up a single snapshot date. We just use the
+        # latest in the database (we could use today and search from it, but
+        # the database is just one that is checked in, so it could be old
+        # and db.get_next_prev_day_with_builds may give up before finding it).
+        date = self.db.execute_return_list(
+                          "SELECT MAX(date) FROM snapshot_binaries")[0][0]
+        d = re.search("(\d{4})(\d{2})(\d{2})", date)
+        date = (d.group(1) + "-" + d.group(2) + "-" + d.group(3))
 
         # -- Don't iterate through platforms for snapshot --
 
@@ -69,7 +72,7 @@ class TestURLLookupFunctions(TestCaseWithFixtures):
 
             future_date, past_date = self.db.get_next_prev_day_with_builds(
                                         "linaro-alip",
-                                        today.FormatISODate().encode('ascii'),
+                                        date,
                                         compatable_hwpacks)
 
             if past_date == None:
