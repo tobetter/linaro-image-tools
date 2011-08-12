@@ -23,6 +23,11 @@ UI:
   translate:
     linaro-m: '10.11'
     linaro-n: '11.05'
+    '11.06': '11.06'
+    '11.07': '11.07'
+    '11.08': '11.08'
+    '11.09': '11.09'
+    '11.10': '11.10'
   cmdline short names:
     build: b
     hardware: w
@@ -113,6 +118,10 @@ choice:
     - alpha-3
     - beta
     - rc
+    - final
+    '11.06':
+    - final
+    '11.07':
     - final
 
 platform: linaro-n
