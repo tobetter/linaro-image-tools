@@ -46,6 +46,8 @@ choice:
     overo: Overo
     smdkv310: S5PV310
     origen: Origen
+    # UI may need some work to support snowball. Currently under investigation.
+    #snowball_sd: Snowball
   
   hwpack:
     beagle:
@@ -59,6 +61,8 @@ choice:
     - panda
     - panda-x11-base
     - bsp-omap4
+    - lt-panda-x11-base-natty
+    - lt-panda
     
     vexpress:
     - vexpress
@@ -77,7 +81,7 @@ choice:
     
     mx53loco:
     - lt-mx53loco
-    - s5pv310
+    - lt-mx5
      
     u8500:
      - lt-u8500
@@ -91,6 +95,9 @@ choice:
 
     origen:
      - lt-origen
+
+    snowball_sd:
+     - lt-snowball
 
   image:
   - alip
@@ -110,4 +117,5 @@ choice:
 
 platform: linaro-n
 repository: release
+
 
