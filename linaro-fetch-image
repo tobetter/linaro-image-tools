@@ -54,11 +54,8 @@ def main():
 
     if config.args['platform'] == "snapshot":
         config.args['release_or_snapshot'] = "snapshot"
-    elif config.args['platform'] == "release":
-        config.args['release_or_snapshot'] = "release"
     else:
-        logging.error("Please specify platform as 'release' or 'snapshot'")
-        sys.exit(1)
+        config.args['release_or_snapshot'] = "release"
 
     # Using the config we have, look up URLs to download data from in the
     # server index

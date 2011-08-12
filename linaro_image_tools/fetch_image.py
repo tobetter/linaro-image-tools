@@ -1366,6 +1366,8 @@ class DB():
                 HW Pack: platform, hardware, date, build"""
         image_url = None
         hwpack_url = None
+        old_image = args['image']
+        build_bits = None
 
         if(args['release_or_snapshot'] == "snapshot"):
             count = 0
@@ -1441,7 +1443,7 @@ class DB():
                 else:
                     break  # Got a URL, go.
 
-        else:
+        elif args['release_or_snapshot'] == "release":
             image_url = self.get_url("release_binaries",
                             [
                              ("image", args['image']),
@@ -1454,14 +1456,86 @@ class DB():
                              ("build", args['build']),
                              ("platform", args['platform'])])
 
+        else:
+            assert(0, "Unexpected args['release_or_snapshot']: {0}".format(
+                       args['release_or_snapshot']))
+
         if(not image_url):
             # If didn't get an image URL set up something so the return line
             # doesn't crash
             image_url = [None]
 
+            if args['release_or_snapshot'] == "snapshot":
+                table = "snapshot_binaries"
+            else:
+                table = "release_binaries"
+
+            if not (self.get_url(table, [("image", old_image)]) or
+                    self.get_url(table, [("image", args['image'])])):
+                msg = "{0} does not match any OS indexed".format(old_image)
+                logging.error(msg)
+
+            if args['release_or_snapshot'] == "snapshot":
+                if not self.get_url("snapshot_binaries",
+                                    [("date", build_bits[0])]):
+                    msg = "Can not find requested OS on date {0}".format(
+                           build_bits[0])
+                    logging.error(msg)
+
+                elif not self.get_url("snapshot_binaries",
+                                      [("build", build_bits[1])]):
+                    msg = "Can not find build {0} of requested OS".format(
+                           build_bits[1])
+                    logging.error(msg)
+
+            else:  # Release...
+                if not self.get_url("release_binaries",
+                                    [("build", args['build'])]):
+                    msg = "Can not find build {0} of selected OS".format(
+                           args['build'])
+                    logging.error(msg)
+
+                if not self.get_url("release_binaries",
+                                    [("platform", args['platform'])]):
+                    msg = "Can not find OS for platform {0}".format(
+                           args['platform'])
+                    logging.error(msg)
+
         if(not hwpack_url):
             # If didn't get a hardware pack URL set up something so the return
             # line doesn't crash
             hwpack_url = [None]
+
+            table = None
+            if args['release_or_snapshot'] == "snapshot":
+                table = "snapshot_hwpacks"
+                build = build_bits[1]
+
+            elif args['release_or_snapshot'] == "release":
+                table = "release_hwpacks"
+                build = args['build']
+
+            if not self.get_url(table, [("hardware", args['hwpack'])]):
+                msg = "{0} does not match any hardware pack indexed".format(
+                       args['hwpack'])
+                logging.error(msg)
+
+            if args['release_or_snapshot'] == "snapshot":
+                if not self.get_url("snapshot_hwpacks",
+                                    [("date", build_bits[0])]):
+                    msg = "Hardware pack does not exist on date {0}".format(
+                           build_bits[0])
+                    logging.error(msg)
+
+            else:  # Release...
+                if not self.get_url("release_hwpacks",
+                                    [("platform", args['platform'])]):
+                    msg = "Hardware pack unavailable for platform {0}".format(
+                           args['platform'])
+
+            if not self.get_url(table, [("build", build)]):
+                msg = ("Build {0} doesn't exist for any hardware "
+                       "pack indexed".format(build))
+                logging.error(msg)
 
         return(image_url[0], hwpack_url[0])
