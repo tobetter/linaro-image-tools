@@ -43,21 +43,25 @@ def verify_file_integrity(sig_file_list):
     """
 
     gpg_sig_ok = True
+    gpg_out = ""
 
     verified_files = []
     for sig_file in sig_file_list:
         hash_file = sig_file[0:-len('.asc')]
 
         try:
-            cmd_runner.run(['gpg', '--verify', sig_file]).wait()
-        except cmd_runner.SubcommandNonZeroReturnValue:
+            cmd_runner.Popen(['gpg', '--verify', sig_file],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT).communicate()
+        except cmd_runner.SubcommandNonZeroReturnValue as inst:
             gpg_sig_ok = False
+            gpg_out = inst.stdout
 
         if os.path.dirname(hash_file) == '':
             sha_cwd = None
         else:
             sha_cwd = os.path.dirname(hash_file)
-        
+
         try:
             sha1sums_out, _ = cmd_runner.Popen(
                                             ['sha1sum', '-c', hash_file],
@@ -73,14 +77,14 @@ def verify_file_integrity(sig_file_list):
             if sha1_check:
                 verified_files.append(sha1_check.group(1))
 
-    return verified_files, gpg_sig_ok
+    return verified_files, gpg_sig_ok, gpg_out
 
 def check_file_integrity_and_log_errors(sig_file_list, binary, hwpacks):
     """
     Wrapper around verify_file_integrity that prints error messages to stderr
     if verify_file_integrity finds any problems.
     """
-    verified_files, gpg_sig_pass = verify_file_integrity(sig_file_list)
+    verified_files, gpg_sig_pass, _ = verify_file_integrity(sig_file_list)
 
     # Check the outputs from verify_file_integrity
     # Abort if anything fails.

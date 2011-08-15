@@ -387,8 +387,8 @@ class DownloadManager():
     def _check_downloads(self):
         self.get_sig_files()
 
-        self.verified_files, self.gpg_sig_ok = utils.verify_file_integrity(
-                                                            self.sig_files)
+        (self.verified_files, self.gpg_sig_ok,
+         self.gpg_out) = utils.verify_file_integrity(self.sig_files)
 
         # Expect to have 2 sha1sum files (one for hwpack, one for OS bin)
         self.have_sha1sums = len(self.sha1_files) ==2
@@ -442,22 +442,36 @@ class DownloadManager():
             # matches the sha1sums we will re-download any failing hwpack
             # and OS binary files in the if below.
 
-            self._download_sigs_gen_download_list(force_download=True)
-            self._check_downloads()
-
-            if(self.have_sha1sums and self.have_gpg_sigs
-               and not self.gpg_sig_ok):
-                # If after re-trying the downloads we still can't get a GPG
-                # signature match on a sha1sum file (and both files exist)
-                # the abort.
-                message = "Package signature check failed. Aborting"
+            if re.search("Can't check signature: public key not found",
+                         self.gpg_out):
+                search = re.search("Signature made.*?using (\w+) key ID (\S+)",
+                                    self.gpg_out)
+                message = ("Package signature check failed.\n"
+                           "To check package signatures, please import {0} "
+                           "key {1}")
+                message = message.format(search.group(1), search.group(2))
                 if self.event_queue:
-                    self.event_queue.put("message", message)
-                    self.event_queue.put("abort")
+                    self.event_queue.put(("message", message))
                 else:
                     print >> sys.stderr, message
 
-                return [], False
+            else:
+                self._download_sigs_gen_download_list(force_download=True)
+                self._check_downloads()
+
+                if(self.have_sha1sums and self.have_gpg_sigs
+                   and not self.gpg_sig_ok):
+                    # If after re-trying the downloads we still can't get a GPG
+                    # signature match on a sha1sum file (and both files exist)
+                    # tell the user.
+                    message = "Package signature check failed"
+                    if self.event_queue:
+                        self.event_queue.put(("message", message))
+                        self.event_queue.put("abort")
+                    else:
+                        print >> sys.stderr, message
+
+                    return [], False
 
         if(self.have_sha1sums and 
            self.gpg_sig_ok or not self.have_gpg_sigs):
@@ -479,8 +493,8 @@ class DownloadManager():
                                     self.event_queue,
                                     force_download=True)
 
-                (self.verified_files,
-                 self.gpg_sig_ok) = utils.verify_file_integrity(self.sig_files)
+                (self.verified_files, self.gpg_sig_ok,
+                 self.gpg_out) = utils.verify_file_integrity(self.sig_files)
 
                 to_retry = self._unverified_files()
 
@@ -499,9 +513,6 @@ class DownloadManager():
 
         hwpack = os.path.basename(self.downloaded_files[hwpack_url])
         hwpack_verified = (hwpack in self.verified_files) and self.gpg_sig_ok
-
-        if self.event_queue:  # Clear messages, if any, from GUI
-            self.event_queue.put(("message", ""))
 
         return self.downloaded_files, hwpack_verified
 
