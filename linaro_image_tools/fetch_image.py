@@ -442,14 +442,20 @@ class DownloadManager():
             # matches the sha1sums we will re-download any failing hwpack
             # and OS binary files in the if below.
 
-            if re.search("Can't check signature: public key not found",
-                         self.gpg_out):
-                search = re.search("Signature made.*?using (\w+) key ID (\S+)",
-                                    self.gpg_out)
+            no_pubkey_search = re.search("\[GNUPG:\] NO_PUBKEY (\S+)",
+                                         self.gpg_out)
+            if no_pubkey_search:
                 message = ("Package signature check failed.\n"
-                           "To check package signatures, please import {0} "
-                           "key {1}")
-                message = message.format(search.group(1), search.group(2))
+                           "To check package signatures, please import "
+                           "key {0}")
+                # The GPG output we are using gives us the long key format,
+                # which doesn't match anything in the key management app
+                # that ships with Ubuntu Desktop. The last 8 digits though
+                # are the short key, which are what we normally deal with.
+                # That is, this seems to be the case. I haven't found any
+                # answers after searching around about the long keyID format,
+                # but this works for keys I have tested with...
+                message = message.format(no_pubkey_search.group(1)[-8:])
                 if self.event_queue:
                     self.event_queue.put(("message", message))
                 else:

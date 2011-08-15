@@ -22,6 +22,7 @@ import platform
 import subprocess
 import re
 import logging
+import tempfile
 
 try:
     from CommandNotFound import CommandNotFound
@@ -48,14 +49,16 @@ def verify_file_integrity(sig_file_list):
     verified_files = []
     for sig_file in sig_file_list:
         hash_file = sig_file[0:-len('.asc')]
+        tmp = tempfile.NamedTemporaryFile()
 
         try:
-            cmd_runner.Popen(['gpg', '--verify', sig_file],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT).communicate()
-        except cmd_runner.SubcommandNonZeroReturnValue as inst:
+             cmd_runner.run(['gpg', '--status-file={0}'.format(tmp.name),
+                             '--verify', sig_file]).wait()
+        except cmd_runner.SubcommandNonZeroReturnValue:
             gpg_sig_ok = False
-            gpg_out = inst.stdout
+            gpg_out = gpg_out + tmp.read()
+
+        tmp.close()
 
         if os.path.dirname(hash_file) == '':
             sha_cwd = None
