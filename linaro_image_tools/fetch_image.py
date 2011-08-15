@@ -504,7 +504,7 @@ class DownloadManager():
                     # corrupt. Display a message to the user and quit.
                     message = "Download retry failed. Aborting"
                     if self.event_queue:
-                        self.event_queue.put("message", message)
+                        self.event_queue.put(("message", message))
                         self.event_queue.put("abort")
                     else:
                         print >> sys.stderr, message
