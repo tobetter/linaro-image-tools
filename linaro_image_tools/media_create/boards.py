@@ -323,7 +323,7 @@ class BoardConfig(object):
                 cls.LOADER_MIN_SIZE_S = align_up(int(loader_min_size) * 1024**2,
                                                SECTOR_SIZE) / SECTOR_SIZE
 
-            uboot_in_boot_part = cls.get_metadata_field('u-boot_in_boot_part')
+            uboot_in_boot_part = cls.get_metadata_field('u_boot_in_boot_part')
             if uboot_in_boot_part is None:
                 cls.uboot_in_boot_part = None  
             elif string.lower(uboot_in_boot_part) == 'yes':
