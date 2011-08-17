@@ -107,7 +107,7 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
                                              self.MockCmdRunnerPopen()))
         hash_filename = "dummy-file.txt"
         signature_filename = hash_filename + ".asc"
-        verified_files, _ = verify_file_integrity([signature_filename])
+        verified_files, _, _ = verify_file_integrity([signature_filename])
         self.assertEqual(self.filenames_in_shafile, verified_files)
 
     def test_check_file_integrity_and_print_errors(self):

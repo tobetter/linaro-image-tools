@@ -387,8 +387,8 @@ class DownloadManager():
     def _check_downloads(self):
         self.get_sig_files()
 
-        self.verified_files, self.gpg_sig_ok = utils.verify_file_integrity(
-                                                            self.sig_files)
+        (self.verified_files, self.gpg_sig_ok,
+         self.gpg_out) = utils.verify_file_integrity(self.sig_files)
 
         # Expect to have 2 sha1sum files (one for hwpack, one for OS bin)
         self.have_sha1sums = len(self.sha1_files) ==2
@@ -442,22 +442,42 @@ class DownloadManager():
             # matches the sha1sums we will re-download any failing hwpack
             # and OS binary files in the if below.
 
-            self._download_sigs_gen_download_list(force_download=True)
-            self._check_downloads()
-
-            if(self.have_sha1sums and self.have_gpg_sigs
-               and not self.gpg_sig_ok):
-                # If after re-trying the downloads we still can't get a GPG
-                # signature match on a sha1sum file (and both files exist)
-                # the abort.
-                message = "Package signature check failed. Aborting"
+            no_pubkey_search = re.search("\[GNUPG:\] NO_PUBKEY (\S+)",
+                                         self.gpg_out)
+            if no_pubkey_search:
+                message = ("Package signature check failed.\n"
+                           "To check package signatures, please import "
+                           "key {0}")
+                # The GPG output we are using gives us the long key format,
+                # which doesn't match anything in the key management app
+                # that ships with Ubuntu Desktop. The last 8 digits though
+                # are the short key, which are what we normally deal with.
+                # That is, this seems to be the case. I haven't found any
+                # answers after searching around about the long keyID format,
+                # but this works for keys I have tested with...
+                message = message.format(no_pubkey_search.group(1)[-8:])
                 if self.event_queue:
-                    self.event_queue.put("message", message)
-                    self.event_queue.put("abort")
+                    self.event_queue.put(("message", message))
                 else:
                     print >> sys.stderr, message
 
-                return [], False
+            else:
+                self._download_sigs_gen_download_list(force_download=True)
+                self._check_downloads()
+
+                if(self.have_sha1sums and self.have_gpg_sigs
+                   and not self.gpg_sig_ok):
+                    # If after re-trying the downloads we still can't get a GPG
+                    # signature match on a sha1sum file (and both files exist)
+                    # tell the user.
+                    message = "Package signature check failed"
+                    if self.event_queue:
+                        self.event_queue.put(("message", message))
+                        self.event_queue.put("abort")
+                    else:
+                        print >> sys.stderr, message
+
+                    return [], False
 
         if(self.have_sha1sums and 
            self.gpg_sig_ok or not self.have_gpg_sigs):
@@ -479,8 +499,8 @@ class DownloadManager():
                                     self.event_queue,
                                     force_download=True)
 
-                (self.verified_files,
-                 self.gpg_sig_ok) = utils.verify_file_integrity(self.sig_files)
+                (self.verified_files, self.gpg_sig_ok,
+                 self.gpg_out) = utils.verify_file_integrity(self.sig_files)
 
                 to_retry = self._unverified_files()
 
@@ -490,7 +510,7 @@ class DownloadManager():
                     # corrupt. Display a message to the user and quit.
                     message = "Download retry failed. Aborting"
                     if self.event_queue:
-                        self.event_queue.put("message", message)
+                        self.event_queue.put(("message", message))
                         self.event_queue.put("abort")
                     else:
                         print >> sys.stderr, message
@@ -499,9 +519,6 @@ class DownloadManager():
 
         hwpack = os.path.basename(self.downloaded_files[hwpack_url])
         hwpack_verified = (hwpack in self.verified_files) and self.gpg_sig_ok
-
-        if self.event_queue:  # Clear messages, if any, from GUI
-            self.event_queue.put(("message", ""))
 
         return self.downloaded_files, hwpack_verified
 
