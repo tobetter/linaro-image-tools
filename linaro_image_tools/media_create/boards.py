@@ -303,7 +303,8 @@ class BoardConfig(object):
             cls.extra_serial_opts = cls.get_metadata_field('extra_serial_opts')
 
             partition_layout = cls.get_metadata_field('partition_layout')
-            if partition_layout == 'bootfs_rootfs' or partition_layout is None:
+            if partition_layout in ['bootfs_rootfs', 'reserved_bootfs_rootfs',
+                                    None]:
                 cls.fat_size = 32
             elif partition_layout == 'bootfs16_rootfs':
                 cls.fat_size = 16
