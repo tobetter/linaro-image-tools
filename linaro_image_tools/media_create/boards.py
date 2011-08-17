@@ -294,8 +294,8 @@ class BoardConfig(object):
             cls.wired_interfaces = cls.get_metadata_field('wired_interfaces')
             cls.wireless_interfaces = cls.get_metadata_field('wireless_interfaces')
             cls.mmc_id = cls.get_metadata_field('mmc_id')
-            cls.vmlinuz = cls.get_metadata_field('vmlinuz')
-            cls.initrd = cls.get_metadata_field('initrd')
+            cls.vmlinuz = cls.get_metadata_field('kernel_file')
+            cls.initrd = cls.get_metadata_field('initrd_file')
             cls.dtb_file = cls.get_metadata_field('dtb_file')
             cls.extra_boot_args_options = cls.get_metadata_field(
                 'extra_boot_options')

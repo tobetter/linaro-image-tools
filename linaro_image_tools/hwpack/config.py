@@ -65,8 +65,8 @@ class Config(object):
     LOADER_MIN_SIZE_KEY = "loader_min_size"
     X_LOADER_PACKAGE_KEY = "x_loader_package"
     X_LOADER_FILE_KEY = "x_loader_file"
-    VMLINUZ_KEY = "vmlinuz"
-    INITRD_KEY = "initrd"
+    VMLINUZ_KEY = "kernel_file"
+    INITRD_KEY = "initrd_file"
     DTB_FILE_KEY = "dtb_file"
     EXTRA_BOOT_OPTIONS_KEY = 'extra_boot_options'
     BOOT_SCRIPT_KEY = 'boot_script'
