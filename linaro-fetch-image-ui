@@ -159,10 +159,13 @@ image or to an MMC card. First we need to know what hardware you have."""
 
         # self.settings['write_to_file_or_device'] should match the first
         # button below...
-        self.settings['write_to_file_or_device'] = "file"
+        self.button_text = {'hardware': "I have a",
+                            'sim': "I want to run on a hardware simulation."}
+
+        self.settings['hw_or_qemu'] = 'hardware'
         add_button(self,
                    line_1_grid,
-                   "I have a",
+                   self.button_text['hardware'],
                    wx.RB_GROUP,
                    self.event_radio_button_select,
                    None, None)
@@ -172,7 +175,7 @@ image or to an MMC card. First we need to know what hardware you have."""
 
         add_button(self,
                    file_dev_grid,
-                   "I want to run on a hardware simulation.",
+                   self.button_text['sim'],
                    None,
                    self.event_radio_button_select,
                    None, None)
@@ -212,7 +215,11 @@ image or to an MMC card. First we need to know what hardware you have."""
         self.settings['compatable_hwpacks'] = (
                 self.settings['choice']['hwpack'][self.settings['hardware']])
     def event_radio_button_select(self, event):
-        pass
+        val = event.GetEventObject().GetLabel()
+        if val == self.button_text['sim']:
+            self.settings['hw_or_qemu'] = 'sim'
+        elif val == self.button_text['hardware']:
+            self.settings['hw_or_qemu'] = 'hardware'
     #--- END event(s) ---
 
     def SetNext(self, next):
@@ -750,14 +757,16 @@ class LMC_settings(wiz.WizardPageSimple):
         # self.settings['write_to_file_or_device'] should match the first
         # button below...
         self.settings['write_to_file_or_device'] = "file"
-        add_button(self,
+        self.file_button = add_button(
+                   self,
                    file_dev_grid,
                    "Write to file",
                    wx.RB_GROUP,
                    self.event_radio_button_select,
                    None, None)
 
-        add_button(self,
+        self.device_button = add_button(
+                   self,
                    file_dev_grid,
                    "Write to device",
                    None,
@@ -912,6 +921,15 @@ class LMC_settings(wiz.WizardPageSimple):
     def on_activate(self):
         self.update_forward_active_and_mmc_confirm_box_visible()
         self.set_hwpacks_for_hardware()
+        self.update_dev_file_buttons()
+
+    def update_dev_file_buttons(self):
+        if self.settings['hw_or_qemu'] == 'sim':
+            self.device_button.Disable()
+            self.device_button.SetValue(False)
+            self.file_button.SetValue(True)
+        else:
+            self.device_button.Enable()
 
     def set_hwpacks_for_hardware(self):
         self.cb_hwpacks.Clear()
