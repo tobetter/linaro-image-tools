@@ -16,7 +16,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import inspect
 import os
 from linaro_image_tools.testing import TestCaseWithFixtures
 import re
@@ -27,7 +26,7 @@ class TestURLLookupFunctions(TestCaseWithFixtures):
 
     def setUp(self):
         # We use local files for testing, so get paths sorted.
-        this_file = os.path.abspath(inspect.getfile(inspect.currentframe()))
+        this_file = os.path.abspath(__file__)
         this_dir = os.path.dirname(this_file)
         yaml_file_location = os.path.join(this_dir, "../"
                                           "fetch_image_settings.yaml")
