@@ -59,13 +59,16 @@ def add_button(bind_to,
 class ReleaseOrSnapshotPage(wiz.WizardPageSimple):
     """Ask the user if they want to use a release or a snapshot"""
 
-    def __init__(self, parent, config, width):
+    def __init__(self, parent, config, db, width):
         wiz.WizardPageSimple.__init__(self, parent)
         self.config = config
         self.settings = self.config.settings
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.next = None
         self.prev = None
+        self.db = db
+        self.wizard = parent
+        self.width = width
 
         message = ("Would you like to use a Linaro release, or a more up to "
                    "date, but possibly unstable build?")
@@ -88,8 +91,17 @@ class ReleaseOrSnapshotPage(wiz.WizardPageSimple):
         add_button(self, self.box1, self.button_text['snapshot'], None,
                    self.event_radio_button_select, None, None)
 
+        self.cp = wx.CollapsiblePane(self, label="Advanced Options",
+                                     style=wx.CP_DEFAULT_STYLE |
+                                           wx.CP_NO_TLW_RESIZE)
+        self.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.event_on_pane_changed, self.cp)
+        self.make_pane_content(self.cp.GetPane())
+        self.box2 = wx.BoxSizer(wx.VERTICAL)
+        self.box2.Add(self.cp)
+        
         self.sizer.Add(header)
         self.sizer.Add(self.box1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
+        self.sizer.Add(self.box2, 0, wx.ALIGN_LEFT | wx.ALL, 5)
         self.SetSizerAndFit(self.sizer)
         self.sizer.Fit(self)
         self.Move((50, 50))
@@ -97,10 +109,264 @@ class ReleaseOrSnapshotPage(wiz.WizardPageSimple):
     def event_radio_button_select(self, event):
         self.radio_selected = event.GetEventObject().GetLabel()
         # The radio button can be release, snapshot or "latest snapshot"
-        if(self.radio_selected == self.button_text['release']):
+        if self.radio_selected == self.button_text['release']:
             self.settings['release_or_snapshot'] = "release"
         else:
             self.settings['release_or_snapshot'] = "snapshot"
+
+    def event_on_pane_changed(self, event):
+        self.update_release_and_build_boxes()
+        self.fill_os_list()
+        self.Layout()
+
+    def make_pane_content(self, pane):
+        self.adv_box = wx.BoxSizer(wx.VERTICAL)
+
+        message = ("You have the option of selecting from several OS images "
+                   "and builds.")
+        header = wx.StaticText(pane, -1, message)
+        header.Wrap(self.width - 10)  # -10 because boarder below is 5 px wide
+        self.adv_box.Add(header)
+
+        # TODO: Put in table with explainations!
+        # TODO: Needs to be different (OS name only) if selecting snapshot!
+
+        platforms = []
+        for key, value in self.settings['choice']['platform'].items():
+            platforms.append(key)
+
+        style = wx.CB_DROPDOWN | wx.CB_READONLY
+        default_release = self.settings['UI']['translate'][platforms[-1]]
+        self.settings['platform'] = default_release
+
+        self.cb_release = wx.ComboBox(pane, style=style)
+        self.Bind(wx.EVT_COMBOBOX, self.event_cb_release, self.cb_release)
+
+        self.cb_build = wx.ComboBox(pane, style=style)
+        self.Bind(wx.EVT_COMBOBOX, self.event_combo_box_build, self.cb_build)
+
+        self.cb_image = wx.ComboBox(pane, style=style)
+        self.Bind(wx.EVT_COMBOBOX, self.event_combo_box_os, self.cb_image)
+
+        alignment = wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP
+        self.adv_box.Add(self.cb_release, 0, alignment, 5)
+        self.adv_box.Add(self.cb_build, 0, alignment, 5)
+        self.adv_box.Add(self.cb_image, 0, alignment, 5)
+
+        pane.SetSizer(self.adv_box)
+        self.adv_box.Fit(pane)
+
+    def update_build_box(self):
+        """Depending on what hardware has been chosen, the OS list may be
+        restricted. Filter out anything that is unavailable."""
+        self.cb_build.Clear()
+
+        builds = self.db.get_builds(self.settings['platform'])
+        self.cb_build.SetValue("No build available")
+
+        for build in builds:
+            if(self.db.hardware_is_available_for_platform_build(
+                                          self.settings['compatable_hwpacks'],
+                                          self.settings['platform'],
+                                          build)
+                and self.db.build_is_available_for_platform_image(
+                                "release_binaries",
+                                self.settings['platform'],
+                                self.settings['image'],
+                                build)):
+
+                self.cb_build.Append(build)
+                self.cb_build.SetValue(build)
+                self.settings['release_build'] = build
+
+        available_hwpacks = (
+            self.db.get_available_hwpacks_for_hardware_build_plaform(
+                                          self.settings['compatable_hwpacks'],
+                                          self.settings['platform'],
+                                          self.settings['release_build']))
+
+        if len(available_hwpacks):
+            self.settings['hwpack'] = available_hwpacks[0]
+            self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
+        else:
+            self.wizard.FindWindowById(wx.ID_FORWARD).Disable()
+
+    def update_release_and_build_boxes(self):
+        """Depending on what hardware has been chosen, some builds may be
+           unavailable..."""
+        self.cb_release.Clear()
+
+        default_release = None
+        for platform, value in self.settings['choice']['platform'].items():
+            if(self.db.hardware_is_available_for_platform(
+                                          self.settings['compatable_hwpacks'],
+                                          platform)
+               and len(self.db.execute_return_list(
+                               'select * from release_binaries '
+                               'where platform == ? and image == ?',
+                                (platform, self.settings['image'])))):
+
+                if platform in self.settings['UI']['translate']:
+                    platform = self.settings['UI']['translate'][platform]
+
+                self.cb_release.Append(platform, platform.upper())
+                if not default_release or default_release < platform:
+                    default_release = platform
+
+        self.settings['platform'] = (
+                    self.settings['UI']['reverse-translate'][default_release])
+        self.cb_release.SetValue(default_release)
+        self.update_build_box()
+
+    def get_human_os_name(self, item):
+        """Given an OS name from the database, return a human name (either
+        translated from the YAML settings, or just prettified) and if it is a
+        LEB OS or not"""
+
+        item = re.sub("linaro-", "", item)  # Remove any linaro- decoration
+
+        human_name = item
+
+        if item in self.settings['UI']['descriptions']:
+            human_name = self.settings['UI']['descriptions'][item]
+        else:
+            # Make human_name look nicer...
+            human_name = string.capwords(item)
+
+        leb_search = re.search("^LEB:\s*(.*)$", human_name)
+
+        if leb_search:
+            return leb_search.group(1), True
+
+        return human_name, False
+
+    def fill_os_list(self):
+        """Filter the list of OS's from the config file based on the users
+        preferences so all choices in the list are valid (i.e. their hardware
+        is supported for the build they have chosen)."""
+
+        # select unique image from snapshot_binaries/release_binaries to
+        # generate list
+        os_list = None
+        if self.settings['release_or_snapshot'] == "release":
+            os_list = self.db.get_os_list_from('release_binaries')
+        else:
+            os_list = self.db.get_os_list_from('snapshot_binaries')
+
+        self.cb_image.Clear()
+
+        printed_tag = None
+        last_name = None
+        current_image_setting_valid = False
+
+        for state in ["LEB", "other"]:
+            for item in os_list:
+                if item == "old":
+                    # Old is a directory that sometimes hangs around,
+                    # but isn't one we want to display
+                    continue
+
+                # Save the original, untouched image name for use later.
+                # We give it a more human name for display
+                original = item
+                item = re.sub("linaro-", "", item)
+
+                os_hardware_combo_available = (
+                            self.db.image_hardware_combo_available(
+                                    self.settings['release_or_snapshot'],
+                                    original,
+                                    self.settings['compatable_hwpacks']))
+
+                if os_hardware_combo_available:
+                    human_name, is_LEB = self.get_human_os_name(item)
+
+                    if item == self.settings['image']:
+                        current_image_setting_valid = True
+
+                    if state == "LEB" and is_LEB:
+
+                        if printed_tag != state:
+                            self.cb_image.Append(
+                                            "- Linaro Supported Releases -")
+                            printed_tag = state
+
+                        self.cb_image.Append(human_name, original)
+
+                        if self.settings['image'] == None:
+                            self.settings['image'] = original
+
+                    elif state != "LEB" and not is_LEB:
+                        if printed_tag != state:
+                            self.cb_image.Append(
+                                            "- Community Supported Releases -")
+                            printed_tag = state
+
+                        self.cb_image.Append(human_name, original)
+
+                    last_name = original
+
+        if(    self.settings['image'] != None
+           and current_image_setting_valid == False):
+            # If we have an image setting, but it doesn't match the OS list, we
+            # have switched OS list. It may be that adding/removing "linaro-"
+            # from the name will get a match.
+
+            if re.search("linaro-", self.settings['image']):
+                test_name = re.sub("linaro-", "", self.settings['image'])
+            else:
+                test_name = "linaro-" + self.settings['image']
+
+            if test_name in os_list:
+                # Success! We have translated the name and can retain the
+                # "old setting"
+                self.settings['image'] = test_name
+                current_image_setting_valid = True
+
+        if(   self.settings['image'] == None
+           or current_image_setting_valid == False):
+            # This should only get hit if there are no LEBs available
+            self.settings['image'] = last_name
+
+        assert self.settings['image']
+
+        # Make sure the visible selected value matches the saved setting
+        self.cb_image.SetValue(
+                            self.get_human_os_name(self.settings['image'])[0])
+
+    #--- Event(s) ---
+    def event_cb_release(self, evt):
+        str = evt.GetString().encode('ascii').lower()
+        if str in self.settings['UI']['reverse-translate']:
+            str = self.settings['UI']['reverse-translate'][str]
+        self.settings['platform'] = str
+
+        self.update_build_box()
+
+    def event_combo_box_build(self, evt):
+        self.settings['release_build'] = evt.GetString().encode('ascii')
+
+    def event_combo_box_os(self, evt):
+        self.settings['image'] = self.cb_image.GetClientData(
+                                                            evt.GetSelection())
+
+        if self.settings['image']:  # Is None for items that aren't an OS
+            self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
+            image = re.sub("linaro-", "", self.settings['image'])
+
+            if image + "::long" in self.settings['UI']['descriptions']:
+                self.help_text.SetLabel(self.settings['UI']
+                                                     ['descriptions']
+                                                     [image + "::long"])
+            else:
+                self.help_text.SetLabel("")
+
+        else:  # Have selected help text
+            self.wizard.FindWindowById(wx.ID_FORWARD).Disable()
+            self.help_text.SetLabel("Please select an operating system to run "
+                                    "on your chosen hardware.")
+
+        self.help_text.Wrap(self.width - 10)
+    #--- END event(s) ---
 
 
 class AboutMyHardwarePage(wiz.PyWizardPage):
@@ -125,8 +391,6 @@ class AboutMyHardwarePage(wiz.PyWizardPage):
 This Wizard will write an operating system of your choosing to either a disk
 image or to an MMC card. First we need to know what hardware you have."""
         header = wx.StaticText(self, label=message)
-
-
 
         #--- Hardware Combo Box ---
         # Make sure that the displayed release is the one set in settings if
@@ -1543,6 +1807,7 @@ class TestDriveWizard(wx.wizard.Wizard):
 
         self.pages['release_or_snapshot'] = ReleaseOrSnapshotPage(self.wizard,
                                                                   self.config,
+                                                                  db,
                                                                   width)
 
         self.pages['select_release']    = SelectStableRelease(self.wizard,

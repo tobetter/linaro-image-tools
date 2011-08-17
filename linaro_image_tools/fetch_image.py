@@ -813,6 +813,14 @@ class FetchImageConfig():
                 value = re.sub('LEB:\s*', '', value)
                 self.settings['UI']['reverse-descriptions'][value] = key
 
+        # If an item doesn't have a translation, just add in a null one
+        if not self.settings['UI']['translate']:
+            self.settings['UI']['translate'] = {}
+
+        for key, value in self.settings['choice']['platform'].items():
+            if not key in self.settings['UI']['translate']:
+                self.settings['UI']['translate'][key] = key
+
         self.settings['UI']['reverse-translate'] = {}
         for (key, value) in self.settings['UI']['translate'].items():
             self.settings['UI']['reverse-translate'][value] = key
