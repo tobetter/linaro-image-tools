@@ -502,18 +502,12 @@ class Config(object):
                 self.PATH_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
         
     def _validate_extra_boot_options(self):
-        extra_boot_options = self.extra_boot_options
-        if not extra_boot_options:
-            raise HwpackConfigError(
-                "No extra_boot_options in the [%s] section" % \
-                    self.MAIN_SECTION)
+        # Optional and tricky to determine a valid pattern.
+        pass
 
     def _validate_extra_serial_opts(self):
-        extra_serial_opts = self.extra_serial_opts
-        if not extra_serial_opts:
-            raise HwpackConfigError(
-                "No extra_serial_opts in the [%s] section" % \
-                    self.MAIN_SECTION)
+        # Optional and tricky to determine a valid pattern.
+        pass
 
     def _validate_boot_script(self):
         boot_script = self.boot_script
@@ -521,7 +515,6 @@ class Config(object):
             raise HwpackConfigError(
                 "No boot_script in the [%s] section" % \
                     self.MAIN_SECTION)
-
 
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty

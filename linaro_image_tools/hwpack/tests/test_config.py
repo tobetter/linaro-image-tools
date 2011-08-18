@@ -37,7 +37,11 @@ class ConfigTests(TestCase):
                              "u-boot.bin\nserial_tty=ttySAC1\n" \
                              "partition_layout = bootfs_rootfs\n"\
                              "x_loader_package = x-loader-omap4-panda\n"\
-                             "x_loader_file = usr/lib/x-loader/omap4430panda/MLO\n")
+                             "x_loader_file = usr/lib/x-loader/omap4430panda/MLO\n"\
+                             "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                             "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
+                             "boot_script = boot.scr\n"\
+                             "u_boot_in_boot_part = Yes\n")
     valid_end = "[ubuntu]\nsources-entry = foo bar\n"
 
     def test_create(self):
