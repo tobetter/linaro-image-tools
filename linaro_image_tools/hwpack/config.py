@@ -474,11 +474,10 @@ class Config(object):
 
     def _validate_x_loader_file(self):
         x_loader_file = self.x_loader_file
-        if not x_loader_file:
-            raise HwpackConfigError("No x_loader_file in the [%s] section" % \
-                                        self.MAIN_SECTION)
-        self._assert_matches_pattern(
-            self.PATH_REGEX, x_loader_file, "Invalid path: %s" % x_loader_file)
+        if x_loader_file is not None:
+            self._assert_matches_pattern(
+                self.PATH_REGEX, x_loader_file, "Invalid path: %s" % \
+                    x_loader_file)
 
     def _validate_vmlinuz(self):
         vmlinuz = self.vmlinuz
@@ -661,14 +660,12 @@ class Config(object):
 
     def _validate_x_loader_package(self):
         x_loader_package = self.x_loader_package
-        if not x_loader_package:
-            raise HwpackConfigError(
-                "No %s in the [%s] section"
-                % (self.X_LOADER_PACKAGE_KEY, self.MAIN_SECTION))
-        self._assert_matches_pattern(
-            self.PACKAGE_REGEX, x_loader_package, "Invalid value in %s in the " \
-                "[%s] section: %s" % (self.X_LOADER_PACKAGE_KEY,
-                                      self.MAIN_SECTION, x_loader_package))
+        if x_loader_package is not None:
+            self._assert_matches_pattern(
+                self.PACKAGE_REGEX, x_loader_package, "Invalid value in %s in " \
+                    "the [%s] section: %s" % (self.X_LOADER_PACKAGE_KEY,
+                                              self.MAIN_SECTION,
+                                              x_loader_package))
 
     def _validate_architectures(self):
         architectures = self.architectures
