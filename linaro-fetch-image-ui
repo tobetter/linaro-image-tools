@@ -768,9 +768,6 @@ class LMC_settings(wiz.WizardPageSimple):
                                "card, or to a file on the local file system.")
         header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
 
-        foo = DevChoserFrame(self, -1, "Title")
-        print foo.ShowModal()
-
         #--- Layout ---
         self.sizer.Add(header, 0, wx.ALIGN_LEFT | wx.ALL, 5)
         box1 = wx.BoxSizer(wx.VERTICAL)
@@ -992,35 +989,6 @@ class LMC_settings(wiz.WizardPageSimple):
         else:
             self.wizard.FindWindowById(wx.ID_FORWARD).Disable()
 
-        self.confirm_device()
-
-    def confirm_device(self):
-        """Print disk devices found on the system."""
-        bus, udisks = _get_system_bus_and_udisks_iface()
-        
-        try:
-           path = udisks.get_dbus_method('FindDeviceByDeviceFile')(
-                                self.settings['path_selected'])
-        except dbus.exceptions.DBusException:
-            # TODO: Check that this exception isn't hiding other errors.
-            return False
-
-        print "---", path, "---"
-        device = bus.get_object("org.freedesktop.UDisks", path)
-        device_file =  _get_dbus_property('DeviceFile', device, path)
-
-        mount_paths = _get_dbus_property('device-mount-paths', device, path)
-        mount_point = ''.join(b for b in mount_paths)
-        if mount_point == '':
-           mount_point = 'none'
-
-        props = ['drive-media', 'drive-vendor', 'drive-model', 'drive-connection-interface']
-        for prop in props:
-            print prop, _get_dbus_property(prop, device, path)
-
-        print str(_get_dbus_property('device-size', device, path))
-        print _get_dbus_property('device-presentation-name', device, path)
-
     # --- Event Handlers ---
     def event_on_pane_changed(self, event):
         self.Layout()
@@ -1035,14 +1003,15 @@ class LMC_settings(wiz.WizardPageSimple):
                                 style=wx.SAVE)
 
         elif self.settings['write_to_file_or_device'] == "device":
-            dlg = wx.FileDialog(self,
-                                message="Choose a device",
-                                defaultDir=os.getcwd(),
-                                defaultFile="",
-                                style=wx.OPEN | wx.CHANGE_DIR)
+            dlg = DevChoser(self, -1, "Please chose a device", self.settings)
 
-        if dlg.ShowModal() == wx.ID_OK:
-            self.settings['path_selected'] = dlg.GetPaths()[0]
+        result = dlg.ShowModal()
+        file_or_dev = self.settings['write_to_file_or_device']
+
+        if result == wx.ID_OK or file_or_dev == "device":
+            # The dev chooser doesn't do ok/cancel, it just finishes.
+            if self.settings['write_to_file_or_device'] == "file":
+                self.settings['path_selected'] = dlg.GetPaths()[0]
             self.file_path_and_name.SetValue(self.settings['path_selected'])
 
         dlg.Destroy()
@@ -1100,56 +1069,61 @@ class LMC_settings(wiz.WizardPageSimple):
     def event_swap_size(self, event):
         self.settings['swap_file'] = str(self.image_size_spinner.GetValue())
 
-class DevChoserFrame(wx.Dialog):
-    def __init__(self, parent, id, title):
-        wx.Dialog.__init__(self, parent, id, title, size=(1550, 510))
-        
-        panel = wx.Panel(self, -1)
+
+class DevChoser(wx.Dialog):
+    def __init__(self, parent, id, title, settings):
+        self.settings = settings
+        wx.Dialog.__init__(self, parent, id, title)
+
         vbox = wx.BoxSizer(wx.VERTICAL)
 
         dev_info = self.get_device_info()
-
-
-
         dev_number = 1
 
         grid1 = wx.FlexGridSizer(0, len(dev_info[0].keys())+1, 0, 0)
         group = wx.RB_GROUP
+        alignment = wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP
+        keys = dev_info[0].keys()
+
+        grid1.Add(wx.StaticText(self, label=""))
+        for key in keys:
+            grid1.Add(wx.StaticText(self, label=key), 0, alignment, 5)
+
+        self.id_dev_map = {}
+        first = True
         for info in dev_info:
-            add_button(self, grid1, str(dev_number), group,
-                       self.event_radio_button_select, None, None)
+            button = add_button(self, grid1, str(dev_number), group,
+                                self.event_radio_button_select, None, None)
             group = None
+
+            for key in keys:
+                message = info[key]
+                grid1.Add(wx.StaticText(self, label=message), 0, alignment, 5)
+
+                if key == "path":
+                    self.id_dev_map[str(dev_number)] = info[key]
+
+                    if self.settings['path_selected'] == info[key]:
+                        button.SetValue(True)
+
+                    if first and not self.settings['path_selected']:
+                         self.settings['path_selected'] = info[key]
+
             dev_number += 1
-            
-            for key in info.keys():
-                message = key + " " + info[key] + " "
-                grid1.Add(wx.StaticText(self, label=message))
-                print message,
-            print "--"
-        print "-------"
 
         vbox.Add(grid1)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        okButton = wx.Button(self, -1, 'Ok', size=(70, 30))
-        closeButton = wx.Button(self, -1, 'Close', size=(70, 30))
+        okButton = wx.Button(self, -1, 'Use Selected Device')
+        okButton.Bind(wx.EVT_BUTTON, self.OnCloseMe)
         hbox.Add(okButton, 1)
-        hbox.Add(closeButton, 1, wx.LEFT, 5)
 
-        #vbox.Add(panel)
         vbox.Add(hbox, 1, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 10)
-
+        vbox.Fit(self)
         self.SetSizer(vbox)
 
-#        panel.Add(wx.StaticText(messge))
-#        button = wx.Button(panel, 1003, "Close Me")
-#        button.SetPosition((15, 15))
-#        self.Bind(wx.EVT_BUTTON, self.OnCloseMe, button)
-#        self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
-
-        #foo.ShowModal()
-
     def event_radio_button_select(self, event):
-        pass
+        val = event.GetEventObject().GetLabel()
+        self.settings['path_selected'] = self.id_dev_map[val]
 
     def get_device_info(self):
         """Get information about devices found on the system.
@@ -1160,18 +1134,14 @@ class DevChoserFrame(wx.Dialog):
         dev_info = []
         for path in devices:
             device = bus.get_object("org.freedesktop.UDisks", path)
-
-            mount_paths = _get_dbus_property('device-mount-paths', device, path)
-            mount_point = ''.join(b for b in mount_paths)
-            if mount_point == '':
-                mount_point = 'none'
-
-            props = ['drive-media', 'drive-vendor', 'drive-model',
-                     'drive-connection-interface']
-            info = {'mount-point': mount_point}
-            for prop in props:
-                info[prop] = _get_dbus_property(prop, device, path)
-            dev_info.append(info)
+            props = ['drive-model', 'drive-vendor',
+                     'drive-connection-interface', 'drive-media']
+            info = {'path': _get_dbus_property('DeviceFile', device, path)}
+            if(not _get_dbus_property('device-is-partition', device, path) and
+               _get_dbus_property('device-is-media-available', device, path)):
+                for prop in props:
+                    info[prop] = str(_get_dbus_property(prop, device, path))
+                dev_info.append(info)
 
         return dev_info
 
@@ -1350,6 +1320,13 @@ class RunLMC(wiz.WizardPageSimple):
             self.settings['image_file'] = self.settings['path_selected']
         elif self.settings['write_to_file_or_device'] == "device":
             self.settings['mmc'] = self.settings['path_selected']
+
+            title = 'Are you sure?'
+            text = "Completely erase {0}?".format(self.settings['mmc'])
+            dlg = wx.MessageDialog(None, text, title,
+                                  wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+            if dlg.ShowModal() != wx.ID_YES:
+                return
         else:
             assert False, ("self.config.settings['write_to_file_or_device'] "
                            "was an unexpected value"
