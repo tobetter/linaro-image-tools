@@ -71,7 +71,7 @@ class Config(object):
     EXTRA_BOOT_OPTIONS_KEY = 'extra_boot_options'
     BOOT_SCRIPT_KEY = 'boot_script'
     UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
-    EXTRA_SERIAL_OPTS_KEY = 'extra_serial_opts'
+    EXTRA_SERIAL_OPTS_KEY = 'extra_serial_options'
 
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',

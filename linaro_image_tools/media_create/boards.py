@@ -300,7 +300,7 @@ class BoardConfig(object):
             cls.extra_boot_args_options = cls.get_metadata_field(
                 'extra_boot_options')
             cls.boot_script = cls.get_metadata_field('boot_script')
-            cls.extra_serial_opts = cls.get_metadata_field('extra_serial_opts')
+            cls.extra_serial_opts = cls.get_metadata_field('extra_serial_options')
 
             partition_layout = cls.get_metadata_field('partition_layout')
             if partition_layout == 'bootfs_rootfs' or partition_layout is None:

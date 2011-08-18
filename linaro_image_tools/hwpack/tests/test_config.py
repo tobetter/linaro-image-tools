@@ -42,7 +42,7 @@ class ConfigTests(TestCase):
                              "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
                              "dtb_file = boot/dt-3.0.0-1002-linaro-omap/omap4-panda.dtb\n"\
                              "boot_script = boot.scr\n"\
-                             "extra_serial_opts = console=tty0 console=ttyO2,115200n8\n"\
+                             "extra_serial_options = console=tty0 console=ttyO2,115200n8\n"\
                              "extra_boot_options = earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000\n"\
                              "boot_script = boot.scr\n"\
                              "u_boot_in_boot_part = Yes\n")
