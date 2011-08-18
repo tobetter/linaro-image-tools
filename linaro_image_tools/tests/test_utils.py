@@ -22,6 +22,7 @@ import stat
 import subprocess
 import sys
 import logging
+import tempfile
 
 from linaro_image_tools import cmd_runner, utils
 from linaro_image_tools.testing import TestCaseWithFixtures
@@ -91,14 +92,25 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
                 TestVerifyFileIntegrity.filenames_in_shafile) + ': OK\n'
             raise cmd_runner.SubcommandNonZeroReturnValue([], 1, stdout, None)
 
+    class FakeTempFile():
+        name = "/tmp/1"
+
+        def close(self):
+            pass
+
+        def read(self):
+            return ""
 
     def test_verify_files(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        self.useFixture(MockSomethingFixture(tempfile, 'NamedTemporaryFile',
+                                             self.FakeTempFile))
         hash_filename = "dummy-file.txt"
         signature_filename = hash_filename + ".asc"
         verify_file_integrity([signature_filename])
         self.assertEqual(
-            ['gpg --verify %s' % signature_filename,
+            ['gpg --status-file=%s --verify %s' % (self.FakeTempFile.name,
+                                                   signature_filename),
              'sha1sum -c %s' % hash_filename],
             fixture.mock.commands_executed)
         

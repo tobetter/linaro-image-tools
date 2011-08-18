@@ -1476,8 +1476,9 @@ class DB():
                              ("platform", args['platform'])])
 
         else:
-            assert(0, "Unexpected args['release_or_snapshot']: {0}".format(
-                       args['release_or_snapshot']))
+            message = "Unexpected args['release_or_snapshot']: {0}".format(
+                       args['release_or_snapshot'])
+            raise AssertionError(message)
 
         if(not image_url):
             # If didn't get an image URL set up something so the return line
