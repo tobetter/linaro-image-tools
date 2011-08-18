@@ -622,8 +622,8 @@ class Config(object):
         uboot_in_boot_part = self.uboot_in_boot_part
         if string.lower(uboot_in_boot_part) not in ['yes', 'no']:
             raise HwpackConfigError(
-                "Invalid value for uboot_in_boot_part: %s"
-                % self.parser.get("hwpack", "uboot_in_boot_part"))
+                "Invalid value for u_boot_in_boot_part: %s"
+                % self.parser.get("hwpack", "u_boot_in_boot_part"))
 
     def _validate_support(self):
         support = self.support
