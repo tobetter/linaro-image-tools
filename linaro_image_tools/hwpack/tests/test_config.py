@@ -217,6 +217,14 @@ class ConfigTests(TestCase):
                                      "u-boot-file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
+    def test_validate_invalid_kernel_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n" \
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = ~~\n")
+        self.assertValidationError("Invalid path: ~~", config)
+
     def test_validate_invalid_x_loader_package_name(self):
         config = self.get_config(
             self.valid_start_v2 + "u-boot-package = u-boot-linaro-s5pv310\n" \

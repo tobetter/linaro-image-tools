@@ -483,7 +483,7 @@ class Config(object):
     def _validate_vmlinuz(self):
         vmlinuz = self.vmlinuz
         if not vmlinuz:
-            raise HwpackConfigError("No vmlinuz in the [%s] section" % \
+            raise HwpackConfigError("No kernel_file in the [%s] section" % \
                                         self.MAIN_SECTION)
         self._assert_matches_pattern(
             self.PATH_REGEX, vmlinuz, "Invalid path: %s" % vmlinuz)
@@ -491,7 +491,7 @@ class Config(object):
     def _validate_initrd(self):
         initrd = self.initrd
         if not initrd:
-            raise HwpackConfigError("No initrd in the [%s] section" % \
+            raise HwpackConfigError("No initrd_file in the [%s] section" % \
                                         self.MAIN_SECTION)
         self._assert_matches_pattern(
             self.PATH_REGEX, initrd, "Invalid path: %s" % initrd)
