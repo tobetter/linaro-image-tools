@@ -96,7 +96,7 @@ def get_args_parser():
         '--hwpack-force-yes', action='store_true',
         help='Pass --force-yes to linaro-hwpack-install')
     parser.add_argument(
-        '--image_size', default='2G',
+        '--image_size', default='3G',
         help=('The image size, specified in mega/giga bytes (e.g. 3000M or '
               '3G); use with --image_file only'))
     parser.add_argument(
