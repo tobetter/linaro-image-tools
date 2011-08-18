@@ -339,6 +339,17 @@ class ConfigTests(TestCase):
                                      "u_boot_in_boot_part = Nope\n")
         self.assertValidationError("Invalid value for u_boot_in_boot_part: Nope", config)
 
+    def test_validate_u_boot_in_boot_part_bool(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n" \
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                                     "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
+                                     "boot_script = boot.scr\n"\
+                                     "u_boot_in_boot_part = True\n")
+        self.assertValidationError("Invalid value for u_boot_in_boot_part: True", config)
+
     def test_validate_serial_tty(self):
         config = self.get_config(self.valid_start_v2 +
                                  "u-boot-package = u-boot-linaro-s5pv310\n" \
@@ -455,6 +466,12 @@ class ConfigTests(TestCase):
         config.validate()
         self.assertEqual("u-boot-linaro-s5pv310",
                          config.u_boot_package)
+
+    def test_x_loader_file(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("usr/lib/x-loader/omap4430panda/MLO",
+                         config.x_loader_file)
 
     def test_kernel_file(self):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)
