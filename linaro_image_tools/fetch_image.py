@@ -37,6 +37,8 @@ import threading
 import subprocess
 import utils
 
+QEMU = "qemu"
+HARDWARE = "hardware"
 
 class DownloadManager():
     def __init__(self, cachedir):

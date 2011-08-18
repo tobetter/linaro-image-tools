@@ -32,6 +32,7 @@ import operator
 import Queue
 import time
 import datetime
+from linaro_image_tools.fetch_image import (QEMU, HARDWARE)
 
 
 def add_button(bind_to,
@@ -162,7 +163,7 @@ image or to an MMC card. First we need to know what hardware you have."""
         self.button_text = {'hardware': "I have a",
                             'sim': "I want to run on a hardware simulation."}
 
-        self.settings['hw_or_qemu'] = 'hardware'
+        self.settings['hw_or_qemu'] = HARDWARE
         add_button(self,
                    line_1_grid,
                    self.button_text['hardware'],
@@ -217,9 +218,9 @@ image or to an MMC card. First we need to know what hardware you have."""
     def event_radio_button_select(self, event):
         val = event.GetEventObject().GetLabel()
         if val == self.button_text['sim']:
-            self.settings['hw_or_qemu'] = 'sim'
+            self.settings['hw_or_qemu'] = QEMU
         elif val == self.button_text['hardware']:
-            self.settings['hw_or_qemu'] = 'hardware'
+            self.settings['hw_or_qemu'] = HARDWARE
     #--- END event(s) ---
 
     def SetNext(self, next):
@@ -924,7 +925,7 @@ class LMC_settings(wiz.WizardPageSimple):
         self.update_dev_file_buttons()
 
     def update_dev_file_buttons(self):
-        if self.settings['hw_or_qemu'] == 'sim':
+        if self.settings['hw_or_qemu'] == QEMU:
             self.device_button.Disable()
             self.device_button.SetValue(False)
             self.file_button.SetValue(True)
