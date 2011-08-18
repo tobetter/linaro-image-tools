@@ -284,6 +284,7 @@ class BoardConfig(object):
                 cls.dtb_addr = None
                 cls.extra_boot_args_options = None
                 cls.boot_script = None
+                cls.kernel_flavors = None
 
             # Set new values from metadata.
             cls.kernel_addr = cls.get_metadata_field('kernel_addr')
@@ -448,14 +449,8 @@ class BoardConfig(object):
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
-        if cls.vmlinuz is None:
-            (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
-                uboot_parts_dir)
-        else:
-            k_img_data = os.path.join(chroot_dir, cls.vmlinuz)
-            i_img_data = os.path.join(chroot_dir, cls.initrd)
-            d_img_data = os.path.join(chroot_dir, cls.dtb_file)
-
+        (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
+            uboot_parts_dir)
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
                                      d_img_data)
         cls._make_boot_files(
@@ -502,6 +497,11 @@ class BoardConfig(object):
     @classmethod
     def _get_kflavor_files(cls, path):
         """Search for kernel, initrd and optional dtb in path."""
+        if cls.kernel_flavors is None:
+            # V2 metadata specifies each glob, not flavors.
+            # XXX This duplication is temporary until V1 dies.
+            return cls._get_kflavor_files_v2(path)
+
         for flavor in cls.kernel_flavors:
             kregex = KERNEL_GLOB % {'kernel_flavor' : flavor}
             iregex = INITRD_GLOB % {'kernel_flavor' : flavor}
@@ -521,6 +521,22 @@ class BoardConfig(object):
         raise ValueError(
             "No kernel found matching %s for flavors %s" % (
                 KERNEL_GLOB, " ".join(cls.kernel_flavors)))
+
+    @classmethod
+    def _get_kflavor_files_v2(cls, path):
+        kernel = _get_file_matching(os.path.join(path, cls.vmlinuz))
+        if kernel is not None:
+            initrd = _get_file_matching(os.path.join(path, cls.initrd))
+            if initrd is not None:
+                dtb = None
+                if cls.dtb_file is not None:
+                    dtb = _get_file_matching(os.path.join(path, cls.dtb_file))
+                return (kernel, initrd, dtb)
+            raise ValueError(
+                "Found kernel matching %s but no initrd matching %s" % (
+                    cls.vmlinuz, cls.initrd))
+        raise ValueError(
+            "No kernel found matching %s." % (cls.vmlinuz))
 
     @classmethod
     def populate_raw_partition(cls, media, boot_dir):

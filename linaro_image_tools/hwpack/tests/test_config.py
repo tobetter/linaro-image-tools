@@ -38,9 +38,9 @@ class ConfigTests(TestCase):
                              "partition_layout = bootfs_rootfs\n"\
                              "x_loader_package = x-loader-omap4-panda\n"\
                              "x_loader_file = usr/lib/x-loader/omap4430panda/MLO\n"\
-                             "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
-                             "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
-                             "dtb_file = boot/dt-3.0.0-1002-linaro-omap/omap4-panda.dtb\n"\
+                             "kernel_file = boot/vmlinuz-*-linaro-omap\n"\
+                             "initrd_file = boot/initrd.img-*-linaro-omap\n"\
+                             "dtb_file = boot/dt-*-linaro-omap/omap4-panda.dtb\n"\
                              "boot_script = boot.scr\n"\
                              "extra_serial_options = console=tty0 console=ttyO2,115200n8\n"\
                              "extra_boot_options = earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000\n"\
@@ -458,19 +458,19 @@ class ConfigTests(TestCase):
     def test_kernel_file(self):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)
         config.validate()
-        self.assertEqual("boot/vmlinuz-3.0.0-1002-linaro-omap",
+        self.assertEqual("boot/vmlinuz-*-linaro-omap",
                          config.vmlinuz)
 
     def test_initrd_file(self):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)
         config.validate()
-        self.assertEqual("boot/initrd.img-3.0.0-1002-linaro-omap",
+        self.assertEqual("boot/initrd.img-*-linaro-omap",
                          config.initrd)
 
     def test_dtb_file(self):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)
         config.validate()
-        self.assertEqual("boot/dt-3.0.0-1002-linaro-omap/omap4-panda.dtb",
+        self.assertEqual("boot/dt-*-linaro-omap/omap4-panda.dtb",
                          config.dtb_file)
 
     def test_extra_boot_options(self):

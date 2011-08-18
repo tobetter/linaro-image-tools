@@ -44,6 +44,7 @@ class Config(object):
     PACKAGES_KEY = "packages"
     PACKAGE_REGEX = NAME_REGEX
     PATH_REGEX = r"\w[\w+\-./_]+$"
+    GLOB_REGEX = r"\w[\w+\-./_\*]+$"
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
@@ -483,7 +484,7 @@ class Config(object):
             raise HwpackConfigError("No kernel_file in the [%s] section" % \
                                         self.MAIN_SECTION)
         self._assert_matches_pattern(
-            self.PATH_REGEX, vmlinuz, "Invalid path: %s" % vmlinuz)
+            self.GLOB_REGEX, vmlinuz, "Invalid path: %s" % vmlinuz)
 
     def _validate_initrd(self):
         initrd = self.initrd
@@ -491,13 +492,13 @@ class Config(object):
             raise HwpackConfigError("No initrd_file in the [%s] section" % \
                                         self.MAIN_SECTION)
         self._assert_matches_pattern(
-            self.PATH_REGEX, initrd, "Invalid path: %s" % initrd)
+            self.GLOB_REGEX, initrd, "Invalid path: %s" % initrd)
 
     def _validate_dtb_file(self):
         dtb_file = self.dtb_file
         if dtb_file is not None:
             self._assert_matches_pattern(
-                self.PATH_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
+                self.GLOB_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
         
     def _validate_extra_boot_options(self):
         # Optional and tricky to determine a valid pattern.
