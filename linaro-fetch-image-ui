@@ -32,6 +32,7 @@ import operator
 import Queue
 import time
 import datetime
+from linaro_image_tools.fetch_image import (QEMU, HARDWARE)
 
 
 def add_button(bind_to,
@@ -56,21 +57,21 @@ def add_button(bind_to,
     return radio_button
 
 
-class ReleaseOrSnapshotPage(wiz.PyWizardPage):
+class ReleaseOrSnapshotPage(wiz.WizardPageSimple):
     """Ask the user if they want to use a release or a snapshot"""
 
-    def __init__(self, parent, config):
-        wiz.PyWizardPage.__init__(self, parent)
+    def __init__(self, parent, config, width):
+        wiz.WizardPageSimple.__init__(self, parent)
         self.config = config
         self.settings = self.config.settings
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.next = None
         self.prev = None
 
-        self.sizer.Add(wx.StaticText(self, -1,
-"""This Wizard will write an operating system of your choosing to
-either a disk image or to an MMC card. First we need to know if
-your priority is stability or the latest and greatest features."""))
+        message = ("Would you like to use a Linaro release, or a more up to "
+                   "date, but possibly unstable build?")
+        header = wx.StaticText(self, -1, message)
+        header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
 
         self.box1 = wx.BoxSizer(wx.VERTICAL)
 
@@ -88,8 +89,8 @@ your priority is stability or the latest and greatest features."""))
         add_button(self, self.box1, self.button_text['snapshot'], None,
                    self.event_radio_button_select, None, None)
 
+        self.sizer.Add(header)
         self.sizer.Add(self.box1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
-
         self.SetSizerAndFit(self.sizer)
         self.sizer.Fit(self)
         self.Move((50, 50))
@@ -102,14 +103,8 @@ your priority is stability or the latest and greatest features."""))
         else:
             self.settings['release_or_snapshot'] = "snapshot"
 
-    def SetNext(self, next):
-        self.next = next
 
-    def GetNext(self):
-        return self.next
-
-
-class AboutMyHardwarePage(wiz.WizardPageSimple):
+class AboutMyHardwarePage(wiz.PyWizardPage):
     """Ask the user about their hardware. This only asks about the board, not
        any specific hardware packs because there can be multiple names for the
        same hardware pack or sometimes a hardware pack is only available in the
@@ -118,20 +113,21 @@ class AboutMyHardwarePage(wiz.WizardPageSimple):
        under advanced options in the Linaro Media Create options
        page"""
 
-    def __init__(self, parent, config, db, width):
-        wiz.WizardPageSimple.__init__(self, parent)
+    def __init__(self, parent, config, db):
+        wiz.PyWizardPage.__init__(self, parent)
         self.settings = config.settings
         self.db = db
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.box1 = wx.BoxSizer(wx.VERTICAL)
         self.box2 = wx.BoxSizer(wx.VERTICAL)
+        self.next = None
 
-        header = wx.StaticText(self,
-                               label="Please select the hardware that you "
-                                     "would like to build an image for from "
-                                     "the following list")
+        message = """\
+This Wizard will write an operating system of your choosing to either a disk
+image or to an MMC card. First we need to know what hardware you have."""
+        header = wx.StaticText(self, label=message)
 
-        header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
+
 
         #--- Hardware Combo Box ---
         # Make sure that the displayed release is the one set in settings if
@@ -154,8 +150,36 @@ class AboutMyHardwarePage(wiz.WizardPageSimple):
         self.Bind(wx.EVT_COMBOBOX,
                   self.event_combo_box_hardware,
                   self.cb_hardware)
-        self.box1.Add(self.cb_hardware, 0,
-                      wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        #self.box1.Add(self.cb_hardware, 0,
+        #              wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+
+        file_dev_grid = wx.FlexGridSizer(0, 1, 0, 0)
+        line_1_grid = wx.FlexGridSizer(0, 2, 0, 0)
+        self.box2.Add(file_dev_grid, 0, wx.EXPAND)
+        grid1 = wx.FlexGridSizer(0, 2, 0, 0)
+
+        # self.settings['write_to_file_or_device'] should match the first
+        # button below...
+        self.button_text = {'hardware': "I have a",
+                            'sim': "I want to run on a hardware simulation."}
+
+        self.settings['hw_or_qemu'] = HARDWARE
+        add_button(self,
+                   line_1_grid,
+                   self.button_text['hardware'],
+                   wx.RB_GROUP,
+                   self.event_radio_button_select,
+                   None, None)
+
+        line_1_grid.Add(self.cb_hardware)
+        file_dev_grid.Add(line_1_grid)
+
+        add_button(self,
+                   file_dev_grid,
+                   self.button_text['sim'],
+                   None,
+                   self.event_radio_button_select,
+                   None, None)
 
         self.sizer.Add(header)
         self.sizer.Add(self.box1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
@@ -191,8 +215,19 @@ class AboutMyHardwarePage(wiz.WizardPageSimple):
 
         self.settings['compatable_hwpacks'] = (
                 self.settings['choice']['hwpack'][self.settings['hardware']])
+    def event_radio_button_select(self, event):
+        val = event.GetEventObject().GetLabel()
+        if val == self.button_text['sim']:
+            self.settings['hw_or_qemu'] = QEMU
+        elif val == self.button_text['hardware']:
+            self.settings['hw_or_qemu'] = HARDWARE
     #--- END event(s) ---
 
+    def SetNext(self, next):
+        self.next = next
+
+    def GetNext(self):
+        return self.next
 
 class SelectStableRelease(wiz.WizardPageSimple):
     """Ask the user which Linaro release they would like to run."""
@@ -723,14 +758,16 @@ class LMC_settings(wiz.WizardPageSimple):
         # self.settings['write_to_file_or_device'] should match the first
         # button below...
         self.settings['write_to_file_or_device'] = "file"
-        add_button(self,
+        self.file_button = add_button(
+                   self,
                    file_dev_grid,
                    "Write to file",
                    wx.RB_GROUP,
                    self.event_radio_button_select,
                    None, None)
 
-        add_button(self,
+        self.device_button = add_button(
+                   self,
                    file_dev_grid,
                    "Write to device",
                    None,
@@ -885,6 +922,15 @@ class LMC_settings(wiz.WizardPageSimple):
     def on_activate(self):
         self.update_forward_active_and_mmc_confirm_box_visible()
         self.set_hwpacks_for_hardware()
+        self.update_dev_file_buttons()
+
+    def update_dev_file_buttons(self):
+        if self.settings['hw_or_qemu'] == QEMU:
+            self.device_button.Disable()
+            self.device_button.SetValue(False)
+            self.file_button.SetValue(True)
+        else:
+            self.device_button.Enable()
 
     def set_hwpacks_for_hardware(self):
         self.cb_hwpacks.Clear()
@@ -1445,9 +1491,6 @@ class TestDriveWizard(wx.wizard.Wizard):
             if page == self.pages['hardware_details']:
                 self.pages['select_os'].fill_os_list()
 
-            if page == self.pages['release_or_snapshot']:
-                self.pages['hardware_details'].on_page_changing()
-
             # If about to move into the release selection, make sure the list
             # is populated only with releases that are valid with our current
             # selection
@@ -1492,15 +1535,16 @@ class TestDriveWizard(wx.wizard.Wizard):
         self.wizard = wiz.Wizard(self, -1, "Linaro Media Builder")
 
         self.pages = {}
-        self.pages['release_or_snapshot'] = ReleaseOrSnapshotPage(self.wizard,
-                                                                  self.config)
-        self.wizard.FitToPage(self.pages['release_or_snapshot'])
-        (width, height) = self.wizard.GetSize()
-
         self.pages['hardware_details']  = AboutMyHardwarePage(self.wizard,
                                                               self.config,
-                                                              db,
-                                                              width)
+                                                              db)
+
+        self.wizard.FitToPage(self.pages['hardware_details'])
+        (width, height) = self.wizard.GetSize()
+
+        self.pages['release_or_snapshot'] = ReleaseOrSnapshotPage(self.wizard,
+                                                                  self.config,
+                                                                  width)
 
         self.pages['select_release']    = SelectStableRelease(self.wizard,
                                                               self.config,
@@ -1527,14 +1571,14 @@ class TestDriveWizard(wx.wizard.Wizard):
                                                  db,
                                                  width)
 
-        self.pages['release_or_snapshot'].SetNext(
-                                            self.pages['hardware_details'])
-
-        self.pages['hardware_details'].SetPrev(
+        self.pages['hardware_details'].SetNext(
                                             self.pages['release_or_snapshot'])
 
-        self.pages['hardware_details'].SetNext(self.pages['select_os'])
-        self.pages['select_os'].SetPrev(self.pages['hardware_details'])
+        self.pages['release_or_snapshot'].SetPrev(
+                                            self.pages['hardware_details'])
+
+        self.pages['release_or_snapshot'].SetNext(self.pages['select_os'])
+        self.pages['select_os'].SetPrev(self.pages['release_or_snapshot'])
         # Select OS goes to select build, which is customised for
         # releases or snapshots
         self.pages['lmc_settings'].SetNext(self.pages['run_lmc'])
@@ -1543,7 +1587,8 @@ class TestDriveWizard(wx.wizard.Wizard):
         for (name, page) in self.pages.items():
             self.wizard.GetPageAreaSizer().Add(page)
 
-        self.wizard.RunWizard(self.pages['release_or_snapshot'])
+        self.pages['hardware_details'].on_page_changing()
+        self.wizard.RunWizard(self.pages['hardware_details'])
 
 
 def run():
