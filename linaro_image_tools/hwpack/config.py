@@ -169,7 +169,7 @@ class Config(object):
 
     @property
     def uboot_in_boot_part(self):
-        """Whether uboot binary should be put in the boot partition. A bool."""
+        """Whether uboot binary should be put in the boot partition. A str."""
         return self.parser.get(self.MAIN_SECTION, self.UBOOT_IN_BOOT_PART_KEY)
 
     def _get_option_from_main_section(self, key):
