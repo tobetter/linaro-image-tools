@@ -229,6 +229,64 @@ class ConfigTests(TestCase):
                                      "kernel_file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
+    def test_validate_empty_kernel_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n"
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = \n")
+        self.assertValidationError("No kernel_file in the [hwpack] section", config)
+
+    def test_validate_invalid_initrd_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n" \
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                                     "initrd_file = ~~\n")
+        self.assertValidationError("Invalid path: ~~", config)
+
+    def test_validate_empty_initrd_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n"
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                                     "initrd_file = \n")
+        self.assertValidationError("No initrd_file in the [hwpack] section", config)
+
+    def test_validate_empty_boot_script(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n"
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                                     "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n")
+        self.assertValidationError("No boot_script in the [hwpack] section", config)
+
+    def test_validate_invalid_boot_script(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n" \
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                                     "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
+                                     "u_boot_in_boot_part = No\n"\
+                                     "boot_script = ~~\n")
+        self.assertValidationError("Invalid path: ~~", config)
+
+    def test_validate_invalid_dtb_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n" \
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                                     "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
+                                     "boot_script = boot.scr\n"\
+                                     "u_boot_in_boot_part = No\n"\
+                                     "dtb_file = ~~\n")
+        self.assertValidationError("Invalid path: ~~", config)
+
     def test_validate_invalid_x_loader_package_name(self):
         config = self.get_config(
             self.valid_start_v2 + "u-boot-package = u-boot-linaro-s5pv310\n" \
@@ -329,6 +387,17 @@ class ConfigTests(TestCase):
         config = self.get_config(self.valid_complete_v2 + 
                                  "load_addr = 80000000\n")
         self.assertValidationError("Invalid load address: 80000000", config)
+
+    def test_validate_dtb_addr(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "dtb_addr = 0x8000000\n")
+        self.assertValidationError("Invalid dtb address: 0x8000000", config)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "dtb_addr = 0x8000000x\n")
+        self.assertValidationError("Invalid dtb address: 0x8000000x", config)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "dtb_addr = 80000000\n")
+        self.assertValidationError("Invalid dtb address: 80000000", config)
 
     def test_wired_interfaces(self):
         config = self.get_config(self.valid_complete_v2 + 

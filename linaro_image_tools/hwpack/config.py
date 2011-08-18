@@ -515,6 +515,9 @@ class Config(object):
             raise HwpackConfigError(
                 "No boot_script in the [%s] section" % \
                     self.MAIN_SECTION)
+        else:
+            self._assert_matches_pattern(
+                self.PATH_REGEX, boot_script, "Invalid path: %s" % boot_script)
 
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty
