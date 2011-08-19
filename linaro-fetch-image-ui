@@ -847,7 +847,7 @@ class LMC_settings(wiz.WizardPageSimple):
 
         #--- Build some widgets ---
         #-- Target file system --
-        file_systems = ["ext3", "ext4", "btrfs", "ext2"]
+        file_systems = ["ext4", "btrfs", "ext3", "ext2"]
         default_target = file_systems[0]
         self.settings['rootfs'] = default_target
         cb_rootfs = wx.ComboBox(pane,
