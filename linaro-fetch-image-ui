@@ -33,7 +33,11 @@ import Queue
 import time
 import datetime
 from linaro_image_tools.fetch_image import (QEMU, HARDWARE)
-
+from linaro_image_tools.media_create.check_device import (
+    _get_system_bus_and_udisks_iface,
+    _get_dbus_property,
+    )
+import dbus
 
 def add_button(bind_to,
                sizer,
@@ -121,9 +125,6 @@ class ReleaseOrSnapshotPage(wiz.PyWizardPage):
         self.adv_box.Add(header)
         self.grid1 = wx.FlexGridSizer(0, 2, 0, 0)
         self.grid2 = wx.FlexGridSizer(0, 2, 0, 0)
-
-        # TODO: Put in table with explainations!
-        # TODO: Needs to be different (OS name only) if selecting snapshot!
 
         platforms = []
         for key, value in self.settings['choice']['platform'].items():
@@ -500,8 +501,6 @@ image or to an MMC card. First we need to know what hardware you have."""
         self.Bind(wx.EVT_COMBOBOX,
                   self.event_combo_box_hardware,
                   self.cb_hardware)
-        #self.box1.Add(self.cb_hardware, 0,
-        #              wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP, 5)
 
         file_dev_grid = wx.FlexGridSizer(0, 1, 0, 0)
         line_1_grid = wx.FlexGridSizer(0, 2, 0, 0)
@@ -570,6 +569,8 @@ image or to an MMC card. First we need to know what hardware you have."""
             self.settings['hw_or_qemu'] = QEMU
             assert "beagle" in self.settings['choice']['hardware'].keys()
             self.settings['hardware'] = "beagle"
+            self.settings['compatable_hwpacks'] = (
+                self.settings['choice']['hwpack'][self.settings['hardware']])
 
         elif val == self.button_text['hardware']:
             self.settings['hw_or_qemu'] = HARDWARE
@@ -767,38 +768,11 @@ class LMC_settings(wiz.WizardPageSimple):
                                "card, or to a file on the local file system.")
         header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
 
-        #--- Build some widgets ---
-        #-- Target file system --
-        file_systems = ["ext3", "ext4", "btrfs", "ext2"]
-        default_target = file_systems[0]
-        self.settings['rootfs'] = default_target
-        cb_rootfs = wx.ComboBox(self,
-                                value=default_target,
-                                style=wx.CB_DROPDOWN | wx.CB_READONLY)
-
-        for item in file_systems:
-            cb_rootfs.Append(item, item.upper())
-
-        self.Bind(wx.EVT_COMBOBOX, self.event_combo_box_rootfs, cb_rootfs)
-
-        #-- Image size spinner
-        self.image_size_spinner = wx.SpinCtrl(self, -1, "")
-        self.Bind(wx.EVT_SPINCTRL,
-                  self.event_image_size,
-                  self.image_size_spinner)
-
-        #-- Swap size spinner
-        self.swap_size_spinner = wx.SpinCtrl(self, -1, "")
-        self.Bind(wx.EVT_SPINCTRL,
-                  self.event_swap_size,
-                  self.swap_size_spinner)
-
         #--- Layout ---
         self.sizer.Add(header, 0, wx.ALIGN_LEFT | wx.ALL, 5)
         box1 = wx.BoxSizer(wx.VERTICAL)
         file_dev_grid = wx.FlexGridSizer(0, 2, 0, 0)
         box1.Add(file_dev_grid, 0, wx.EXPAND)
-        grid1 = wx.FlexGridSizer(0, 2, 0, 0)
 
         # self.settings['write_to_file_or_device'] should match the first
         # button below...
@@ -851,33 +825,59 @@ class LMC_settings(wiz.WizardPageSimple):
 
         box1.Add(file_browse_grid, 0, wx.EXPAND)
 
-        cb1 = wx.CheckBox(self, -1, "Show advanced options")
-        self.Bind(wx.EVT_CHECKBOX, self.event_show_advanced_options, cb1)
-        box1.Add(cb1)
-
-        #-- Combo boxes for hardware and image selection --
-        optional_settings_box_title = wx.StaticBox(
-                                                self,
-                                                label=" Optional Settings ")
-
-        self.optional_settings_box = wx.StaticBoxSizer(
-                                                optional_settings_box_title,
-                                                wx.VERTICAL)
-
+        # Advanced settings collapsible pane
+        self.cp = wx.CollapsiblePane(self, label="Advanced Options",
+                                     style=wx.CP_DEFAULT_STYLE |
+                                           wx.CP_NO_TLW_RESIZE)
+        self.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.event_on_pane_changed,
+                  self.cp)
+        self.make_pane_content(self.cp.GetPane())
         self.box2 = wx.BoxSizer(wx.VERTICAL)
+        self.box2.Add(self.cp)
 
-        self.box2.AddWindow(self.optional_settings_box,
-                            0,
-                            border=2,
-                            flag=wx.ALL | wx.EXPAND)
+        self.sizer.Add(box1, 0, wx.ALIGN_LEFT | wx.ALL, 0)
+        self.sizer.Add(self.box2, 0, wx.ALIGN_LEFT | wx.ALL, 0)
+        self.SetSizer(self.sizer)
+        self.sizer.Fit(self)
+        self.Move((50, 50))
 
-        grid1.Add(cb_rootfs, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+    def make_pane_content(self, pane):
+        self.box = wx.BoxSizer(wx.VERTICAL)
+        grid1 = wx.FlexGridSizer(0, 2, 0, 0)
 
-        grid1.Add(wx.StaticText(self,
+        #--- Build some widgets ---
+        #-- Target file system --
+        file_systems = ["ext3", "ext4", "btrfs", "ext2"]
+        default_target = file_systems[0]
+        self.settings['rootfs'] = default_target
+        cb_rootfs = wx.ComboBox(pane,
+                                value=default_target,
+                                style=wx.CB_DROPDOWN | wx.CB_READONLY)
+
+        for item in file_systems:
+            cb_rootfs.Append(item, item.upper())
+
+        self.Bind(wx.EVT_COMBOBOX, self.event_combo_box_rootfs, cb_rootfs)
+
+        #-- Image size spinner
+        self.image_size_spinner = wx.SpinCtrl(pane, -1, "")
+        self.Bind(wx.EVT_SPINCTRL,
+                  self.event_image_size,
+                  self.image_size_spinner)
+
+        #-- Swap size spinner
+        self.swap_size_spinner = wx.SpinCtrl(pane, -1, "")
+        self.Bind(wx.EVT_SPINCTRL,
+                  self.event_swap_size,
+                  self.swap_size_spinner)
+
+
+        alignment = wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP
+        grid1.Add(cb_rootfs, 0, alignment, 5)
+
+        grid1.Add(wx.StaticText(pane,
                                 label="The root file system of the image"),
-                                0,
-                                wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
-                                5)
+                                0, alignment, 5)
 
         # We want to sub-devide the cell, to add another grid sizer...
         file_size_grid = wx.FlexGridSizer(0, 2, 0, 0)
@@ -889,37 +889,37 @@ class LMC_settings(wiz.WizardPageSimple):
         # Add a spinner that allows us to type/click a numerical value (defined above)
         file_size_grid.Add(self.image_size_spinner,
                            0,
-                           wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
+                           alignment,
                            5)
 
         # Add a choice of MB or GB for size input
         units = ["GB", "MB"]
         self.size_unit = units[0]  # Set the default unit
-        unit_choice = wx.Choice(self, -1, (100, 50), choices=units)
+        unit_choice = wx.Choice(pane, -1, (100, 50), choices=units)
         self.Bind(wx.EVT_CHOICE, self.event_chose_unit, unit_choice)
         file_size_grid.Add(unit_choice, 0, wx.ALIGN_RIGHT | wx.TOP, 5)
 
         # Back out of the extra grid, add some help text
         grid1.Add(wx.StaticText(
-                            self,
+                            pane,
                             label="Writing to file only: Image file size"),
                             0,
-                            wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
+                            alignment,
                             5)
 
         # The swap size (MB only)
         grid1.Add(self.swap_size_spinner,
                   0,
-                  wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
+                  alignment,
                   5)
 
-        grid1.Add(wx.StaticText(self, label="Swap file size in MB"),
+        grid1.Add(wx.StaticText(pane, label="Swap file size in MB"),
                   0,
                   wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                   5)
 
         self.cb_hwpacks = wx.ComboBox(
-                                self,
+                                pane,
                                 value=self.settings['compatable_hwpacks'][0],
                                 style=wx.CB_DROPDOWN | wx.CB_READONLY)
 
@@ -932,37 +932,14 @@ class LMC_settings(wiz.WizardPageSimple):
                   wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                   5)
 
-        grid1.Add(wx.StaticText(self, label="Compatible hardware packs"),
+        grid1.Add(wx.StaticText(pane, label="Compatible hardware packs"),
                   0,
                   wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                   5)
 
-        self.optional_settings_box.Add(grid1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
-
-        confirm_mmc_usage_title = wx.StaticBox(self, label=" Are you sure? ")
-
-        self.confirm_mmc_usage_box = wx.StaticBoxSizer(confirm_mmc_usage_title,
-                                                       wx.VERTICAL)
-        cb2 = wx.CheckBox(
-                        self,
-                        -1,
-                        "Yes, erase and use the device I have selected above.")
-
-        self.Bind(wx.EVT_CHECKBOX, self.event_use_mmc_tickbox, cb2)
-        self.confirm_mmc_usage_box.Add(cb2)
-
-        self.box3 = wx.BoxSizer(wx.VERTICAL)
-        self.box3.AddWindow(self.confirm_mmc_usage_box,
-                            0,
-                            border=2,
-                            flag=wx.ALL | wx.EXPAND)
-
-        self.sizer.Add(box1, 0, wx.ALIGN_LEFT | wx.ALL, 0)
-        self.sizer.Add(self.box2, 0, wx.ALIGN_LEFT | wx.ALL, 0)
-        self.sizer.Add(self.box3, 0, wx.ALIGN_LEFT | wx.ALL, 0)
-        self.SetSizer(self.sizer)
-        self.sizer.Fit(self)
-        self.Move((50, 50))
+        self.box.Add(grid1, 0, alignment, 0)
+        pane.SetSizer(self.box)
+        self.box.Fit(pane)
 
     def on_activate(self):
         self.update_forward_active_and_mmc_confirm_box_visible()
@@ -1008,22 +985,14 @@ class LMC_settings(wiz.WizardPageSimple):
     def update_forward_active_and_mmc_confirm_box_visible(self):
         if(    self.settings['path_selected']
            and self.settings['path_selected'] != ""):
-
-            if (   self.settings['write_to_file_or_device'] == "file"
-                or self.settings['write_to_file_or_device'] == "device"
-                   and self.yes_use_mmc):
-                self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
-            else:
-                self.wizard.FindWindowById(wx.ID_FORWARD).Disable()
+            self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
         else:
             self.wizard.FindWindowById(wx.ID_FORWARD).Disable()
 
-        if self.settings['write_to_file_or_device'] == "device":
-            self.box3.Show(self.confirm_mmc_usage_box, True)
-        else:
-            self.box3.Hide(self.confirm_mmc_usage_box, True)
-
     # --- Event Handlers ---
+    def event_on_pane_changed(self, event):
+        self.Layout()
+
     def event_open_file_control(self, event):
         if self.settings['write_to_file_or_device'] == "file":
 
@@ -1034,14 +1003,15 @@ class LMC_settings(wiz.WizardPageSimple):
                                 style=wx.SAVE)
 
         elif self.settings['write_to_file_or_device'] == "device":
-            dlg = wx.FileDialog(self,
-                                message="Choose a device",
-                                defaultDir=os.getcwd(),
-                                defaultFile="",
-                                style=wx.OPEN | wx.CHANGE_DIR)
+            dlg = DevChoser(self, -1, "Please chose a device", self.settings)
 
-        if dlg.ShowModal() == wx.ID_OK:
-            self.settings['path_selected'] = dlg.GetPaths()[0]
+        result = dlg.ShowModal()
+        file_or_dev = self.settings['write_to_file_or_device']
+
+        if result == wx.ID_OK or file_or_dev == "device":
+            # The dev chooser doesn't do ok/cancel, it just finishes.
+            if self.settings['write_to_file_or_device'] == "file":
+                self.settings['path_selected'] = dlg.GetPaths()[0]
             self.file_path_and_name.SetValue(self.settings['path_selected'])
 
         dlg.Destroy()
@@ -1077,12 +1047,6 @@ class LMC_settings(wiz.WizardPageSimple):
 
         self.update_forward_active_and_mmc_confirm_box_visible()
 
-    def event_show_advanced_options(self, event):
-        if event.IsChecked():
-            self.box2.Show(self.optional_settings_box, True)
-        else:
-            self.box2.Hide(self.optional_settings_box, True)
-
     def event_pick_file_path(self, evt):
         self.settings['path_selected'] = os.path.abspath(evt.GetPath())
         self.update_forward_active_and_mmc_confirm_box_visible()
@@ -1105,10 +1069,87 @@ class LMC_settings(wiz.WizardPageSimple):
     def event_swap_size(self, event):
         self.settings['swap_file'] = str(self.image_size_spinner.GetValue())
 
-    def event_use_mmc_tickbox(self, event):
-        self.yes_use_mmc = event.IsChecked()
-        self.update_forward_active_and_mmc_confirm_box_visible()
 
+class DevChoser(wx.Dialog):
+    def __init__(self, parent, id, title, settings):
+        self.settings = settings
+        wx.Dialog.__init__(self, parent, id, title)
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        dev_info = self.get_device_info()
+        dev_number = 1
+
+        grid1 = wx.FlexGridSizer(0, len(dev_info[0].keys())+1, 0, 0)
+        group = wx.RB_GROUP
+        alignment = wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP
+        keys = dev_info[0].keys()
+
+        grid1.Add(wx.StaticText(self, label=""))
+        for key in keys:
+            grid1.Add(wx.StaticText(self, label=key), 0, alignment, 5)
+
+        self.id_dev_map = {}
+        first = True
+        for info in dev_info:
+            button = add_button(self, grid1, str(dev_number), group,
+                                self.event_radio_button_select, None, None)
+            group = None
+
+            for key in keys:
+                message = info[key]
+                grid1.Add(wx.StaticText(self, label=message), 0, alignment, 5)
+
+                if key == "path":
+                    self.id_dev_map[str(dev_number)] = info[key]
+
+                    if self.settings['path_selected'] == info[key]:
+                        button.SetValue(True)
+
+                    if first and not self.settings['path_selected']:
+                         self.settings['path_selected'] = info[key]
+
+            dev_number += 1
+
+        vbox.Add(grid1)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        okButton = wx.Button(self, -1, 'Use Selected Device')
+        okButton.Bind(wx.EVT_BUTTON, self.OnCloseMe)
+        hbox.Add(okButton, 1)
+
+        vbox.Add(hbox, 1, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 10)
+        vbox.Fit(self)
+        self.SetSizer(vbox)
+
+    def event_radio_button_select(self, event):
+        val = event.GetEventObject().GetLabel()
+        self.settings['path_selected'] = self.id_dev_map[val]
+
+    def get_device_info(self):
+        """Get information about devices found on the system.
+        """
+        bus, udisks = _get_system_bus_and_udisks_iface()
+        devices = udisks.get_dbus_method('EnumerateDevices')()
+        devices.sort()
+        dev_info = []
+        for path in devices:
+            device = bus.get_object("org.freedesktop.UDisks", path)
+            props = ['drive-model', 'drive-vendor',
+                     'drive-connection-interface', 'drive-media']
+            info = {'path': _get_dbus_property('DeviceFile', device, path)}
+            if(not _get_dbus_property('device-is-partition', device, path) and
+               _get_dbus_property('device-is-media-available', device, path)):
+                for prop in props:
+                    info[prop] = str(_get_dbus_property(prop, device, path))
+                dev_info.append(info)
+
+        return dev_info
+
+    def OnCloseMe(self, event):
+        self.Close(True)
+
+    def OnCloseWindow(self, event):
+        self.Destroy()
 
 class RunLMC(wiz.WizardPageSimple):
     """Present the user with some information about their choices and a button
@@ -1279,6 +1320,13 @@ class RunLMC(wiz.WizardPageSimple):
             self.settings['image_file'] = self.settings['path_selected']
         elif self.settings['write_to_file_or_device'] == "device":
             self.settings['mmc'] = self.settings['path_selected']
+
+            title = 'Are you sure?'
+            text = "Completely erase {0}?".format(self.settings['mmc'])
+            dlg = wx.MessageDialog(None, text, title,
+                                  wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+            if dlg.ShowModal() != wx.ID_YES:
+                return
         else:
             assert False, ("self.config.settings['write_to_file_or_device'] "
                            "was an unexpected value"
@@ -1492,7 +1540,6 @@ class TestDriveWizard(wx.wizard.Wizard):
     def __init__(self, title):
         wx.wizard.Wizard.__init__(self, None, -1, title, wx.NullBitmap)
         self.Bind(wx.wizard.EVT_WIZARD_PAGE_CHANGING, self.on_page_changing)
-        self.done_startup = False
 
     def on_page_changing(self, evt):
         """Executed before the page changes."""
@@ -1501,15 +1548,6 @@ class TestDriveWizard(wx.wizard.Wizard):
         rel_or_snap_pg = self.pages['release_or_snapshot']
         select_snap_pg = self.pages['select_snapshot']
         lmc_settings_pg = self.pages['lmc_settings']
-
-        if not self.done_startup:
-            lmc_settings_pg.box2.Hide(lmc_settings_pg.optional_settings_box,
-                                      True)
-
-            lmc_settings_pg.box3.Hide(lmc_settings_pg.confirm_mmc_usage_box,
-                                      True)
-
-            self.done_startup = True
 
         page = evt.GetPage()
 
