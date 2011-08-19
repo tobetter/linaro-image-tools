@@ -901,14 +901,10 @@ class DB():
     def record_url(self, url, table):
         """Check to see if the record exists in the index, if not, add it"""
 
-        assert self.url_parse[table]["base_url"] != None, ("Can not match the "
+        assert self.url_parse[table]["base_url"], ("Can not match the "
                "URL received (%s) to an entry provided by add_url_parse_list",
                url)
         assert re.search('^' + self.url_parse[table]["base_url"], url)
-
-        if(not re.search(self.url_parse[table]["url_validator"], url)):
-            #Make sure that the URL matches the validator
-            return
 
         logging.info("Recording URL", url)
 
@@ -919,7 +915,7 @@ class DB():
 
         # Do not add the record if it already exists
         self.c.execute("select url from " + table + " where url == ?", (url,))
-        if(self.c.fetchone()):
+        if self.c.fetchone():
             return
 
         url_match = re.search(self.url_parse[table]["base_url"] + r"(.*)$",
@@ -934,7 +930,7 @@ class DB():
         # Work out how many values we will insert into the database
         length = 0
         for name in self.url_parse[table]["url_chunks"]:
-            if(name != ""):
+            if name != "":
                 length += 1
 
         sqlcmd = "insert into " + table + " values ("
@@ -950,10 +946,10 @@ class DB():
         chunk_index = 0
         for name in self.url_parse[table]["url_chunks"]:
             # If this part of the URL isn't a parameter, don't insert it
-            if(name != ""):
+            if name != "":
                 # If the entry is a tuple, it indicates it is of the form
                 # name, regexp
-                if(isinstance(name, tuple)):
+                if isinstance(name, tuple):
                     # use stored regexp to extract data for the database
                     match = re.search(name[1], url_chunks[chunk_index])
                     assert match, ("Unable to match regexp to string ",
