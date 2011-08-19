@@ -473,7 +473,11 @@ class BoardConfig(object):
                 with cls.hardwarepack_handler:
                     default = os.path.join(
                         chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
-                        'u-boot.bin')
+                        'u-boot.img')
+                    if not os.path.exists(default):
+                        default = os.path.join(
+                            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+                            'u-boot.bin')
                     uboot_bin = cls.get_file('u_boot', default=default)
                     proc = cmd_runner.run(
                         ['cp', '-v', uboot_bin, boot_disk], as_root=True)
