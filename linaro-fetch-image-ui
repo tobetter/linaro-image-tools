@@ -77,6 +77,7 @@ class ReleaseOrSnapshotPage(wiz.PyWizardPage):
         self.width = width
         self.settings['image'] = None
         self.os_selected = True
+        self.width = width
 
         message = ("Would you like to use a Linaro release, or a more up to "
                    "date, but possibly unstable build?")
@@ -90,14 +91,16 @@ class ReleaseOrSnapshotPage(wiz.PyWizardPage):
                             'snapshot': "I would like to run untested, but "
                                         "more up-to-date software."}
 
-        add_button(self, self.box1, self.button_text['release'],
-                   wx.RB_GROUP, self.event_radio_button_select, None, None)
+        self.rel_btn = add_button(self, self.box1, self.button_text['release'],
+                                  wx.RB_GROUP, self.event_radio_button_select,
+                                  None, None)
 
         # Save the setting for the default selected value
         self.settings['release_or_snapshot'] = "release"
 
-        add_button(self, self.box1, self.button_text['snapshot'], None,
-                   self.event_radio_button_select, None, None)
+        self.snap_btn = add_button(self, self.box1,
+                                   self.button_text['snapshot'], None,
+                                   self.event_radio_button_select, None, None)
 
         self.cp = wx.CollapsiblePane(self, label="Advanced Options",
                                      style=wx.CP_DEFAULT_STYLE |
@@ -107,10 +110,13 @@ class ReleaseOrSnapshotPage(wiz.PyWizardPage):
         self.make_pane_content(self.cp.GetPane())
         self.box2 = wx.BoxSizer(wx.VERTICAL)
         self.box2.Add(self.cp)
-        
+
+        self.help_text_main = wx.StaticText(self, -1, "")
+
         self.sizer.Add(header)
         self.sizer.Add(self.box1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
         self.sizer.Add(self.box2, 0, wx.ALIGN_LEFT | wx.ALL, 5)
+        self.sizer.Add(self.help_text_main, 0, wx.ALIGN_LEFT | wx.ALL, 5)
         self.SetSizerAndFit(self.sizer)
         self.sizer.Fit(self)
         self.Move((50, 50))
@@ -390,6 +396,50 @@ class ReleaseOrSnapshotPage(wiz.PyWizardPage):
         self.cb_image.SetValue(
                             self.get_human_os_name(self.settings['image'])[0])
 
+    def force_rel_snap_if_hw_requires(self):
+        """
+        If a hardware pack is only available on a release or snapshot build
+        then force self.settings['release_or_snapshot'] and grey out the
+        other radio button. Also display a helpful message.
+        """
+
+        snapshot_ok = False
+        release_ok = False
+
+        for hwpack in self.settings['compatable_hwpacks']:
+            if self.db.hardware_is_available_in_table("snapshot_hwpacks",
+                                                      hwpack):
+                snapshot_ok = True
+            if self.db.hardware_is_available_in_table("release_hwpacks",
+                                                         hwpack):
+                release_ok = True
+
+        assert release_ok or snapshot_ok, ("release or snapshot should have"
+                                           "a hardware pack available")
+
+        self.rel_btn.Enable()
+        self.snap_btn.Enable()
+        message = ""
+
+        if not release_ok:
+            self.settings['release_or_snapshot'] = "snapshot"
+            self.rel_btn.Disable()
+            self.rel_btn.SetValue(False)
+            self.snap_btn.SetValue(True)
+            message = ("The hardware you have chosen is only available for "
+                       "snapshot builds, so release builds have been disabled")
+
+        if not snapshot_ok:
+            self.settings['release_or_snapshot'] = "release"
+            self.snap_btn.Disable()
+            self.snap_btn.SetValue(False)
+            self.rel_btn.SetValue(True)
+            message = ("The hardware you have chosen is only available for "
+                       "release builds, so snapshot builds have been disabled")
+
+        self.help_text_main.SetLabel(message)
+        self.help_text_main.Wrap(self.width - 10)
+
     def GetNext(self):
         if self.settings['release_or_snapshot'] == "release":
             return self.pages['lmc_settings']
@@ -546,11 +596,12 @@ image or to an MMC card. First we need to know what hardware you have."""
                                                                   .iteritems(),
                                        key=operator.itemgetter(1))
 
-        table = self.settings['release_or_snapshot'] + "_hwpacks"
-
         for device_name, human_readable_name in sorted_hardware_names:
             for hwpack in self.settings['choice']['hwpack'][device_name]:
-                if self.db.hardware_is_available_in_table(table, hwpack):
+                if(self.db.hardware_is_available_in_table("snapshot_hwpacks",
+                                                          hwpack)
+                   or self.db.hardware_is_available_in_table("release_hwpacks",
+                                                             hwpack)):
                     self.cb_hardware.Append(human_readable_name, device_name)
                     break
 
@@ -1570,6 +1621,7 @@ class TestDriveWizard(wx.wizard.Wizard):
                                             self.config.settings['build_date'])
 
             if page == hw_details_pg:
+                rel_or_snap_pg.force_rel_snap_if_hw_requires()
                 rel_or_snap_pg.fill_os_list()
                 rel_or_snap_pg.update_release_and_build_boxes()
 
