@@ -716,6 +716,44 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
             i += 1
         return expected
 
+    def test_get_file_info_relative_path(self):
+        # Create a config file
+        cfg_file = os.path.join(self.temp_bootdir_path,
+                      boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
+        uboot_file = 'u-boot.bin'
+        with open(cfg_file, 'w') as f:
+                f.write('%s %s %i %#x %s\n' % ('NORMAL', uboot_file, 0,
+                                               0xBA0000, '9'))
+        with open(os.path.join(self.temp_bootdir_path, uboot_file), 'w') as f:
+            file_info = boards.SnowballEmmcConfig.get_file_info(
+                self.temp_bootdir_path)
+        self.assertEquals(file_info[0]['filename'],
+                          os.path.join(self.temp_bootdir_path, uboot_file))
+
+    def test_get_file_info_abs_path(self):
+        # Create a config file
+        cfg_file = os.path.join(self.temp_bootdir_path,
+                      boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
+        uboot_dir = tempfile.mkdtemp(dir=self.temp_bootdir_path)
+        uboot_file = os.path.join(uboot_dir, 'u-boot.bin')
+        with open(cfg_file, 'w') as f:
+                f.write('%s %s %i %#x %s\n' % ('NORMAL', uboot_file, 0,
+                                               0xBA0000, '9'))
+        with open(uboot_file, 'w') as f:
+            file_info = boards.SnowballEmmcConfig.get_file_info(
+                self.temp_bootdir_path)
+        self.assertEquals(file_info[0]['filename'], uboot_file)
+
+    def test_get_file_info_raises(self):
+        # Create a config file
+        cfg_file = os.path.join(self.temp_bootdir_path,
+                      boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
+        with open(cfg_file, 'w') as f:
+                f.write('%s %s %i %#x %s\n' % ('NORMAL', 'u-boot.bin', 0,
+                                               0xBA0000, '9'))
+        self.assertRaises(AssertionError, boards.SnowballEmmcConfig.get_file_info,
+                          self.temp_bootdir_path)
+
     def test_file_name_size(self):
         ''' Test using a to large toc file '''
         _, toc_filename = tempfile.mkstemp()

@@ -832,7 +832,17 @@ class SnowballEmmcConfig(SnowballSdConfig):
                 file_data = line.split()
                 if file_data[0][0] == '#':
                     continue
-                filename = os.path.join(bin_dir, file_data[1])
+                filename = file_data[1]
+                if not os.path.exists(filename):
+                    # If filename is not absolute, assume it's relative to bin
+                    # for backwards compatibility.
+                    filename = os.path.join(bin_dir, file_data[1])
+                    if not os.path.exists(filename):
+                        # Temp fix for hwpack which doesn't link u-boot in /boot
+                        filename = os.path.join(bin_dir, '..', 'usr', 'lib',
+                                                'u-boot', 'u8500_snowball', file_data[1])
+                assert os.path.exists(filename), "File %s does not exist, " \
+                    "please check the startfiles config file." % file_data[1]
                 address = long(file_data[3], 16)
                 if address != 0:
                     ofs = address
