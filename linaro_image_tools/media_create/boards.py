@@ -835,8 +835,8 @@ class SnowballEmmcConfig(SnowballSdConfig):
                     continue
                 filename = os.path.join(chroot_dir, file_data[1])
                 if not os.path.exists(filename):
-                    # If filename is not absolute, assume it's relative to bin
-                    # for backwards compatibility.
+                    # If filename is not absolute, assume it's relative to
+                    # /boot in the chroot for backwards compatibility.
                     filename = os.path.join(bin_dir, file_data[1])
                 assert os.path.exists(filename), "File %s does not exist, " \
                     "please check the startfiles config file." % file_data[1]
