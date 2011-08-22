@@ -906,7 +906,7 @@ class DB():
                url)
         assert re.search('^' + self.url_parse[table]["base_url"], url)
 
-        logging.info("Recording URL", url)
+        logging.info("Recording URL %s", url)
 
         assert url not in self.touched_urls, ("URLs expected to only be added "
                                               "to 1 place\n" + url)
@@ -927,18 +927,21 @@ class DB():
         # We now construct an SQL command to insert the index data into the
         # database using the information we have.
 
-        # Work out how many values we will insert into the database
+        sqlcmd = "INSERT INTO " + table + " ("
         length = 0
-        for name in self.url_parse[table]["url_chunks"]:
+        for name in (self.url_parse[table]["url_chunks"] + ["url"]):
             if name != "":
+                if isinstance(name, tuple):
+                    name = name[0]
+                sqlcmd += name + ", "
                 length += 1
 
-        sqlcmd = "insert into " + table + " values ("
+        sqlcmd = sqlcmd.rstrip(", ")  # get rid of unwanted space & comma
+        sqlcmd += ") VALUES ("
 
         # Add the appropriate number of ?s (+1 is so we have room for url)
-        sqlcmd += "".join(["?, " for x in range(length + 1)])
-        sqlcmd = sqlcmd.rstrip(" ")  # get rid of unwanted space
-        sqlcmd = sqlcmd.rstrip(",")  # get rid of unwanted comma
+        sqlcmd += "".join(["?, " for x in range(length)])
+        sqlcmd = sqlcmd.rstrip(", ")  # get rid of unwanted space and comma
         sqlcmd += ")"
 
         # Get the parameters from the URL to record in the SQL database
@@ -962,7 +965,7 @@ class DB():
             chunk_index += 1
 
         sqlparams.append(url)
-
+        logging.info("{0}: {1}".format(sqlcmd, sqlparams))
         self.c.execute(sqlcmd, tuple(sqlparams))
 
     def commit(self):
@@ -973,7 +976,7 @@ class DB():
             self.commit()
             self.database.close()
 
-    def create_table_with_url_text_items(self, table, items):
+    def create_table_with_name_columns(self, table, items):
         cmd = "create table if not exists "
         cmd += table + " ("
 

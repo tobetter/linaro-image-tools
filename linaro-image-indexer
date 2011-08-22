@@ -32,6 +32,9 @@ RELEASE_URL                 = "http://releases.linaro.org/platform/"
 SNAPSHOTS_WWW_DOCUMENT_ROOT = "/srv/snapshots.linaro.org/www/"
 SNAPSHOTS_URL               = "http://snapshots.linaro.org/"
 
+# Log everything, and send it to stderr.
+logging.basicConfig(level=logging.DEBUG)
+
 class ServerIndexer():
     """Create a database of files on the linaro image servers for use by image
        creation tools."""
@@ -48,7 +51,7 @@ class ServerIndexer():
             return True
 
         for item in list:
-            if re.search(to_search, item):
+            if re.search(item, to_search):
                 return True
 
         return False
@@ -58,10 +61,12 @@ class ServerIndexer():
         logging.info(self.url_parse.items())
         
         for table, info in self.url_parse.items():
-            logging.info(info["base_dir"], ":", info["base_url"], table,
-                         info["url_validator"], info["url_chunks"])
+            logging.info("------------------------------------------")
+            logging.info("{0}: {1}".format(table, info['db_columns']))
+            logging.info("{0} {1} {2} {3}".format(
+                          info["base_dir"], info["base_url"],
+                          info["url_validator"], info["url_chunks"]))
             self.go(info, table)
-            logging.info("")
 
     def go(self, info, table):
         root_url = info["base_url"]
@@ -71,7 +76,8 @@ class ServerIndexer():
             for file in files:
                 relative_location = re.sub(root_dir, "",
                                            os.path.join(root, file))
-
+                relative_location = relative_location.lstrip("/")
+                
                 to_match = info["url_validator"][0]
                 not_match = info["url_validator"][1]
 
@@ -84,7 +90,7 @@ class ServerIndexer():
                 url = urlparse.urljoin(root_url, relative_location)
                 url = urlparse.urljoin(url, file)
 
-                logging.info(url)
+                logging.info("{0}: {1}".format(table, url))
                 self.db.record_url(url, table)
                     
         self.dump() 
@@ -128,7 +134,7 @@ class ServerIndexer():
                     else:
                         items.append(item)
 
-            self.db.create_table_with_url_text_items(id, items)
+            self.db.create_table_with_name_columns(id, db_columns)
 
     def clean_removed_urls_from_db(self):
         self.db.clean_removed_urls_from_db()
@@ -156,25 +162,25 @@ if __name__ == '__main__':
                     "release_binaries",
                     ["platform", "image", ""])
 
-#    if old:
-#        #releases.linaro.org/platform/linaro-m/hwpacks/final/
-#        # hwpack_linaro-bsp-omap4_20101109-1_armel_unsupported.tar.gz
-#        crawler.add_directory_parse_list(RELEASES_WWW_DOCUMENT_ROOT,
-#                                         RELEASE_URL,
-#                                         (["/hwpacks/"], ["/platform/"]),
-#                                         "release_hwpacks",
-#                                         ["plaform", "build", "hardware"],
-#                                         ["platform", "", "build",
-#                                          ("hardware", r"hwpack_linaro-(.*?)_")])
-#    else:
-#        # 11.06/ubuntu/panda
-#        crawler.add_directory_parse_list(
-#                  RELEASES_WWW_DOCUMENT_ROOT,
-#                  RELEASE_URL,
-#                  (["/hwpacks/"], ["/platform/"]),
-#                  ["plaform", "build", "hardware"],
-#                  "release_hwpacks",
-#                  ["platform", "", "", ("hardware", r"hwpack_linaro-(.*?)_")])
+    if old:
+        #releases.linaro.org/platform/linaro-m/hwpacks/final/
+        # hwpack_linaro-bsp-omap4_20101109-1_armel_unsupported.tar.gz
+        crawler.add_directory_parse_list(RELEASES_WWW_DOCUMENT_ROOT,
+                                         RELEASE_URL,
+                                         (["/hwpacks/"], ["/platform/"]),
+                                         "release_hwpacks",
+                                         ["plaform", "build", "hardware"],
+                                         ["platform", "", "build",
+                                          ("hardware", r"hwpack_linaro-(.*?)_")])
+    else:
+        # 11.06/ubuntu/panda
+        crawler.add_directory_parse_list(
+                  RELEASES_WWW_DOCUMENT_ROOT,
+                  RELEASE_URL,
+                  (["hwpack"], ["/platform/"]),
+                  ["platform", "build", "hardware"],
+                  "release_hwpacks",
+                  ["platform", "", "", ("hardware", r"hwpack_linaro-(.*?)_")])
 #
 #    #http://snapshots.linaro.org/11.05-daily/linaro-alip/20110420/0/images/tar/
 #    crawler.add_directory_parse_list(SNAPSHOTS_WWW_DOCUMENT_ROOT,
