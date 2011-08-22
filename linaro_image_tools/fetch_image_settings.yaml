@@ -21,13 +21,6 @@ UI:
     release: Release help text
     snapshot: Snapshot help text
   translate:
-    linaro-m: '10.11'
-    linaro-n: '11.05'
-    '11.06': '11.06'
-    '11.07': '11.07'
-    '11.08': '11.08'
-    '11.09': '11.09'
-    '11.10': '11.10'
   cmdline short names:
     build: b
     hardware: w
@@ -45,7 +38,7 @@ choice:
     efikamx: EFIKA MX Smarttop 
     efikasb: EFIKA MX Smartbook
     mx51evk: i.MX51
-    mx53loco: i.MX53 Loco
+    mx53loco: i.MX53 Quick Start
     # I don't have a --dev setting to linaro-media-create for a u8500 yet.
     # u8500: U8500
     overo: Overo
@@ -119,9 +112,15 @@ choice:
     - beta
     - rc
     - final
+
+  platform:
+    '11.05':
+    - final
     '11.06':
     - final
     '11.07':
+    - final
+    '11.08':
     - final
 
 platform: linaro-n
