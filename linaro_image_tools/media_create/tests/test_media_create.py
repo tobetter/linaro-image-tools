@@ -726,7 +726,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                                                0xBA0000, '9'))
         with open(os.path.join(self.temp_bootdir_path, uboot_file), 'w') as f:
             file_info = boards.SnowballEmmcConfig.get_file_info(
-                self.temp_bootdir_path)
+                self.tempdir)
         self.assertEquals(file_info[0]['filename'],
                           os.path.join(self.temp_bootdir_path, uboot_file))
 
@@ -734,14 +734,14 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
         # Create a config file
         cfg_file = os.path.join(self.temp_bootdir_path,
                       boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
-        uboot_dir = tempfile.mkdtemp(dir=self.temp_bootdir_path)
+        uboot_dir = tempfile.mkdtemp(dir=self.tempdir)
         uboot_file = os.path.join(uboot_dir, 'u-boot.bin')
         with open(cfg_file, 'w') as f:
                 f.write('%s %s %i %#x %s\n' % ('NORMAL', uboot_file, 0,
                                                0xBA0000, '9'))
         with open(uboot_file, 'w') as f:
             file_info = boards.SnowballEmmcConfig.get_file_info(
-                self.temp_bootdir_path)
+                self.tempdir)
         self.assertEquals(file_info[0]['filename'], uboot_file)
 
     def test_get_file_info_raises(self):
@@ -752,7 +752,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                 f.write('%s %s %i %#x %s\n' % ('NORMAL', 'u-boot.bin', 0,
                                                0xBA0000, '9'))
         self.assertRaises(AssertionError, boards.SnowballEmmcConfig.get_file_info,
-                          self.temp_bootdir_path)
+                          self.tempdir)
 
     def test_file_name_size(self):
         ''' Test using a to large toc file '''
@@ -867,7 +867,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
     def test_normal_case(self):
         expected = self.setupFiles()
         actual = boards.SnowballEmmcConfig.get_file_info(
-            self.temp_bootdir_path)
+            self.tempdir)
         self.assertEquals(expected, actual)
 
 
