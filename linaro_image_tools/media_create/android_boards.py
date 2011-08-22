@@ -35,6 +35,7 @@ from linaro_image_tools.media_create.boards import Mx53LoCoConfig
 from linaro_image_tools.media_create.boards import SnowballSdConfig
 from linaro_image_tools.media_create.boards import SnowballEmmcConfig
 from linaro_image_tools.media_create.boards import SMDKV310Config
+from linaro_image_tools.media_create.boards import OrigenConfig
 from linaro_image_tools.media_create.boards import (
     align_up,
     align_partition,
@@ -266,6 +267,27 @@ class AndroidSMDKV310Config(AndroidBoardConfig, SMDKV310Config):
             loader_start, loader_len, command)
 
 
+class AndroidOrigenConfig(AndroidBoardConfig, OrigenConfig):
+    _extra_serial_opts = 'console=tty0 console=ttySAC2,115200n8'
+    android_specific_args = 'init=/init androidboot.console=ttySAC2'
+
+    @classmethod
+    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+        loaders_min_len = (
+            SAMSUNG_V310_BL2_START + SAMSUNG_V310_BL2_LEN -
+            SAMSUNG_V310_BL1_START)
+
+        loader_start, loader_end, loader_len = align_partition(
+            1, loaders_min_len, 1, PART_ALIGN_S)
+
+        command = super(AndroidOrigenConfig, cls).get_sfdisk_cmd(
+            should_align_boot_part=False, start_addr=loader_end,
+            extra_part=True)
+
+        return '%s,%s,0xDA\n%s' % (
+            loader_start, loader_len, command)
+
+
 android_board_configs = {
     'beagle': AndroidBeagleConfig,
     'panda': AndroidPandaConfig,
@@ -273,4 +295,5 @@ android_board_configs = {
     'snowball_emmc': AndroidSnowballEmmcConfig,
     'smdkv310': AndroidSMDKV310Config,
     'iMX53': AndroidMx53LoCoConfig,
+    'origen': AndroidOrigenConfig,
     }
