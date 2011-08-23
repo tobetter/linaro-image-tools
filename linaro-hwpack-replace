@@ -76,7 +76,7 @@ def set_logging_param(args):
 
 
 def get_hwpack_name(old_hwpack):
-    timestamp = [datetime.datetime.now().strftime("%Y%m%d-%H%S")]
+    timestamp = [datetime.datetime.now().strftime("%Y%m%d-%H%M")]
     hwpack_name_parts = (old_hwpack.split('_', 3))
     return('_'.join(hwpack_name_parts[:2] + timestamp + hwpack_name_parts[3:]))
 
