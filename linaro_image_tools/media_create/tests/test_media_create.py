@@ -736,8 +736,9 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                       boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
         uboot_dir = tempfile.mkdtemp(dir=self.tempdir)
         uboot_file = os.path.join(uboot_dir, 'u-boot.bin')
+        uboot_relative_file = uboot_file.replace(self.tempdir, '')
         with open(cfg_file, 'w') as f:
-                f.write('%s %s %i %#x %s\n' % ('NORMAL', uboot_file, 0,
+                f.write('%s %s %i %#x %s\n' % ('NORMAL', uboot_relative_file, 0,
                                                0xBA0000, '9'))
         with open(uboot_file, 'w') as f:
             file_info = boards.SnowballEmmcConfig.get_file_info(
