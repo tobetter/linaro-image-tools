@@ -759,7 +759,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
         # Populate created raw partition with TOC and startup files.
         config_files_path = os.path.join(chroot_dir, 'boot')
         _, toc_filename = tempfile.mkstemp()
-        new_files = cls.get_file_info(config_files_path)
+        new_files = cls.get_file_info(chroot_dir)
         with open(toc_filename, 'wb') as toc:
             cls.create_toc(toc, new_files)
         cls.install_snowball_boot_loader(toc_filename, new_files,
@@ -820,19 +820,26 @@ class SnowballEmmcConfig(SnowballSdConfig):
             f.write(data)
 
     @classmethod
-    def get_file_info(cls, bin_dir):
+    def get_file_info(cls, chroot_dir):
         ''' Fills in the offsets of files that are located in
         non-absolute memory locations depending on their sizes.'
         Also fills in file sizes'''
         ofs = cls.TOC_SIZE
         files = []
+        bin_dir = os.path.join(chroot_dir, 'boot')
         with open(os.path.join(bin_dir, cls.SNOWBALL_STARTUP_FILES_CONFIG),
                   'r') as info_file:
             for line in info_file:
                 file_data = line.split()
                 if file_data[0][0] == '#':
                     continue
-                filename = os.path.join(bin_dir, file_data[1])
+                if file_data[1].startswith('/'):
+                    filename = os.path.join(chroot_dir,
+                                            file_data[1].lstrip('/'))
+                else:
+                    filename = os.path.join(bin_dir, file_data[1])
+                assert os.path.exists(filename), "File %s does not exist, " \
+                    "please check the startfiles config file." % file_data[1]
                 address = long(file_data[3], 16)
                 if address != 0:
                     ofs = address
