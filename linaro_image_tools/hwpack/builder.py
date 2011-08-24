@@ -123,6 +123,8 @@ class HardwarePackBuilder(object):
                 packages = self.config.packages[:]
                 if self.config.u_boot_package is not None:
                     packages.append(self.config.u_boot_package)
+                if self.config.x_loader_package is not None:
+                    packages.append(self.config.x_loader_package)
                 local_packages = [
                     FetchedPackage.from_deb(deb)
                     for deb in self.local_debs]
@@ -146,6 +148,13 @@ class HardwarePackBuilder(object):
                                 packages, self.config.u_boot_package)
                             hwpack.metadata.u_boot = self.add_file_to_hwpack(
                                 u_boot_package, self.config.u_boot_file,
+                                package_unpacker, hwpack, hwpack.U_BOOT_DIR)
+
+                        if self.config.x_loader_package is not None:
+                            x_loader_package = self.find_fetched_package(
+                                packages, self.config.x_loader_package)
+                            hwpack.metadata.x_loader = self.add_file_to_hwpack(
+                                x_loader_package, self.config.x_loader_file,
                                 package_unpacker, hwpack, hwpack.U_BOOT_DIR)
 
                         logger.debug("Adding packages to hwpack")

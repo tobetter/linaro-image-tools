@@ -115,6 +115,11 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
     def setUp(self):
         super(HardwarePackBuilderTests, self).setUp()
         self.useFixture(ChdirToTempdirFixture())
+        self.extra_config={'format': '2.0', 'u-boot-package': 'wanted-package',
+                          'u-boot-file': 'wanted-file', 
+                          'partition_layout': 'bootfs_rootfs',
+                          'x_loader_package': 'x-loader-omap4-panda',
+                          'x_loader_file': 'usr/lib/x-loader/omap4430panda/MLO'}
 
     def test_raises_on_missing_configuration(self):
         e = self.assertRaises(
@@ -156,9 +161,7 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
                                                     wanted_package])
         _, config = self.makeMetaDataAndConfigFixture(
             [package_name, wanted_package_name], sources_dict,
-            extra_config={'format': '2.0', 'u-boot-package': 'wanted-package',
-                          'u-boot-file': 'wanted-file', 
-                          'partition_layout': 'bootfs_rootfs'})
+            extra_config=self.extra_config)
         builder = HardwarePackBuilder(config.filename, "1.0", [])
         found_package = builder.find_fetched_package(
             [available_package, wanted_package], wanted_package_name)
@@ -174,9 +177,7 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
                                                     wanted_package])
         _, config = self.makeMetaDataAndConfigFixture(
             [package_name, wanted_package_name], sources_dict,
-            extra_config={'format': '2.0', 'u-boot-package': 'wanted-package',
-                          'u-boot-file': 'wanted-file', 
-                          'partition_layout': 'bootfs_rootfs'})
+            extra_config=self.extra_config)
         builder = HardwarePackBuilder(config.filename, "1.0", [])
         packages = [available_package, wanted_package]
         builder.find_fetched_package(packages, wanted_package_name)
@@ -190,9 +191,7 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         sources_dict = self.sourcesDictForPackages([available_package])
         _, config = self.makeMetaDataAndConfigFixture(
             [package_name], sources_dict,
-            extra_config={'format': '2.0', 'u-boot-package': 'wanted-package',
-                          'u-boot-file': 'wanted-file', 
-                          'partition_layout': 'bootfs_rootfs'})
+            extra_config=self.extra_config)
         builder = HardwarePackBuilder(config.filename, "1.0", [])
         packages = [available_package]
         self.assertRaises(AssertionError, builder.find_fetched_package,

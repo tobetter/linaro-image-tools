@@ -276,9 +276,6 @@ class BoardConfig(object):
                 cls.load_addr = None
                 cls.serial_tty = None
                 cls.fat_size = None
-                cls.BOOT_MIN_SIZE_S = None
-                cls.ROOT_MIN_SIZE_S = None
-                cls.LOADER_MIN_SIZE_S = None
 
             # Set new values from metadata.
             cls.kernel_addr = cls.get_metadata_field(
@@ -578,7 +575,7 @@ class OmapConfig(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        install_omap_boot_loader(chroot_dir, boot_dir)
+        install_omap_boot_loader(chroot_dir, boot_dir, cls)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         make_dtb(d_img_data, boot_dir)
@@ -1294,11 +1291,16 @@ def _get_mlo_file(chroot_dir):
         raise AssertionError("No MLO files found on %s" % chroot_dir)
 
 
-def install_omap_boot_loader(chroot_dir, boot_disk):
-    mlo_file = _get_mlo_file(chroot_dir)
-    cmd_runner.run(["cp", "-v", mlo_file, boot_disk], as_root=True).wait()
-    # XXX: Is this really needed?
-    cmd_runner.run(["sync"]).wait()
+def install_omap_boot_loader(chroot_dir, boot_disk, cls):
+    with cls.hardwarepack_handler:
+        try:
+            default = _get_mlo_file(chroot_dir)
+        except AssertionError:
+            default = None
+        mlo_file = cls.get_file('x_loader', default=default)
+        cmd_runner.run(["cp", "-v", mlo_file, boot_disk], as_root=True).wait()
+        # XXX: Is this really needed?
+        cmd_runner.run(["sync"]).wait()
 
 
 def make_boot_ini(boot_script_path, boot_disk):

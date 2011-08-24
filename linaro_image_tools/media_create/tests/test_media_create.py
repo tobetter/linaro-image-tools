@@ -1458,7 +1458,10 @@ class TestBoards(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             boards, '_get_mlo_file',
             lambda chroot_dir: "%s/MLO" % chroot_dir))
-        install_omap_boot_loader("chroot_dir", "boot_disk")
+        class config(BoardConfig):
+            pass
+        config.set_metadata([])
+        install_omap_boot_loader("chroot_dir", "boot_disk", config)
         expected = [
             '%s cp -v chroot_dir/MLO boot_disk' % sudo_args, 'sync']
         self.assertEqual(expected, fixture.mock.commands_executed)
