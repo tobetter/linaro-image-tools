@@ -78,7 +78,6 @@ choice:
     - imx51
     
     mx53loco:
-    - lt-mx53loco
     - lt-mx5
      
     u8500:

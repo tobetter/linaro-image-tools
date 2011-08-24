@@ -36,6 +36,7 @@ import datetime
 import threading
 import subprocess
 import utils
+import xdg.BaseDirectory as xdgBaseDir
 
 QEMU = "qemu"
 HARDWARE = "hardware"
@@ -529,8 +530,7 @@ class FileHandler():
     """Downloads files and creates images from them by calling
     linaro-media-create"""
     def __init__(self):
-        import xdg.BaseDirectory as xdgBaseDir
-        self.homedir = os.path.join(xdgBaseDir.xdg_config_home,
+        self.datadir = os.path.join(xdgBaseDir.xdg_data_home,
                                      "linaro",
                                      "image-tools",
                                      "fetch_image")
@@ -611,6 +611,12 @@ class FileHandler():
         args.append("--hwpack")
         args.append(hwpack_file)
 
+        if not os.path.isdir(self.datadir):
+            os.makedirs(self.datadir)
+        with open(os.path.join(self.datadir, "linaro-media-create.log"),
+                               mode='w') as lmc_log:
+            lmc_log.write(" ".join(args) + "\n")
+
         logging.info(" ".join(args))
 
         return args
@@ -656,6 +662,11 @@ class FileHandler():
             self.settings       = settings
             self.tools_dir      = tools_dir
 
+            self.datadir = os.path.join(xdgBaseDir.xdg_data_home,
+                                     "linaro",
+                                     "image-tools",
+                                     "fetch_image")
+
         def run(self):
             """
             1. Download required files.
@@ -699,6 +710,9 @@ class FileHandler():
             self.waiting_for_event_response = False
             self.event_queue.put(("start", "unpack"))
 
+            lmc_log = open(os.path.join(self.datadir,
+                                        "linaro-media-create.log"), mode='a')
+
             while(1):
                 if self.create_process.poll() != None:
                     # linaro-media-create has finished. Tell the GUI the return
@@ -722,6 +736,8 @@ class FileHandler():
                     if self.save_lines:
                         self.saved_lines += self.line
 
+                    lmc_log.write(self.line + "\n")
+                    lmc_log.flush()
                     self.line = ""
                 else:
                     self.line += self.input
@@ -764,6 +780,8 @@ class FileHandler():
 
                 while self.waiting_for_event_response:
                     time.sleep(0.2)
+
+            lmc_log.close()
 
         def send_to_create_process(self, text):
             print >> self.create_process.stdin, text
