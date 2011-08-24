@@ -34,6 +34,7 @@ from binascii import crc32
 import tarfile
 import ConfigParser
 import shutil
+import string
 
 from linaro_image_tools import cmd_runner
 
@@ -243,17 +244,20 @@ class BoardConfig(object):
     load_addr = None
     dtb_addr = None
     dtb_name = None
+    dtb_file = None
     kernel_flavors = None
     boot_script = None
     serial_tty = None
     wired_interfaces = None
     wireless_interfaces = None
     mmc_id = None
+    vmlinuz = None
+    initrd = None
 
     hardwarepack_handler = None
 
     @classmethod
-    def get_metadata_field(cls, target, field_name):
+    def get_metadata_field(cls, field_name):
         """ Return the metadata value for field_name if it can be found.
         """
         data, _ = cls.hardwarepack_handler.get_field(
@@ -276,24 +280,30 @@ class BoardConfig(object):
                 cls.load_addr = None
                 cls.serial_tty = None
                 cls.fat_size = None
+                cls.dtb_name = None
+                cls.dtb_addr = None
+                cls.extra_boot_args_options = None
+                cls.boot_script = None
+                cls.kernel_flavors = None
 
             # Set new values from metadata.
-            cls.kernel_addr = cls.get_metadata_field(
-                cls.kernel_addr, 'kernel_addr')
-            cls.initrd_addr = cls.get_metadata_field(
-                cls.initrd_addr, 'initrd_addr')
-            cls.load_addr = cls.get_metadata_field(
-                cls.load_addr, 'load_addr')
-            cls.serial_tty = cls.get_metadata_field(
-                cls.serial_tty, 'serial_tty')
-            cls.wired_interfaces = cls.get_metadata_field(
-                cls.wired_interfaces, 'wired_interfaces')
-            cls.wireless_interfaces = cls.get_metadata_field(
-                cls.wireless_interfaces, 'wireless_interfaces')
-            cls.mmc_id = cls.get_metadata_field(
-                cls.mmc_id, 'mmc_id')
+            cls.kernel_addr = cls.get_metadata_field('kernel_addr')
+            cls.initrd_addr = cls.get_metadata_field('initrd_addr')
+            cls.load_addr = cls.get_metadata_field('load_addr')
+            cls.dtb_addr = cls.get_metadata_field('dtb_addr')
+            cls.serial_tty = cls.get_metadata_field('serial_tty')
+            cls.wired_interfaces = cls.get_metadata_field('wired_interfaces')
+            cls.wireless_interfaces = cls.get_metadata_field('wireless_interfaces')
+            cls.mmc_id = cls.get_metadata_field('mmc_id')
+            cls.vmlinuz = cls.get_metadata_field('kernel_file')
+            cls.initrd = cls.get_metadata_field('initrd_file')
+            cls.dtb_file = cls.get_metadata_field('dtb_file')
+            cls.extra_boot_args_options = cls.get_metadata_field(
+                'extra_boot_options')
+            cls.boot_script = cls.get_metadata_field('boot_script')
+            cls.extra_serial_opts = cls.get_metadata_field('extra_serial_options')
 
-            partition_layout = cls.get_metadata_field(cls.fat_size, 'partition_layout')
+            partition_layout = cls.get_metadata_field('partition_layout')
             if partition_layout == 'bootfs_rootfs' or partition_layout is None:
                 cls.fat_size = 32
             elif partition_layout == 'bootfs16_rootfs':
@@ -301,22 +311,26 @@ class BoardConfig(object):
             else:
                 raise AssertionError("Unknown partition layout '%s'." % partition_layout)
 
-            boot_min_size = cls.get_metadata_field(
-                cls.BOOT_MIN_SIZE_S, 'boot_min_size')
+            boot_min_size = cls.get_metadata_field('boot_min_size')
             if boot_min_size is not None:
                 cls.BOOT_MIN_SIZE_S = align_up(int(boot_min_size) * 1024**2,
                                                SECTOR_SIZE) / SECTOR_SIZE
-            root_min_size = cls.get_metadata_field(
-                cls.ROOT_MIN_SIZE_S, 'root_min_size')
+            root_min_size = cls.get_metadata_field('root_min_size')
             if root_min_size is not None:
                 cls.ROOT_MIN_SIZE_S = align_up(int(root_min_size) * 1024**2,
                                                SECTOR_SIZE) / SECTOR_SIZE
-            loader_min_size = cls.get_metadata_field(
-                cls.LOADER_MIN_SIZE_S, 'loader_min_size')
+            loader_min_size = cls.get_metadata_field('loader_min_size')
             if loader_min_size is not None:
                 cls.LOADER_MIN_SIZE_S = align_up(int(loader_min_size) * 1024**2,
                                                SECTOR_SIZE) / SECTOR_SIZE
 
+            uboot_in_boot_part = cls.get_metadata_field('u_boot_in_boot_part')
+            if uboot_in_boot_part is None:
+                cls.uboot_in_boot_part = None  
+            elif string.lower(uboot_in_boot_part) == 'yes':
+                cls.uboot_in_boot_part = True
+            elif string.lower(uboot_in_boot_part) == 'no':
+                cls.uboot_in_boot_part = False
 
     @classmethod
     def get_file(cls, file_alias, default=None):
@@ -436,7 +450,7 @@ class BoardConfig(object):
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
         (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
-                                                   uboot_parts_dir)
+            uboot_parts_dir)
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
                                      d_img_data)
         cls._make_boot_files(
@@ -487,6 +501,11 @@ class BoardConfig(object):
     @classmethod
     def _get_kflavor_files(cls, path):
         """Search for kernel, initrd and optional dtb in path."""
+        if cls.kernel_flavors is None:
+            # V2 metadata specifies each glob, not flavors.
+            # XXX This duplication is temporary until V1 dies.
+            return cls._get_kflavor_files_v2(path)
+
         for flavor in cls.kernel_flavors:
             kregex = KERNEL_GLOB % {'kernel_flavor' : flavor}
             iregex = INITRD_GLOB % {'kernel_flavor' : flavor}
@@ -506,6 +525,23 @@ class BoardConfig(object):
         raise ValueError(
             "No kernel found matching %s for flavors %s" % (
                 KERNEL_GLOB, " ".join(cls.kernel_flavors)))
+
+    @classmethod
+    def _get_kflavor_files_v2(cls, path):
+        kernel = _get_file_matching(os.path.join(path, cls.vmlinuz))
+        if kernel is not None:
+            initrd = _get_file_matching(os.path.join(path, cls.initrd))
+            if initrd is not None:
+                dtb = None
+                if cls.dtb_file is not None:
+                    dtb = _get_file_matching(os.path.join(path, cls.dtb_file))
+                print "Will use kernel=%s, initrd=%s, dtb=%s." % (kernel, initrd, dtb)
+                return (kernel, initrd, dtb)
+            raise ValueError(
+                "Found kernel matching %s but no initrd matching %s" % (
+                    cls.vmlinuz, cls.initrd))
+        raise ValueError(
+            "No kernel found matching %s." % (cls.vmlinuz))
 
     @classmethod
     def populate_raw_partition(cls, media, boot_dir):

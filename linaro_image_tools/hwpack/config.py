@@ -21,6 +21,7 @@
 
 import ConfigParser
 import re
+import string
 
 from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
@@ -43,6 +44,7 @@ class Config(object):
     PACKAGES_KEY = "packages"
     PACKAGE_REGEX = NAME_REGEX
     PATH_REGEX = r"\w[\w+\-./_]+$"
+    GLOB_REGEX = r"\w[\w+\-./_\*]+$"
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
@@ -53,6 +55,7 @@ class Config(object):
     KERNEL_ADDR_KEY = "kernel_addr"
     INITRD_ADDR_KEY = "initrd_addr"
     LOAD_ADDR_KEY = "load_addr"
+    DTB_ADDR_KEY = "dtb_addr"
     WIRED_INTERFACES_KEY = "wired_interfaces"
     WIRELESS_INTERFACES_KEY = "wireless_interfaces"
     PARTITION_LAYOUT_KEY = "partition_layout"
@@ -63,6 +66,13 @@ class Config(object):
     LOADER_MIN_SIZE_KEY = "loader_min_size"
     X_LOADER_PACKAGE_KEY = "x_loader_package"
     X_LOADER_FILE_KEY = "x_loader_file"
+    VMLINUZ_KEY = "kernel_file"
+    INITRD_KEY = "initrd_file"
+    DTB_FILE_KEY = "dtb_file"
+    EXTRA_BOOT_OPTIONS_KEY = 'extra_boot_options'
+    BOOT_SCRIPT_KEY = 'boot_script'
+    UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
+    EXTRA_SERIAL_OPTS_KEY = 'extra_serial_options'
 
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
@@ -101,6 +111,7 @@ class Config(object):
             self._validate_kernel_addr()
             self._validate_initrd_addr()
             self._validate_load_addr()
+            self._validate_dtb_addr()
             self._validate_wired_interfaces()
             self._validate_wireless_interfaces()
             self._validate_partition_layout()
@@ -110,6 +121,13 @@ class Config(object):
             self._validate_loader_min_size()
             self._validate_x_loader_package()
             self._validate_x_loader_file()
+            self._validate_vmlinuz()
+            self._validate_initrd()
+            self._validate_dtb_file()
+            self._validate_extra_boot_options()
+            self._validate_boot_script()
+            self._validate_uboot_in_boot_part()
+            self._validate_extra_serial_opts()
 
         self._validate_sections()
 
@@ -150,6 +168,11 @@ class Config(object):
         except ConfigParser.NoOptionError:
             return True
 
+    @property
+    def uboot_in_boot_part(self):
+        """Whether uboot binary should be put in the boot partition. A str."""
+        return self.parser.get(self.MAIN_SECTION, self.UBOOT_IN_BOOT_PART_KEY)
+
     def _get_option_from_main_section(self, key):
         """Get the value from the main section for the given key.
 
@@ -176,6 +199,30 @@ class Config(object):
         return self._get_option_from_main_section(self.SERIAL_TTY_KEY)
 
     @property
+    def extra_boot_options(self):
+        """Extra boot arg options.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.EXTRA_BOOT_OPTIONS_KEY)
+
+    @property
+    def extra_serial_opts(self):
+        """Extra serial options.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.EXTRA_SERIAL_OPTS_KEY)
+
+    @property
+    def boot_script(self):
+        """File name of the target boot script.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.BOOT_SCRIPT_KEY)
+
+    @property
     def kernel_addr(self):
         """address where u-boot should load the kernel 
 
@@ -198,6 +245,14 @@ class Config(object):
         An int.
         """
         return self._get_option_from_main_section(self.LOAD_ADDR_KEY)
+
+    @property
+    def dtb_addr(self):
+        """address for dtb image generation
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.DTB_ADDR_KEY)
 
     @property
     def wired_interfaces(self):
@@ -333,6 +388,30 @@ class Config(object):
         return self._get_option_from_main_section(self.X_LOADER_FILE_KEY)
 
     @property
+    def vmlinuz(self):
+        """The path to the vmlinuz kernel.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.VMLINUZ_KEY)
+
+    @property
+    def initrd(self):
+        """The path to initrd
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.INITRD_KEY)
+
+    @property
+    def dtb_file(self):
+        """The path to the device tree binary.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.DTB_FILE_KEY)
+
+    @property
     def architectures(self):
         """The architectures to build the hwpack for.
 
@@ -399,6 +478,46 @@ class Config(object):
                 self.PATH_REGEX, x_loader_file, "Invalid path: %s" % \
                     x_loader_file)
 
+    def _validate_vmlinuz(self):
+        vmlinuz = self.vmlinuz
+        if not vmlinuz:
+            raise HwpackConfigError("No kernel_file in the [%s] section" % \
+                                        self.MAIN_SECTION)
+        self._assert_matches_pattern(
+            self.GLOB_REGEX, vmlinuz, "Invalid path: %s" % vmlinuz)
+
+    def _validate_initrd(self):
+        initrd = self.initrd
+        if not initrd:
+            raise HwpackConfigError("No initrd_file in the [%s] section" % \
+                                        self.MAIN_SECTION)
+        self._assert_matches_pattern(
+            self.GLOB_REGEX, initrd, "Invalid path: %s" % initrd)
+
+    def _validate_dtb_file(self):
+        dtb_file = self.dtb_file
+        if dtb_file is not None:
+            self._assert_matches_pattern(
+                self.GLOB_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
+        
+    def _validate_extra_boot_options(self):
+        # Optional and tricky to determine a valid pattern.
+        pass
+
+    def _validate_extra_serial_opts(self):
+        # Optional and tricky to determine a valid pattern.
+        pass
+
+    def _validate_boot_script(self):
+        boot_script = self.boot_script
+        if not boot_script:
+            raise HwpackConfigError(
+                "No boot_script in the [%s] section" % \
+                    self.MAIN_SECTION)
+        else:
+            self._assert_matches_pattern(
+                self.PATH_REGEX, boot_script, "Invalid path: %s" % boot_script)
+
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty
         if serial_tty is None:
@@ -429,6 +548,13 @@ class Config(object):
             return
         if not self._validate_addr(addr):
             raise HwpackConfigError("Invalid load address: %s" % addr)
+
+    def _validate_dtb_addr(self):
+        addr = self.dtb_addr
+        if addr is None:
+            return
+        if not self._validate_addr(addr):
+            raise HwpackConfigError("Invalid dtb address: %s" % addr)
 
     def _validate_wired_interfaces(self):
         pass
@@ -490,6 +616,13 @@ class Config(object):
             raise HwpackConfigError(
                 "Invalid value for include-debs: %s"
                 % self.parser.get("hwpack", "include-debs"))
+
+    def _validate_uboot_in_boot_part(self):
+        uboot_in_boot_part = self.uboot_in_boot_part
+        if string.lower(uboot_in_boot_part) not in ['yes', 'no']:
+            raise HwpackConfigError(
+                "Invalid value for u_boot_in_boot_part: %s"
+                % self.parser.get("hwpack", "u_boot_in_boot_part"))
 
     def _validate_support(self):
         support = self.support

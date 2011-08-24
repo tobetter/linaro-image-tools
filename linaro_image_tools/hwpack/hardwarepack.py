@@ -78,10 +78,13 @@ class Metadata(object):
 
     @classmethod
     def add_v2_config(self, serial_tty=None, kernel_addr=None, initrd_addr=None,
-                      load_addr=None, fdt=None, wired_interfaces=[],
+                      load_addr=None, dtb_file=None, wired_interfaces=[],
                       wireless_interfaces=[], partition_layout=None,
                       mmc_id=None, boot_min_size=None, root_min_size=None,
-                      loader_min_size=None):
+                      loader_min_size=None, vmlinuz=None, initrd=None,
+                      dtb_addr=None, extra_boot_options=None,
+                      boot_script=None, uboot_in_boot_part=None,
+                      extra_serial_opts=None):
         """Add fields that are specific to the new format.
 
         These fields are not present in earlier config files.
@@ -99,6 +102,14 @@ class Metadata(object):
         self.root_min_size = root_min_size
         self.loader_min_size = loader_min_size
         self.x_loader = None
+        self.vmlinuz = vmlinuz
+        self.initrd = initrd
+        self.dtb_file = dtb_file
+        self.dtb_addr = dtb_addr
+        self.extra_boot_options = extra_boot_options
+        self.boot_script = boot_script
+        self.uboot_in_boot_part = uboot_in_boot_part
+        self.extra_serial_opts = extra_serial_opts
 
     @classmethod
     def from_config(cls, config, version, architecture):
@@ -134,7 +145,15 @@ class Metadata(object):
                                    mmc_id=config.mmc_id,
                                    boot_min_size=config.boot_min_size,
                                    root_min_size=config.root_min_size,
-                                   loader_min_size=config.loader_min_size)
+                                   loader_min_size=config.loader_min_size,
+                                   vmlinuz=config.vmlinuz,
+                                   initrd=config.initrd,
+                                   dtb_file=config.dtb_file,
+                                   dtb_addr=config.dtb_addr,
+                                   extra_boot_options=config.extra_boot_options,
+                                   boot_script=config.boot_script,
+                                   uboot_in_boot_part=config.uboot_in_boot_part,
+                                   extra_serial_opts=config.extra_serial_opts)
         return metadata
 
     def __str__(self):
@@ -162,6 +181,8 @@ class Metadata(object):
             metadata += "INITRD_ADDR=%s\n" % self.initrd_addr
         if self.load_addr is not None:
             metadata += "LOAD_ADDR=%s\n" % self.load_addr
+        if self.dtb_addr is not None:
+            metadata += "DTB_ADDR=%s\n" % self.dtb_addr
         if self.wired_interfaces != []:
             metadata += "WIRED_INTERFACES=%s\n" % " ".join(self.wired_interfaces)
         if self.wireless_interfaces != []:
@@ -179,6 +200,20 @@ class Metadata(object):
             metadata += "LOADER_MIN_SIZE=%s\n" % self.loader_min_size
         if self.x_loader is not None:
             metadata += "X_LOADER=%s\n" % self.x_loader
+        if self.vmlinuz is not None:
+            metadata += "KERNEL_FILE=%s\n" % self.vmlinuz
+        if self.initrd is not None:
+            metadata += "INITRD_FILE=%s\n" % self.initrd
+        if self.dtb_file is not None:
+            metadata += "DTB_FILE=%s\n" % self.dtb_file
+        if self.extra_boot_options is not None:
+            metadata += "EXTRA_BOOT_OPTIONS=%s\n" % self.extra_boot_options
+        if self.boot_script is not None:
+            metadata += "BOOT_SCRIPT=%s\n" % self.boot_script
+        if self.uboot_in_boot_part is not None:
+            metadata += "U_BOOT_IN_BOOT_PART=%s\n" % self.uboot_in_boot_part
+        if self.extra_serial_opts is not None:
+            metadata += "EXTRA_SERIAL_OPTIONS=%s\n" % self.extra_serial_opts
 
         return metadata
 
