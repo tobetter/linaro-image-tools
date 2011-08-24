@@ -246,46 +246,33 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
         install_mx5_boot_loader(os.path.join(boot_device_or_file, "u-boot.imx"), boot_partition, cls.LOADER_MIN_SIZE_S)
 
 
-class AndroidSMDKV310Config(AndroidBoardConfig, SMDKV310Config):
+class AndroidSamsungConfig(AndroidBoardConfig):
+
+    @classmethod
+    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+        loaders_min_len = (
+            SAMSUNG_V310_BL2_START + SAMSUNG_V310_BL2_LEN -
+            SAMSUNG_V310_BL1_START)
+
+        loader_start, loader_end, loader_len = align_partition(
+            1, loaders_min_len, 1, PART_ALIGN_S)
+
+        command = super(AndroidSamsungConfig, cls).get_sfdisk_cmd(
+            should_align_boot_part=False, start_addr=loader_end,
+            extra_part=True)
+
+        return '%s,%s,0xDA\n%s' % (
+            loader_start, loader_len, command)
+
+
+class AndroidSMDKV310Config(AndroidSamsungConfig, SMDKV310Config):
     _extra_serial_opts = 'console=tty0 console=ttySAC1,115200n8'
     android_specific_args = 'init=/init androidboot.console=ttySAC1'
 
-    @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False):
-        loaders_min_len = (
-            SAMSUNG_V310_BL2_START + SAMSUNG_V310_BL2_LEN -
-            SAMSUNG_V310_BL1_START)
 
-        loader_start, loader_end, loader_len = align_partition(
-            1, loaders_min_len, 1, PART_ALIGN_S)
-
-        command = super(AndroidSMDKV310Config, cls).get_sfdisk_cmd(
-            should_align_boot_part=False, start_addr=loader_end,
-            extra_part=True)
-
-        return '%s,%s,0xDA\n%s' % (
-            loader_start, loader_len, command)
-
-
-class AndroidOrigenConfig(AndroidBoardConfig, OrigenConfig):
+class AndroidOrigenConfig(AndroidSamsungConfig, OrigenConfig):
     _extra_serial_opts = 'console=tty0 console=ttySAC2,115200n8'
     android_specific_args = 'init=/init androidboot.console=ttySAC2'
-
-    @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False):
-        loaders_min_len = (
-            SAMSUNG_V310_BL2_START + SAMSUNG_V310_BL2_LEN -
-            SAMSUNG_V310_BL1_START)
-
-        loader_start, loader_end, loader_len = align_partition(
-            1, loaders_min_len, 1, PART_ALIGN_S)
-
-        command = super(AndroidOrigenConfig, cls).get_sfdisk_cmd(
-            should_align_boot_part=False, start_addr=loader_end,
-            extra_part=True)
-
-        return '%s,%s,0xDA\n%s' % (
-            loader_start, loader_len, command)
 
 
 android_board_configs = {
