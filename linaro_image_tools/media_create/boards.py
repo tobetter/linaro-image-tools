@@ -307,16 +307,16 @@ class BoardConfig(object):
             cls.extra_serial_opts = cls.get_metadata_field('extra_serial_options')
             cls.snowball_startup_files_config = cls.get_metadata_field(
                 'snowball_startup_files_config')
-            cls.LOADER_START_S = cls.get_metadata_field('loader_start')
 
-            partition_layout = cls.get_metadata_field('partition_layout')
-            if partition_layout in ['bootfs_rootfs', 'reserved_bootfs_rootfs',
+            cls.partition_layout = cls.get_metadata_field('partition_layout')
+            if cls.partition_layout in ['bootfs_rootfs', 'reserved_bootfs_rootfs',
                                     None]:
                 cls.fat_size = 32
-            elif partition_layout == 'bootfs16_rootfs':
+            elif cls.partition_layout == 'bootfs16_rootfs':
                 cls.fat_size = 16
             else:
-                raise AssertionError("Unknown partition layout '%s'." % partition_layout)
+                raise AssertionError("Unknown partition layout '%s'." % \
+                                         cls.partition_layout)
 
             boot_min_size = cls.get_metadata_field('boot_min_size')
             if boot_min_size is not None:
@@ -338,6 +338,10 @@ class BoardConfig(object):
                 cls.uboot_in_boot_part = True
             elif string.lower(uboot_in_boot_part) == 'no':
                 cls.uboot_in_boot_part = False
+
+            loader_start = cls.get_metadata_field('loader_start')
+            if loader_start is not None:
+                cls.LOADER_START_S = int(loader_start)
 
     @classmethod
     def get_file(cls, file_alias, default=None):
@@ -453,13 +457,10 @@ class BoardConfig(object):
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
         if cls.partition_layout in ['bootfs_rootfs', 'bootfs16_rootfs']:
-            print "Will create boot and root partitions."
             return cls.get_normal_sfdisk_cmd(should_align_boot_part)
         elif cls.partition_layout in ['reserved_bootfs_rootfs']:
-            print "Will create loader, boot and root partitions."
             return cls.get_reserved_sfdisk_cmd(should_align_boot_part)
         else:
-            print "Will create partitions according to hwpacks V1 scheme."
             return cls.get_v1_sfdisk_cmd(should_align_boot_part)
 
     @classmethod

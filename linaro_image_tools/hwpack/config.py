@@ -64,6 +64,7 @@ class Config(object):
     BOOT_MIN_SIZE_KEY = "boot_min_size"
     ROOT_MIN_SIZE_KEY = "root_min_size"
     LOADER_MIN_SIZE_KEY = "loader_min_size"
+    LOADER_START_KEY = "loader_start"
     X_LOADER_PACKAGE_KEY = "x_loader_package"
     X_LOADER_FILE_KEY = "x_loader_file"
     VMLINUZ_KEY = "kernel_file"
@@ -120,6 +121,7 @@ class Config(object):
             self._validate_boot_min_size()
             self._validate_root_min_size()
             self._validate_loader_min_size()
+            self._validate_loader_start()
             self._validate_x_loader_package()
             self._validate_x_loader_file()
             self._validate_vmlinuz()
@@ -322,6 +324,14 @@ class Config(object):
         An int.
         """
         return self._get_option_from_main_section(self.LOADER_MIN_SIZE_KEY)
+
+    @property
+    def loader_start(self):
+        """Start of loader partition. If left out, defaults to 1.
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.LOADER_START_KEY)
 
     @property
     def origin(self):
@@ -627,6 +637,16 @@ class Config(object):
         except:
             raise HwpackConfigError(
                 "Invalid loader min size %s" % (loader_min_size))
+
+    def _validate_loader_start(self):
+        loader_start = self.loader_start
+        if loader_start is None:
+            return
+        try:
+            assert int(loader_start) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid loader start %s" % (loader_start))
 
     def _validate_include_debs(self):
         try:

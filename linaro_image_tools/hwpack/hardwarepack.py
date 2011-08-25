@@ -84,7 +84,7 @@ class Metadata(object):
                       loader_min_size=None, vmlinuz=None, initrd=None,
                       dtb_addr=None, extra_boot_options=None,
                       boot_script=None, uboot_in_boot_part=None,
-                      extra_serial_opts=None,
+                      extra_serial_opts=None, loader_start=None,
                       snowball_startup_files_config=None):
         """Add fields that are specific to the new format.
 
@@ -102,6 +102,7 @@ class Metadata(object):
         self.boot_min_size = boot_min_size
         self.root_min_size = root_min_size
         self.loader_min_size = loader_min_size
+        self.loader_start = loader_start
         self.x_loader = None
         self.vmlinuz = vmlinuz
         self.initrd = initrd
@@ -148,6 +149,7 @@ class Metadata(object):
                                    boot_min_size=config.boot_min_size,
                                    root_min_size=config.root_min_size,
                                    loader_min_size=config.loader_min_size,
+                                   loader_start=config.loader_start,
                                    vmlinuz=config.vmlinuz,
                                    initrd=config.initrd,
                                    dtb_file=config.dtb_file,
@@ -201,6 +203,8 @@ class Metadata(object):
             metadata += "ROOT_MIN_SIZE=%s\n" % self.root_min_size
         if self.loader_min_size is not None:
             metadata += "LOADER_MIN_SIZE=%s\n" % self.loader_min_size
+        if self.loader_start is not None:
+            metadata += "LOADER_START=%s\n" % self.loader_start
         if self.x_loader is not None:
             metadata += "X_LOADER=%s\n" % self.x_loader
         if self.vmlinuz is not None:
