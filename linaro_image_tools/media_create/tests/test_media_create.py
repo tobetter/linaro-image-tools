@@ -1130,6 +1130,12 @@ class TestGetSfdiskCmd(TestCase):
                 '1318912,-,E\n1318912,1048576,L\n2367488,,,-', 
                 android_boards.AndroidPandaConfig.get_sfdisk_cmd())
 
+    def test_origen_android(self):
+        self.assertEqual(
+            '1,8191,0xDA\n8253,270274,0x0C,*\n278528,524288,L\n' \
+                '802816,-,E\n802816,524288,L\n1327104,1048576,L\n2375680,,,-',
+                android_boards.AndroidOrigenConfig.get_sfdisk_cmd())
+
     def test_snowball_emmc_android(self):
         self.assertEqual(
             '256,7936,0xDA\n8192,262144,0x0C,*\n270336,524288,L\n' \
@@ -1337,6 +1343,18 @@ class TestGetBootCmdAndroid(TestCase):
             'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
                        'fatload mmc 1:1 0x08000000 uInitrd; '
                        'bootm 0x00100000 0x08000000'}
+        self.assertEqual(expected, boot_commands)
+
+
+    def test_android_origen(self):
+        boot_commands = (android_boards.AndroidOrigenConfig.
+                         _get_boot_env(consoles=[]))
+        expected = {
+            'bootargs': 'console=tty0 console=ttySAC2,115200n8 '
+                        'rootwait ro init=/init androidboot.console=ttySAC2',
+            'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
+                       'fatload mmc 0:2 0x42000000 uInitrd; '
+                       'bootm 0x40007000 0x42000000'}
         self.assertEqual(expected, boot_commands)
 
 

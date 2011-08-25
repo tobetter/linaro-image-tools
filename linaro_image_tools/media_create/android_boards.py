@@ -35,6 +35,7 @@ from linaro_image_tools.media_create.boards import Mx53LoCoConfig
 from linaro_image_tools.media_create.boards import SnowballSdConfig
 from linaro_image_tools.media_create.boards import SnowballEmmcConfig
 from linaro_image_tools.media_create.boards import SMDKV310Config
+from linaro_image_tools.media_create.boards import OrigenConfig
 from linaro_image_tools.media_create.boards import (
     align_up,
     align_partition,
@@ -245,9 +246,7 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
         install_mx5_boot_loader(os.path.join(boot_device_or_file, "u-boot.imx"), boot_partition, cls.LOADER_MIN_SIZE_S)
 
 
-class AndroidSMDKV310Config(AndroidBoardConfig, SMDKV310Config):
-    _extra_serial_opts = 'console=tty0 console=ttySAC1,115200n8'
-    android_specific_args = 'init=/init androidboot.console=ttySAC1'
+class AndroidSamsungConfig(AndroidBoardConfig):
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
@@ -258,12 +257,22 @@ class AndroidSMDKV310Config(AndroidBoardConfig, SMDKV310Config):
         loader_start, loader_end, loader_len = align_partition(
             1, loaders_min_len, 1, PART_ALIGN_S)
 
-        command = super(AndroidSMDKV310Config, cls).get_sfdisk_cmd(
+        command = super(AndroidSamsungConfig, cls).get_sfdisk_cmd(
             should_align_boot_part=False, start_addr=loader_end,
             extra_part=True)
 
         return '%s,%s,0xDA\n%s' % (
             loader_start, loader_len, command)
+
+
+class AndroidSMDKV310Config(AndroidSamsungConfig, SMDKV310Config):
+    _extra_serial_opts = 'console=tty0 console=ttySAC1,115200n8'
+    android_specific_args = 'init=/init androidboot.console=ttySAC1'
+
+
+class AndroidOrigenConfig(AndroidSamsungConfig, OrigenConfig):
+    _extra_serial_opts = 'console=tty0 console=ttySAC2,115200n8'
+    android_specific_args = 'init=/init androidboot.console=ttySAC2'
 
 
 android_board_configs = {
@@ -273,4 +282,5 @@ android_board_configs = {
     'snowball_emmc': AndroidSnowballEmmcConfig,
     'smdkv310': AndroidSMDKV310Config,
     'iMX53': AndroidMx53LoCoConfig,
+    'origen': AndroidOrigenConfig,
     }

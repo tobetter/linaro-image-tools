@@ -1089,7 +1089,10 @@ class SamsungConfig(BoardConfig):
 
     @classmethod
     def populate_raw_partition(cls, chroot_dir, boot_device_or_file):
-        # Populate created raw partition with BL1, env and u-boot
+        # Zero the env so that the boot_script will get loaded
+        _dd("/dev/zero", boot_device_or_file, count=SAMSUNG_V310_ENV_LEN,
+            seek=SAMSUNG_V310_ENV_START)
+        # Populate created raw partition with BL1 and u-boot
         spl_file = os.path.join(chroot_dir, 'boot', 'u-boot-mmc-spl.bin')
         assert os.path.getsize(spl_file) <= (SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
             "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
