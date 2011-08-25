@@ -284,6 +284,7 @@ class BoardConfig(object):
                 cls.dtb_addr = None
                 cls.extra_boot_args_options = None
                 cls.boot_script = None
+                cls.kernel_flavors = None
 
             # Set new values from metadata.
             cls.kernel_addr = cls.get_metadata_field('kernel_addr')
@@ -294,13 +295,13 @@ class BoardConfig(object):
             cls.wired_interfaces = cls.get_metadata_field('wired_interfaces')
             cls.wireless_interfaces = cls.get_metadata_field('wireless_interfaces')
             cls.mmc_id = cls.get_metadata_field('mmc_id')
-            cls.vmlinuz = cls.get_metadata_field('vmlinuz')
-            cls.initrd = cls.get_metadata_field('initrd')
+            cls.vmlinuz = cls.get_metadata_field('kernel_file')
+            cls.initrd = cls.get_metadata_field('initrd_file')
             cls.dtb_file = cls.get_metadata_field('dtb_file')
             cls.extra_boot_args_options = cls.get_metadata_field(
                 'extra_boot_options')
             cls.boot_script = cls.get_metadata_field('boot_script')
-            cls.extra_serial_opts = cls.get_metadata_field('extra_serial_opts')
+            cls.extra_serial_opts = cls.get_metadata_field('extra_serial_options')
 
             partition_layout = cls.get_metadata_field('partition_layout')
             if partition_layout in ['bootfs_rootfs', 'reserved_bootfs_rootfs',
@@ -324,7 +325,7 @@ class BoardConfig(object):
                 cls.LOADER_MIN_SIZE_S = align_up(int(loader_min_size) * 1024**2,
                                                SECTOR_SIZE) / SECTOR_SIZE
 
-            uboot_in_boot_part = cls.get_metadata_field('u-boot_in_boot_part')
+            uboot_in_boot_part = cls.get_metadata_field('u_boot_in_boot_part')
             if uboot_in_boot_part is None:
                 cls.uboot_in_boot_part = None  
             elif string.lower(uboot_in_boot_part) == 'yes':
@@ -449,14 +450,8 @@ class BoardConfig(object):
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
-        if cls.vmlinuz is None:
-            (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
-                uboot_parts_dir)
-        else:
-            k_img_data = os.path.join(chroot_dir, cls.vmlinuz)
-            i_img_data = os.path.join(chroot_dir, cls.initrd)
-            d_img_data = os.path.join(chroot_dir, cls.dtb_file)
-
+        (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
+            uboot_parts_dir)
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
                                      d_img_data)
         cls._make_boot_files(
@@ -503,6 +498,11 @@ class BoardConfig(object):
     @classmethod
     def _get_kflavor_files(cls, path):
         """Search for kernel, initrd and optional dtb in path."""
+        if cls.kernel_flavors is None:
+            # V2 metadata specifies each glob, not flavors.
+            # XXX This duplication is temporary until V1 dies.
+            return cls._get_kflavor_files_v2(path)
+
         for flavor in cls.kernel_flavors:
             kregex = KERNEL_GLOB % {'kernel_flavor' : flavor}
             iregex = INITRD_GLOB % {'kernel_flavor' : flavor}
@@ -522,6 +522,23 @@ class BoardConfig(object):
         raise ValueError(
             "No kernel found matching %s for flavors %s" % (
                 KERNEL_GLOB, " ".join(cls.kernel_flavors)))
+
+    @classmethod
+    def _get_kflavor_files_v2(cls, path):
+        kernel = _get_file_matching(os.path.join(path, cls.vmlinuz))
+        if kernel is not None:
+            initrd = _get_file_matching(os.path.join(path, cls.initrd))
+            if initrd is not None:
+                dtb = None
+                if cls.dtb_file is not None:
+                    dtb = _get_file_matching(os.path.join(path, cls.dtb_file))
+                print "Will use kernel=%s, initrd=%s, dtb=%s." % (kernel, initrd, dtb)
+                return (kernel, initrd, dtb)
+            raise ValueError(
+                "Found kernel matching %s but no initrd matching %s" % (
+                    cls.vmlinuz, cls.initrd))
+        raise ValueError(
+            "No kernel found matching %s." % (cls.vmlinuz))
 
     @classmethod
     def populate_raw_partition(cls, media, boot_dir):
@@ -643,7 +660,7 @@ class PandaConfig(OmapConfig):
     load_addr = '0x80008000'
     boot_script = 'boot.scr'
     extra_boot_args_options = (
-        'easdfsdfrlyprintk fixrtc nocompcache vram=48M '
+        'earlyprintk fixrtc nocompcache vram=48M '
         'omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000')
 
 

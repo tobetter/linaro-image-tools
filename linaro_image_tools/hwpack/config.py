@@ -44,12 +44,13 @@ class Config(object):
     PACKAGES_KEY = "packages"
     PACKAGE_REGEX = NAME_REGEX
     PATH_REGEX = r"\w[\w+\-./_]+$"
+    GLOB_REGEX = r"\w[\w+\-./_\*]+$"
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
     ASSUME_INSTALLED_KEY = "assume-installed"
-    U_BOOT_PACKAGE_KEY = "u-boot-package"
-    U_BOOT_FILE_KEY = "u-boot-file"
+    U_BOOT_PACKAGE_KEY = "u_boot_package"
+    U_BOOT_FILE_KEY = "u_boot_file"
     SERIAL_TTY_KEY = "serial_tty"
     KERNEL_ADDR_KEY = "kernel_addr"
     INITRD_ADDR_KEY = "initrd_addr"
@@ -65,13 +66,13 @@ class Config(object):
     LOADER_MIN_SIZE_KEY = "loader_min_size"
     X_LOADER_PACKAGE_KEY = "x_loader_package"
     X_LOADER_FILE_KEY = "x_loader_file"
-    VMLINUZ_KEY = "vmlinuz"
-    INITRD_KEY = "initrd"
+    VMLINUZ_KEY = "kernel_file"
+    INITRD_KEY = "initrd_file"
     DTB_FILE_KEY = "dtb_file"
     EXTRA_BOOT_OPTIONS_KEY = 'extra_boot_options'
     BOOT_SCRIPT_KEY = 'boot_script'
-    UBOOT_IN_BOOT_PART_KEY = 'u-boot_in_boot_part'
-    EXTRA_SERIAL_OPTS_KEY = 'extra_serial_opts'
+    UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
+    EXTRA_SERIAL_OPTS_KEY = 'extra_serial_options'
     SNOWBALL_STARTUP_FILES_CONFIG_KEY = 'snowball_startup_files_config'
 
     DEFINED_PARTITION_LAYOUTS = [
@@ -171,7 +172,7 @@ class Config(object):
 
     @property
     def uboot_in_boot_part(self):
-        """Whether uboot binary should be put in the boot partition. A bool."""
+        """Whether uboot binary should be put in the boot partition. A str."""
         return self.parser.get(self.MAIN_SECTION, self.UBOOT_IN_BOOT_PART_KEY)
 
     def _get_option_from_main_section(self, key):
@@ -491,38 +492,32 @@ class Config(object):
     def _validate_vmlinuz(self):
         vmlinuz = self.vmlinuz
         if not vmlinuz:
-            raise HwpackConfigError("No vmlinuz in the [%s] section" % \
+            raise HwpackConfigError("No kernel_file in the [%s] section" % \
                                         self.MAIN_SECTION)
         self._assert_matches_pattern(
-            self.PATH_REGEX, vmlinuz, "Invalid path: %s" % vmlinuz)
+            self.GLOB_REGEX, vmlinuz, "Invalid path: %s" % vmlinuz)
 
     def _validate_initrd(self):
         initrd = self.initrd
         if not initrd:
-            raise HwpackConfigError("No initrd in the [%s] section" % \
+            raise HwpackConfigError("No initrd_file in the [%s] section" % \
                                         self.MAIN_SECTION)
         self._assert_matches_pattern(
-            self.PATH_REGEX, initrd, "Invalid path: %s" % initrd)
+            self.GLOB_REGEX, initrd, "Invalid path: %s" % initrd)
 
     def _validate_dtb_file(self):
         dtb_file = self.dtb_file
         if dtb_file is not None:
             self._assert_matches_pattern(
-                self.PATH_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
+                self.GLOB_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
         
     def _validate_extra_boot_options(self):
-        extra_boot_options = self.extra_boot_options
-        if not extra_boot_options:
-            raise HwpackConfigError(
-                "No extra_boot_options in the [%s] section" % \
-                    self.MAIN_SECTION)
+        # Optional and tricky to determine a valid pattern.
+        pass
 
     def _validate_extra_serial_opts(self):
-        extra_serial_opts = self.extra_serial_opts
-        if not extra_serial_opts:
-            raise HwpackConfigError(
-                "No extra_serial_opts in the [%s] section" % \
-                    self.MAIN_SECTION)
+        # Optional and tricky to determine a valid pattern.
+        pass
 
     def _validate_boot_script(self):
         boot_script = self.boot_script
@@ -530,6 +525,10 @@ class Config(object):
             raise HwpackConfigError(
                 "No boot_script in the [%s] section" % \
                     self.MAIN_SECTION)
+        else:
+            self._assert_matches_pattern(
+                self.PATH_REGEX, boot_script, "Invalid path: %s" % boot_script)
+
 
     def _validate_snowball_startup_files_config(self):
         snowball_startup_files_config = self.snowball_startup_files_config
@@ -641,8 +640,8 @@ class Config(object):
         uboot_in_boot_part = self.uboot_in_boot_part
         if string.lower(uboot_in_boot_part) not in ['yes', 'no']:
             raise HwpackConfigError(
-                "Invalid value for uboot_in_boot_part: %s"
-                % self.parser.get("hwpack", "uboot_in_boot_part"))
+                "Invalid value for u_boot_in_boot_part: %s"
+                % self.parser.get("hwpack", "u_boot_in_boot_part"))
 
     def _validate_support(self):
         support = self.support

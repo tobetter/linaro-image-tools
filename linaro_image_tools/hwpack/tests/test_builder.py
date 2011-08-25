@@ -119,7 +119,11 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
                           'u-boot-file': 'wanted-file', 
                           'partition_layout': 'bootfs_rootfs',
                           'x_loader_package': 'x-loader-omap4-panda',
-                          'x_loader_file': 'usr/lib/x-loader/omap4430panda/MLO'}
+                          'x_loader_file': 'usr/lib/x-loader/omap4430panda/MLO',
+                          'kernel_file': 'boot/vmlinuz-3.0.0-1002-linaro-omap',
+                          'initrd_file': 'boot/initrd.img-3.0.0-1002-linaro-omap',
+                          'boot_script': 'boot.scr',
+                          'u_boot_in_boot_part': 'no'}
 
     def test_raises_on_missing_configuration(self):
         e = self.assertRaises(

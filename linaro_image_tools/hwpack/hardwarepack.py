@@ -204,9 +204,9 @@ class Metadata(object):
         if self.x_loader is not None:
             metadata += "X_LOADER=%s\n" % self.x_loader
         if self.vmlinuz is not None:
-            metadata += "VMLINUZ=%s\n" % self.vmlinuz
+            metadata += "KERNEL_FILE=%s\n" % self.vmlinuz
         if self.initrd is not None:
-            metadata += "INITRD=%s\n" % self.initrd
+            metadata += "INITRD_FILE=%s\n" % self.initrd
         if self.dtb_file is not None:
             metadata += "DTB_FILE=%s\n" % self.dtb_file
         if self.extra_boot_options is not None:
@@ -214,9 +214,9 @@ class Metadata(object):
         if self.boot_script is not None:
             metadata += "BOOT_SCRIPT=%s\n" % self.boot_script
         if self.uboot_in_boot_part is not None:
-            metadata += "U-BOOT_IN_BOOT_PART=%s\n" % self.uboot_in_boot_part
+            metadata += "U_BOOT_IN_BOOT_PART=%s\n" % self.uboot_in_boot_part
         if self.extra_serial_opts is not None:
-            metadata += "EXTRA_SERIAL_OPTS=%s\n" % self.extra_serial_opts
+            metadata += "EXTRA_SERIAL_OPTIONS=%s\n" % self.extra_serial_opts
         if self.snowball_startup_files_config is not None:
             metadata += "SNOWBALL_STARTUP_FILES_CONFIG=%s\n" % self.snowball_startup_files_config
 
