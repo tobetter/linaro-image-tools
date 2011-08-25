@@ -293,7 +293,8 @@ class BoardConfig(object):
             cls.dtb_addr = cls.get_metadata_field('dtb_addr')
             cls.serial_tty = cls.get_metadata_field('serial_tty')
             cls.wired_interfaces = cls.get_metadata_field('wired_interfaces')
-            cls.wireless_interfaces = cls.get_metadata_field('wireless_interfaces')
+            cls.wireless_interfaces = cls.get_metadata_field(
+                'wireless_interfaces')
             cls.mmc_id = cls.get_metadata_field('mmc_id')
             cls.vmlinuz = cls.get_metadata_field('kernel_file')
             cls.initrd = cls.get_metadata_field('initrd_file')
@@ -302,6 +303,8 @@ class BoardConfig(object):
                 'extra_boot_options')
             cls.boot_script = cls.get_metadata_field('boot_script')
             cls.extra_serial_opts = cls.get_metadata_field('extra_serial_options')
+            cls.snowball_startup_files_config = cls.get_metadata_field(
+                'snowball_startup_files_config')
 
             partition_layout = cls.get_metadata_field('partition_layout')
             if partition_layout in ['bootfs_rootfs', 'reserved_bootfs_rootfs',
@@ -744,7 +747,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
     # puts the MBR, so the boot loader skips that address.
     supports_writing_to_mmc = False
     SNOWBALL_LOADER_START_S = (128 * 1024) / SECTOR_SIZE
-    SNOWBALL_STARTUP_FILES_CONFIG = 'startfiles.cfg'
+    snowball_startup_files_config = 'startfiles.cfg'
     TOC_SIZE = 512
 
     @classmethod
@@ -801,7 +804,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
                                      cls.SNOWBALL_LOADER_START_S)
         cls.delete_file(toc_filename)
         cls.delete_file(os.path.join(config_files_path,
-                                     cls.SNOWBALL_STARTUP_FILES_CONFIG))
+                                     cls.snowball_startup_files_config))
 
     @classmethod
     def install_snowball_boot_loader(cls, toc_file_name, files,
@@ -861,7 +864,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
         ofs = cls.TOC_SIZE
         files = []
         bin_dir = os.path.join(chroot_dir, 'boot')
-        with open(os.path.join(bin_dir, cls.SNOWBALL_STARTUP_FILES_CONFIG),
+        with open(os.path.join(bin_dir, cls.snowball_startup_files_config),
                   'r') as info_file:
             for line in info_file:
                 file_data = line.split()

@@ -685,7 +685,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                     ('UBOOT_ENV', 'u-boot-env.bin', 0, 0x00C1F000, '10')]
         # Create a config file
         cfg_file = os.path.join(self.temp_bootdir_path,
-        boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
+        boards.SnowballEmmcConfig.snowball_startup_files_config)
         with open(cfg_file, 'w') as f:
             for line in src_data:
                 # Write comments, so we test that the parser can read them
@@ -719,7 +719,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
     def test_get_file_info_relative_path(self):
         # Create a config file
         cfg_file = os.path.join(self.temp_bootdir_path,
-                      boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
+                      boards.SnowballEmmcConfig.snowball_startup_files_config)
         uboot_file = 'u-boot.bin'
         with open(cfg_file, 'w') as f:
                 f.write('%s %s %i %#x %s\n' % ('NORMAL', uboot_file, 0,
@@ -733,7 +733,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
     def test_get_file_info_abs_path(self):
         # Create a config file
         cfg_file = os.path.join(self.temp_bootdir_path,
-                      boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
+                      boards.SnowballEmmcConfig.snowball_startup_files_config)
         uboot_dir = tempfile.mkdtemp(dir=self.tempdir)
         uboot_file = os.path.join(uboot_dir, 'u-boot.bin')
         uboot_relative_file = uboot_file.replace(self.tempdir, '')
@@ -748,7 +748,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
     def test_get_file_info_raises(self):
         # Create a config file
         cfg_file = os.path.join(self.temp_bootdir_path,
-                      boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
+                      boards.SnowballEmmcConfig.snowball_startup_files_config)
         with open(cfg_file, 'w') as f:
                 f.write('%s %s %i %#x %s\n' % ('NORMAL', 'u-boot.bin', 0,
                                                0xBA0000, '9'))
