@@ -46,6 +46,7 @@ from linaro_image_tools.media_create import (
 from linaro_image_tools.media_create.boards import (
     SAMSUNG_V310_BL1_START,
     SAMSUNG_V310_BL2_START,
+    SAMSUNG_V310_BL2_LEN,
     SECTOR_SIZE,
     align_up,
     align_partition,
@@ -1135,6 +1136,50 @@ class TestGetSfdiskCmd(TestCase):
             '256,7936,0xDA\n8192,262144,0x0C,*\n270336,524288,L\n' \
                 '794624,-,E\n794624,524288,L\n1318912,1048576,L\n2367488,,,-', 
                 android_boards.AndroidSnowballEmmcConfig.get_sfdisk_cmd())
+
+class TestGetSfdiskCmdV2(TestCase):
+
+    def test_mx5(self):
+        class config(boards.Mx5Config):
+            partition_layout = 'reserved_bootfs_rootfs'
+        self.assertEqual(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            config.get_sfdisk_cmd())
+
+    def test_snowball_sd(self):
+        class config(boards.SnowballSdConfig):
+            partition_layout = 'bootfs_rootfs'
+        self.assertEqual(
+            '63,106432,0x0C,*\n106496,,,-',
+            config.get_sfdisk_cmd())
+
+    def test_snowball_emmc(self):
+        class config(boards.SnowballEmmcConfig):
+            partition_layout = 'reserved_bootfs_rootfs'
+            LOADER_START_S = (128 * 1024) / SECTOR_SIZE
+        self.assertEqual(
+            '256,7936,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            config.get_sfdisk_cmd())
+
+    def test_smdkv310(self):
+        class config(board_configs['smdkv310']):
+            partition_layout = 'reserved_bootfs_rootfs'
+            LOADER_MIN_SIZE_S = (SAMSUNG_V310_BL2_START +
+                                 SAMSUNG_V310_BL2_LEN -
+                                 SAMSUNG_V310_BL1_START)
+        self.assertEquals(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            config.get_sfdisk_cmd())
+
+    def test_origen(self):
+        class config(board_configs['origen']):
+            partition_layout = 'reserved_bootfs_rootfs'
+            LOADER_MIN_SIZE_S = (SAMSUNG_V310_BL2_START +
+                                 SAMSUNG_V310_BL2_LEN -
+                                 SAMSUNG_V310_BL1_START)
+        self.assertEquals(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            config.get_sfdisk_cmd())
 
 
 class TestGetBootCmd(TestCase):
