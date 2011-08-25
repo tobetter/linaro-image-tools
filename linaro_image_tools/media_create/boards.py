@@ -352,6 +352,10 @@ class BoardConfig(object):
 
         This default implementation returns a boot vfat partition of type FAT16
         or FAT32, followed by a root partition.
+
+        XXX: This default implementation and all overrides are left for V1
+        compatibility only. They should be removed as part of the work to
+        kill off hwpacks V1.
         """
         if cls.fat_size == 32:
             partition_type = '0x0C'
@@ -381,6 +385,67 @@ class BoardConfig(object):
 
         return '%s,%s,%s,*\n%s,,,-' % (
             boot_start, boot_len, partition_type, root_start)
+
+    @classmethod
+    def get_normal_sfdisk_cmd(cls, should_align_boot_part=False):
+        """Return the sfdisk command to partition the media.
+
+        :param should_align_boot_part: Whether to align the boot partition too.
+
+        This returns a boot vfat partition of type FAT16
+        or FAT32, followed by a root partition.
+        """
+        if cls.fat_size == 32:
+            partition_type = '0x0C'
+        else:
+            partition_type = '0x0E'
+
+        # align on sector 63 for compatibility with broken versions of x-loader
+        # unless align_boot_part is set
+        # XXX OMAP specific, might break other boards?
+        boot_align = 63
+        if should_align_boot_part:
+            boot_align = PART_ALIGN_S
+
+        # can only start on sector 1 (sector 0 is MBR / partition table)
+        boot_start, boot_end, boot_len = align_partition(
+            1, cls.BOOT_MIN_SIZE_S, boot_align, PART_ALIGN_S)
+        # apparently OMAP3 ROMs require the vfat length to be an even number
+        # of sectors (multiple of 1 KiB); decrease the length if it's odd,
+        # there should still be enough room
+        # XXX OMAP specific, might break other boards?
+        boot_len = boot_len - boot_len % 2
+        boot_end = boot_start + boot_len - 1
+
+        # we ignore _root_end / _root_len and return a sfdisk command to
+        # instruct the use of all remaining space; XXX we now have root size
+        # config, so we can do something more sensible
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, cls.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return '%s,%s,%s,*\n%s,,,-' % (
+            boot_start, boot_len, partition_type, root_start)
+
+    @classmethod
+    def get_reserved_sfdisk_cmd(cls, should_align_boot_part=None):
+        """Return the sfdisk command to partition the media.
+
+        :param should_align_boot_part: Ignored.
+
+        This returns a loader partition, then a boot vfat partition of type
+        FAT16 or FAT32, followed by a root partition.
+        """
+        loader_start, loader_end, loader_len = align_partition(
+            cls.LOADER_START_S, cls.LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
+
+        boot_start, boot_end, boot_len = align_partition(
+            loader_end + 1, cls.BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, cls.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
+        loader_start, loader_len, boot_start, boot_len, root_start)
 
     @classmethod
     def _get_bootcmd(cls, d_img_data):
