@@ -480,7 +480,7 @@ class IsolatedAptCache(object):
         logger.debug("Writing apt configs")
         self.tempdir = tempfile.mkdtemp(prefix="hwpack-apt-cache-")
         dirs = ["var/lib/dpkg",
-                "etc/apt/",
+                "etc/apt/sources.list.d",
                 "var/cache/apt/archives/partial",
                 "var/lib/apt/lists/partial",
                ]

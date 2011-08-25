@@ -16,28 +16,34 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-import wx
-import unittest
+import os
+from linaro_image_tools.testing import TestCaseWithFixtures
 import re
 import linaro_image_tools.fetch_image as fetch_image
 
 
-class TestURLLookupFunctions(unittest.TestCase):
+class TestURLLookupFunctions(TestCaseWithFixtures):
 
     def setUp(self):
+        # We use local files for testing, so get paths sorted.
+        this_file = os.path.abspath(__file__)
+        this_dir = os.path.dirname(this_file)
+        yaml_file_location = os.path.join(this_dir, "../"
+                                          "fetch_image_settings.yaml")
+        sample_db_location = os.path.join(this_dir, "test_server_index.sqlite")
         self.file_handler   = fetch_image.FileHandler()
-        self.file_handler.update_files_from_server()
         self.config         = fetch_image.FetchImageConfig()
         self.config.settings["force_download"] = False
 
         # Load settings YAML, which defines the parameters we ask for and
         # acceptable responses from the user
-        self.config.read_config(self.file_handler.settings_file)
+        self.config.read_config(yaml_file_location)
 
         # Using the config we have, look up URLs to download data from in the
         # server index
-        self.db = fetch_image.DB(self.file_handler.index_file)
+        self.db = fetch_image.DB(sample_db_location)
+
+        super(TestURLLookupFunctions, self).setUp()
 
     def test_url_lookup(self):
         self.settings = self.config.settings
@@ -45,10 +51,14 @@ class TestURLLookupFunctions(unittest.TestCase):
 
         #--- Test first with a snapshot build lookup ---
         # -- Fix a build date --
-        # We only need to look up a single snapshot date. Start with today and
-        # go with the day in the DB, build 0
-        today = wx.DateTime()
-        today.SetToCurrent()
+        # We only need to look up a single snapshot date. We just use the
+        # latest in the database (we could use today and search from it, but
+        # the database is just one that is checked in, so it could be old
+        # and db.get_next_prev_day_with_builds may give up before finding it).
+        date = self.db.execute_return_list(
+                          "SELECT MAX(date) FROM snapshot_binaries")[0][0]
+        d = re.search("(\d{4})(\d{2})(\d{2})", date)
+        date = (d.group(1) + "-" + d.group(2) + "-" + d.group(3))
 
         # -- Don't iterate through platforms for snapshot --
 
@@ -61,7 +71,7 @@ class TestURLLookupFunctions(unittest.TestCase):
 
             future_date, past_date = self.db.get_next_prev_day_with_builds(
                                         "linaro-alip",
-                                        today.FormatISODate().encode('ascii'),
+                                        date,
                                         compatable_hwpacks)
 
             if past_date == None:

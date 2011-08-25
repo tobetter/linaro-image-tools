@@ -21,8 +21,6 @@ UI:
     release: Release help text
     snapshot: Snapshot help text
   translate:
-    linaro-m: '10.11'
-    linaro-n: '11.05'
   cmdline short names:
     build: b
     hardware: w
@@ -40,12 +38,14 @@ choice:
     efikamx: EFIKA MX Smarttop 
     efikasb: EFIKA MX Smartbook
     mx51evk: i.MX51
-    mx53loco: i.MX53 Loco
+    mx53loco: i.MX53 Quick Start
     # I don't have a --dev setting to linaro-media-create for a u8500 yet.
     # u8500: U8500
     overo: Overo
     smdkv310: S5PV310
     origen: Origen
+    # UI may need some work to support snowball. Currently under investigation.
+    #snowball_sd: Snowball
   
   hwpack:
     beagle:
@@ -59,6 +59,8 @@ choice:
     - panda
     - panda-x11-base
     - bsp-omap4
+    - lt-panda-x11-base-natty
+    - lt-panda
     
     vexpress:
     - vexpress
@@ -76,8 +78,7 @@ choice:
     - imx51
     
     mx53loco:
-    - lt-mx53loco
-    - s5pv310
+    - lt-mx5
      
     u8500:
      - lt-u8500
@@ -91,6 +92,9 @@ choice:
 
     origen:
      - lt-origen
+
+    snowball_sd:
+     - lt-snowball
 
   image:
   - alip
@@ -108,6 +112,17 @@ choice:
     - rc
     - final
 
+  platform:
+    '11.05':
+    - final
+    '11.06':
+    - final
+    '11.07':
+    - final
+    '11.08':
+    - final
+
 platform: linaro-n
 repository: release
+
 

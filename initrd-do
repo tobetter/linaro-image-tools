@@ -1,0 +1,172 @@
+#!/bin/sh
+# initrd-do - run a command within an initrd
+# Copyright (C) 2008 Loïc Minier <lool@dooz.org>
+# Copyright (C) 2011 Linaro Limited
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+# SOFTWARE IN THE PUBLIC INTEREST, INC. BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+#
+# Except as contained in this notice, the name of the author shall not be used
+# in advertising or otherwise to promote the sale, use or other dealings in
+# this Software without prior written authorization from the author.
+#
+# depends: sudo
+
+set -e
+
+self="$(basename "$0")"
+work_dir=""
+new_initrd=""
+
+log() {
+    echo "$*" >&2
+}
+
+log_i() {
+    log "I:" "$@"
+}
+
+log_w() {
+    log "W:" "$@"
+}
+
+die() {
+    log "E:" "$@"
+    exit 1
+}
+
+usage() {
+    log "Usage: $self --initrd <initrd-file> [-c <command> [<arg> ...]]"
+}
+
+getshell() {
+    if [ -n "$SHELL" ]; then
+        echo "$SHELL"
+        return
+    fi
+    PASSWD="$(getent passwd $(id -u) | sed -n 's/.*://p')"
+    if [ -n "$PASSWD" ]; then
+        echo "$PASSWD"
+        return
+    fi
+    echo "/bin/sh"
+}
+
+escape() {
+    echo "$*" | sed "s/'/'\"'\"'/g; s/.*/'&'/"
+}
+
+# unused; use eval
+unescape () {
+    eval "echo" "$*"
+}
+
+cleanup() {
+    if [ -n "$new_initrd" ]; then
+        rm -f "$new_initrd"
+    fi
+    if [ -n "$work_dir" ]; then
+        rm -rf "$work_dir"
+    fi
+}
+
+trap "cleanup" 0 1 2 3 9 11 13 15
+
+initrd=""
+command="$(escape "$(getshell)")"
+
+while [ $# -gt 0 ]; do
+    case $1 in
+      --help)
+        usage
+        exit 0
+      ;;
+      -i|--initrd)
+        shift
+        initrd="$1"
+        if ! shift; then
+            die "Need an initrd file after --initrd"
+        fi
+      ;;
+      -c)
+        shift
+        if [ $# -le 0 ]; then
+            die "Need a command after -c"
+        fi
+        command=""
+        while :; do
+            command="$command $(escape "$1")"
+            shift
+            if [ $# -eq 0 ]; then
+                break
+            fi
+        done
+        break
+      ;;
+      *)
+        # clever handling of args: set initrd first if unset, otherwise set
+        # command
+        if [ -z "$initrd" ]; then
+            initrd="$1"
+            shift
+        else
+            command=""
+            while :; do
+                command="$command $(escape "$1")"
+                shift
+                if [ $# -eq 0 ]; then
+                    break
+                fi
+            done
+        fi
+      ;;
+    esac
+done
+
+if [ -z "$initrd" ]; then
+    usage
+    exit 1
+fi
+
+work_dir="$(mktemp -dt "$self.XXXXXXXXXX")"
+
+# subshell to not touch cwd as we will nuke it
+(   cd "$work_dir"
+    log_i "Unpacking initrd $initrd"
+    gunzip -c <"$initrd" | cpio -i --quiet
+    log_i "Running command:" $command
+    eval $command
+)
+
+err=$?
+
+if [ 0 != $err ]; then
+    log_w "Command exited with $err; aborting"
+    exit 1
+fi
+
+log_i "Generating new initrd"
+new_initrd="$(mktemp -t "$self.XXXXXXXXXX")"
+# subshell to not touch cwd as we will nuke it
+(   cd "$work_dir"
+    find . | cpio -o -H newc -R 0:0 --quiet | gzip -c >"$new_initrd"
+)
+
+log_i "Moving new initrd to $initrd"
+mv -f "$new_initrd" "$initrd"
+

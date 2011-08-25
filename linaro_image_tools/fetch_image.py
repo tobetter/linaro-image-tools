@@ -36,7 +36,10 @@ import datetime
 import threading
 import subprocess
 import utils
+import xdg.BaseDirectory as xdgBaseDir
 
+QEMU = "qemu"
+HARDWARE = "hardware"
 
 class DownloadManager():
     def __init__(self, cachedir):
@@ -387,8 +390,8 @@ class DownloadManager():
     def _check_downloads(self):
         self.get_sig_files()
 
-        self.verified_files, self.gpg_sig_ok = utils.verify_file_integrity(
-                                                            self.sig_files)
+        (self.verified_files, self.gpg_sig_ok,
+         self.gpg_out) = utils.verify_file_integrity(self.sig_files)
 
         # Expect to have 2 sha1sum files (one for hwpack, one for OS bin)
         self.have_sha1sums = len(self.sha1_files) ==2
@@ -442,22 +445,42 @@ class DownloadManager():
             # matches the sha1sums we will re-download any failing hwpack
             # and OS binary files in the if below.
 
-            self._download_sigs_gen_download_list(force_download=True)
-            self._check_downloads()
-
-            if(self.have_sha1sums and self.have_gpg_sigs
-               and not self.gpg_sig_ok):
-                # If after re-trying the downloads we still can't get a GPG
-                # signature match on a sha1sum file (and both files exist)
-                # the abort.
-                message = "Package signature check failed. Aborting"
+            no_pubkey_search = re.search("\[GNUPG:\] NO_PUBKEY (\S+)",
+                                         self.gpg_out)
+            if no_pubkey_search:
+                message = ("Package signature check failed.\n"
+                           "To check package signatures, please import "
+                           "key {0}")
+                # The GPG output we are using gives us the long key format,
+                # which doesn't match anything in the key management app
+                # that ships with Ubuntu Desktop. The last 8 digits though
+                # are the short key, which are what we normally deal with.
+                # That is, this seems to be the case. I haven't found any
+                # answers after searching around about the long keyID format,
+                # but this works for keys I have tested with...
+                message = message.format(no_pubkey_search.group(1)[-8:])
                 if self.event_queue:
-                    self.event_queue.put("message", message)
-                    self.event_queue.put("abort")
+                    self.event_queue.put(("message", message))
                 else:
                     print >> sys.stderr, message
 
-                return [], False
+            else:
+                self._download_sigs_gen_download_list(force_download=True)
+                self._check_downloads()
+
+                if(self.have_sha1sums and self.have_gpg_sigs
+                   and not self.gpg_sig_ok):
+                    # If after re-trying the downloads we still can't get a GPG
+                    # signature match on a sha1sum file (and both files exist)
+                    # tell the user.
+                    message = "Package signature check failed"
+                    if self.event_queue:
+                        self.event_queue.put(("message", message))
+                        self.event_queue.put("abort")
+                    else:
+                        print >> sys.stderr, message
+
+                    return [], False
 
         if(self.have_sha1sums and 
            self.gpg_sig_ok or not self.have_gpg_sigs):
@@ -479,8 +502,8 @@ class DownloadManager():
                                     self.event_queue,
                                     force_download=True)
 
-                (self.verified_files,
-                 self.gpg_sig_ok) = utils.verify_file_integrity(self.sig_files)
+                (self.verified_files, self.gpg_sig_ok,
+                 self.gpg_out) = utils.verify_file_integrity(self.sig_files)
 
                 to_retry = self._unverified_files()
 
@@ -490,7 +513,7 @@ class DownloadManager():
                     # corrupt. Display a message to the user and quit.
                     message = "Download retry failed. Aborting"
                     if self.event_queue:
-                        self.event_queue.put("message", message)
+                        self.event_queue.put(("message", message))
                         self.event_queue.put("abort")
                     else:
                         print >> sys.stderr, message
@@ -500,9 +523,6 @@ class DownloadManager():
         hwpack = os.path.basename(self.downloaded_files[hwpack_url])
         hwpack_verified = (hwpack in self.verified_files) and self.gpg_sig_ok
 
-        if self.event_queue:  # Clear messages, if any, from GUI
-            self.event_queue.put(("message", ""))
-
         return self.downloaded_files, hwpack_verified
 
 
@@ -510,8 +530,7 @@ class FileHandler():
     """Downloads files and creates images from them by calling
     linaro-media-create"""
     def __init__(self):
-        import xdg.BaseDirectory as xdgBaseDir
-        self.homedir = os.path.join(xdgBaseDir.xdg_config_home,
+        self.datadir = os.path.join(xdgBaseDir.xdg_data_home,
                                      "linaro",
                                      "image-tools",
                                      "fetch_image")
@@ -592,6 +611,12 @@ class FileHandler():
         args.append("--hwpack")
         args.append(hwpack_file)
 
+        if not os.path.isdir(self.datadir):
+            os.makedirs(self.datadir)
+        with open(os.path.join(self.datadir, "linaro-media-create.log"),
+                               mode='w') as lmc_log:
+            lmc_log.write(" ".join(args) + "\n")
+
         logging.info(" ".join(args))
 
         return args
@@ -637,6 +662,11 @@ class FileHandler():
             self.settings       = settings
             self.tools_dir      = tools_dir
 
+            self.datadir = os.path.join(xdgBaseDir.xdg_data_home,
+                                     "linaro",
+                                     "image-tools",
+                                     "fetch_image")
+
         def run(self):
             """
             1. Download required files.
@@ -680,6 +710,9 @@ class FileHandler():
             self.waiting_for_event_response = False
             self.event_queue.put(("start", "unpack"))
 
+            lmc_log = open(os.path.join(self.datadir,
+                                        "linaro-media-create.log"), mode='a')
+
             while(1):
                 if self.create_process.poll() != None:
                     # linaro-media-create has finished. Tell the GUI the return
@@ -703,6 +736,8 @@ class FileHandler():
                     if self.save_lines:
                         self.saved_lines += self.line
 
+                    lmc_log.write(self.line + "\n")
+                    lmc_log.flush()
                     self.line = ""
                 else:
                     self.line += self.input
@@ -745,6 +780,8 @@ class FileHandler():
 
                 while self.waiting_for_event_response:
                     time.sleep(0.2)
+
+            lmc_log.close()
 
         def send_to_create_process(self, text):
             print >> self.create_process.stdin, text
@@ -812,6 +849,14 @@ class FetchImageConfig():
             if isinstance(value, basestring):
                 value = re.sub('LEB:\s*', '', value)
                 self.settings['UI']['reverse-descriptions'][value] = key
+
+        # If an item doesn't have a translation, just add in a null one
+        if not self.settings['UI']['translate']:
+            self.settings['UI']['translate'] = {}
+
+        for key, value in self.settings['choice']['platform'].items():
+            if not key in self.settings['UI']['translate']:
+                self.settings['UI']['translate'][key] = key
 
         self.settings['UI']['reverse-translate'] = {}
         for (key, value) in self.settings['UI']['translate'].items():
@@ -1366,6 +1411,8 @@ class DB():
                 HW Pack: platform, hardware, date, build"""
         image_url = None
         hwpack_url = None
+        old_image = args['image']
+        build_bits = None
 
         if(args['release_or_snapshot'] == "snapshot"):
             count = 0
@@ -1441,7 +1488,7 @@ class DB():
                 else:
                     break  # Got a URL, go.
 
-        else:
+        elif args['release_or_snapshot'] == "release":
             image_url = self.get_url("release_binaries",
                             [
                              ("image", args['image']),
@@ -1454,14 +1501,87 @@ class DB():
                              ("build", args['build']),
                              ("platform", args['platform'])])
 
+        else:
+            message = "Unexpected args['release_or_snapshot']: {0}".format(
+                       args['release_or_snapshot'])
+            raise AssertionError(message)
+
         if(not image_url):
             # If didn't get an image URL set up something so the return line
             # doesn't crash
             image_url = [None]
 
+            if args['release_or_snapshot'] == "snapshot":
+                table = "snapshot_binaries"
+            else:
+                table = "release_binaries"
+
+            if not (self.get_url(table, [("image", old_image)]) or
+                    self.get_url(table, [("image", args['image'])])):
+                msg = "{0} does not match any OS indexed".format(old_image)
+                logging.error(msg)
+
+            if args['release_or_snapshot'] == "snapshot":
+                if not self.get_url("snapshot_binaries",
+                                    [("date", build_bits[0])]):
+                    msg = "Can not find requested OS on date {0}".format(
+                           build_bits[0])
+                    logging.error(msg)
+
+                elif not self.get_url("snapshot_binaries",
+                                      [("build", build_bits[1])]):
+                    msg = "Can not find build {0} of requested OS".format(
+                           build_bits[1])
+                    logging.error(msg)
+
+            else:  # Release...
+                if not self.get_url("release_binaries",
+                                    [("build", args['build'])]):
+                    msg = "Can not find build {0} of selected OS".format(
+                           args['build'])
+                    logging.error(msg)
+
+                if not self.get_url("release_binaries",
+                                    [("platform", args['platform'])]):
+                    msg = "Can not find OS for platform {0}".format(
+                           args['platform'])
+                    logging.error(msg)
+
         if(not hwpack_url):
             # If didn't get a hardware pack URL set up something so the return
             # line doesn't crash
             hwpack_url = [None]
+
+            table = None
+            if args['release_or_snapshot'] == "snapshot":
+                table = "snapshot_hwpacks"
+                build = build_bits[1]
+
+            elif args['release_or_snapshot'] == "release":
+                table = "release_hwpacks"
+                build = args['build']
+
+            if not self.get_url(table, [("hardware", args['hwpack'])]):
+                msg = "{0} does not match any hardware pack indexed".format(
+                       args['hwpack'])
+                logging.error(msg)
+
+            if args['release_or_snapshot'] == "snapshot":
+                if not self.get_url("snapshot_hwpacks",
+                                    [("date", build_bits[0])]):
+                    msg = "Hardware pack does not exist on date {0}".format(
+                           build_bits[0])
+                    logging.error(msg)
+
+            else:  # Release...
+                if not self.get_url("release_hwpacks",
+                                    [("platform", args['platform'])]):
+                    msg = "Hardware pack unavailable for platform {0}".format(
+                           args['platform'])
+
+            if not self.get_url(table, [("build", build)]):
+                msg = ("Build {0} doesn't exist for any hardware "
+                       "pack indexed".format(build))
+                logging.error(msg)
 
         return(image_url[0], hwpack_url[0])

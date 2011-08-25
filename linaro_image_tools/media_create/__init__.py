@@ -58,7 +58,7 @@ def get_args_parser():
         '--dev', required=True, dest='board', choices=KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
     parser.add_argument(
-        '--rootfs', default='ext3', choices=['ext2', 'ext3', 'ext4', 'btrfs'],
+        '--rootfs', default='ext4', choices=['ext2', 'ext3', 'ext4', 'btrfs'],
         help='Type of filesystem to use for the rootfs')
     parser.add_argument(
         '--rfs_label', default='rootfs',
@@ -96,7 +96,7 @@ def get_args_parser():
         '--hwpack-force-yes', action='store_true',
         help='Pass --force-yes to linaro-hwpack-install')
     parser.add_argument(
-        '--image_size', default='2G',
+        '--image_size', default='3G',
         help=('The image size, specified in mega/giga bytes (e.g. 3000M or '
               '3G); use with --image_file only'))
     parser.add_argument(

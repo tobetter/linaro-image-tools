@@ -485,7 +485,11 @@ class BoardConfig(object):
                 with cls.hardwarepack_handler:
                     default = os.path.join(
                         chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
-                        'u-boot.bin')
+                        'u-boot.img')
+                    if not os.path.exists(default):
+                        default = os.path.join(
+                            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+                            'u-boot.bin')
                     uboot_bin = cls.get_file('u_boot', default=default)
                     proc = cmd_runner.run(
                         ['cp', '-v', uboot_bin, boot_disk], as_root=True)
@@ -789,7 +793,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
         # Populate created raw partition with TOC and startup files.
         config_files_path = os.path.join(chroot_dir, 'boot')
         _, toc_filename = tempfile.mkstemp()
-        new_files = cls.get_file_info(config_files_path)
+        new_files = cls.get_file_info(chroot_dir)
         with open(toc_filename, 'wb') as toc:
             cls.create_toc(toc, new_files)
         cls.install_snowball_boot_loader(toc_filename, new_files,
@@ -850,19 +854,26 @@ class SnowballEmmcConfig(SnowballSdConfig):
             f.write(data)
 
     @classmethod
-    def get_file_info(cls, bin_dir):
+    def get_file_info(cls, chroot_dir):
         ''' Fills in the offsets of files that are located in
         non-absolute memory locations depending on their sizes.'
         Also fills in file sizes'''
         ofs = cls.TOC_SIZE
         files = []
+        bin_dir = os.path.join(chroot_dir, 'boot')
         with open(os.path.join(bin_dir, cls.SNOWBALL_STARTUP_FILES_CONFIG),
                   'r') as info_file:
             for line in info_file:
                 file_data = line.split()
                 if file_data[0][0] == '#':
                     continue
-                filename = os.path.join(bin_dir, file_data[1])
+                if file_data[1].startswith('/'):
+                    filename = os.path.join(chroot_dir,
+                                            file_data[1].lstrip('/'))
+                else:
+                    filename = os.path.join(bin_dir, file_data[1])
+                assert os.path.exists(filename), "File %s does not exist, " \
+                    "please check the startfiles config file." % file_data[1]
                 address = long(file_data[3], 16)
                 if address != 0:
                     ofs = address
@@ -1076,6 +1087,20 @@ class SamsungConfig(BoardConfig):
             'u-boot.bin')
         return uboot_file
 
+
+    @classmethod
+    def populate_raw_partition(cls, chroot_dir, boot_device_or_file):
+        # Populate created raw partition with BL1, env and u-boot
+        spl_file = os.path.join(chroot_dir, 'boot', 'u-boot-mmc-spl.bin')
+        assert os.path.getsize(spl_file) <= (SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
+            "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
+        _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
+        uboot_file = os.path.join(chroot_dir, 'boot', 'u-boot.bin')
+        assert os.path.getsize(uboot_file) <= (SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
+            "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
+        _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
+
+
     @classmethod
     def install_samsung_boot_loader(cls, chroot_dir, boot_device_or_file):
         spl_file = cls._get_samsung_spl(chroot_dir)
@@ -1221,6 +1246,8 @@ def get_plain_boot_script_contents(boot_env):
     # https://bugs.launchpad.net/linaro-image-tools/+bug/788765
     # for more.
     return (
+        'setenv initrd_high "0xffffffff"\n'
+        'setenv fdt_high "0xffffffff"\n'
         'setenv bootcmd "%(bootcmd)s"\n'
         'setenv bootargs "%(bootargs)s"\n'
         "boot"

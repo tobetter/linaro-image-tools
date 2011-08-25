@@ -32,7 +32,12 @@ import operator
 import Queue
 import time
 import datetime
-
+from linaro_image_tools.fetch_image import (QEMU, HARDWARE)
+from linaro_image_tools.media_create.check_device import (
+    _get_system_bus_and_udisks_iface,
+    _get_dbus_property,
+    )
+import dbus
 
 def add_button(bind_to,
                sizer,
@@ -59,18 +64,25 @@ def add_button(bind_to,
 class ReleaseOrSnapshotPage(wiz.PyWizardPage):
     """Ask the user if they want to use a release or a snapshot"""
 
-    def __init__(self, parent, config):
+    def __init__(self, parent, config, db, pages, width):
         wiz.PyWizardPage.__init__(self, parent)
         self.config = config
         self.settings = self.config.settings
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.next = None
         self.prev = None
+        self.db = db
+        self.wizard = parent
+        self.pages = pages
+        self.width = width
+        self.settings['image'] = None
+        self.os_selected = True
+        self.width = width
 
-        self.sizer.Add(wx.StaticText(self, -1,
-"""This Wizard will write an operating system of your choosing to
-either a disk image or to an MMC card. First we need to know if
-your priority is stability or the latest and greatest features."""))
+        message = ("Would you like to use a Linaro release, or a more up to "
+                   "date, but possibly unstable build?")
+        header = wx.StaticText(self, -1, message)
+        header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
 
         self.box1 = wx.BoxSizer(wx.VERTICAL)
 
@@ -79,179 +91,112 @@ your priority is stability or the latest and greatest features."""))
                             'snapshot': "I would like to run untested, but "
                                         "more up-to-date software."}
 
-        add_button(self, self.box1, self.button_text['release'],
-                   wx.RB_GROUP, self.event_radio_button_select, None, None)
+        self.rel_btn = add_button(self, self.box1, self.button_text['release'],
+                                  wx.RB_GROUP, self.event_radio_button_select,
+                                  None, None)
 
         # Save the setting for the default selected value
         self.settings['release_or_snapshot'] = "release"
 
-        add_button(self, self.box1, self.button_text['snapshot'], None,
-                   self.event_radio_button_select, None, None)
+        self.snap_btn = add_button(self, self.box1,
+                                   self.button_text['snapshot'], None,
+                                   self.event_radio_button_select, None, None)
 
-        self.sizer.Add(self.box1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
-
-        self.SetSizerAndFit(self.sizer)
-        self.sizer.Fit(self)
-        self.Move((50, 50))
-
-    def event_radio_button_select(self, event):
-        self.radio_selected = event.GetEventObject().GetLabel()
-        # The radio button can be release, snapshot or "latest snapshot"
-        if(self.radio_selected == self.button_text['release']):
-            self.settings['release_or_snapshot'] = "release"
-        else:
-            self.settings['release_or_snapshot'] = "snapshot"
-
-    def SetNext(self, next):
-        self.next = next
-
-    def GetNext(self):
-        return self.next
-
-
-class AboutMyHardwarePage(wiz.WizardPageSimple):
-    """Ask the user about their hardware. This only asks about the board, not
-       any specific hardware packs because there can be multiple names for the
-       same hardware pack or sometimes a hardware pack is only available in the
-       releases or snapshots repository. We whittle down the choice as we go
-       and the user can chose a hardare pack (if they don't like the default)
-       under advanced options in the Linaro Media Create options
-       page"""
-
-    def __init__(self, parent, config, db, width):
-        wiz.WizardPageSimple.__init__(self, parent)
-        self.settings = config.settings
-        self.db = db
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.box1 = wx.BoxSizer(wx.VERTICAL)
+        self.cp = wx.CollapsiblePane(self, label="Advanced Options",
+                                     style=wx.CP_DEFAULT_STYLE |
+                                           wx.CP_NO_TLW_RESIZE)
+        self.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.event_on_pane_changed,
+                  self.cp)
+        self.make_pane_content(self.cp.GetPane())
         self.box2 = wx.BoxSizer(wx.VERTICAL)
+        self.box2.Add(self.cp)
 
-        header = wx.StaticText(self,
-                               label="Please select the hardware that you "
-                                     "would like to build an image for from "
-                                     "the following list")
-
-        header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
-
-        #--- Hardware Combo Box ---
-        # Make sure that the displayed release is the one set in settings if
-        # no selection is made
-        if "panda" in self.settings['choice']['hardware'].keys():
-            default_hardware = "panda"
-        else:
-            default_hardware = self.settings['choice']['hardware'].keys()[-1]
-
-        self.settings['hardware'] = default_hardware
-        self.settings['compatable_hwpacks'] = (
-                self.settings['choice']['hwpack'][self.settings['hardware']])
-
-        self.cb_hardware = wx.ComboBox(self,
-                            value=self.settings['choice']
-                                               ['hardware']
-                                               [default_hardware],
-                            style=wx.CB_DROPDOWN | wx.CB_READONLY)
-
-        self.Bind(wx.EVT_COMBOBOX,
-                  self.event_combo_box_hardware,
-                  self.cb_hardware)
-        self.box1.Add(self.cb_hardware, 0,
-                      wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        self.help_text_main = wx.StaticText(self, -1, "")
 
         self.sizer.Add(header)
         self.sizer.Add(self.box1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
         self.sizer.Add(self.box2, 0, wx.ALIGN_LEFT | wx.ALL, 5)
+        self.sizer.Add(self.help_text_main, 0, wx.ALIGN_LEFT | wx.ALL, 5)
         self.SetSizerAndFit(self.sizer)
         self.sizer.Fit(self)
         self.Move((50, 50))
 
-    def on_page_changing(self):
-        self.update_hardware_box()
+    def make_pane_content(self, pane):
+        self.adv_box = wx.BoxSizer(wx.VERTICAL)
 
-    def update_hardware_box(self):
-        self.cb_hardware.Clear()
-
-        sorted_hardware_names = sorted(self.settings['choice']['hardware']
-                                                                  .iteritems(),
-                                       key=operator.itemgetter(1))
-
-        table = self.settings['release_or_snapshot'] + "_hwpacks"
-
-        for device_name, human_readable_name in sorted_hardware_names:
-            for hwpack in self.settings['choice']['hwpack'][device_name]:
-                if self.db.hardware_is_available_in_table(table, hwpack):
-                    self.cb_hardware.Append(human_readable_name, device_name)
-                    break
-
-    #--- Event(s) ---
-    def event_combo_box_hardware(self, event):
-        self.settings['hardware'] = (event
-                                     .GetEventObject()
-                                      .GetClientData(event.GetSelection())
-                                       .encode('ascii'))
-
-        self.settings['compatable_hwpacks'] = (
-                self.settings['choice']['hwpack'][self.settings['hardware']])
-    #--- END event(s) ---
-
-
-class SelectStableRelease(wiz.WizardPageSimple):
-    """Ask the user which Linaro release they would like to run."""
-    def __init__(self, parent, config, db, width):
-        wiz.WizardPageSimple.__init__(self, parent)
-        self.settings = config.settings
-        self.db = db
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.wizard = parent
-
-        header = wx.StaticText(self, label="Please select the stable Linaro "
-                                           "release you would like to use")
-
-        header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
-
-        self.sizer.Add(header)
-        self.box1 = wx.BoxSizer(wx.VERTICAL)
+        message = ("You have the option of selecting from several OS images "
+                   "and builds.")
+        header = wx.StaticText(pane, -1, message)
+        header.Wrap(self.width - 10)  # -10 because boarder below is 5 px wide
+        self.adv_box.Add(header)
+        self.grid1 = wx.FlexGridSizer(0, 2, 0, 0)
+        self.grid2 = wx.FlexGridSizer(0, 2, 0, 0)
 
         platforms = []
         for key, value in self.settings['choice']['platform'].items():
             platforms.append(key)
 
-        default_release = self.settings['UI']['translate'][platforms[-1]]
-        self.cb_release = wx.ComboBox(self,
-                                      value=default_release,
-                                      style=wx.CB_DROPDOWN | wx.CB_READONLY)
-        self.Bind(wx.EVT_COMBOBOX,
-                  self.event_combo_box_release,
-                  self.cb_release)
+        style = wx.CB_DROPDOWN | wx.CB_READONLY
+        self.settings['platform'] = None
 
-        if(default_release in self.settings['UI']['translate']):
-            default_release = self.settings['UI']['translate'][default_release]
-        self.settings['platform'] = (
-                    self.settings['UI']['reverse-translate'][default_release])
+        self.cb_release = wx.ComboBox(pane, style=style)
+        self.Bind(wx.EVT_COMBOBOX, self.event_cb_release, self.cb_release)
 
-        for item in platforms:
-            if(item in self.settings['UI']['translate']):
-                new_item = self.settings['UI']['translate'][item]
-                item = new_item
-
-            self.cb_release.Append(item, item.upper())
-
-        self.cb_build = wx.ComboBox(self,
-                                    style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        self.cb_build = wx.ComboBox(pane, style=style)
         self.Bind(wx.EVT_COMBOBOX, self.event_combo_box_build, self.cb_build)
 
-        self.box1.Add(self.cb_release, 0,
-                      wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP, 5)
-        self.box1.Add(self.cb_build, 0,
-                      wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP, 5)
-        self.sizer.Add(self.box1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
-        self.SetSizerAndFit(self.sizer)
-        self.sizer.Fit(self)
-        self.Move((50, 50))
+        self.cb_image = wx.ComboBox(pane, style=style)
+        self.Bind(wx.EVT_COMBOBOX, self.event_combo_box_os, self.cb_image)
+
+        self.help_text = wx.StaticText(pane, -1, "")
+
+        alignment = wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP
+        align_text = alignment | wx.ALIGN_CENTER_VERTICAL
+        self.grid1.Add(self.cb_image, 0, alignment, 5)
+        self.grid1.Add(wx.StaticText(pane, -1, "The OS to run"),
+                          0, align_text, 5)
+
+        self.grid2.Add(self.cb_release, 0, alignment, 5)
+        self.grid2.Add(wx.StaticText(pane, -1, "Available Linaro releases"),
+                          0, align_text, 5)
+
+        self.grid2.Add(self.cb_build, 0, alignment, 5)
+        self.grid2.Add(wx.StaticText(pane, -1, "Available milestones"),
+                          0, align_text, 5)
+
+        self.adv_box.Add(self.grid1, 0, alignment, 0)
+        self.adv_box.Add(self.grid2, 0, alignment, 0)
+        self.update_visibility()
+        self.adv_box.Add(self.help_text, 0, alignment, 5)
+
+        pane.SetSizer(self.adv_box)
+        self.adv_box.Fit(pane)
+
+    def update_visibility(self):
+        if self.settings['release_or_snapshot'] == "snapshot":
+            self.adv_box.Hide(self.grid2, True)
+        else:
+            self.adv_box.Show(self.grid2, True)
+
+        self.Fit()
+        self.Layout()
+
+    def update_next_active(self):
+        if self.build_available and self.os_selected:
+            self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
+        else:
+            self.wizard.FindWindowById(wx.ID_FORWARD).Disable()
 
     def update_build_box(self):
         """Depending on what hardware has been chosen, the OS list may be
         restricted. Filter out anything that is unavailable."""
         self.cb_build.Clear()
+
+        if self.settings['release_or_snapshot'] == "snapshot":
+            # This combo box is not used by snapshot builds
+            self.cb_build.SetValue("Not applicable")
+            self.build_available = True
+            return
 
         builds = self.db.get_builds(self.settings['platform'])
         self.cb_build.SetValue("No build available")
@@ -279,14 +224,27 @@ class SelectStableRelease(wiz.WizardPageSimple):
 
         if len(available_hwpacks):
             self.settings['hwpack'] = available_hwpacks[0]
-            self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
+            self.build_available = True
         else:
-            self.wizard.FindWindowById(wx.ID_FORWARD).Disable()
+            self.build_available = False
+
+        self.update_next_active()
 
     def update_release_and_build_boxes(self):
         """Depending on what hardware has been chosen, some builds may be
            unavailable..."""
         self.cb_release.Clear()
+
+        if self.settings['release_or_snapshot'] == "snapshot":
+            # This combo box is not used by snapshot builds
+            self.cb_release.SetValue("Not applicable")
+            return
+
+        if not self.os_selected:
+            self.cb_release.SetValue("-")
+            self.update_build_box()
+            self.update_next_active()
+            return
 
         default_release = None
         for platform, value in self.settings['choice']['platform'].items():
@@ -298,22 +256,223 @@ class SelectStableRelease(wiz.WizardPageSimple):
                                'where platform == ? and image == ?',
                                 (platform, self.settings['image'])))):
 
-                if(platform in self.settings['UI']['translate']):
+                if platform in self.settings['UI']['translate']:
                     platform = self.settings['UI']['translate'][platform]
 
                 self.cb_release.Append(platform, platform.upper())
                 if not default_release or default_release < platform:
                     default_release = platform
 
-        self.settings['platform'] = (
-                    self.settings['UI']['reverse-translate'][default_release])
-        self.cb_release.SetValue(default_release)
+        if default_release in self.settings['UI']['reverse-translate']:
+            default = self.settings['UI']['reverse-translate'][default_release]
+        else:
+            default = default_release
+
+        if not self.settings['platform']:
+            # No platform has been chose, go with the default
+            self.settings['platform'] = default
+            self.cb_release.SetValue(default_release)
+        else:
+            # Don't change the value of platform if it is set.
+            pf = self.settings['UI']['translate'][self.settings['platform']]
+            self.cb_release.SetValue(pf)
+
         self.update_build_box()
+        self.update_next_active()
+
+    def get_human_os_name(self, item):
+        """Given an OS name from the database, return a human name (either
+        translated from the YAML settings, or just prettified) and if it is a
+        LEB OS or not"""
+
+        item = re.sub("linaro-", "", item)  # Remove any linaro- decoration
+
+        if item in self.settings['UI']['descriptions']:
+            human_name = self.settings['UI']['descriptions'][item]
+        else:
+            # Make human_name look nicer...
+            human_name = string.capwords(item)
+
+        leb_search = re.search("^LEB:\s*(.*)$", human_name)
+
+        if leb_search:
+            return leb_search.group(1), True
+
+        return human_name, False
+
+    def fill_os_list(self):
+        """Filter the list of OS's from the config file based on the users
+        preferences so all choices in the list are valid (i.e. their hardware
+        is supported for the build they have chosen)."""
+
+        # select unique image from snapshot_binaries/release_binaries to
+        # generate list
+        os_list = None
+        if self.settings['release_or_snapshot'] == "release":
+            os_list = self.db.get_os_list_from('release_binaries')
+        else:
+            os_list = self.db.get_os_list_from('snapshot_binaries')
+
+        self.cb_image.Clear()
+
+        printed_tag = None
+        last_name = None
+        current_image_setting_valid = False
+
+        for state in ["LEB", "other"]:
+            for item in os_list:
+                if item == "old":
+                    # Old is a directory that sometimes hangs around,
+                    # but isn't one we want to display
+                    continue
+
+                # Save the original, untouched image name for use later.
+                # We give it a more human name for display
+                original = item
+                item = re.sub("linaro-", "", item)
+
+                os_hardware_combo_available = (
+                            self.db.image_hardware_combo_available(
+                                    self.settings['release_or_snapshot'],
+                                    original,
+                                    self.settings['compatable_hwpacks']))
+
+                if os_hardware_combo_available:
+                    human_name, is_LEB = self.get_human_os_name(item)
+
+                    if item == self.settings['image']:
+                        current_image_setting_valid = True
+
+                    if state == "LEB" and is_LEB:
+
+                        if printed_tag != state:
+                            self.cb_image.Append(
+                                            "- Linaro Supported Releases -")
+                            printed_tag = state
+
+                        self.cb_image.Append(human_name, original)
+
+                        if self.settings['image'] == None:
+                            self.settings['image'] = original
+                            self.os_selected = True
+
+                    elif state != "LEB" and not is_LEB:
+                        if printed_tag != state:
+                            self.cb_image.Append(
+                                            "- Community Supported Releases -")
+                            printed_tag = state
+
+                        self.cb_image.Append(human_name, original)
+
+                    last_name = original
+
+        if(    self.settings['image'] != None
+           and current_image_setting_valid == False):
+            # If we have an image setting, but it doesn't match the OS list, we
+            # have switched OS list. It may be that adding/removing "linaro-"
+            # from the name will get a match.
+
+            if re.search("linaro-", self.settings['image']):
+                test_name = re.sub("linaro-", "", self.settings['image'])
+            else:
+                test_name = "linaro-" + self.settings['image']
+
+            if test_name in os_list:
+                # Success! We have translated the name and can retain the
+                # "old setting"
+                self.settings['image'] = test_name
+                current_image_setting_valid = True
+                self.os_selected = True
+
+        if(   self.settings['image'] == None
+           or current_image_setting_valid == False):
+            # This should only get hit if there are no LEBs available
+            self.settings['image'] = last_name
+            self.os_selected = True
+
+        assert self.settings['image']
+
+        # Make sure the visible selected value matches the saved setting
+        self.cb_image.SetValue(
+                            self.get_human_os_name(self.settings['image'])[0])
+
+    def force_rel_snap_if_hw_requires(self):
+        """
+        If a hardware pack is only available on a release or snapshot build
+        then force self.settings['release_or_snapshot'] and grey out the
+        other radio button. Also display a helpful message.
+        """
+
+        snapshot_ok = False
+        release_ok = False
+
+        for hwpack in self.settings['compatable_hwpacks']:
+            if self.db.hardware_is_available_in_table("snapshot_hwpacks",
+                                                      hwpack):
+                snapshot_ok = True
+            if self.db.hardware_is_available_in_table("release_hwpacks",
+                                                         hwpack):
+                release_ok = True
+
+        assert release_ok or snapshot_ok, ("release or snapshot should have"
+                                           "a hardware pack available")
+
+        self.rel_btn.Enable()
+        self.snap_btn.Enable()
+        message = ""
+
+        if not release_ok:
+            self.settings['release_or_snapshot'] = "snapshot"
+            self.rel_btn.Disable()
+            self.rel_btn.SetValue(False)
+            self.snap_btn.SetValue(True)
+            message = ("The hardware you have chosen is only available for "
+                       "snapshot builds, so release builds have been disabled")
+
+        if not snapshot_ok:
+            self.settings['release_or_snapshot'] = "release"
+            self.snap_btn.Disable()
+            self.snap_btn.SetValue(False)
+            self.rel_btn.SetValue(True)
+            message = ("The hardware you have chosen is only available for "
+                       "release builds, so snapshot builds have been disabled")
+
+        self.help_text_main.SetLabel(message)
+        self.help_text_main.Wrap(self.width - 10)
+
+    def GetNext(self):
+        if self.settings['release_or_snapshot'] == "release":
+            return self.pages['lmc_settings']
+        else:
+            return self.pages['select_snapshot']
+
+    def GetPrev(self):
+        return self.pages['hardware_details']
 
     #--- Event(s) ---
-    def event_combo_box_release(self, evt):
+    def event_radio_button_select(self, event):
+        # The radio button can be release or snapshot
+        self.radio_selected = event.GetEventObject().GetLabel()
+
+        if self.radio_selected == self.button_text['release']:
+            self.settings['release_or_snapshot'] = "release"
+        else:
+            self.settings['release_or_snapshot'] = "snapshot"
+
+        self.update_release_and_build_boxes()
+        self.update_visibility()
+        self.update_next_active()
+
+    def event_on_pane_changed(self, event):
+        self.fill_os_list()
+        self.update_release_and_build_boxes()
+        self.update_visibility()
+        self.Layout()
+        self.update_next_active()
+
+    def event_cb_release(self, evt):
         str = evt.GetString().encode('ascii').lower()
-        if(str in self.settings['UI']['reverse-translate']):
+        if str in self.settings['UI']['reverse-translate']:
             str = self.settings['UI']['reverse-translate'][str]
         self.settings['platform'] = str
 
@@ -321,8 +480,158 @@ class SelectStableRelease(wiz.WizardPageSimple):
 
     def event_combo_box_build(self, evt):
         self.settings['release_build'] = evt.GetString().encode('ascii')
+
+    def event_combo_box_os(self, evt):
+        self.settings['image'] = self.cb_image.GetClientData(
+                                                            evt.GetSelection())
+
+        if self.settings['image']:  # Is None for items that aren't an OS
+            self.os_selected = True
+            image = re.sub("linaro-", "", self.settings['image'])
+
+            if image + "::long" in self.settings['UI']['descriptions']:
+                self.help_text.SetLabel(self.settings['UI']
+                                                     ['descriptions']
+                                                     [image + "::long"])
+            else:
+                self.help_text.SetLabel("")
+
+        else:  # Have selected help text
+            self.os_selected = False
+            self.help_text.SetLabel("Please select an operating system to run "
+                                    "on your chosen hardware.")
+
+        self.help_text.Wrap(self.width - 10)
+        self.update_release_and_build_boxes()
+        self.update_next_active()
     #--- END event(s) ---
 
+
+class AboutMyHardwarePage(wiz.PyWizardPage):
+    """Ask the user about their hardware. This only asks about the board, not
+       any specific hardware packs because there can be multiple names for the
+       same hardware pack or sometimes a hardware pack is only available in the
+       releases or snapshots repository. We whittle down the choice as we go
+       and the user can chose a hardare pack (if they don't like the default)
+       under advanced options in the Linaro Media Create options
+       page"""
+
+    def __init__(self, parent, config, db):
+        wiz.PyWizardPage.__init__(self, parent)
+        self.settings = config.settings
+        self.db = db
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.box1 = wx.BoxSizer(wx.VERTICAL)
+        self.box2 = wx.BoxSizer(wx.VERTICAL)
+        self.next = None
+
+        message = """\
+This Wizard will write an operating system of your choosing to either a disk
+image or to an MMC card. First we need to know what hardware you have."""
+        header = wx.StaticText(self, label=message)
+
+        #--- Hardware Combo Box ---
+        # Make sure that the displayed release is the one set in settings if
+        # no selection is made
+        if "panda" in self.settings['choice']['hardware'].keys():
+            default_hardware = "panda"
+        else:
+            default_hardware = self.settings['choice']['hardware'].keys()[-1]
+
+        self.settings['hardware'] = default_hardware
+        self.settings['compatable_hwpacks'] = (
+                self.settings['choice']['hwpack'][self.settings['hardware']])
+
+        self.cb_hardware = wx.ComboBox(self,
+                            value=self.settings['choice']
+                                               ['hardware']
+                                               [default_hardware],
+                            style=wx.CB_DROPDOWN | wx.CB_READONLY)
+
+        self.Bind(wx.EVT_COMBOBOX,
+                  self.event_combo_box_hardware,
+                  self.cb_hardware)
+
+        file_dev_grid = wx.FlexGridSizer(0, 1, 0, 0)
+        line_1_grid = wx.FlexGridSizer(0, 2, 0, 0)
+        self.box2.Add(file_dev_grid, 0, wx.EXPAND)
+
+        # self.settings['write_to_file_or_device'] should match the first
+        # button below...
+        self.button_text = {'hardware': "I have a",
+                            'sim': "I want to run on a hardware simulation."}
+
+        self.settings['hw_or_qemu'] = HARDWARE
+        add_button(self,
+                   line_1_grid,
+                   self.button_text['hardware'],
+                   wx.RB_GROUP,
+                   self.event_radio_button_select,
+                   None, None)
+
+        line_1_grid.Add(self.cb_hardware)
+        file_dev_grid.Add(line_1_grid)
+
+        add_button(self,
+                   file_dev_grid,
+                   self.button_text['sim'],
+                   None,
+                   self.event_radio_button_select,
+                   None, None)
+
+        self.sizer.Add(header)
+        self.sizer.Add(self.box1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
+        self.sizer.Add(self.box2, 0, wx.ALIGN_LEFT | wx.ALL, 5)
+        self.SetSizerAndFit(self.sizer)
+        self.sizer.Fit(self)
+        self.Move((50, 50))
+
+    def on_page_changing(self):
+        self.update_hardware_box()
+
+    def update_hardware_box(self):
+        self.cb_hardware.Clear()
+
+        sorted_hardware_names = sorted(self.settings['choice']['hardware']
+                                                                  .iteritems(),
+                                       key=operator.itemgetter(1))
+
+        for device_name, human_readable_name in sorted_hardware_names:
+            for hwpack in self.settings['choice']['hwpack'][device_name]:
+                if(self.db.hardware_is_available_in_table("snapshot_hwpacks",
+                                                          hwpack)
+                   or self.db.hardware_is_available_in_table("release_hwpacks",
+                                                             hwpack)):
+                    self.cb_hardware.Append(human_readable_name, device_name)
+                    break
+
+    #--- Event(s) ---
+    def event_combo_box_hardware(self, event):
+        self.settings['hardware'] = (event
+                                     .GetEventObject()
+                                      .GetClientData(event.GetSelection())
+                                       .encode('ascii'))
+
+        self.settings['compatable_hwpacks'] = (
+                self.settings['choice']['hwpack'][self.settings['hardware']])
+    def event_radio_button_select(self, event):
+        val = event.GetEventObject().GetLabel()
+        if val == self.button_text['sim']:
+            self.settings['hw_or_qemu'] = QEMU
+            assert "beagle" in self.settings['choice']['hardware'].keys()
+            self.settings['hardware'] = "beagle"
+            self.settings['compatable_hwpacks'] = (
+                self.settings['choice']['hwpack'][self.settings['hardware']])
+
+        elif val == self.button_text['hardware']:
+            self.settings['hw_or_qemu'] = HARDWARE
+    #--- END event(s) ---
+
+    def SetNext(self, next):
+        self.next = next
+
+    def GetNext(self):
+        return self.next
 
 class SelectSnapshot(wiz.WizardPageSimple):
     """Present the user with a calendar widget and a list of builds available
@@ -483,183 +792,6 @@ class SelectSnapshot(wiz.WizardPageSimple):
     #--- END event(s) ---
 
 
-class SelectOS(wiz.WizardPageSimple):
-    """Ask the user which OS they would like to run. Filter out any choices
-    that are unavailable due to previous choices."""
-    def __init__(self, parent, config, db, width):
-        wiz.WizardPageSimple.__init__(self, parent)
-        self.settings = config.settings
-        self.wizard = parent
-        self.db = db
-        self.width = width
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.settings['image'] = None
-
-        header = wx.StaticText(self, label="Please select the operating "
-                                           "system you would like to run on "
-                                           "your hardware.")
-        header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
-
-        self.box1 = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(header)
-
-        self.cb_image = wx.ComboBox(self,
-                                    style=wx.CB_DROPDOWN | wx.CB_READONLY)
-        self.Bind(wx.EVT_COMBOBOX, self.event_combo_box_os, self.cb_image)
-
-        #--- Layout ---
-        # -- Combo boxes for hardware and image selection --
-        self.box1.Add(self.cb_image, 0, wx.ALIGN_LEFT | wx.ALL, 5)
-
-        self.sizer.Add(self.box1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
-
-        self.help_text = wx.StaticText(self)
-        self.sizer.Add(self.help_text, 1, wx.EXPAND, 5)
-
-        self.SetSizer(self.sizer)
-        self.sizer.Fit(self)
-        self.Move((50, 50))
-
-    def get_human_os_name(self, item):
-        """Given an OS name from the database, return a human name (either
-        translated from the YAML settings, or just prettified) and if it is a
-        LEB OS or not"""
-
-        item = re.sub("linaro-", "", item)  # Remove any linaro- decoration
-
-        human_name = item
-
-        if item in self.settings['UI']['descriptions']:
-            human_name = self.settings['UI']['descriptions'][item]
-        else:
-            # Make human_name look nicer...
-            human_name = string.capwords(item)
-
-        leb_search = re.search("^LEB:\s*(.*)$", human_name)
-
-        if leb_search:
-            return leb_search.group(1), True
-
-        return human_name, False
-
-    def fill_os_list(self):
-        """Filter the list of OS's from the config file based on the users
-        preferences so all choices in the list are valid (i.e. their hardware
-        is supported for the build they have chosen)."""
-
-        # select unique image from snapshot_binaries/release_binaries to
-        # generate list
-        os_list = None
-        if self.settings['release_or_snapshot'] == "release":
-            os_list = self.db.get_os_list_from('release_binaries')
-        else:
-            os_list = self.db.get_os_list_from('snapshot_binaries')
-
-        self.cb_image.Clear()
-
-        printed_tag = None
-        last_name = None
-        current_image_setting_valid = False
-
-        for state in ["LEB", "other"]:
-            for item in os_list:
-                if item == "old":
-                    # Old is a directory that sometimes hangs around,
-                    # but isn't one we want to display
-                    continue
-
-                # Save the original, untouched image name for use later.
-                # We give it a more human name for display
-                original = item
-                item = re.sub("linaro-", "", item)
-
-                os_hardware_combo_available = (
-                            self.db.image_hardware_combo_available(
-                                    self.settings['release_or_snapshot'],
-                                    original,
-                                    self.settings['compatable_hwpacks']))
-
-                if os_hardware_combo_available:
-                    human_name, is_LEB = self.get_human_os_name(item)
-
-                    if item == self.settings['image']:
-                        current_image_setting_valid = True
-
-                    if state == "LEB" and is_LEB:
-
-                        if printed_tag != state:
-                            self.cb_image.Append(
-                                            "- Linaro Supported Releases -")
-                            printed_tag = state
-
-                        self.cb_image.Append(human_name, original)
-
-                        if self.settings['image'] == None:
-                            self.settings['image'] = original
-
-                    elif state != "LEB" and not is_LEB:
-                        if printed_tag != state:
-                            self.cb_image.Append(
-                                            "- Community Supported Releases -")
-                            printed_tag = state
-
-                        self.cb_image.Append(human_name, original)
-
-                    last_name = original
-
-        if(    self.settings['image'] != None
-           and current_image_setting_valid == False):
-            # If we have an image setting, but it doesn't match the OS list, we
-            # have switched OS list. It may be that adding/removing "linaro-"
-            # from the name will get a match.
-
-            if re.search("linaro-", self.settings['image']):
-                test_name = re.sub("linaro-", "", self.settings['image'])
-            else:
-                test_name = "linaro-" + self.settings['image']
-
-            if test_name in os_list:
-                # Success! We have translated the name and can retain the
-                # "old setting"
-                self.settings['image'] = test_name
-                current_image_setting_valid = True
-
-        if(   self.settings['image'] == None
-           or current_image_setting_valid == False):
-            # This should only get hit if there are no LEBs available
-            self.settings['image'] = last_name
-
-        assert self.settings['image']
-
-        # Make sure the visible selected value matches the saved setting
-        self.cb_image.SetValue(
-                            self.get_human_os_name(self.settings['image'])[0])
-
-    #--- Event(s) ---
-    def event_combo_box_os(self, evt):
-        self.settings['image'] = self.cb_image.GetClientData(
-                                                            evt.GetSelection())
-
-        if self.settings['image']:  # Is None for items that aren't an OS
-            self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
-            image = re.sub("linaro-", "", self.settings['image'])
-
-            if image + "::long" in self.settings['UI']['descriptions']:
-                self.help_text.SetLabel(self.settings['UI']
-                                                     ['descriptions']
-                                                     [image + "::long"])
-            else:
-                self.help_text.SetLabel("")
-
-        else:  # Have selected help text
-            self.wizard.FindWindowById(wx.ID_FORWARD).Disable()
-            self.help_text.SetLabel("Please select an operating system to run "
-                                    "on your chosen hardware.")
-
-        self.help_text.Wrap(self.width - 10)
-    #--- END event(s) ---
-
-
 class LMC_settings(wiz.WizardPageSimple):
     """Present the user with, intially, the choice of writing the file system
     they are going to have created to a file, or directly to a device. Ask
@@ -687,50 +819,25 @@ class LMC_settings(wiz.WizardPageSimple):
                                "card, or to a file on the local file system.")
         header.Wrap(width - 10)  # -10 because boarder below is 5 pixels wide
 
-        #--- Build some widgets ---
-        #-- Target file system --
-        file_systems = ["ext3", "ext4", "btrfs", "ext2"]
-        default_target = file_systems[0]
-        self.settings['rootfs'] = default_target
-        cb_rootfs = wx.ComboBox(self,
-                                value=default_target,
-                                style=wx.CB_DROPDOWN | wx.CB_READONLY)
-
-        for item in file_systems:
-            cb_rootfs.Append(item, item.upper())
-
-        self.Bind(wx.EVT_COMBOBOX, self.event_combo_box_rootfs, cb_rootfs)
-
-        #-- Image size spinner
-        self.image_size_spinner = wx.SpinCtrl(self, -1, "")
-        self.Bind(wx.EVT_SPINCTRL,
-                  self.event_image_size,
-                  self.image_size_spinner)
-
-        #-- Swap size spinner
-        self.swap_size_spinner = wx.SpinCtrl(self, -1, "")
-        self.Bind(wx.EVT_SPINCTRL,
-                  self.event_swap_size,
-                  self.swap_size_spinner)
-
         #--- Layout ---
         self.sizer.Add(header, 0, wx.ALIGN_LEFT | wx.ALL, 5)
         box1 = wx.BoxSizer(wx.VERTICAL)
         file_dev_grid = wx.FlexGridSizer(0, 2, 0, 0)
         box1.Add(file_dev_grid, 0, wx.EXPAND)
-        grid1 = wx.FlexGridSizer(0, 2, 0, 0)
 
         # self.settings['write_to_file_or_device'] should match the first
         # button below...
         self.settings['write_to_file_or_device'] = "file"
-        add_button(self,
+        self.file_button = add_button(
+                   self,
                    file_dev_grid,
                    "Write to file",
                    wx.RB_GROUP,
                    self.event_radio_button_select,
                    None, None)
 
-        add_button(self,
+        self.device_button = add_button(
+                   self,
                    file_dev_grid,
                    "Write to device",
                    None,
@@ -769,33 +876,59 @@ class LMC_settings(wiz.WizardPageSimple):
 
         box1.Add(file_browse_grid, 0, wx.EXPAND)
 
-        cb1 = wx.CheckBox(self, -1, "Show advanced options")
-        self.Bind(wx.EVT_CHECKBOX, self.event_show_advanced_options, cb1)
-        box1.Add(cb1)
-
-        #-- Combo boxes for hardware and image selection --
-        optional_settings_box_title = wx.StaticBox(
-                                                self,
-                                                label=" Optional Settings ")
-
-        self.optional_settings_box = wx.StaticBoxSizer(
-                                                optional_settings_box_title,
-                                                wx.VERTICAL)
-
+        # Advanced settings collapsible pane
+        self.cp = wx.CollapsiblePane(self, label="Advanced Options",
+                                     style=wx.CP_DEFAULT_STYLE |
+                                           wx.CP_NO_TLW_RESIZE)
+        self.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.event_on_pane_changed,
+                  self.cp)
+        self.make_pane_content(self.cp.GetPane())
         self.box2 = wx.BoxSizer(wx.VERTICAL)
+        self.box2.Add(self.cp)
 
-        self.box2.AddWindow(self.optional_settings_box,
-                            0,
-                            border=2,
-                            flag=wx.ALL | wx.EXPAND)
+        self.sizer.Add(box1, 0, wx.ALIGN_LEFT | wx.ALL, 0)
+        self.sizer.Add(self.box2, 0, wx.ALIGN_LEFT | wx.ALL, 0)
+        self.SetSizer(self.sizer)
+        self.sizer.Fit(self)
+        self.Move((50, 50))
 
-        grid1.Add(cb_rootfs, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP, 5)
+    def make_pane_content(self, pane):
+        self.box = wx.BoxSizer(wx.VERTICAL)
+        grid1 = wx.FlexGridSizer(0, 2, 0, 0)
 
-        grid1.Add(wx.StaticText(self,
+        #--- Build some widgets ---
+        #-- Target file system --
+        file_systems = ["ext4", "btrfs", "ext3", "ext2"]
+        default_target = file_systems[0]
+        self.settings['rootfs'] = default_target
+        cb_rootfs = wx.ComboBox(pane,
+                                value=default_target,
+                                style=wx.CB_DROPDOWN | wx.CB_READONLY)
+
+        for item in file_systems:
+            cb_rootfs.Append(item, item.upper())
+
+        self.Bind(wx.EVT_COMBOBOX, self.event_combo_box_rootfs, cb_rootfs)
+
+        #-- Image size spinner
+        self.image_size_spinner = wx.SpinCtrl(pane, -1, "")
+        self.Bind(wx.EVT_SPINCTRL,
+                  self.event_image_size,
+                  self.image_size_spinner)
+
+        #-- Swap size spinner
+        self.swap_size_spinner = wx.SpinCtrl(pane, -1, "")
+        self.Bind(wx.EVT_SPINCTRL,
+                  self.event_swap_size,
+                  self.swap_size_spinner)
+
+
+        alignment = wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP
+        grid1.Add(cb_rootfs, 0, alignment, 5)
+
+        grid1.Add(wx.StaticText(pane,
                                 label="The root file system of the image"),
-                                0,
-                                wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
-                                5)
+                                0, alignment, 5)
 
         # We want to sub-devide the cell, to add another grid sizer...
         file_size_grid = wx.FlexGridSizer(0, 2, 0, 0)
@@ -807,37 +940,37 @@ class LMC_settings(wiz.WizardPageSimple):
         # Add a spinner that allows us to type/click a numerical value (defined above)
         file_size_grid.Add(self.image_size_spinner,
                            0,
-                           wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
+                           alignment,
                            5)
 
         # Add a choice of MB or GB for size input
         units = ["GB", "MB"]
         self.size_unit = units[0]  # Set the default unit
-        unit_choice = wx.Choice(self, -1, (100, 50), choices=units)
+        unit_choice = wx.Choice(pane, -1, (100, 50), choices=units)
         self.Bind(wx.EVT_CHOICE, self.event_chose_unit, unit_choice)
         file_size_grid.Add(unit_choice, 0, wx.ALIGN_RIGHT | wx.TOP, 5)
 
         # Back out of the extra grid, add some help text
         grid1.Add(wx.StaticText(
-                            self,
+                            pane,
                             label="Writing to file only: Image file size"),
                             0,
-                            wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
+                            alignment,
                             5)
 
         # The swap size (MB only)
         grid1.Add(self.swap_size_spinner,
                   0,
-                  wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
+                  alignment,
                   5)
 
-        grid1.Add(wx.StaticText(self, label="Swap file size in MB"),
+        grid1.Add(wx.StaticText(pane, label="Swap file size in MB"),
                   0,
                   wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                   5)
 
         self.cb_hwpacks = wx.ComboBox(
-                                self,
+                                pane,
                                 value=self.settings['compatable_hwpacks'][0],
                                 style=wx.CB_DROPDOWN | wx.CB_READONLY)
 
@@ -850,41 +983,27 @@ class LMC_settings(wiz.WizardPageSimple):
                   wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                   5)
 
-        grid1.Add(wx.StaticText(self, label="Compatible hardware packs"),
+        grid1.Add(wx.StaticText(pane, label="Compatible hardware packs"),
                   0,
                   wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                   5)
 
-        self.optional_settings_box.Add(grid1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
-
-        confirm_mmc_usage_title = wx.StaticBox(self, label=" Are you sure? ")
-
-        self.confirm_mmc_usage_box = wx.StaticBoxSizer(confirm_mmc_usage_title,
-                                                       wx.VERTICAL)
-        cb2 = wx.CheckBox(
-                        self,
-                        -1,
-                        "Yes, erase and use the device I have selected above.")
-
-        self.Bind(wx.EVT_CHECKBOX, self.event_use_mmc_tickbox, cb2)
-        self.confirm_mmc_usage_box.Add(cb2)
-
-        self.box3 = wx.BoxSizer(wx.VERTICAL)
-        self.box3.AddWindow(self.confirm_mmc_usage_box,
-                            0,
-                            border=2,
-                            flag=wx.ALL | wx.EXPAND)
-
-        self.sizer.Add(box1, 0, wx.ALIGN_LEFT | wx.ALL, 0)
-        self.sizer.Add(self.box2, 0, wx.ALIGN_LEFT | wx.ALL, 0)
-        self.sizer.Add(self.box3, 0, wx.ALIGN_LEFT | wx.ALL, 0)
-        self.SetSizer(self.sizer)
-        self.sizer.Fit(self)
-        self.Move((50, 50))
+        self.box.Add(grid1, 0, alignment, 0)
+        pane.SetSizer(self.box)
+        self.box.Fit(pane)
 
     def on_activate(self):
         self.update_forward_active_and_mmc_confirm_box_visible()
         self.set_hwpacks_for_hardware()
+        self.update_dev_file_buttons()
+
+    def update_dev_file_buttons(self):
+        if self.settings['hw_or_qemu'] == QEMU:
+            self.device_button.Disable()
+            self.device_button.SetValue(False)
+            self.file_button.SetValue(True)
+        else:
+            self.device_button.Enable()
 
     def set_hwpacks_for_hardware(self):
         self.cb_hwpacks.Clear()
@@ -917,22 +1036,14 @@ class LMC_settings(wiz.WizardPageSimple):
     def update_forward_active_and_mmc_confirm_box_visible(self):
         if(    self.settings['path_selected']
            and self.settings['path_selected'] != ""):
-
-            if (   self.settings['write_to_file_or_device'] == "file"
-                or self.settings['write_to_file_or_device'] == "device"
-                   and self.yes_use_mmc):
-                self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
-            else:
-                self.wizard.FindWindowById(wx.ID_FORWARD).Disable()
+            self.wizard.FindWindowById(wx.ID_FORWARD).Enable()
         else:
             self.wizard.FindWindowById(wx.ID_FORWARD).Disable()
 
-        if self.settings['write_to_file_or_device'] == "device":
-            self.box3.Show(self.confirm_mmc_usage_box, True)
-        else:
-            self.box3.Hide(self.confirm_mmc_usage_box, True)
-
     # --- Event Handlers ---
+    def event_on_pane_changed(self, event):
+        self.Layout()
+
     def event_open_file_control(self, event):
         if self.settings['write_to_file_or_device'] == "file":
 
@@ -943,14 +1054,15 @@ class LMC_settings(wiz.WizardPageSimple):
                                 style=wx.SAVE)
 
         elif self.settings['write_to_file_or_device'] == "device":
-            dlg = wx.FileDialog(self,
-                                message="Choose a device",
-                                defaultDir=os.getcwd(),
-                                defaultFile="",
-                                style=wx.OPEN | wx.CHANGE_DIR)
+            dlg = DevChoser(self, -1, "Please chose a device", self.settings)
 
-        if dlg.ShowModal() == wx.ID_OK:
-            self.settings['path_selected'] = dlg.GetPaths()[0]
+        result = dlg.ShowModal()
+        file_or_dev = self.settings['write_to_file_or_device']
+
+        if result == wx.ID_OK or file_or_dev == "device":
+            # The dev chooser doesn't do ok/cancel, it just finishes.
+            if self.settings['write_to_file_or_device'] == "file":
+                self.settings['path_selected'] = dlg.GetPaths()[0]
             self.file_path_and_name.SetValue(self.settings['path_selected'])
 
         dlg.Destroy()
@@ -986,12 +1098,6 @@ class LMC_settings(wiz.WizardPageSimple):
 
         self.update_forward_active_and_mmc_confirm_box_visible()
 
-    def event_show_advanced_options(self, event):
-        if event.IsChecked():
-            self.box2.Show(self.optional_settings_box, True)
-        else:
-            self.box2.Hide(self.optional_settings_box, True)
-
     def event_pick_file_path(self, evt):
         self.settings['path_selected'] = os.path.abspath(evt.GetPath())
         self.update_forward_active_and_mmc_confirm_box_visible()
@@ -1014,10 +1120,87 @@ class LMC_settings(wiz.WizardPageSimple):
     def event_swap_size(self, event):
         self.settings['swap_file'] = str(self.image_size_spinner.GetValue())
 
-    def event_use_mmc_tickbox(self, event):
-        self.yes_use_mmc = event.IsChecked()
-        self.update_forward_active_and_mmc_confirm_box_visible()
 
+class DevChoser(wx.Dialog):
+    def __init__(self, parent, id, title, settings):
+        self.settings = settings
+        wx.Dialog.__init__(self, parent, id, title)
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        dev_info = self.get_device_info()
+        dev_number = 1
+
+        grid1 = wx.FlexGridSizer(0, len(dev_info[0].keys())+1, 0, 0)
+        group = wx.RB_GROUP
+        alignment = wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP
+        keys = dev_info[0].keys()
+
+        grid1.Add(wx.StaticText(self, label=""))
+        for key in keys:
+            grid1.Add(wx.StaticText(self, label=key), 0, alignment, 5)
+
+        self.id_dev_map = {}
+        first = True
+        for info in dev_info:
+            button = add_button(self, grid1, str(dev_number), group,
+                                self.event_radio_button_select, None, None)
+            group = None
+
+            for key in keys:
+                message = info[key]
+                grid1.Add(wx.StaticText(self, label=message), 0, alignment, 5)
+
+                if key == "path":
+                    self.id_dev_map[str(dev_number)] = info[key]
+
+                    if self.settings['path_selected'] == info[key]:
+                        button.SetValue(True)
+
+                    if first and not self.settings['path_selected']:
+                         self.settings['path_selected'] = info[key]
+
+            dev_number += 1
+
+        vbox.Add(grid1)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        okButton = wx.Button(self, -1, 'Use Selected Device')
+        okButton.Bind(wx.EVT_BUTTON, self.OnCloseMe)
+        hbox.Add(okButton, 1)
+
+        vbox.Add(hbox, 1, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 10)
+        vbox.Fit(self)
+        self.SetSizer(vbox)
+
+    def event_radio_button_select(self, event):
+        val = event.GetEventObject().GetLabel()
+        self.settings['path_selected'] = self.id_dev_map[val]
+
+    def get_device_info(self):
+        """Get information about devices found on the system.
+        """
+        bus, udisks = _get_system_bus_and_udisks_iface()
+        devices = udisks.get_dbus_method('EnumerateDevices')()
+        devices.sort()
+        dev_info = []
+        for path in devices:
+            device = bus.get_object("org.freedesktop.UDisks", path)
+            props = ['drive-model', 'drive-vendor',
+                     'drive-connection-interface', 'drive-media']
+            info = {'path': _get_dbus_property('DeviceFile', device, path)}
+            if(not _get_dbus_property('device-is-partition', device, path) and
+               _get_dbus_property('device-is-media-available', device, path)):
+                for prop in props:
+                    info[prop] = str(_get_dbus_property(prop, device, path))
+                dev_info.append(info)
+
+        return dev_info
+
+    def OnCloseMe(self, event):
+        self.Close(True)
+
+    def OnCloseWindow(self, event):
+        self.Destroy()
 
 class RunLMC(wiz.WizardPageSimple):
     """Present the user with some information about their choices and a button
@@ -1188,6 +1371,13 @@ class RunLMC(wiz.WizardPageSimple):
             self.settings['image_file'] = self.settings['path_selected']
         elif self.settings['write_to_file_or_device'] == "device":
             self.settings['mmc'] = self.settings['path_selected']
+
+            title = 'Are you sure?'
+            text = "Completely erase {0}?".format(self.settings['mmc'])
+            dlg = wx.MessageDialog(None, text, title,
+                                  wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+            if dlg.ShowModal() != wx.ID_YES:
+                return
         else:
             assert False, ("self.config.settings['write_to_file_or_device'] "
                            "was an unexpected value"
@@ -1401,21 +1591,14 @@ class TestDriveWizard(wx.wizard.Wizard):
     def __init__(self, title):
         wx.wizard.Wizard.__init__(self, None, -1, title, wx.NullBitmap)
         self.Bind(wx.wizard.EVT_WIZARD_PAGE_CHANGING, self.on_page_changing)
-        self.done_startup = False
 
     def on_page_changing(self, evt):
-        'Executed before the page changes.'
+        """Executed before the page changes."""
 
-        if self.done_startup == False:
-            self.pages['lmc_settings'].box2.Hide(
-                            self.pages['lmc_settings'].optional_settings_box,
-                            True)
-
-            self.pages['lmc_settings'].box3.Hide(
-                            self.pages['lmc_settings'].confirm_mmc_usage_box,
-                            True)
-
-            self.done_startup = True
+        hw_details_pg = self.pages['hardware_details']
+        rel_or_snap_pg = self.pages['release_or_snapshot']
+        select_snap_pg = self.pages['select_snapshot']
+        lmc_settings_pg = self.pages['lmc_settings']
 
         page = evt.GetPage()
 
@@ -1425,45 +1608,33 @@ class TestDriveWizard(wx.wizard.Wizard):
 
             # If going from a select snapshot or select release page, record
             # which we were on so the back button of the next page works
-            if(self.config.settings['release_or_snapshot'] == "release"):
-                self.pages['select_os'].SetNext(self.pages['select_release'])
-                self.pages['select_release'].SetPrev(self.pages['select_os'])
-
-                self.pages['select_release'].SetNext(self.pages['lmc_settings'])
-                self.pages['lmc_settings'].SetPrev(self.pages['select_release'])
+            if self.config.settings['release_or_snapshot'] == "release":
+                lmc_settings_pg.SetPrev(rel_or_snap_pg)
             else:
-                self.pages['select_os'].SetNext(self.pages['select_snapshot'])
-                self.pages['select_snapshot'].SetPrev(self.pages['select_os'])
+                select_snap_pg.SetNext(lmc_settings_pg)
 
-                if(page == self.pages['select_os']):
-                    self.pages['select_snapshot'].fill_build_combo_box_for_date(
+                lmc_settings_pg.SetPrev(select_snap_pg)
+                select_snap_pg.SetPrev(rel_or_snap_pg)
+
+                if page == rel_or_snap_pg:
+                    select_snap_pg.fill_build_combo_box_for_date(
                                             self.config.settings['build_date'])
 
-                self.pages['select_snapshot'].SetNext(self.pages['lmc_settings'])
-                self.pages['lmc_settings'].SetPrev(self.pages['select_snapshot'])
+            if page == hw_details_pg:
+                rel_or_snap_pg.force_rel_snap_if_hw_requires()
+                rel_or_snap_pg.fill_os_list()
+                rel_or_snap_pg.update_release_and_build_boxes()
 
-            if page == self.pages['hardware_details']:
-                self.pages['select_os'].fill_os_list()
-
-            if page == self.pages['release_or_snapshot']:
-                self.pages['hardware_details'].on_page_changing()
-
-            # If about to move into the release selection, make sure the list
-            # is populated only with releases that are valid with our current
-            # selection
-            if(    page == self.pages['select_os']
-               and self.config.settings['release_or_snapshot'] == "release"):
-                self.pages['select_release'].update_release_and_build_boxes()
-
-            if page == self.pages['select_snapshot']:
+            if page == select_snap_pg:
                 # Execute when exiting page
-                self.pages['select_snapshot'].update_platform()
+                select_snap_pg.update_platform()
 
-            if(   page == self.pages['select_snapshot']
-               or page == self.pages['select_release']):
-                self.pages['lmc_settings'].on_activate()
+            if(   page == select_snap_pg
+               or (page == rel_or_snap_pg and
+                   self.config.settings['release_or_snapshot'] == "release")):
+                lmc_settings_pg.on_activate()
 
-            if page == self.pages['lmc_settings']:
+            if page == lmc_settings_pg:
                 # Forward stays disabled until LMC has finished running
                 self.wizard.FindWindowById(wx.ID_FORWARD).Disable()
                 self.pages['run_lmc'].on_activate()
@@ -1492,30 +1663,23 @@ class TestDriveWizard(wx.wizard.Wizard):
         self.wizard = wiz.Wizard(self, -1, "Linaro Media Builder")
 
         self.pages = {}
-        self.pages['release_or_snapshot'] = ReleaseOrSnapshotPage(self.wizard,
-                                                                  self.config)
-        self.wizard.FitToPage(self.pages['release_or_snapshot'])
-        (width, height) = self.wizard.GetSize()
-
         self.pages['hardware_details']  = AboutMyHardwarePage(self.wizard,
                                                               self.config,
-                                                              db,
-                                                              width)
+                                                              db)
 
-        self.pages['select_release']    = SelectStableRelease(self.wizard,
-                                                              self.config,
-                                                              db,
-                                                              width)
+        self.wizard.FitToPage(self.pages['hardware_details'])
+        (width, height) = self.wizard.GetSize()
+
+        self.pages['release_or_snapshot'] = ReleaseOrSnapshotPage(self.wizard,
+                                                                  self.config,
+                                                                  db,
+                                                                  self.pages,
+                                                                  width)
 
         self.pages['select_snapshot']   = SelectSnapshot(self.wizard,
                                                          self.config,
                                                          db,
                                                          width)
-
-        self.pages['select_os']         = SelectOS(self.wizard,
-                                                   self.config,
-                                                   db,
-                                                   width)
 
         self.pages['lmc_settings']      = LMC_settings(self.wizard,
                                                        self.config,
@@ -1527,23 +1691,17 @@ class TestDriveWizard(wx.wizard.Wizard):
                                                  db,
                                                  width)
 
-        self.pages['release_or_snapshot'].SetNext(
-                                            self.pages['hardware_details'])
-
-        self.pages['hardware_details'].SetPrev(
+        self.pages['hardware_details'].SetNext(
                                             self.pages['release_or_snapshot'])
 
-        self.pages['hardware_details'].SetNext(self.pages['select_os'])
-        self.pages['select_os'].SetPrev(self.pages['hardware_details'])
-        # Select OS goes to select build, which is customised for
-        # releases or snapshots
         self.pages['lmc_settings'].SetNext(self.pages['run_lmc'])
         self.pages['run_lmc'].SetPrev(self.pages['lmc_settings'])
 
         for (name, page) in self.pages.items():
             self.wizard.GetPageAreaSizer().Add(page)
 
-        self.wizard.RunWizard(self.pages['release_or_snapshot'])
+        self.pages['hardware_details'].on_page_changing()
+        self.wizard.RunWizard(self.pages['hardware_details'])
 
 
 def run():
