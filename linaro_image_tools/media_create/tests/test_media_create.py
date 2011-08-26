@@ -44,8 +44,6 @@ from linaro_image_tools.media_create import (
     android_boards,
     )
 from linaro_image_tools.media_create.boards import (
-    SAMSUNG_V310_BL1_START,
-    SAMSUNG_V310_BL2_START,
     SECTOR_SIZE,
     align_up,
     align_partition,
@@ -1505,9 +1503,9 @@ class TestBoards(TestCaseWithFixtures):
             "chroot_dir", "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL1_START),
+            'seek=%d' % (sudo_args, uboot_flavor, boards.SMDKV310Config.SAMSUNG_V310_BL1_START),
             '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL2_START)]
+            'seek=%d' % (sudo_args, uboot_flavor, boards.SMDKV310Config.SAMSUNG_V310_BL2_START)]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_install_origen_u_boot(self):
@@ -1531,9 +1529,9 @@ class TestBoards(TestCaseWithFixtures):
             "chroot_dir", "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL1_START),
+            'seek=%d' % (sudo_args, uboot_flavor, boards.OrigenConfig.SAMSUNG_V310_BL1_START),
             '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL2_START)]
+            'seek=%d' % (sudo_args, uboot_flavor, boards.OrigenConfig.SAMSUNG_V310_BL2_START)]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_get_plain_boot_script_contents(self):

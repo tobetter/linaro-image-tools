@@ -69,38 +69,6 @@ def align_up(value, align):
     """Round value to the next multiple of align."""
     return (value + align - 1) / align * align
 
-# Samsung v310 implementation notes and terminology
-#
-# * BL0, BL1 etc. are the various bootloaders in order of execution
-# * BL0 is the first stage bootloader, located in ROM; it loads a 32s long BL1
-#   from MMC offset +1s and runs it
-# * BL1 is the secondary program loader (SPL), a small (< 14k) version of
-#   U-Boot with a checksum; it inits DRAM and loads a 1024s long BL2 to DRAM
-#   from MMC offset +65s
-# * BL2 is U-Boot; it loads its 32s (16 KiB) long environment from MMC offset
-#   +33s which tells it to load a boot.scr from the first FAT partition of the
-#   MMC
-#
-# Layout:
-# +0s: part table / MBR, 1s long
-# +1s: BL1/SPL, 32s long
-# +33s: U-Boot environment, 32s long
-# +65s: U-Boot, 1024s long
-# >= +1089s: FAT partition with boot script (boot.scr), kernel (uImage) and
-#            initrd (uInitrd)
-SAMSUNG_V310_BL1_START = 1
-SAMSUNG_V310_BL1_LEN = 32
-SAMSUNG_V310_ENV_START = SAMSUNG_V310_BL1_START + SAMSUNG_V310_BL1_LEN
-SAMSUNG_V310_ENV_LEN = 32
-assert SAMSUNG_V310_ENV_START == 33, "BL1 expects u-boot environment at +33s"
-assert SAMSUNG_V310_ENV_LEN * SECTOR_SIZE == 16 * 1024, (
-    "BL1 expects u-boot environment to be 16 KiB")
-SAMSUNG_V310_BL2_START = SAMSUNG_V310_ENV_START + SAMSUNG_V310_ENV_LEN
-SAMSUNG_V310_BL2_LEN = 1024
-assert SAMSUNG_V310_BL2_LEN * SECTOR_SIZE == 512 * 1024, (
-    "BL1 expects BL2 (u-boot) to be 512 KiB")
-
-
 def align_partition(min_start, min_length, start_alignment, end_alignment):
     """Compute partition start and end offsets based on specified constraints.
 
@@ -1015,6 +983,37 @@ class VexpressConfig(BoardConfig):
         make_uInitrd(i_img_data, boot_dir)
 
 class SamsungConfig(BoardConfig):
+    # Samsung v310 implementation notes and terminology
+    #
+    # * BL0, BL1 etc. are the various bootloaders in order of execution
+    # * BL0 is the first stage bootloader, located in ROM; it loads a 32s long BL1
+    #   from MMC offset +1s and runs it
+    # * BL1 is the secondary program loader (SPL), a small (< 14k) version of
+    #   U-Boot with a checksum; it inits DRAM and loads a 1024s long BL2 to DRAM
+    #   from MMC offset +65s
+    # * BL2 is U-Boot; it loads its 32s (16 KiB) long environment from MMC offset
+    #   +33s which tells it to load a boot.scr from the first FAT partition of the
+    #   MMC
+    #
+    # Layout:
+    # +0s: part table / MBR, 1s long
+    # +1s: BL1/SPL, 32s long
+    # +33s: U-Boot environment, 32s long
+    # +65s: U-Boot, 1024s long
+    # >= +1089s: FAT partition with boot script (boot.scr), kernel (uImage) and
+    #            initrd (uInitrd)
+    SAMSUNG_V310_BL1_START = 1
+    SAMSUNG_V310_BL1_LEN = 32
+    SAMSUNG_V310_ENV_START = SAMSUNG_V310_BL1_START + SAMSUNG_V310_BL1_LEN
+    SAMSUNG_V310_ENV_LEN = 32
+    assert SAMSUNG_V310_ENV_START == 33, "BL1 expects u-boot environment at +33s"
+    assert SAMSUNG_V310_ENV_LEN * SECTOR_SIZE == 16 * 1024, (
+        "BL1 expects u-boot environment to be 16 KiB")
+    SAMSUNG_V310_BL2_START = SAMSUNG_V310_ENV_START + SAMSUNG_V310_ENV_LEN
+    SAMSUNG_V310_BL2_LEN = 1024
+    assert SAMSUNG_V310_BL2_LEN * SECTOR_SIZE == 512 * 1024, (
+        "BL1 expects BL2 (u-boot) to be 512 KiB")
+
     @classproperty
     def extra_serial_opts(cls):
         return cls._extra_serial_opts % cls.serial_tty
@@ -1023,8 +1022,8 @@ class SamsungConfig(BoardConfig):
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
         # bootloaders partition needs to hold BL1, U-Boot environment, and BL2
         loaders_min_len = (
-            SAMSUNG_V310_BL2_START + SAMSUNG_V310_BL2_LEN -
-            SAMSUNG_V310_BL1_START)
+            cls.SAMSUNG_V310_BL2_START + cls.SAMSUNG_V310_BL2_LEN -
+            cls.SAMSUNG_V310_BL1_START)
 
         # bootloaders partition
         loaders_start, loaders_end, loaders_len = align_partition(
@@ -1049,9 +1048,9 @@ class SamsungConfig(BoardConfig):
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
         cls.install_samsung_boot_loader(chroot_dir, boot_device_or_file)
-        env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
+        env_size = cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
-        _dd(env_file, boot_device_or_file, seek=SAMSUNG_V310_ENV_START)
+        _dd(env_file, boot_device_or_file, seek=cls.SAMSUNG_V310_ENV_START)
 
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
@@ -1086,38 +1085,37 @@ class SamsungConfig(BoardConfig):
             'u-boot.bin')
         return uboot_file
 
-
     @classmethod
     def populate_raw_partition(cls, chroot_dir, boot_device_or_file):
         # Zero the env so that the boot_script will get loaded
-        _dd("/dev/zero", boot_device_or_file, count=SAMSUNG_V310_ENV_LEN,
-            seek=SAMSUNG_V310_ENV_START)
+        _dd("/dev/zero", boot_device_or_file, count=cls.SAMSUNG_V310_ENV_LEN,
+            seek=cls.SAMSUNG_V310_ENV_START)
         # Populate created raw partition with BL1 and u-boot
         spl_file = os.path.join(chroot_dir, 'boot', 'u-boot-mmc-spl.bin')
-        assert os.path.getsize(spl_file) <= (SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
+        assert os.path.getsize(spl_file) <= (cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
             "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
-        _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
+        _dd(spl_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL1_START)
         uboot_file = os.path.join(chroot_dir, 'boot', 'u-boot.bin')
-        assert os.path.getsize(uboot_file) <= (SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
+        assert os.path.getsize(uboot_file) <= (cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
             "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
-        _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
+        _dd(uboot_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL2_START)
 
 
     @classmethod
     def install_samsung_boot_loader(cls, chroot_dir, boot_device_or_file):
         spl_file = cls._get_samsung_spl(chroot_dir)
-        bl1_max_size = SAMSUNG_V310_BL1_LEN * SECTOR_SIZE
+        bl1_max_size = cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE
         assert os.path.getsize(spl_file) <= bl1_max_size, (
             "%s is larger than %s" % (spl_file, bl1_max_size))
-        _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
+        _dd(spl_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL1_START)
 
         with cls.hardwarepack_handler:
             uboot_file = cls.get_file(
                 'u_boot', default=cls._get_samsung_uboot(chroot_dir))
-        bl2_max_size = SAMSUNG_V310_BL2_LEN * SECTOR_SIZE
+        bl2_max_size = cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE
         assert os.path.getsize(uboot_file) <= bl2_max_size, (
             "%s is larger than %s" % (uboot_file, bl2_max_size))
-        _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
+        _dd(uboot_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL2_START)
 
 
 class SMDKV310Config(SamsungConfig):
