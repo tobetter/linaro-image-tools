@@ -84,7 +84,9 @@ class Metadata(object):
                       loader_min_size=None, vmlinuz=None, initrd=None,
                       dtb_addr=None, extra_boot_options=None,
                       boot_script=None, uboot_in_boot_part=None,
-                      extra_serial_opts=None):
+                      extra_serial_opts=None, samsung_bl1_start=None,
+                      samsung_bl1_len=None, samsung_env_len=None,
+                      samsung_bl2_len=None):
         """Add fields that are specific to the new format.
 
         These fields are not present in earlier config files.
@@ -111,6 +113,10 @@ class Metadata(object):
         self.boot_script = boot_script
         self.uboot_in_boot_part = uboot_in_boot_part
         self.extra_serial_opts = extra_serial_opts
+        self.samsung_bl1_start = samsung_bl1_start
+        self.samsung_bl1_len = samsung_bl1_len
+        self.samsung_env_len = samsung_env_len
+        self.samsung_bl2_len = samsung_bl2_len
 
     @classmethod
     def from_config(cls, config, version, architecture):
@@ -154,7 +160,11 @@ class Metadata(object):
                                    extra_boot_options=config.extra_boot_options,
                                    boot_script=config.boot_script,
                                    uboot_in_boot_part=config.uboot_in_boot_part,
-                                   extra_serial_opts=config.extra_serial_opts)
+                                   extra_serial_opts=config.extra_serial_opts,
+                                   samsung_bl1_start=config.samsung_bl1_start,
+                                   samsung_bl1_len=config.samsung_bl1_len,
+                                   samsung_env_len=config.samsung_env_len,
+                                   samsung_bl2_len=config.samsung_bl2_len)
         return metadata
 
     def __str__(self):
@@ -217,6 +227,14 @@ class Metadata(object):
             metadata += "U_BOOT_IN_BOOT_PART=%s\n" % self.uboot_in_boot_part
         if self.extra_serial_opts is not None:
             metadata += "EXTRA_SERIAL_OPTIONS=%s\n" % self.extra_serial_opts
+        if self.samsung_bl1_start is not None:
+            metadata += "SAMSUNG_BL1_START=%s\n" % self.samsung_bl1_start
+        if self.samsung_bl1_len is not None:
+            metadata += "SAMSUNG_BL1_LEN=%s\n" % self.samsung_bl1_len
+        if self.samsung_env_len is not None:
+            metadata += "SAMSUNG_ENV_LEN=%s\n" % self.samsung_env_len
+        if self.samsung_bl2_len is not None:
+            metadata += "SAMSUNG_BL2_LEN=%s\n" % self.samsung_bl2_len
 
         return metadata
 
