@@ -51,6 +51,7 @@ class Config(object):
     ASSUME_INSTALLED_KEY = "assume-installed"
     U_BOOT_PACKAGE_KEY = "u_boot_package"
     U_BOOT_FILE_KEY = "u_boot_file"
+    SPL_FILE_KEY = "spl_file"
     SERIAL_TTY_KEY = "serial_tty"
     KERNEL_ADDR_KEY = "kernel_addr"
     INITRD_ADDR_KEY = "initrd_addr"
@@ -372,6 +373,14 @@ class Config(object):
         return self._get_option_from_main_section(self.U_BOOT_FILE_KEY)
 
     @property
+    def spl_file(self):
+        """The spl bin file that will be unpacked from the u-boot package.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.SPL_FILE_KEY)
+
+    @property
     def x_loader_package(self):
         """The x-loader package that contains the x-loader bin.
 
@@ -470,6 +479,12 @@ class Config(object):
         if u_boot_file is not None:
             self._assert_matches_pattern(
                 self.PATH_REGEX, u_boot_file, "Invalid path: %s" % u_boot_file)
+
+    def _validate_spl_file(self):
+        spl_file = self.spl_file
+        if spl_file is not None:
+            self._assert_matches_pattern(
+                self.PATH_REGEX, spl_file, "Invalid path: %s" % spl_file)
 
     def _validate_x_loader_file(self):
         x_loader_file = self.x_loader_file

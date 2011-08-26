@@ -1108,7 +1108,7 @@ class SamsungConfig(BoardConfig):
                 default = cls._get_samsung_spl(chroot_dir)
             except AssertionError:
                 default = None
-            spl_file = cls.get_file('spl_file', default=default)
+            spl_file = cls.get_file('spl', default=default)
             bl1_max_size = cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE
             assert os.path.getsize(spl_file) <= bl1_max_size, (
                 "%s is larger than %s" % (spl_file, bl1_max_size))

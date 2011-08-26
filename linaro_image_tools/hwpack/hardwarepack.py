@@ -90,6 +90,7 @@ class Metadata(object):
         These fields are not present in earlier config files.
         """
         self.u_boot = None
+        self.spl = None
         self.serial_tty = serial_tty
         self.kernel_addr = kernel_addr
         self.initrd_addr = initrd_addr
@@ -173,6 +174,8 @@ class Metadata(object):
             
         if self.u_boot is not None:
             metadata += "U_BOOT=%s\n" % self.u_boot
+        if self.spl is not None:
+            metadata += "SPL=%s\n" % self.spl
         if self.serial_tty is not None:
             metadata += "SERIAL_TTY=%s\n" % self.serial_tty
         if self.kernel_addr is not None:

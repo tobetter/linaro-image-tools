@@ -149,6 +149,10 @@ class HardwarePackBuilder(object):
                             hwpack.metadata.u_boot = self.add_file_to_hwpack(
                                 u_boot_package, self.config.u_boot_file,
                                 package_unpacker, hwpack, hwpack.U_BOOT_DIR)
+                            if self.config.spl_file is not None:
+                                hwpack.metadata.spl = self.add_file_to_hwpack(
+                                    u_boot_package, self.config.spl_file,
+                                    package_unpacker, hwpack, hwpack.U_BOOT_DIR)
 
                         if self.config.x_loader_package is not None:
                             x_loader_package = self.find_fetched_package(
