@@ -74,6 +74,11 @@ class Config(object):
     BOOT_SCRIPT_KEY = 'boot_script'
     UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
     EXTRA_SERIAL_OPTS_KEY = 'extra_serial_options'
+    SAMSUNG_BL1_START_KEY = 'samsung_bl1_start'
+    SAMSUNG_BL1_LEN_KEY = 'samsung_bl1_len'
+    SAMSUNG_ENV_LEN_KEY = 'samsung_env_len'
+    SAMSUNG_BL2_LEN_KEY = 'samsung_bl2_len'
+
 
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
@@ -129,6 +134,10 @@ class Config(object):
             self._validate_boot_script()
             self._validate_uboot_in_boot_part()
             self._validate_extra_serial_opts()
+            self._validate_samsung_bl1_start()
+            self._validate_samsung_bl1_len()
+            self._validate_samsung_env_len()
+            self._validate_samsung_bl2_len()
 
         self._validate_sections()
 
@@ -421,6 +430,38 @@ class Config(object):
         return self._get_option_from_main_section(self.DTB_FILE_KEY)
 
     @property
+    def samsung_bl1_start(self):
+        """BL1 start offset for Samsung boards.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.SAMSUNG_BL1_START_KEY)
+
+    @property
+    def samsung_bl1_len(self):
+        """BL1 length for Samsung boards.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.SAMSUNG_BL1_LEN_KEY)
+
+    @property
+    def samsung_env_len(self):
+        """Env length for Samsung boards.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.SAMSUNG_ENV_LEN_KEY)
+
+    @property
+    def samsung_bl2_len(self):
+        """BL2 length for Samsung boards.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.SAMSUNG_BL2_LEN_KEY)
+
+    @property
     def architectures(self):
         """The architectures to build the hwpack for.
 
@@ -673,6 +714,46 @@ class Config(object):
                     "the [%s] section: %s" % (self.X_LOADER_PACKAGE_KEY,
                                               self.MAIN_SECTION,
                                               x_loader_package))
+
+    def _validate_samsung_bl1_start(self):
+        samsung_bl1_start = self.samsung_bl1_start
+        if samsung_bl1_start is None:
+            return
+        try:
+            assert int(samsung_bl1_start) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid samsung_bl1_start %s" % (samsung_bl1_start))
+
+    def _validate_samsung_bl1_len(self):
+        samsung_bl1_len = self.samsung_bl1_len
+        if samsung_bl1_len is None:
+            return
+        try:
+            assert int(samsung_bl1_len) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid samsung_bl1_len %s" % (samsung_bl1_len))
+
+    def _validate_samsung_env_len(self):
+        samsung_env_len = self.samsung_env_len
+        if samsung_env_len is None:
+            return
+        try:
+            assert int(samsung_env_len) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid samsung_env_len %s" % (samsung_env_len))
+
+    def _validate_samsung_bl2_len(self):
+        samsung_bl2_len = self.samsung_bl2_len
+        if samsung_bl2_len is None:
+            return
+        try:
+            assert int(samsung_bl2_len) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid samsung_bl2_len %s" % (samsung_bl2_len))
 
     def _validate_architectures(self):
         architectures = self.architectures
