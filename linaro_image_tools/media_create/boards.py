@@ -1148,10 +1148,10 @@ class SamsungConfig(BoardConfig):
             _dd(spl_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL1_START)
             uboot_file = cls.get_file(
                 'u_boot', default=cls._get_samsung_uboot(chroot_dir))
-        bl2_max_size = cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE
-        assert os.path.getsize(uboot_file) <= bl2_max_size, (
-            "%s is larger than %s" % (uboot_file, bl2_max_size))
-        _dd(uboot_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL2_START)
+            bl2_max_size = cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE
+            assert os.path.getsize(uboot_file) <= bl2_max_size, (
+                "%s is larger than %s" % (uboot_file, bl2_max_size))
+            _dd(uboot_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL2_START)
 
 
 class SMDKV310Config(SamsungConfig):
