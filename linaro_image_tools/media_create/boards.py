@@ -1046,7 +1046,6 @@ class VexpressConfig(BoardConfig):
         make_uInitrd(i_img_data, boot_dir)
 
 class SamsungConfig(BoardConfig):
-
     @classproperty
     def extra_serial_opts(cls):
         return cls._extra_serial_opts % cls.serial_tty
