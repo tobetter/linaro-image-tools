@@ -222,6 +222,37 @@ class BoardConfig(object):
     vmlinuz = None
     initrd = None
 
+    # Samsung v310 implementation notes and terminology
+    #
+    # * BL0, BL1 etc. are the various bootloaders in order of execution
+    # * BL0 is the first stage bootloader, located in ROM; it loads a 32s long BL1
+    #   from MMC offset +1s and runs it
+    # * BL1 is the secondary program loader (SPL), a small (< 14k) version of
+    #   U-Boot with a checksum; it inits DRAM and loads a 1024s long BL2 to DRAM
+    #   from MMC offset +65s
+    # * BL2 is U-Boot; it loads its 32s (16 KiB) long environment from MMC offset
+    #   +33s which tells it to load a boot.scr from the first FAT partition of the
+    #   MMC
+    #
+    # Layout:
+    # +0s: part table / MBR, 1s long
+    # +1s: BL1/SPL, 32s long
+    # +33s: U-Boot environment, 32s long
+    # +65s: U-Boot, 1024s long
+    # >= +1089s: FAT partition with boot script (boot.scr), kernel (uImage) and
+    #            initrd (uInitrd)
+    SAMSUNG_V310_BL1_START = 1
+    SAMSUNG_V310_BL1_LEN = 32
+    SAMSUNG_V310_ENV_START = SAMSUNG_V310_BL1_START + SAMSUNG_V310_BL1_LEN
+    SAMSUNG_V310_ENV_LEN = 32
+    assert SAMSUNG_V310_ENV_START == 33, "BL1 expects u-boot environment at +33s"
+    assert SAMSUNG_V310_ENV_LEN * SECTOR_SIZE == 16 * 1024, (
+        "BL1 expects u-boot environment to be 16 KiB")
+    SAMSUNG_V310_BL2_START = SAMSUNG_V310_ENV_START + SAMSUNG_V310_ENV_LEN
+    SAMSUNG_V310_BL2_LEN = 1024
+    assert SAMSUNG_V310_BL2_LEN * SECTOR_SIZE == 512 * 1024, (
+        "BL1 expects BL2 (u-boot) to be 512 KiB")
+
     hardwarepack_handler = None
 
     @classmethod
@@ -231,10 +262,6 @@ class BoardConfig(object):
         data, _ = cls.hardwarepack_handler.get_field(
             cls.hardwarepack_handler.main_section, field_name)
         return data
-
-    @classmethod
-    def set_board_specific_metadata(cls):
-        pass
 
     @classmethod
     def set_metadata(cls, hwpacks):
@@ -257,8 +284,12 @@ class BoardConfig(object):
                 cls.extra_boot_args_options = None
                 cls.boot_script = None
                 cls.kernel_flavors = None
-
-                cls.set_board_specific_metadata()
+                cls.SAMSUNG_V310_BL1_START = None
+                cls.SAMSUNG_V310_BL1_LEN = None
+                cls.SAMSUNG_V310_ENV_START = None
+                cls.SAMSUNG_V310_ENV_LEN = None
+                cls.SAMSUNG_V310_BL2_START = None
+                cls.SAMSUNG_V310_BL2_LEN = None
 
             # Set new values from metadata.
             cls.kernel_addr = cls.get_metadata_field('kernel_addr')
@@ -305,6 +336,32 @@ class BoardConfig(object):
                 cls.uboot_in_boot_part = True
             elif string.lower(uboot_in_boot_part) == 'no':
                 cls.uboot_in_boot_part = False
+
+            samsung_bl1_start = cls.get_metadata_field('samsung_bl1_start')
+            if samsung_bl1_start is not None:
+                cls.SAMSUNG_V310_BL1_START = int(samsung_bl1_start)
+            samsung_bl1_len = cls.get_metadata_field('samsung_bl1_len')
+            if samsung_bl1_len is not None:
+                cls.SAMSUNG_V310_BL1_LEN = int(samsung_bl1_len)
+            samsung_env_len = cls.get_metadata_field('samsung_env_len')
+            if samsung_env_len is not None:
+                cls.SAMSUNG_V310_ENV_LEN = int(samsung_env_len)
+                assert cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE == 16 * 1024, (
+                    "BL1 expects u-boot environment to be 16 KiB")
+            samsung_bl2_len = cls.get_metadata_field('samsung_bl2_len')
+            if samsung_bl2_len is not None:
+                cls.SAMSUNG_V310_BL2_LEN = int(samsung_bl2_len)
+                assert cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE == 512 * 1024, (
+                    "BL1 expects BL2 (u-boot) to be 512 KiB")
+
+            if (cls.SAMSUNG_V310_BL1_START and cls.SAMSUNG_V310_BL1_LEN):
+                cls.SAMSUNG_V310_ENV_START = (cls.SAMSUNG_V310_BL1_START +
+                                              cls.SAMSUNG_V310_BL1_LEN)
+                assert cls.SAMSUNG_V310_ENV_START == 33, (
+                    "BL1 expects u-boot environment at +33s")
+            if (cls.SAMSUNG_V310_ENV_START and cls.SAMSUNG_V310_ENV_LEN):
+                cls.SAMSUNG_V310_BL2_START = (cls.SAMSUNG_V310_ENV_START +
+                                              cls.SAMSUNG_V310_ENV_LEN)
 
     @classmethod
     def get_file(cls, file_alias, default=None):
@@ -989,71 +1046,6 @@ class VexpressConfig(BoardConfig):
         make_uInitrd(i_img_data, boot_dir)
 
 class SamsungConfig(BoardConfig):
-    # Samsung v310 implementation notes and terminology
-    #
-    # * BL0, BL1 etc. are the various bootloaders in order of execution
-    # * BL0 is the first stage bootloader, located in ROM; it loads a 32s long BL1
-    #   from MMC offset +1s and runs it
-    # * BL1 is the secondary program loader (SPL), a small (< 14k) version of
-    #   U-Boot with a checksum; it inits DRAM and loads a 1024s long BL2 to DRAM
-    #   from MMC offset +65s
-    # * BL2 is U-Boot; it loads its 32s (16 KiB) long environment from MMC offset
-    #   +33s which tells it to load a boot.scr from the first FAT partition of the
-    #   MMC
-    #
-    # Layout:
-    # +0s: part table / MBR, 1s long
-    # +1s: BL1/SPL, 32s long
-    # +33s: U-Boot environment, 32s long
-    # +65s: U-Boot, 1024s long
-    # >= +1089s: FAT partition with boot script (boot.scr), kernel (uImage) and
-    #            initrd (uInitrd)
-    SAMSUNG_V310_BL1_START = 1
-    SAMSUNG_V310_BL1_LEN = 32
-    SAMSUNG_V310_ENV_START = SAMSUNG_V310_BL1_START + SAMSUNG_V310_BL1_LEN
-    SAMSUNG_V310_ENV_LEN = 32
-    assert SAMSUNG_V310_ENV_START == 33, "BL1 expects u-boot environment at +33s"
-    assert SAMSUNG_V310_ENV_LEN * SECTOR_SIZE == 16 * 1024, (
-        "BL1 expects u-boot environment to be 16 KiB")
-    SAMSUNG_V310_BL2_START = SAMSUNG_V310_ENV_START + SAMSUNG_V310_ENV_LEN
-    SAMSUNG_V310_BL2_LEN = 1024
-    assert SAMSUNG_V310_BL2_LEN * SECTOR_SIZE == 512 * 1024, (
-        "BL1 expects BL2 (u-boot) to be 512 KiB")
-
-    @classmethod
-    def set_board_specific_metadata(cls):
-        cls.SAMSUNG_V310_BL1_START = None
-        cls.SAMSUNG_V310_BL1_LEN = None
-        cls.SAMSUNG_V310_ENV_START = None
-        cls.SAMSUNG_V310_ENV_LEN = None
-        cls.SAMSUNG_V310_BL2_START = None
-        cls.SAMSUNG_V310_BL2_LEN = None
-        
-        samsung_bl1_start = cls.get_metadata_field('samsung_bl1_start')
-        if samsung_bl1_start is not None:
-            cls.SAMSUNG_V310_BL1_START = int(samsung_bl1_start)
-        samsung_bl1_len = cls.get_metadata_field('samsung_bl1_len')
-        if samsung_bl1_len is not None:
-            cls.SAMSUNG_V310_BL1_LEN = int(samsung_bl1_len)
-        samsung_env_len = cls.get_metadata_field('samsung_env_len')
-        if samsung_env_len is not None:
-            cls.SAMSUNG_V310_ENV_LEN = int(samsung_env_len)
-            assert cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE == 16 * 1024, (
-                "BL1 expects u-boot environment to be 16 KiB")
-        samsung_bl2_len = cls.get_metadata_field('samsung_bl2_len')
-        if samsung_bl2_len is not None:
-            cls.SAMSUNG_V310_BL2_LEN = int(samsung_bl2_len)
-            assert cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE == 512 * 1024, (
-                "BL1 expects BL2 (u-boot) to be 512 KiB")
-
-        if (cls.SAMSUNG_V310_BL1_START and cls.SAMSUNG_V310_BL1_LEN):
-            cls.SAMSUNG_V310_ENV_START = (cls.SAMSUNG_V310_BL1_START +
-                                          cls.SAMSUNG_V310_BL1_LEN)
-            assert cls.SAMSUNG_V310_ENV_START == 33, (
-                "BL1 expects u-boot environment at +33s")
-        if (cls.SAMSUNG_V310_ENV_START and cls.SAMSUNG_V310_ENV_LEN):
-            cls.SAMSUNG_V310_BL2_START = (cls.SAMSUNG_V310_ENV_START +
-                                          cls.SAMSUNG_V310_ENV_LEN)
 
     @classproperty
     def extra_serial_opts(cls):
