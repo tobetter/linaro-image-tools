@@ -278,6 +278,6 @@ android_board_configs = {
     'snowball_sd': AndroidSnowballSdConfig,
     'snowball_emmc': AndroidSnowballEmmcConfig,
     'smdkv310': AndroidSMDKV310Config,
-    'iMX53': AndroidMx53LoCoConfig,
+    'mx53loco': AndroidMx53LoCoConfig,
     'origen': AndroidOrigenConfig,
     }
