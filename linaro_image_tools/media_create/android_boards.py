@@ -26,9 +26,6 @@ android_board_configs at the bottom of this file.
 
 from linaro_image_tools.media_create.partitions import SECTOR_SIZE
 from linaro_image_tools.media_create.boards import PART_ALIGN_S
-from linaro_image_tools.media_create.boards import SAMSUNG_V310_BL1_START
-from linaro_image_tools.media_create.boards import SAMSUNG_V310_BL2_START
-from linaro_image_tools.media_create.boards import SAMSUNG_V310_BL2_LEN
 from linaro_image_tools.media_create.boards import BeagleConfig
 from linaro_image_tools.media_create.boards import PandaConfig
 from linaro_image_tools.media_create.boards import Mx53LoCoConfig
@@ -251,8 +248,8 @@ class AndroidSamsungConfig(AndroidBoardConfig):
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
         loaders_min_len = (
-            SAMSUNG_V310_BL2_START + SAMSUNG_V310_BL2_LEN -
-            SAMSUNG_V310_BL1_START)
+            cls.SAMSUNG_V310_BL2_START + cls.SAMSUNG_V310_BL2_LEN -
+            cls.SAMSUNG_V310_BL1_START)
 
         loader_start, loader_end, loader_len = align_partition(
             1, loaders_min_len, 1, PART_ALIGN_S)

@@ -85,12 +85,15 @@ class Metadata(object):
                       dtb_addr=None, extra_boot_options=None,
                       boot_script=None, uboot_in_boot_part=None,
                       extra_serial_opts=None, loader_start=None,
-                      snowball_startup_files_config=None):
+                      snowball_startup_files_config=None,
+                      samsung_bl1_start=None, samsung_bl1_len=None,
+                      samsung_env_len=None, samsung_bl2_len=None):
         """Add fields that are specific to the new format.
 
         These fields are not present in earlier config files.
         """
         self.u_boot = None
+        self.spl = None
         self.serial_tty = serial_tty
         self.kernel_addr = kernel_addr
         self.initrd_addr = initrd_addr
@@ -113,6 +116,10 @@ class Metadata(object):
         self.uboot_in_boot_part = uboot_in_boot_part
         self.extra_serial_opts = extra_serial_opts
         self.snowball_startup_files_config = snowball_startup_files_config
+        self.samsung_bl1_start = samsung_bl1_start
+        self.samsung_bl1_len = samsung_bl1_len
+        self.samsung_env_len = samsung_env_len
+        self.samsung_bl2_len = samsung_bl2_len
 
     @classmethod
     def from_config(cls, config, version, architecture):
@@ -158,7 +165,11 @@ class Metadata(object):
                                    boot_script=config.boot_script,
                                    uboot_in_boot_part=config.uboot_in_boot_part,
                                    extra_serial_opts=config.extra_serial_opts,
-                                   snowball_startup_files_config=config.snowball_startup_files_config)
+                                   snowball_startup_files_config=config.snowball_startup_files_config,
+                                   samsung_bl1_start=config.samsung_bl1_start,
+                                   samsung_bl1_len=config.samsung_bl1_len,
+                                   samsung_env_len=config.samsung_env_len,
+                                   samsung_bl2_len=config.samsung_bl2_len)
         return metadata
 
     def __str__(self):
@@ -178,6 +189,8 @@ class Metadata(object):
             
         if self.u_boot is not None:
             metadata += "U_BOOT=%s\n" % self.u_boot
+        if self.spl is not None:
+            metadata += "SPL=%s\n" % self.spl
         if self.serial_tty is not None:
             metadata += "SERIAL_TTY=%s\n" % self.serial_tty
         if self.kernel_addr is not None:
@@ -223,6 +236,14 @@ class Metadata(object):
             metadata += "EXTRA_SERIAL_OPTIONS=%s\n" % self.extra_serial_opts
         if self.snowball_startup_files_config is not None:
             metadata += "SNOWBALL_STARTUP_FILES_CONFIG=%s\n" % self.snowball_startup_files_config
+        if self.samsung_bl1_start is not None:
+            metadata += "SAMSUNG_BL1_START=%s\n" % self.samsung_bl1_start
+        if self.samsung_bl1_len is not None:
+            metadata += "SAMSUNG_BL1_LEN=%s\n" % self.samsung_bl1_len
+        if self.samsung_env_len is not None:
+            metadata += "SAMSUNG_ENV_LEN=%s\n" % self.samsung_env_len
+        if self.samsung_bl2_len is not None:
+            metadata += "SAMSUNG_BL2_LEN=%s\n" % self.samsung_bl2_len
 
         return metadata
 
