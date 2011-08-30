@@ -64,6 +64,7 @@ class Config(object):
     BOOT_MIN_SIZE_KEY = "boot_min_size"
     ROOT_MIN_SIZE_KEY = "root_min_size"
     LOADER_MIN_SIZE_KEY = "loader_min_size"
+    LOADER_START_KEY = "loader_start"
     X_LOADER_PACKAGE_KEY = "x_loader_package"
     X_LOADER_FILE_KEY = "x_loader_file"
     VMLINUZ_KEY = "kernel_file"
@@ -73,11 +74,12 @@ class Config(object):
     BOOT_SCRIPT_KEY = 'boot_script'
     UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
     EXTRA_SERIAL_OPTS_KEY = 'extra_serial_options'
+    SNOWBALL_STARTUP_FILES_CONFIG_KEY = 'snowball_startup_files_config'
 
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
         'bootfs_rootfs',
-        #'reserved_bootfs_rootfs',
+        'reserved_bootfs_rootfs',
         ]
 
 
@@ -119,6 +121,7 @@ class Config(object):
             self._validate_boot_min_size()
             self._validate_root_min_size()
             self._validate_loader_min_size()
+            self._validate_loader_start()
             self._validate_x_loader_package()
             self._validate_x_loader_file()
             self._validate_vmlinuz()
@@ -128,6 +131,7 @@ class Config(object):
             self._validate_boot_script()
             self._validate_uboot_in_boot_part()
             self._validate_extra_serial_opts()
+            self._validate_snowball_startup_files_config()
 
         self._validate_sections()
 
@@ -223,6 +227,15 @@ class Config(object):
         return self._get_option_from_main_section(self.BOOT_SCRIPT_KEY)
 
     @property
+    def snowball_startup_files_config(self):
+        """File name of the snowball startfiles config file.
+
+        A str.
+        """
+        return self._get_option_from_main_section(
+            self.SNOWBALL_STARTUP_FILES_CONFIG_KEY)
+
+    @property
     def kernel_addr(self):
         """address where u-boot should load the kernel 
 
@@ -311,6 +324,14 @@ class Config(object):
         An int.
         """
         return self._get_option_from_main_section(self.LOADER_MIN_SIZE_KEY)
+
+    @property
+    def loader_start(self):
+        """Start of loader partition. If left out, defaults to 1.
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.LOADER_START_KEY)
 
     @property
     def origin(self):
@@ -518,6 +539,14 @@ class Config(object):
             self._assert_matches_pattern(
                 self.PATH_REGEX, boot_script, "Invalid path: %s" % boot_script)
 
+
+    def _validate_snowball_startup_files_config(self):
+        snowball_startup_files_config = self.snowball_startup_files_config
+        if snowball_startup_files_config is not None:
+            self._assert_matches_pattern(
+                self.PATH_REGEX, snowball_startup_files_config,
+                "Invalid path: %s" % snowball_startup_files_config)
+
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty
         if serial_tty is None:
@@ -608,6 +637,16 @@ class Config(object):
         except:
             raise HwpackConfigError(
                 "Invalid loader min size %s" % (loader_min_size))
+
+    def _validate_loader_start(self):
+        loader_start = self.loader_start
+        if loader_start is None:
+            return
+        try:
+            assert int(loader_start) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid loader start %s" % (loader_start))
 
     def _validate_include_debs(self):
         try:

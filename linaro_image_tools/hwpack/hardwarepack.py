@@ -84,7 +84,8 @@ class Metadata(object):
                       loader_min_size=None, vmlinuz=None, initrd=None,
                       dtb_addr=None, extra_boot_options=None,
                       boot_script=None, uboot_in_boot_part=None,
-                      extra_serial_opts=None):
+                      extra_serial_opts=None, loader_start=None,
+                      snowball_startup_files_config=None):
         """Add fields that are specific to the new format.
 
         These fields are not present in earlier config files.
@@ -101,6 +102,7 @@ class Metadata(object):
         self.boot_min_size = boot_min_size
         self.root_min_size = root_min_size
         self.loader_min_size = loader_min_size
+        self.loader_start = loader_start
         self.x_loader = None
         self.vmlinuz = vmlinuz
         self.initrd = initrd
@@ -110,6 +112,7 @@ class Metadata(object):
         self.boot_script = boot_script
         self.uboot_in_boot_part = uboot_in_boot_part
         self.extra_serial_opts = extra_serial_opts
+        self.snowball_startup_files_config = snowball_startup_files_config
 
     @classmethod
     def from_config(cls, config, version, architecture):
@@ -146,6 +149,7 @@ class Metadata(object):
                                    boot_min_size=config.boot_min_size,
                                    root_min_size=config.root_min_size,
                                    loader_min_size=config.loader_min_size,
+                                   loader_start=config.loader_start,
                                    vmlinuz=config.vmlinuz,
                                    initrd=config.initrd,
                                    dtb_file=config.dtb_file,
@@ -153,7 +157,8 @@ class Metadata(object):
                                    extra_boot_options=config.extra_boot_options,
                                    boot_script=config.boot_script,
                                    uboot_in_boot_part=config.uboot_in_boot_part,
-                                   extra_serial_opts=config.extra_serial_opts)
+                                   extra_serial_opts=config.extra_serial_opts,
+                                   snowball_startup_files_config=config.snowball_startup_files_config)
         return metadata
 
     def __str__(self):
@@ -198,6 +203,8 @@ class Metadata(object):
             metadata += "ROOT_MIN_SIZE=%s\n" % self.root_min_size
         if self.loader_min_size is not None:
             metadata += "LOADER_MIN_SIZE=%s\n" % self.loader_min_size
+        if self.loader_start is not None:
+            metadata += "LOADER_START=%s\n" % self.loader_start
         if self.x_loader is not None:
             metadata += "X_LOADER=%s\n" % self.x_loader
         if self.vmlinuz is not None:
@@ -214,6 +221,8 @@ class Metadata(object):
             metadata += "U_BOOT_IN_BOOT_PART=%s\n" % self.uboot_in_boot_part
         if self.extra_serial_opts is not None:
             metadata += "EXTRA_SERIAL_OPTIONS=%s\n" % self.extra_serial_opts
+        if self.snowball_startup_files_config is not None:
+            metadata += "SNOWBALL_STARTUP_FILES_CONFIG=%s\n" % self.snowball_startup_files_config
 
         return metadata
 

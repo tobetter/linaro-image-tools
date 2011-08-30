@@ -253,6 +253,8 @@ class BoardConfig(object):
     mmc_id = None
     vmlinuz = None
     initrd = None
+    partition_layout = None
+    LOADER_START_S = 1
 
     hardwarepack_handler = None
 
@@ -293,7 +295,8 @@ class BoardConfig(object):
             cls.dtb_addr = cls.get_metadata_field('dtb_addr')
             cls.serial_tty = cls.get_metadata_field('serial_tty')
             cls.wired_interfaces = cls.get_metadata_field('wired_interfaces')
-            cls.wireless_interfaces = cls.get_metadata_field('wireless_interfaces')
+            cls.wireless_interfaces = cls.get_metadata_field(
+                'wireless_interfaces')
             cls.mmc_id = cls.get_metadata_field('mmc_id')
             cls.vmlinuz = cls.get_metadata_field('kernel_file')
             cls.initrd = cls.get_metadata_field('initrd_file')
@@ -302,14 +305,18 @@ class BoardConfig(object):
                 'extra_boot_options')
             cls.boot_script = cls.get_metadata_field('boot_script')
             cls.extra_serial_opts = cls.get_metadata_field('extra_serial_options')
+            cls.snowball_startup_files_config = cls.get_metadata_field(
+                'snowball_startup_files_config')
 
-            partition_layout = cls.get_metadata_field('partition_layout')
-            if partition_layout == 'bootfs_rootfs' or partition_layout is None:
+            cls.partition_layout = cls.get_metadata_field('partition_layout')
+            if cls.partition_layout in ['bootfs_rootfs', 'reserved_bootfs_rootfs',
+                                    None]:
                 cls.fat_size = 32
-            elif partition_layout == 'bootfs16_rootfs':
+            elif cls.partition_layout == 'bootfs16_rootfs':
                 cls.fat_size = 16
             else:
-                raise AssertionError("Unknown partition layout '%s'." % partition_layout)
+                raise AssertionError("Unknown partition layout '%s'." % \
+                                         cls.partition_layout)
 
             boot_min_size = cls.get_metadata_field('boot_min_size')
             if boot_min_size is not None:
@@ -332,6 +339,10 @@ class BoardConfig(object):
             elif string.lower(uboot_in_boot_part) == 'no':
                 cls.uboot_in_boot_part = False
 
+            loader_start = cls.get_metadata_field('loader_start')
+            if loader_start is not None:
+                cls.LOADER_START_S = int(loader_start)
+
     @classmethod
     def get_file(cls, file_alias, default=None):
         file_in_hwpack = cls.hardwarepack_handler.get_file(file_alias)
@@ -341,13 +352,17 @@ class BoardConfig(object):
             return default
 
     @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+    def get_v1_sfdisk_cmd(cls, should_align_boot_part=False):
         """Return the sfdisk command to partition the media.
 
         :param should_align_boot_part: Whether to align the boot partition too.
 
         This default implementation returns a boot vfat partition of type FAT16
         or FAT32, followed by a root partition.
+
+        XXX: This default implementation and all overrides are left for V1
+        compatibility only. They should be removed as part of the work to
+        kill off hwpacks V1.
         """
         if cls.fat_size == 32:
             partition_type = '0x0C'
@@ -377,6 +392,76 @@ class BoardConfig(object):
 
         return '%s,%s,%s,*\n%s,,,-' % (
             boot_start, boot_len, partition_type, root_start)
+
+    @classmethod
+    def get_normal_sfdisk_cmd(cls, should_align_boot_part=False):
+        """Return the sfdisk command to partition the media.
+
+        :param should_align_boot_part: Whether to align the boot partition too.
+
+        This returns a boot vfat partition of type FAT16
+        or FAT32, followed by a root partition.
+        """
+        if cls.fat_size == 32:
+            partition_type = '0x0C'
+        else:
+            partition_type = '0x0E'
+
+        # align on sector 63 for compatibility with broken versions of x-loader
+        # unless align_boot_part is set
+        # XXX OMAP specific, might break other boards?
+        boot_align = 63
+        if should_align_boot_part:
+            boot_align = PART_ALIGN_S
+
+        # can only start on sector 1 (sector 0 is MBR / partition table)
+        boot_start, boot_end, boot_len = align_partition(
+            1, cls.BOOT_MIN_SIZE_S, boot_align, PART_ALIGN_S)
+        # apparently OMAP3 ROMs require the vfat length to be an even number
+        # of sectors (multiple of 1 KiB); decrease the length if it's odd,
+        # there should still be enough room
+        # XXX OMAP specific, might break other boards?
+        boot_len = boot_len - boot_len % 2
+        boot_end = boot_start + boot_len - 1
+
+        # we ignore _root_end / _root_len and return a sfdisk command to
+        # instruct the use of all remaining space; XXX we now have root size
+        # config, so we can do something more sensible
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, cls.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return '%s,%s,%s,*\n%s,,,-' % (
+            boot_start, boot_len, partition_type, root_start)
+
+    @classmethod
+    def get_reserved_sfdisk_cmd(cls, should_align_boot_part=None):
+        """Return the sfdisk command to partition the media.
+
+        :param should_align_boot_part: Ignored.
+
+        This returns a loader partition, then a boot vfat partition of type
+        FAT16 or FAT32, followed by a root partition.
+        """
+        loader_start, loader_end, loader_len = align_partition(
+            cls.LOADER_START_S, cls.LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
+
+        boot_start, boot_end, boot_len = align_partition(
+            loader_end + 1, cls.BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, cls.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
+        loader_start, loader_len, boot_start, boot_len, root_start)
+
+    @classmethod
+    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+        if cls.partition_layout in ['bootfs_rootfs', 'bootfs16_rootfs']:
+            return cls.get_normal_sfdisk_cmd(should_align_boot_part)
+        elif cls.partition_layout in ['reserved_bootfs_rootfs']:
+            return cls.get_reserved_sfdisk_cmd(should_align_boot_part)
+        else:
+            return cls.get_v1_sfdisk_cmd(should_align_boot_part)
 
     @classmethod
     def _get_bootcmd(cls, d_img_data):
@@ -743,11 +828,11 @@ class SnowballEmmcConfig(SnowballSdConfig):
     # puts the MBR, so the boot loader skips that address.
     supports_writing_to_mmc = False
     SNOWBALL_LOADER_START_S = (128 * 1024) / SECTOR_SIZE
-    SNOWBALL_STARTUP_FILES_CONFIG = 'startfiles.cfg'
+    snowball_startup_files_config = 'startfiles.cfg'
     TOC_SIZE = 512
 
     @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=None):
+    def get_v1_sfdisk_cmd(cls, should_align_boot_part=None):
         """Return the sfdisk command to partition the media.
 
         :param should_align_boot_part: Ignored.
@@ -800,7 +885,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
                                      cls.SNOWBALL_LOADER_START_S)
         cls.delete_file(toc_filename)
         cls.delete_file(os.path.join(config_files_path,
-                                     cls.SNOWBALL_STARTUP_FILES_CONFIG))
+                                     cls.snowball_startup_files_config))
 
     @classmethod
     def install_snowball_boot_loader(cls, toc_file_name, files,
@@ -860,7 +945,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
         ofs = cls.TOC_SIZE
         files = []
         bin_dir = os.path.join(chroot_dir, 'boot')
-        with open(os.path.join(bin_dir, cls.SNOWBALL_STARTUP_FILES_CONFIG),
+        with open(os.path.join(bin_dir, cls.snowball_startup_files_config),
                   'r') as info_file:
             for line in info_file:
                 file_data = line.split()
@@ -904,7 +989,7 @@ class Mx5Config(BoardConfig):
         return cls._extra_serial_opts % cls.serial_tty
 
     @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=None):
+    def get_v1_sfdisk_cmd(cls, should_align_boot_part=None):
         """Return the sfdisk command to partition the media.
 
         :param should_align_boot_part: Ignored.
@@ -1020,7 +1105,7 @@ class SamsungConfig(BoardConfig):
         return cls._extra_serial_opts % cls.serial_tty
 
     @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+    def get_v1_sfdisk_cmd(cls, should_align_boot_part=False):
         # bootloaders partition needs to hold BL1, U-Boot environment, and BL2
         loaders_min_len = (
             SAMSUNG_V310_BL2_START + SAMSUNG_V310_BL2_LEN -

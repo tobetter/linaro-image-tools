@@ -46,6 +46,7 @@ from linaro_image_tools.media_create import (
 from linaro_image_tools.media_create.boards import (
     SAMSUNG_V310_BL1_START,
     SAMSUNG_V310_BL2_START,
+    SAMSUNG_V310_BL2_LEN,
     SECTOR_SIZE,
     align_up,
     align_partition,
@@ -685,7 +686,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                     ('UBOOT_ENV', 'u-boot-env.bin', 0, 0x00C1F000, '10')]
         # Create a config file
         cfg_file = os.path.join(self.temp_bootdir_path,
-        boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
+        boards.SnowballEmmcConfig.snowball_startup_files_config)
         with open(cfg_file, 'w') as f:
             for line in src_data:
                 # Write comments, so we test that the parser can read them
@@ -719,7 +720,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
     def test_get_file_info_relative_path(self):
         # Create a config file
         cfg_file = os.path.join(self.temp_bootdir_path,
-                      boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
+                      boards.SnowballEmmcConfig.snowball_startup_files_config)
         uboot_file = 'u-boot.bin'
         with open(cfg_file, 'w') as f:
                 f.write('%s %s %i %#x %s\n' % ('NORMAL', uboot_file, 0,
@@ -733,7 +734,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
     def test_get_file_info_abs_path(self):
         # Create a config file
         cfg_file = os.path.join(self.temp_bootdir_path,
-                      boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
+                      boards.SnowballEmmcConfig.snowball_startup_files_config)
         uboot_dir = tempfile.mkdtemp(dir=self.tempdir)
         uboot_file = os.path.join(uboot_dir, 'u-boot.bin')
         uboot_relative_file = uboot_file.replace(self.tempdir, '')
@@ -748,7 +749,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
     def test_get_file_info_raises(self):
         # Create a config file
         cfg_file = os.path.join(self.temp_bootdir_path,
-                      boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
+                      boards.SnowballEmmcConfig.snowball_startup_files_config)
         with open(cfg_file, 'w') as f:
                 f.write('%s %s %i %#x %s\n' % ('NORMAL', 'u-boot.bin', 0,
                                                0xBA0000, '9'))
@@ -1141,6 +1142,50 @@ class TestGetSfdiskCmd(TestCase):
             '256,7936,0xDA\n8192,262144,0x0C,*\n270336,524288,L\n' \
                 '794624,-,E\n794624,524288,L\n1318912,1048576,L\n2367488,,,-', 
                 android_boards.AndroidSnowballEmmcConfig.get_sfdisk_cmd())
+
+class TestGetSfdiskCmdV2(TestCase):
+
+    def test_mx5(self):
+        class config(boards.Mx5Config):
+            partition_layout = 'reserved_bootfs_rootfs'
+        self.assertEqual(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            config.get_sfdisk_cmd())
+
+    def test_snowball_sd(self):
+        class config(boards.SnowballSdConfig):
+            partition_layout = 'bootfs_rootfs'
+        self.assertEqual(
+            '63,106432,0x0C,*\n106496,,,-',
+            config.get_sfdisk_cmd())
+
+    def test_snowball_emmc(self):
+        class config(boards.SnowballEmmcConfig):
+            partition_layout = 'reserved_bootfs_rootfs'
+            LOADER_START_S = (128 * 1024) / SECTOR_SIZE
+        self.assertEqual(
+            '256,7936,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            config.get_sfdisk_cmd())
+
+    def test_smdkv310(self):
+        class config(board_configs['smdkv310']):
+            partition_layout = 'reserved_bootfs_rootfs'
+            LOADER_MIN_SIZE_S = (SAMSUNG_V310_BL2_START +
+                                 SAMSUNG_V310_BL2_LEN -
+                                 SAMSUNG_V310_BL1_START)
+        self.assertEquals(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            config.get_sfdisk_cmd())
+
+    def test_origen(self):
+        class config(board_configs['origen']):
+            partition_layout = 'reserved_bootfs_rootfs'
+            LOADER_MIN_SIZE_S = (SAMSUNG_V310_BL2_START +
+                                 SAMSUNG_V310_BL2_LEN -
+                                 SAMSUNG_V310_BL1_START)
+        self.assertEquals(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            config.get_sfdisk_cmd())
 
 
 class TestGetBootCmd(TestCase):
