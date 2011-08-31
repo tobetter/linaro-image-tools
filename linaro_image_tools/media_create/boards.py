@@ -1067,11 +1067,16 @@ class SamsungConfig(BoardConfig):
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor)
         old_spl_path = os.path.join(spl_dir, 'v310_mmc_spl.bin')
         new_spl_path = os.path.join(spl_dir, 'u-boot-mmc-spl.bin')
+        new_new_spl_path = os.path.join(spl_dir, 'origen-spl.bin')
 
         spl_file = old_spl_path
         # The new upstream u-boot filename has changed
         if not os.path.exists(spl_file):
             spl_file = new_spl_path
+
+        # The new upstream u-boot filename has changed again
+        if not os.path.exists(spl_file):
+            spl_file = new_new_spl_path
 
         if not os.path.exists(spl_file):
             # missing SPL loader
