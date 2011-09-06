@@ -21,6 +21,7 @@
 # USA.
 
 import wx
+import wx.html
 import wx.wizard
 import wx.wizard as wiz
 import sys
@@ -987,6 +988,14 @@ class LMC_settings(wiz.WizardPageSimple):
                   0,
                   wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
                   5)
+        desc_link = wx.HyperlinkCtrl(
+                                pane, id=-1, url="",
+                                label="Hardware pack descriptions")
+        self.Bind(wx.EVT_HYPERLINK, self.event_hwpack_link, desc_link)
+        grid1.Add(desc_link,
+                  0,
+                  wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP,
+                  5)
 
         self.box.Add(grid1, 0, alignment, 0)
         pane.SetSizer(self.box)
@@ -1078,6 +1087,19 @@ class LMC_settings(wiz.WizardPageSimple):
     def event_combo_box_rootfs(self, evt):
         self.settings['rootfs'] = evt.GetString().encode('ascii').lower()
 
+    def event_hwpack_link(self, event):
+        hw_desc = self.settings['UI']['hwpack-descriptions']
+        body = "<h3>%s</h3><ul>" % self.settings['hardware']
+        for hwpack in self.cb_hwpacks.GetItems():
+            desc = ''
+            if hw_desc.has_key(hwpack):
+                desc = " - %s" % hw_desc[hwpack]
+            body += "<li><b>%s</b><i>%s</i></li>" % (hwpack, desc)
+        body += "</ul>"
+        HtmlDialog( event.GetEventObject().GetParent(),
+                    "Hardware Pack Descriptions: %s",
+                    body)
+
     def event_radio_button_select(self, event):
         """Search the label of the button that has been selected to work out
         what we are writing to."""
@@ -1120,6 +1142,15 @@ class LMC_settings(wiz.WizardPageSimple):
     def event_swap_size(self, event):
         self.settings['swap_file'] = str(self.image_size_spinner.GetValue())
 
+class HtmlDialog(wx.Dialog):
+    def __init__(self, parent, title, content):
+        wx.Dialog.__init__(self, parent, -1, title)
+        html = wx.html.HtmlWindow(self)
+
+        html.SetPage(content)
+        self.SetSize(wx.Size(500,450))
+        self.ShowModal()
+        self.Destroy()
 
 class DevChoser(wx.Dialog):
     def __init__(self, parent, id, title, settings):
