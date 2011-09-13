@@ -492,6 +492,9 @@ class BoardConfig(object):
         elif cls.partition_layout in ['reserved_bootfs_rootfs']:
             return cls.get_reserved_sfdisk_cmd(should_align_boot_part)
         else:
+            assert (cls.hardwarepack_handler.get_format() ==
+                    HardwarepackHandler.FORMAT_1), (
+                "Hwpack format is not 1.0 but partition_layout is unspecified.")
             return cls.get_v1_sfdisk_cmd(should_align_boot_part)
 
     @classmethod
