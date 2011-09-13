@@ -572,9 +572,66 @@ class BoardConfig(object):
             uboot_parts_dir)
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
                                      d_img_data)
-        cls._make_boot_files(
-            boot_env, chroot_dir, boot_dir,
-            boot_device_or_file, k_img_data, i_img_data, d_img_data)
+
+        if cls.hardwarepack_handler.get_format == HardwarepackHandler.FORMAT_1:
+            cls._make_boot_files(
+                boot_env, chroot_dir, boot_dir,
+                boot_device_or_file, k_img_data, i_img_data, d_img_data)
+        else:
+            cls._make_boot_files_v2(
+                boot_env, chroot_dir, boot_dir,
+                boot_device_or_file, k_img_data, i_img_data, d_img_data)
+
+
+    @classmethod
+    def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
+        x_loader_file = cls.get_file('x_loader')
+        if x_loader_file is not None:
+            print "Copying x-loader '%s' to boot partition." % x_loader_file
+            cmd_runner.run(["cp", "-v", x_loader_file, boot_dir],
+                           as_root=True).wait()
+            # XXX: Is this really needed?
+            cmd_runner.run(["sync"]).wait()
+
+        with cls.hardwarepack_handler:
+            uboot_file = cls.get_file('u_boot', default=None)
+            if cls.uboot_dd:
+                assert uboot_file is not None, (
+                    "Cannot find uboot file to be dd:d.")
+                print "Writing u-boot '%s' to boot partition." % uboot_file
+                _dd(uboot_file, boot_device_or_file, seek=2)
+
+            samsung_spl_file = cls.get_file('spl', default=None)
+            if samsung_spl_file is not None:
+                assert os.path.getsize(spl_file) <= (cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
+                    "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
+                print "Writing Samsung spl '%s' to boot partition." % samsung_spl_file
+                _dd(samsung_spl_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL1_START)
+                assert uboot_file is not None, (
+                    "Cannot find uboot file to be dd:d.")
+                assert os.path.getsize(uboot_file) <= (cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
+                    "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
+                print "Writing Samsung u-boot '%s' to boot partition." % samsung_spl_file
+                _dd(samsung_spl_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL2_START)
+        
+        make_uImage(cls.load_addr, k_img_data, boot_dir)
+        make_uInitrd(i_img_data, boot_dir)
+
+	if d_img_data is not None:
+            make_dtb(d_img_data, boot_dir)
+
+	if cls.boot_script is not None:
+            boot_script_path = os.path.join(boot_dir, cls.boot_script)
+            make_boot_script(boot_env, boot_script_path)
+
+        # Only used for Omap and Igep, will this be bad for the other boards?
+        make_boot_ini(boot_script_path, boot_dir)
+
+        if cls.snowball_startup_files is not None:
+            cls.populate_raw_partition(chroot_dir, boot_device_or_file)
+
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
