@@ -193,6 +193,7 @@ class BoardConfig(object):
     uboot_flavor = None
     # whether to copy u-boot to the boot partition
     uboot_in_boot_part = False
+    uboot_dd = False
     mmc_option = '0:1'
     mmc_part_offset = 0
     fat_size = 32
@@ -343,6 +344,14 @@ class BoardConfig(object):
                 cls.uboot_in_boot_part = True
             elif string.lower(uboot_in_boot_part) == 'no':
                 cls.uboot_in_boot_part = False
+
+            uboot_dd = cls.get_metadata_field('u_boot_dd')
+            if uboot_dd is None:
+                cls.uboot_dd = None  
+            elif string.lower(uboot_dd) == 'yes':
+                cls.uboot_dd = True
+            elif string.lower(uboot_dd) == 'no':
+                cls.uboot_dd = False
 
             loader_start = cls.get_metadata_field('loader_start')
             if loader_start is not None:
@@ -573,7 +582,7 @@ class BoardConfig(object):
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
                                      d_img_data)
 
-        if cls.hardwarepack_handler.get_format == HardwarepackHandler.FORMAT_1:
+        if cls.hardwarepack_handler.get_format() == HardwarepackHandler.FORMAT_1:
             cls._make_boot_files(
                 boot_env, chroot_dir, boot_dir,
                 boot_device_or_file, k_img_data, i_img_data, d_img_data)
@@ -587,23 +596,23 @@ class BoardConfig(object):
     def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        x_loader_file = cls.get_file('x_loader')
-        if x_loader_file is not None:
-            print "Copying x-loader '%s' to boot partition." % x_loader_file
-            cmd_runner.run(["cp", "-v", x_loader_file, boot_dir],
-                           as_root=True).wait()
-            # XXX: Is this really needed?
-            cmd_runner.run(["sync"]).wait()
-
         with cls.hardwarepack_handler:
-            uboot_file = cls.get_file('u_boot', default=None)
+            x_loader_file = cls.get_file('x_loader')
+            if x_loader_file is not None:
+                print "Copying x-loader '%s' to boot partition." % x_loader_file
+                cmd_runner.run(["cp", "-v", x_loader_file, boot_dir],
+                               as_root=True).wait()
+                # XXX: Is this really needed?
+                cmd_runner.run(["sync"]).wait()
+
+            uboot_file = cls.get_file('u_boot')
             if cls.uboot_dd:
                 assert uboot_file is not None, (
                     "Cannot find uboot file to be dd:d.")
                 print "Writing u-boot '%s' to boot partition." % uboot_file
                 _dd(uboot_file, boot_device_or_file, seek=2)
 
-            samsung_spl_file = cls.get_file('spl', default=None)
+            samsung_spl_file = cls.get_file('spl')
             if samsung_spl_file is not None:
                 assert os.path.getsize(spl_file) <= (cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
                     "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
@@ -629,7 +638,7 @@ class BoardConfig(object):
         # Only used for Omap and Igep, will this be bad for the other boards?
         make_boot_ini(boot_script_path, boot_dir)
 
-        if cls.snowball_startup_files is not None:
+        if cls.snowball_startup_files_config is not None:
             cls.populate_raw_partition(chroot_dir, boot_device_or_file)
 
 

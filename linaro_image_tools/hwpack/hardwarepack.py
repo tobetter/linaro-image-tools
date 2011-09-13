@@ -84,6 +84,7 @@ class Metadata(object):
                       loader_min_size=None, vmlinuz=None, initrd=None,
                       dtb_addr=None, extra_boot_options=None,
                       boot_script=None, uboot_in_boot_part=None,
+                      uboot_dd=None,
                       extra_serial_opts=None, loader_start=None,
                       snowball_startup_files_config=None,
                       samsung_bl1_start=None, samsung_bl1_len=None,
@@ -114,6 +115,7 @@ class Metadata(object):
         self.extra_boot_options = extra_boot_options
         self.boot_script = boot_script
         self.uboot_in_boot_part = uboot_in_boot_part
+        self.uboot_dd = uboot_dd
         self.extra_serial_opts = extra_serial_opts
         self.snowball_startup_files_config = snowball_startup_files_config
         self.samsung_bl1_start = samsung_bl1_start
@@ -164,6 +166,7 @@ class Metadata(object):
                                    extra_boot_options=config.extra_boot_options,
                                    boot_script=config.boot_script,
                                    uboot_in_boot_part=config.uboot_in_boot_part,
+                                   uboot_dd=config.uboot_dd,
                                    extra_serial_opts=config.extra_serial_opts,
                                    snowball_startup_files_config=config.snowball_startup_files_config,
                                    samsung_bl1_start=config.samsung_bl1_start,
@@ -232,6 +235,8 @@ class Metadata(object):
             metadata += "BOOT_SCRIPT=%s\n" % self.boot_script
         if self.uboot_in_boot_part is not None:
             metadata += "U_BOOT_IN_BOOT_PART=%s\n" % self.uboot_in_boot_part
+        if self.uboot_dd is not None:
+            metadata += "U_BOOT_DD=%s\n" % self.uboot_dd
         if self.extra_serial_opts is not None:
             metadata += "EXTRA_SERIAL_OPTIONS=%s\n" % self.extra_serial_opts
         if self.snowball_startup_files_config is not None:
