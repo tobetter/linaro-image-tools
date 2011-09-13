@@ -375,6 +375,7 @@ class BoardConfig(object):
 
     @classmethod
     def get_file(cls, file_alias, default=None):
+        # XXX remove the 'default' parameter when V1 support is removed!
         file_in_hwpack = cls.hardwarepack_handler.get_file(file_alias)
         if file_in_hwpack is not None:
             return file_in_hwpack
@@ -594,17 +595,23 @@ class BoardConfig(object):
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
         with partition_mounted(boot_partition, boot_disk):
             if cls.uboot_in_boot_part:
-                assert cls.uboot_flavor is not None, (
-                    "uboot_in_boot_part is set but not uboot_flavor")
                 with cls.hardwarepack_handler:
-                    default = os.path.join(
-                        chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
-                        'u-boot.img')
-                    if not os.path.exists(default):
+                    # <legacy v1 support>
+                    if cls.uboot_flavor is not None:
                         default = os.path.join(
                             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
-                            'u-boot.bin')
+                            'u-boot.img')
+                        if not os.path.exists(default):
+                            default = os.path.join(
+                                chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+                                'u-boot.bin')
+                    else:
+                        default = None
+                    # </legacy v1 support>
                     uboot_bin = cls.get_file('u_boot', default=default)
+                    assert uboot_bin is not None, (
+                        "uboot binary could not be found")
+
                     proc = cmd_runner.run(
                         ['cp', '-v', uboot_bin, boot_disk], as_root=True)
                     proc.wait()
