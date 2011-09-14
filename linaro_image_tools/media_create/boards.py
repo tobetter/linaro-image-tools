@@ -598,6 +598,16 @@ class BoardConfig(object):
 
 
     @classmethod
+    def _dd_file(cls, from_file, to_file, seek, max_size=None):
+        assert from_file is not None, "No source file name given."
+        if max_size is not None:
+            assert os.path.getsize(from_file) <= max_size, (
+                    "'%s' is larger than %s" % (from_file, max_size))
+        print "Writing '%s' to '%s' at %s." % (from_file, to_file, seek)
+        _dd(from_file, to_file, seek=seek)
+
+
+    @classmethod
     def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
@@ -612,23 +622,16 @@ class BoardConfig(object):
 
             uboot_file = cls.get_file('u_boot')
             if cls.uboot_dd:
-                assert uboot_file is not None, (
-                    "Cannot find uboot file to be dd:d.")
-                print "Writing u-boot '%s' to boot partition." % uboot_file
-                _dd(uboot_file, boot_device_or_file, seek=2)
+                cls._dd_file(uboot_file, boot_device_or_file, 2)
 
             samsung_spl_file = cls.get_file('spl')
             if samsung_spl_file is not None:
-                assert os.path.getsize(spl_file) <= (cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
-                    "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
-                print "Writing Samsung spl '%s' to boot partition." % samsung_spl_file
-                _dd(samsung_spl_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL1_START)
-                assert uboot_file is not None, (
-                    "Cannot find uboot file to be dd:d.")
-                assert os.path.getsize(uboot_file) <= (cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
-                    "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
-                print "Writing Samsung u-boot '%s' to boot partition." % samsung_spl_file
-                _dd(samsung_spl_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL2_START)
+                cls._dd_file(samsung_spl_file, boot_device_or_file,
+                             cls.SAMSUNG_V310_BL1_START,
+                             cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE)
+                cls._dd_file(uboot_file, boot_device_or_file,
+                             cls.SAMSUNG_V310_BL2_START,
+                             cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE)
         
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
