@@ -165,17 +165,18 @@ class HardwarepackHandler(object):
     def get_format(self):
         format = None
         supported_formats = [self.FORMAT_1, self.FORMAT_2]
-        for hwpack_tarfile in self.hwpack_tarfiles:
-            format_file = hwpack_tarfile.extractfile(self.format_filename)
-            format_string = format_file.read().strip()
-            if not format_string in supported_formats:
-                raise AssertionError(
-                    "Format version '%s' is not supported." % \
-                        format_string)
-            if format is None:
-                format = format_string
-            elif format != format_string:
-                return self.FORMAT_MIXED
+        with self:
+            for hwpack_tarfile in self.hwpack_tarfiles:
+                format_file = hwpack_tarfile.extractfile(self.format_filename)
+                format_string = format_file.read().strip()
+                if not format_string in supported_formats:
+                    raise AssertionError(
+                        "Format version '%s' is not supported." % \
+                            format_string)
+                if format is None:
+                    format = format_string
+                elif format != format_string:
+                    return self.FORMAT_MIXED
         return format
 
     def get_file(self, file_alias):
@@ -577,8 +578,12 @@ class BoardConfig(object):
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
+        if cls.hardwarepack_handler.get_format() == HardwarepackHandler.FORMAT_1:
+            parts_dir = uboot_parts_dir
+        else:
+            parts_dir = chroot_dir
         (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
-            uboot_parts_dir)
+            parts_dir)
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
                                      d_img_data)
 
