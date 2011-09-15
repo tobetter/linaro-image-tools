@@ -44,7 +44,7 @@ class Config(object):
     PACKAGES_KEY = "packages"
     PACKAGE_REGEX = NAME_REGEX
     PATH_REGEX = r"\w[\w+\-./_]+$"
-    GLOB_REGEX = r"\w[\w+\-./_\*]+$"
+    GLOB_REGEX = r"[\w+\-./_\*]+$"
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
