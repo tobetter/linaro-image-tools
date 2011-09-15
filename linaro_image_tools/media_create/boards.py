@@ -35,6 +35,7 @@ import tarfile
 import ConfigParser
 import shutil
 import string
+import logging
 
 from linaro_image_tools import cmd_runner
 
@@ -602,8 +603,21 @@ class BoardConfig(object):
         if max_size is not None:
             assert os.path.getsize(from_file) <= max_size, (
                     "'%s' is larger than %s" % (from_file, max_size))
-        print "Writing '%s' to '%s' at %s." % (from_file, to_file, seek)
+        logger = logging.getLogger("linaro_image_tools")
+        logger.info("Writing '%s' to '%s' at %s." % (from_file, to_file, seek))
         _dd(from_file, to_file, seek=seek)
+
+
+    @classmethod
+    def install_samsung_boot_loader(cls, samsung_spl_file, uboot_file,
+                                    boot_device_or_file):
+                cls._dd_file(samsung_spl_file, boot_device_or_file,
+                             cls.SAMSUNG_V310_BL1_START,
+                             cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE)
+                cls._dd_file(uboot_file, boot_device_or_file,
+                             cls.SAMSUNG_V310_BL2_START,
+                             cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE)
+
 
     @classmethod
     def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
@@ -612,7 +626,9 @@ class BoardConfig(object):
         with cls.hardwarepack_handler:
             x_loader_file = cls.get_file('x_loader')
             if x_loader_file is not None:
-                print "Copying x-loader '%s' to boot partition." % x_loader_file
+                logger = logging.getLogger("linaro_image_tools")
+                logger.info(
+                    "Copying x-loader '%s' to boot partition." % x_loader_file)
                 cmd_runner.run(["cp", "-v", x_loader_file, boot_dir],
                                as_root=True).wait()
                 # XXX: Is this really needed?
@@ -624,13 +640,8 @@ class BoardConfig(object):
 
             samsung_spl_file = cls.get_file('spl')
             if samsung_spl_file is not None:
-                cls._dd_file(samsung_spl_file, boot_device_or_file,
-                             cls.SAMSUNG_V310_BL1_START,
-                             cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE)
-                cls._dd_file(uboot_file, boot_device_or_file,
-                             cls.SAMSUNG_V310_BL2_START,
-                             cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE)
-
+                cls.install_samsung_boot_loader(samsung_spl_file, uboot_file,
+                                    boot_device_or_file)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
 
@@ -731,7 +742,9 @@ class BoardConfig(object):
                 dtb = None
                 if cls.dtb_file is not None:
                     dtb = _get_file_matching(os.path.join(path, cls.dtb_file))
-                print "Will use kernel=%s, initrd=%s, dtb=%s." % (kernel, initrd, dtb)
+                logger = logging.getLogger("linaro_image_tools")
+                logger.info( "Will use kernel=%s, initrd=%s, dtb=%s." % \
+                                 (kernel, initrd, dtb))
                 return (kernel, initrd, dtb)
             raise ValueError(
                 "Found kernel matching %s but no initrd matching %s" % (
@@ -1245,7 +1258,9 @@ class SamsungConfig(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        cls.install_samsung_boot_loader(chroot_dir, boot_device_or_file)
+        cls.install_samsung_boot_loader(cls._get_samsung_spl(chroot_dir),
+                                        cls._get_samsung_uboot(chroot_dir),
+                                        boot_device_or_file)
         env_size = cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
         _dd(env_file, boot_device_or_file, seek=cls.SAMSUNG_V310_ENV_START)
@@ -1302,25 +1317,6 @@ class SamsungConfig(BoardConfig):
         assert os.path.getsize(uboot_file) <= (cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
             "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
         _dd(uboot_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL2_START)
-
-    @classmethod
-    def install_samsung_boot_loader(cls, chroot_dir, boot_device_or_file):
-        with cls.hardwarepack_handler:
-            try:
-                default = cls._get_samsung_spl(chroot_dir)
-            except AssertionError:
-                default = None
-            spl_file = cls.get_file('spl', default=default)
-            bl1_max_size = cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE
-            assert os.path.getsize(spl_file) <= bl1_max_size, (
-                "%s is larger than %s" % (spl_file, bl1_max_size))
-            _dd(spl_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL1_START)
-            uboot_file = cls.get_file(
-                'u_boot', default=cls._get_samsung_uboot(chroot_dir))
-            bl2_max_size = cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE
-            assert os.path.getsize(uboot_file) <= bl2_max_size, (
-                "%s is larger than %s" % (uboot_file, bl2_max_size))
-            _dd(uboot_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL2_START)
 
 
 class SMDKV310Config(SamsungConfig):
