@@ -168,18 +168,16 @@ class HardwarepackHandler(object):
     def get_format(self):
         format = None
         supported_formats = [self.FORMAT_1, self.FORMAT_2]
-        with self:
-            for hwpack_tarfile in self.hwpack_tarfiles:
-                format_file = hwpack_tarfile.extractfile(self.format_filename)
-                format_string = format_file.read().strip()
-                if not format_string in supported_formats:
-                    raise AssertionError(
-                        "Format version '%s' is not supported." % \
-                            format_string)
-                if format is None:
-                    format = format_string
-                elif format != format_string:
-                    return self.FORMAT_MIXED
+        for hwpack_tarfile in self.hwpack_tarfiles:
+            format_file = hwpack_tarfile.extractfile(self.format_filename)
+            format_string = format_file.read().strip()
+            if not format_string in supported_formats:
+                raise AssertionError(
+                    "Format version '%s' is not supported." % format_string)
+            if format is None:
+                format = format_string
+            elif format != format_string:
+                return self.FORMAT_MIXED
         return format
 
     def get_file(self, file_alias):
@@ -500,15 +498,15 @@ class BoardConfig(object):
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
-        import pdb; pdb.set_trace()
         if cls.partition_layout in ['bootfs_rootfs', 'bootfs16_rootfs']:
             return cls.get_normal_sfdisk_cmd(should_align_boot_part)
         elif cls.partition_layout in ['reserved_bootfs_rootfs']:
             return cls.get_reserved_sfdisk_cmd(should_align_boot_part)
         else:
-            assert (cls.hardwarepack_handler.get_format() ==
-                    HardwarepackHandler.FORMAT_1), (
-                "Hwpack format is not 1.0 but partition_layout is unspecified.")
+            with cls.hardwarepack_handler:
+                assert (cls.hardwarepack_handler.get_format() ==
+                        HardwarepackHandler.FORMAT_1), (
+                    "Hwpack format is not 1.0 but partition_layout is unspecified.")
             return cls.get_v1_sfdisk_cmd(should_align_boot_part)
 
     @classmethod
