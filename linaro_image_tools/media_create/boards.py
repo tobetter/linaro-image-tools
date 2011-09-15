@@ -191,6 +191,7 @@ class HardwarepackHandler(object):
 
 class BoardConfig(object):
     """The configuration used when building an image for a board."""
+    hwpack_format = None
     # These attributes may not need to be redefined on some subclasses.
     uboot_flavor = None
     # whether to copy u-boot to the boot partition
@@ -272,12 +273,11 @@ class BoardConfig(object):
     def set_metadata(cls, hwpacks):
         cls.hardwarepack_handler = HardwarepackHandler(hwpacks)
         with cls.hardwarepack_handler:
-            if (cls.hardwarepack_handler.get_format() ==
-                cls.hardwarepack_handler.FORMAT_1):
+            cls.hwpack_format = cls.hardwarepack_handler.get_format()
+            if (cls.hwpack_format == cls.hardwarepack_handler.FORMAT_1):
                 return
 
-            if (cls.hardwarepack_handler.get_format() ==
-                cls.hardwarepack_handler.FORMAT_2):
+            if (cls.hwpack_format == cls.hardwarepack_handler.FORMAT_2):
                 # Clear V1 defaults.
                 cls.kernel_addr = None
                 cls.initrd_addr = None
@@ -503,10 +503,8 @@ class BoardConfig(object):
         elif cls.partition_layout in ['reserved_bootfs_rootfs']:
             return cls.get_reserved_sfdisk_cmd(should_align_boot_part)
         else:
-            with cls.hardwarepack_handler:
-                assert (cls.hardwarepack_handler.get_format() ==
-                        HardwarepackHandler.FORMAT_1), (
-                    "Hwpack format is not 1.0 but partition_layout is unspecified.")
+            assert (cls.hwpack_format == HardwarepackHandler.FORMAT_1), (
+                "Hwpack format is not 1.0 but partition_layout is unspecified.")
             return cls.get_v1_sfdisk_cmd(should_align_boot_part)
 
     @classmethod
@@ -580,7 +578,7 @@ class BoardConfig(object):
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
-        if cls.hardwarepack_handler.get_format() == HardwarepackHandler.FORMAT_1:
+        if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
             parts_dir = uboot_parts_dir
         else:
             parts_dir = chroot_dir
@@ -589,7 +587,7 @@ class BoardConfig(object):
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
                                      d_img_data)
 
-        if cls.hardwarepack_handler.get_format() == HardwarepackHandler.FORMAT_1:
+        if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
             cls._make_boot_files(
                 boot_env, chroot_dir, boot_dir,
                 boot_device_or_file, k_img_data, i_img_data, d_img_data)

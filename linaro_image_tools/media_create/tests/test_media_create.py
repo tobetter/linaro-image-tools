@@ -876,6 +876,7 @@ class TestBootSteps(TestCaseWithFixtures):
         super(TestBootSteps, self).setUp()
         self.funcs_calls = []
         self.mock_all_boards_funcs()
+        linaro_image_tools.media_create.boards.BoardConfig.hwpack_format = '1.0'
 
     def mock_all_boards_funcs(self):
         """Mock functions of boards module with a call tracer."""
@@ -1727,6 +1728,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # Stub time.sleep() as create_partitions() use that.
         self.orig_sleep = time.sleep
         time.sleep = lambda s: None
+        linaro_image_tools.media_create.boards.BoardConfig.hwpack_format = '1.0'
 
     def tearDown(self):
         super(TestCreatePartitions, self).tearDown()
