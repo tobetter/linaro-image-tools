@@ -35,6 +35,7 @@ import tarfile
 import ConfigParser
 import shutil
 import string
+import logging
 
 from linaro_image_tools import cmd_runner
 
@@ -68,6 +69,7 @@ PART_ALIGN_S = 4 * 1024 * 1024 / SECTOR_SIZE
 def align_up(value, align):
     """Round value to the next multiple of align."""
     return (value + align - 1) / align * align
+
 
 def align_partition(min_start, min_length, start_alignment, end_alignment):
     """Compute partition start and end offsets based on specified constraints.
@@ -108,7 +110,7 @@ class HardwarepackHandler(object):
     def __init__(self, hwpacks):
         self.hwpacks = hwpacks
         self.hwpack_tarfiles = []
-    
+
     class FakeSecHead(object):
         """ Add a fake section header to the metadata file.
 
@@ -147,15 +149,17 @@ class HardwarepackHandler(object):
         hwpack_with_data = None
         for hwpack_tarfile in self.hwpack_tarfiles:
             metadata = hwpack_tarfile.extractfile(self.metadata_filename)
-            # Use RawConfigParser which does not support the magical interpolation
-            # behavior of ConfigParser so we don't mess up metadata accidentally.
+            # Use RawConfigParser which does not support the magical
+            # interpolation behavior of ConfigParser so we don't mess up
+            # metadata accidentally.
             parser = ConfigParser.RawConfigParser()
             parser.readfp(self.FakeSecHead(metadata))
             try:
                 new_data = parser.get(section, field)
                 if new_data is not None:
                     assert data is None, "The metadata field '%s' is set to " \
-                        "'%s' and new value '%s' is found" % (field, data, new_data)
+                        "'%s' and new value '%s' is found" % (field, data,
+                                                              new_data)
                     data = new_data
                     hwpack_with_data = hwpack_tarfile
             except ConfigParser.NoOptionError:
@@ -170,8 +174,7 @@ class HardwarepackHandler(object):
             format_string = format_file.read().strip()
             if not format_string in supported_formats:
                 raise AssertionError(
-                    "Format version '%s' is not supported." % \
-                        format_string)
+                    "Format version '%s' is not supported." % format_string)
             if format is None:
                 format = format_string
             elif format != format_string:
@@ -189,10 +192,12 @@ class HardwarepackHandler(object):
 
 class BoardConfig(object):
     """The configuration used when building an image for a board."""
+    hwpack_format = None
     # These attributes may not need to be redefined on some subclasses.
     uboot_flavor = None
     # whether to copy u-boot to the boot partition
     uboot_in_boot_part = False
+    uboot_dd = False
     mmc_option = '0:1'
     mmc_part_offset = 0
     fat_size = 32
@@ -200,9 +205,9 @@ class BoardConfig(object):
     _live_serial_opts = ''
     extra_boot_args_options = None
     supports_writing_to_mmc = True
-    LOADER_MIN_SIZE_S = align_up(1 * 1024**2, SECTOR_SIZE) / SECTOR_SIZE
-    BOOT_MIN_SIZE_S = align_up(50 * 1024**2, SECTOR_SIZE) / SECTOR_SIZE
-    ROOT_MIN_SIZE_S = align_up(50 * 1024**2, SECTOR_SIZE) / SECTOR_SIZE
+    LOADER_MIN_SIZE_S = align_up(1 * 1024 ** 2, SECTOR_SIZE) / SECTOR_SIZE
+    BOOT_MIN_SIZE_S = align_up(50 * 1024 ** 2, SECTOR_SIZE) / SECTOR_SIZE
+    ROOT_MIN_SIZE_S = align_up(50 * 1024 ** 2, SECTOR_SIZE) / SECTOR_SIZE
 
     # These attributes must be defined on all subclasses for backwards
     # compatibility with hwpacks v1 format. Hwpacks v2 format allows these to
@@ -269,12 +274,11 @@ class BoardConfig(object):
     def set_metadata(cls, hwpacks):
         cls.hardwarepack_handler = HardwarepackHandler(hwpacks)
         with cls.hardwarepack_handler:
-            if (cls.hardwarepack_handler.get_format() ==
-                cls.hardwarepack_handler.FORMAT_1):
+            cls.hwpack_format = cls.hardwarepack_handler.get_format()
+            if (cls.hwpack_format == cls.hardwarepack_handler.FORMAT_1):
                 return
 
-            if (cls.hardwarepack_handler.get_format() ==
-                cls.hardwarepack_handler.FORMAT_2):
+            if (cls.hwpack_format == cls.hardwarepack_handler.FORMAT_2):
                 # Clear V1 defaults.
                 cls.kernel_addr = None
                 cls.initrd_addr = None
@@ -325,24 +329,32 @@ class BoardConfig(object):
 
             boot_min_size = cls.get_metadata_field('boot_min_size')
             if boot_min_size is not None:
-                cls.BOOT_MIN_SIZE_S = align_up(int(boot_min_size) * 1024**2,
+                cls.BOOT_MIN_SIZE_S = align_up(int(boot_min_size) * 1024 ** 2,
                                                SECTOR_SIZE) / SECTOR_SIZE
             root_min_size = cls.get_metadata_field('root_min_size')
             if root_min_size is not None:
-                cls.ROOT_MIN_SIZE_S = align_up(int(root_min_size) * 1024**2,
+                cls.ROOT_MIN_SIZE_S = align_up(int(root_min_size) * 1024 ** 2,
                                                SECTOR_SIZE) / SECTOR_SIZE
             loader_min_size = cls.get_metadata_field('loader_min_size')
             if loader_min_size is not None:
-                cls.LOADER_MIN_SIZE_S = align_up(int(loader_min_size) * 1024**2,
+                cls.LOADER_MIN_SIZE_S = align_up(int(loader_min_size) * 1024 ** 2,
                                                SECTOR_SIZE) / SECTOR_SIZE
 
             uboot_in_boot_part = cls.get_metadata_field('u_boot_in_boot_part')
             if uboot_in_boot_part is None:
-                cls.uboot_in_boot_part = None  
+                cls.uboot_in_boot_part = None
             elif string.lower(uboot_in_boot_part) == 'yes':
                 cls.uboot_in_boot_part = True
             elif string.lower(uboot_in_boot_part) == 'no':
                 cls.uboot_in_boot_part = False
+
+            uboot_dd = cls.get_metadata_field('u_boot_dd')
+            if uboot_dd is None:
+                cls.uboot_dd = None
+            elif string.lower(uboot_dd) == 'yes':
+                cls.uboot_dd = True
+            elif string.lower(uboot_dd) == 'no':
+                cls.uboot_dd = False
 
             loader_start = cls.get_metadata_field('loader_start')
             if loader_start is not None:
@@ -492,6 +504,8 @@ class BoardConfig(object):
         elif cls.partition_layout in ['reserved_bootfs_rootfs']:
             return cls.get_reserved_sfdisk_cmd(should_align_boot_part)
         else:
+            assert (cls.hwpack_format == HardwarepackHandler.FORMAT_1), (
+                "Hwpack format is not 1.0 but partition_layout is unspecified.")
             return cls.get_v1_sfdisk_cmd(should_align_boot_part)
 
     @classmethod
@@ -565,13 +579,84 @@ class BoardConfig(object):
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
+        if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
+            parts_dir = uboot_parts_dir
+        else:
+            parts_dir = chroot_dir
         (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
-            uboot_parts_dir)
+            parts_dir)
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
                                      d_img_data)
-        cls._make_boot_files(
-            boot_env, chroot_dir, boot_dir,
-            boot_device_or_file, k_img_data, i_img_data, d_img_data)
+
+        if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
+            cls._make_boot_files(
+                boot_env, chroot_dir, boot_dir,
+                boot_device_or_file, k_img_data, i_img_data, d_img_data)
+        else:
+            cls._make_boot_files_v2(
+                boot_env, chroot_dir, boot_dir,
+                boot_device_or_file, k_img_data, i_img_data, d_img_data)
+
+    @classmethod
+    def _dd_file(cls, from_file, to_file, seek, max_size=None):
+        assert from_file is not None, "No source file name given."
+        if max_size is not None:
+            assert os.path.getsize(from_file) <= max_size, (
+                    "'%s' is larger than %s" % (from_file, max_size))
+        logger = logging.getLogger("linaro_image_tools")
+        logger.info("Writing '%s' to '%s' at %s." % (from_file, to_file, seek))
+        _dd(from_file, to_file, seek=seek)
+
+
+    @classmethod
+    def install_samsung_boot_loader(cls, samsung_spl_file, uboot_file,
+                                    boot_device_or_file):
+                cls._dd_file(samsung_spl_file, boot_device_or_file,
+                             cls.SAMSUNG_V310_BL1_START,
+                             cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE)
+                cls._dd_file(uboot_file, boot_device_or_file,
+                             cls.SAMSUNG_V310_BL2_START,
+                             cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE)
+
+
+    @classmethod
+    def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
+        with cls.hardwarepack_handler:
+            x_loader_file = cls.get_file('x_loader')
+            if x_loader_file is not None:
+                logger = logging.getLogger("linaro_image_tools")
+                logger.info(
+                    "Copying x-loader '%s' to boot partition." % x_loader_file)
+                cmd_runner.run(["cp", "-v", x_loader_file, boot_dir],
+                               as_root=True).wait()
+                # XXX: Is this really needed?
+                cmd_runner.run(["sync"]).wait()
+
+            uboot_file = cls.get_file('u_boot')
+            if cls.uboot_dd:
+                cls._dd_file(uboot_file, boot_device_or_file, 2)
+
+            samsung_spl_file = cls.get_file('spl')
+            if samsung_spl_file is not None:
+                cls.install_samsung_boot_loader(samsung_spl_file, uboot_file,
+                                    boot_device_or_file)
+        make_uImage(cls.load_addr, k_img_data, boot_dir)
+        make_uInitrd(i_img_data, boot_dir)
+
+        if d_img_data is not None:
+            make_dtb(d_img_data, boot_dir)
+
+        if cls.boot_script is not None:
+            boot_script_path = os.path.join(boot_dir, cls.boot_script)
+            make_boot_script(boot_env, boot_script_path)
+
+        # Only used for Omap and Igep, will this be bad for the other boards?
+        make_boot_ini(boot_script_path, boot_dir)
+
+        if cls.snowball_startup_files_config is not None:
+            cls.populate_raw_partition(chroot_dir, boot_device_or_file)
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
@@ -629,10 +714,10 @@ class BoardConfig(object):
             return cls._get_kflavor_files_v2(path)
 
         for flavor in cls.kernel_flavors:
-            kregex = KERNEL_GLOB % {'kernel_flavor' : flavor}
-            iregex = INITRD_GLOB % {'kernel_flavor' : flavor}
-            dregex = DTB_GLOB % {'kernel_flavor' : flavor,
-                                 'dtb_name' : cls.dtb_name}
+            kregex = KERNEL_GLOB % {'kernel_flavor': flavor}
+            iregex = INITRD_GLOB % {'kernel_flavor': flavor}
+            dregex = DTB_GLOB % {'kernel_flavor': flavor,
+                                 'dtb_name': cls.dtb_name}
             kernel = _get_file_matching(os.path.join(path, kregex))
             if kernel is not None:
                 initrd = _get_file_matching(os.path.join(path, iregex))
@@ -657,7 +742,9 @@ class BoardConfig(object):
                 dtb = None
                 if cls.dtb_file is not None:
                     dtb = _get_file_matching(os.path.join(path, cls.dtb_file))
-                print "Will use kernel=%s, initrd=%s, dtb=%s." % (kernel, initrd, dtb)
+                logger = logging.getLogger("linaro_image_tools")
+                logger.info( "Will use kernel=%s, initrd=%s, dtb=%s." % \
+                                 (kernel, initrd, dtb))
                 return (kernel, initrd, dtb)
             raise ValueError(
                 "Found kernel matching %s but no initrd matching %s" % (
@@ -1136,6 +1223,7 @@ class VexpressConfig(BoardConfig):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
 
+
 class SamsungConfig(BoardConfig):
     @classproperty
     def extra_serial_opts(cls):
@@ -1170,7 +1258,9 @@ class SamsungConfig(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        cls.install_samsung_boot_loader(chroot_dir, boot_device_or_file)
+        cls.install_samsung_boot_loader(cls._get_samsung_spl(chroot_dir),
+                                        cls._get_samsung_uboot(chroot_dir),
+                                        boot_device_or_file)
         env_size = cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
         _dd(env_file, boot_device_or_file, seek=cls.SAMSUNG_V310_ENV_START)
@@ -1227,26 +1317,6 @@ class SamsungConfig(BoardConfig):
         assert os.path.getsize(uboot_file) <= (cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
             "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
         _dd(uboot_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL2_START)
-
-
-    @classmethod
-    def install_samsung_boot_loader(cls, chroot_dir, boot_device_or_file):
-        with cls.hardwarepack_handler:
-            try:
-                default = cls._get_samsung_spl(chroot_dir)
-            except AssertionError:
-                default = None
-            spl_file = cls.get_file('spl', default=default)
-            bl1_max_size = cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE
-            assert os.path.getsize(spl_file) <= bl1_max_size, (
-                "%s is larger than %s" % (spl_file, bl1_max_size))
-            _dd(spl_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL1_START)
-            uboot_file = cls.get_file(
-                'u_boot', default=cls._get_samsung_uboot(chroot_dir))
-            bl2_max_size = cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE
-            assert os.path.getsize(uboot_file) <= bl2_max_size, (
-                "%s is larger than %s" % (uboot_file, bl2_max_size))
-            _dd(uboot_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL2_START)
 
 
 class SMDKV310Config(SamsungConfig):

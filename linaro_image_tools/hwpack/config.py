@@ -44,7 +44,7 @@ class Config(object):
     PACKAGES_KEY = "packages"
     PACKAGE_REGEX = NAME_REGEX
     PATH_REGEX = r"\w[\w+\-./_]+$"
-    GLOB_REGEX = r"\w[\w+\-./_\*]+$"
+    GLOB_REGEX = r"[\w+\-./_\*]+$"
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
@@ -74,6 +74,7 @@ class Config(object):
     EXTRA_BOOT_OPTIONS_KEY = 'extra_boot_options'
     BOOT_SCRIPT_KEY = 'boot_script'
     UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
+    UBOOT_DD_KEY = 'u_boot_dd'
     EXTRA_SERIAL_OPTS_KEY = 'extra_serial_options'
     SNOWBALL_STARTUP_FILES_CONFIG_KEY = 'snowball_startup_files_config'
     SAMSUNG_BL1_START_KEY = 'samsung_bl1_start'
@@ -136,6 +137,7 @@ class Config(object):
             self._validate_extra_boot_options()
             self._validate_boot_script()
             self._validate_uboot_in_boot_part()
+            self._validate_uboot_dd()
             self._validate_extra_serial_opts()
             self._validate_snowball_startup_files_config()
             self._validate_samsung_bl1_start()
@@ -186,6 +188,11 @@ class Config(object):
     def uboot_in_boot_part(self):
         """Whether uboot binary should be put in the boot partition. A str."""
         return self.parser.get(self.MAIN_SECTION, self.UBOOT_IN_BOOT_PART_KEY)
+
+    @property
+    def uboot_dd(self):
+        """Whether uboot binary should be dd:d to the boot partition. A str."""
+        return self._get_option_from_main_section(self.UBOOT_DD_KEY)
 
     def _get_option_from_main_section(self, key):
         """Get the value from the main section for the given key.
@@ -718,6 +725,13 @@ class Config(object):
             raise HwpackConfigError(
                 "Invalid value for u_boot_in_boot_part: %s"
                 % self.parser.get("hwpack", "u_boot_in_boot_part"))
+
+    def _validate_uboot_dd(self):
+        uboot_dd = self.uboot_dd
+        if uboot_dd is not None and string.lower(uboot_dd) not in ['yes', 'no']:
+            raise HwpackConfigError(
+                "Invalid value for u_boot_dd: %s"
+                % self.parser.get("hwpack", "u_boot_dd"))
 
     def _validate_support(self):
         support = self.support
