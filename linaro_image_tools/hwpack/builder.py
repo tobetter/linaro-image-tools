@@ -102,7 +102,6 @@ class HardwarePackBuilder(object):
         else:
             raise AssertionError("Package '%s' was not fetched." % \
                                 wanted_package_name)
-        packages.remove(wanted_package)
         return wanted_package
 
     def add_file_to_hwpack(self, package, wanted_file, package_unpacker, hwpack, target_path):
@@ -143,6 +142,7 @@ class HardwarePackBuilder(object):
                             packages,
                             download_content=self.config.include_debs)
 
+                        u_boot_package = None
                         if self.config.u_boot_package is not None:
                             u_boot_package = self.find_fetched_package(
                                 packages, self.config.u_boot_package)
@@ -154,12 +154,20 @@ class HardwarePackBuilder(object):
                                     u_boot_package, self.config.spl_file,
                                     package_unpacker, hwpack, hwpack.U_BOOT_DIR)
 
+                        x_loader_package = None
                         if self.config.x_loader_package is not None:
                             x_loader_package = self.find_fetched_package(
                                 packages, self.config.x_loader_package)
                             hwpack.metadata.x_loader = self.add_file_to_hwpack(
                                 x_loader_package, self.config.x_loader_file,
                                 package_unpacker, hwpack, hwpack.U_BOOT_DIR)
+
+                        if (u_boot_package is not None and
+                            u_boot_package in packages):
+                            packages.remove(u_boot_package)
+                        if (x_loader_package is not None and
+                            x_loader_package in packages):
+                            packages.remove(x_loader_package)
 
                         logger.debug("Adding packages to hwpack")
                         hwpack.add_packages(packages)
