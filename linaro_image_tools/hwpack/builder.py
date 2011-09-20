@@ -162,6 +162,7 @@ class HardwarePackBuilder(object):
                                 x_loader_package, self.config.x_loader_file,
                                 package_unpacker, hwpack, hwpack.U_BOOT_DIR)
 
+                        # u_boot_package and x_loader_package can be identical
                         if (u_boot_package is not None and
                             u_boot_package in packages):
                             packages.remove(u_boot_package)
