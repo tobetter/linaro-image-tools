@@ -624,24 +624,25 @@ class BoardConfig(object):
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
         with cls.hardwarepack_handler:
-            x_loader_file = cls.get_file('x_loader')
-            if x_loader_file is not None:
+            spl_file = cls.get_file('spl')
+            if cls.spl_in_boot_part:
+                assert spl_file is not None, (
+                    "SPL binary could not be found")
                 logger = logging.getLogger("linaro_image_tools")
                 logger.info(
-                    "Copying x-loader '%s' to boot partition." % x_loader_file)
-                cmd_runner.run(["cp", "-v", x_loader_file, boot_dir],
+                    "Copying spl '%s' to boot partition." % spl_file)
+                cmd_runner.run(["cp", "-v", spl_file, boot_dir],
                                as_root=True).wait()
                 # XXX: Is this really needed?
                 cmd_runner.run(["sync"]).wait()
 
+            if cls.spl_dd:
+                cls._dd_file(spl_file, boot_device_or_file, cls.spl_dd)
+
             uboot_file = cls.get_file('u_boot')
             if cls.uboot_dd:
-                cls._dd_file(uboot_file, boot_device_or_file, 2)
+                cls._dd_file(uboot_file, boot_device_or_file, cls.uboot_dd)
 
-            samsung_spl_file = cls.get_file('spl')
-            if samsung_spl_file is not None:
-                cls.install_samsung_boot_loader(samsung_spl_file, uboot_file,
-                                    boot_device_or_file)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
 
