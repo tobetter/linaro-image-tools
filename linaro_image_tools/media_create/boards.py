@@ -198,6 +198,8 @@ class BoardConfig(object):
     # whether to copy u-boot to the boot partition
     uboot_in_boot_part = False
     uboot_dd = False
+    spl_in_boot_part = False
+    spl_dd = False
     mmc_option = '0:1'
     mmc_part_offset = 0
     fat_size = 32
