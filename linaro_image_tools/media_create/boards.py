@@ -748,7 +748,7 @@ class BoardConfig(object):
                 if cls.dtb_file is not None:
                     dtb = _get_file_matching(os.path.join(path, cls.dtb_file))
                 logger = logging.getLogger("linaro_image_tools")
-                logger.info( "Will use kernel=%s, initrd=%s, dtb=%s." % \
+                logger.info("Will use kernel=%s, initrd=%s, dtb=%s." % \
                                  (kernel, initrd, dtb))
                 return (kernel, initrd, dtb)
             raise ValueError(
