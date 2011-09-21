@@ -36,8 +36,8 @@ class ConfigTests(TestCase):
                              "u_boot_file = usr/lib/u-boot/smdkv310/" \
                              "u-boot.bin\nserial_tty=ttySAC1\n" \
                              "partition_layout = bootfs_rootfs\n"\
-                             "x_loader_package = x-loader-omap4-panda\n"\
-                             "x_loader_file = usr/lib/x-loader/omap4430panda/MLO\n"\
+                             "spl_package = x-loader-omap4-panda\n"\
+                             "spl_file = usr/lib/x-loader/omap4430panda/MLO\n"\
                              "kernel_file = boot/vmlinuz-*-linaro-omap\n"\
                              "initrd_file = boot/initrd.img-*-linaro-omap\n"\
                              "dtb_file = boot/dt-*-linaro-omap/omap4-panda.dtb\n"\
@@ -273,23 +273,23 @@ class ConfigTests(TestCase):
                                      "dtb_file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
-    def test_validate_invalid_x_loader_package_name(self):
+    def test_validate_invalid_spl_package_name(self):
         config = self.get_config(
             self.valid_start_v2 + "u-boot-package = u-boot-linaro-s5pv310\n" \
                 "u-boot-file = usr/bin/version/MLO\n" \
                 "partition_layout = bootfs_rootfs\n"\
-                "x_loader_package = ~~\n")
+                "spl_package = ~~\n")
         self.assertValidationError(
-            "Invalid value in x_loader_package in the [hwpack] section: ~~",
+            "Invalid value in spl_package in the [hwpack] section: ~~",
             config)
 
-    def test_validate_invalid_x_loader_file(self):
+    def test_validate_invalid_spl_file(self):
         config = self.get_config(self.valid_start_v2 + 
                                  "u-boot-package = u-boot-linaro-s5pv310\n" \
                                      "u-boot-file = usr/bin/version/MLO\n" \
                                      "partition_layout = bootfs_rootfs\n" \
-                                     "x_loader_package = x-loader--linaro-s5pv310\n" \
-                                     "x_loader_file = ~~\n")
+                                     "spl_package = x-loader--linaro-s5pv310\n" \
+                                     "spl_file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
     def test_validate_partition_layout(self):
@@ -449,11 +449,11 @@ class ConfigTests(TestCase):
         self.assertEqual("u-boot-linaro-s5pv310",
                          config.u_boot_package)
 
-    def test_x_loader_file(self):
+    def test_spl_file(self):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)
         config.validate()
         self.assertEqual("usr/lib/x-loader/omap4430panda/MLO",
-                         config.x_loader_file)
+                         config.spl_file)
 
     def test_kernel_file(self):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)
@@ -497,11 +497,11 @@ class ConfigTests(TestCase):
         self.assertEqual("Yes",
                          config.uboot_in_boot_part)
 
-    def test_x_loader_package(self):
+    def test_spl_package(self):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)
         config.validate()
         self.assertEqual("x-loader-omap4-panda",
-                         config.x_loader_package)
+                         config.spl_package)
 
     def test_serial_tty(self):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)
