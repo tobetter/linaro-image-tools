@@ -663,6 +663,9 @@ class BoardConfig(object):
             cls.populate_raw_partition(chroot_dir, boot_device_or_file)
 
         if cls.SAMSUNG_V310_ENV_LEN is not None:
+            # Do we need to zero out the env before flashing it?
+            _dd("/dev/zero", boot_device_or_file, count=cls.SAMSUNG_V310_ENV_LEN,
+                seek=cls.SAMSUNG_V310_ENV_START)
             env_size = cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
             env_file = make_flashable_env(boot_env, env_size)
             cls._dd_file(env_file, boot_device_or_file, cls.SAMSUNG_V310_ENV_START)
