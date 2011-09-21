@@ -143,7 +143,8 @@ class HardwarePackBuilder(object):
                             download_content=self.config.include_debs)
 
                         u_boot_package = None
-                        if self.config.u_boot_package is not None:
+                        if self.config.u_boot_file is not None:
+                            assert self.config.u_boot_package is not None
                             u_boot_package = self.find_fetched_package(
                                 packages, self.config.u_boot_package)
                             hwpack.metadata.u_boot = self.add_file_to_hwpack(
@@ -151,7 +152,8 @@ class HardwarePackBuilder(object):
                                 package_unpacker, hwpack, hwpack.U_BOOT_DIR)
 
                         spl_package = None
-                        if self.config.spl_package is not None:
+                        if self.config.spl_file is not None:
+                            assert self.config.spl_package is not None
                             spl_package = self.find_fetched_package(
                                 packages, self.config.spl_package)
                             hwpack.metadata.spl = self.add_file_to_hwpack(
