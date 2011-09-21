@@ -1541,7 +1541,7 @@ def install_omap_boot_loader(chroot_dir, boot_disk, cls):
             default = _get_mlo_file(chroot_dir)
         except AssertionError:
             default = None
-        mlo_file = cls.get_file('x_loader', default=default)
+        mlo_file = cls.get_file('spl', default=default)
         cmd_runner.run(["cp", "-v", mlo_file, boot_disk], as_root=True).wait()
         # XXX: Is this really needed?
         cmd_runner.run(["sync"]).wait()
