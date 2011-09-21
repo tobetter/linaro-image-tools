@@ -349,12 +349,17 @@ class BoardConfig(object):
                 cls.uboot_in_boot_part = False
 
             uboot_dd = cls.get_metadata_field('u_boot_dd')
+            # Either uboot_dd is not specified, or it contains the dd offset.
             if uboot_dd is None:
-                cls.uboot_dd = None
-            elif string.lower(uboot_dd) == 'yes':
-                cls.uboot_dd = True
-            elif string.lower(uboot_dd) == 'no':
                 cls.uboot_dd = False
+            else:
+                cls.uboot_dd = int(uboot_dd)
+            spl_dd = cls.get_metadata_field('spl_dd')
+            # Either spl_dd is not specified, or it contains the dd offset.
+            if spl_dd is None:
+                cls.spl_dd = False
+            else:
+                cls.spl_dd = int(spl_dd)
 
             loader_start = cls.get_metadata_field('loader_start')
             if loader_start is not None:
