@@ -349,6 +349,13 @@ class BoardConfig(object):
                 cls.uboot_in_boot_part = True
             elif string.lower(uboot_in_boot_part) == 'no':
                 cls.uboot_in_boot_part = False
+            spl_in_boot_part = cls.get_metadata_field('spl_in_boot_part')
+            if spl_in_boot_part is None:
+                cls.spl_in_boot_part = None
+            elif string.lower(spl_in_boot_part) == 'yes':
+                cls.spl_in_boot_part = True
+            elif string.lower(spl_in_boot_part) == 'no':
+                cls.spl_in_boot_part = False
 
             uboot_dd = cls.get_metadata_field('u_boot_dd')
             # Either uboot_dd is not specified, or it contains the dd offset.
@@ -628,6 +635,7 @@ class BoardConfig(object):
     def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
+        import pdb; pdb.set_trace()
         with cls.hardwarepack_handler:
             spl_file = cls.get_file('spl')
             if cls.spl_in_boot_part:
