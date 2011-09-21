@@ -84,7 +84,7 @@ class Metadata(object):
                       loader_min_size=None, vmlinuz=None, initrd=None,
                       dtb_addr=None, extra_boot_options=None,
                       boot_script=None, uboot_in_boot_part=None,
-                      uboot_dd=None,
+                      uboot_dd=None, spl_in_boot_part=None, spl_dd=None,
                       extra_serial_opts=None, loader_start=None,
                       snowball_startup_files_config=None,
                       samsung_bl1_start=None, samsung_bl1_len=None,
@@ -107,7 +107,6 @@ class Metadata(object):
         self.root_min_size = root_min_size
         self.loader_min_size = loader_min_size
         self.loader_start = loader_start
-        self.x_loader = None
         self.vmlinuz = vmlinuz
         self.initrd = initrd
         self.dtb_file = dtb_file
@@ -116,6 +115,8 @@ class Metadata(object):
         self.boot_script = boot_script
         self.uboot_in_boot_part = uboot_in_boot_part
         self.uboot_dd = uboot_dd
+        self.spl_in_boot_part = spl_in_boot_part
+        self.spl_dd = spl_dd
         self.extra_serial_opts = extra_serial_opts
         self.snowball_startup_files_config = snowball_startup_files_config
         self.samsung_bl1_start = samsung_bl1_start
@@ -167,6 +168,8 @@ class Metadata(object):
                                    boot_script=config.boot_script,
                                    uboot_in_boot_part=config.uboot_in_boot_part,
                                    uboot_dd=config.uboot_dd,
+                                   spl_in_boot_part=config.spl_in_boot_part,
+                                   spl_dd=config.spl_dd,
                                    extra_serial_opts=config.extra_serial_opts,
                                    snowball_startup_files_config=config.snowball_startup_files_config,
                                    samsung_bl1_start=config.samsung_bl1_start,
@@ -221,8 +224,6 @@ class Metadata(object):
             metadata += "LOADER_MIN_SIZE=%s\n" % self.loader_min_size
         if self.loader_start is not None:
             metadata += "LOADER_START=%s\n" % self.loader_start
-        if self.x_loader is not None:
-            metadata += "X_LOADER=%s\n" % self.x_loader
         if self.vmlinuz is not None:
             metadata += "KERNEL_FILE=%s\n" % self.vmlinuz
         if self.initrd is not None:
@@ -235,8 +236,12 @@ class Metadata(object):
             metadata += "BOOT_SCRIPT=%s\n" % self.boot_script
         if self.uboot_in_boot_part is not None:
             metadata += "U_BOOT_IN_BOOT_PART=%s\n" % self.uboot_in_boot_part
+        if self.spl_in_boot_part is not None:
+            metadata += "SPL_IN_BOOT_PART=%s\n" % self.spl_in_boot_part
         if self.uboot_dd is not None:
             metadata += "U_BOOT_DD=%s\n" % self.uboot_dd
+        if self.spl_dd is not None:
+            metadata += "SPL_BOOT_DD=%s\n" % self.spl_dd
         if self.extra_serial_opts is not None:
             metadata += "EXTRA_SERIAL_OPTIONS=%s\n" % self.extra_serial_opts
         if self.snowball_startup_files_config is not None:
