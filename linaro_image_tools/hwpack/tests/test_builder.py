@@ -123,6 +123,7 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
                           'kernel_file': 'boot/vmlinuz-3.0.0-1002-linaro-omap',
                           'initrd_file': 'boot/initrd.img-3.0.0-1002-linaro-omap',
                           'boot_script': 'boot.scr',
+                          'mmc_id': '0:1',
                           'u_boot_in_boot_part': 'no'}
 
     def test_raises_on_missing_configuration(self):

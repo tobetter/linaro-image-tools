@@ -45,6 +45,7 @@ class ConfigTests(TestCase):
                              "extra_serial_options = console=tty0 console=ttyO2,115200n8\n"\
                              "extra_boot_options = earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000\n"\
                              "boot_script = boot.scr\n"\
+                             "mmc_id = 0:1\n"\
                              "u_boot_in_boot_part = Yes\n")
     valid_end = "[ubuntu]\nsources-entry = foo bar\n"
 
@@ -247,12 +248,14 @@ class ConfigTests(TestCase):
                                      "u-boot-file = u-boot.bin\n"
                                      "partition_layout = bootfs_rootfs\n"\
                                      "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                                     "mmc_id = 0:1\n"\
                                      "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n")
         self.assertValidationError("No boot_script in the [hwpack] section", config)
 
     def test_validate_invalid_boot_script(self):
         config = self.get_config(self.valid_start_v2 + 
                                  "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "mmc_id = 0:1\n"\
                                      "u-boot-file = u-boot.bin\n" \
                                      "partition_layout = bootfs_rootfs\n"\
                                      "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
@@ -270,6 +273,7 @@ class ConfigTests(TestCase):
                                      "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
                                      "boot_script = boot.scr\n"\
                                      "u_boot_in_boot_part = No\n"\
+                                     "mmc_id = 0:1\n"\
                                      "dtb_file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
@@ -278,6 +282,7 @@ class ConfigTests(TestCase):
             self.valid_start_v2 + "u-boot-package = u-boot-linaro-s5pv310\n" \
                 "u-boot-file = usr/bin/version/MLO\n" \
                 "partition_layout = bootfs_rootfs\n"\
+                "mmc_id = 0:1\n"\
                 "spl_package = ~~\n")
         self.assertValidationError(
             "Invalid value in spl_package in the [hwpack] section: ~~",
@@ -318,6 +323,7 @@ class ConfigTests(TestCase):
                                      "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
                                      "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
                                      "boot_script = boot.scr\n"\
+                                     "mmc_id = 0:1\n"\
                                      "u_boot_in_boot_part = Nope\n")
         self.assertValidationError("Invalid value for u_boot_in_boot_part: Nope", config)
 
@@ -329,6 +335,7 @@ class ConfigTests(TestCase):
                                      "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
                                      "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
                                      "boot_script = boot.scr\n"\
+                                     "mmc_id = 0:1\n"\
                                      "u_boot_in_boot_part = True\n")
         self.assertValidationError("Invalid value for u_boot_in_boot_part: True", config)
 
@@ -346,7 +353,7 @@ class ConfigTests(TestCase):
     def test_validate_mmc_id(self):
         config = self.get_config(self.valid_complete_v2 + 
                                  "mmc_id = x\n")
-        self.assertValidationError("Invalid mmc id x", config)
+        self.assertValidationError("Invalid mmc_id x", config)
 
     def test_validate_boot_min_size(self):
         config = self.get_config(self.valid_complete_v2 + 
@@ -510,10 +517,10 @@ class ConfigTests(TestCase):
 
     def test_mmc_id(self):
         config = self.get_config(self.valid_complete_v2 + 
-                                 "mmc_id = 1\n" + 
+                                 "mmc_id = 0:1\n" + 
                                  self.valid_end)
         config.validate()
-        self.assertEqual("1", config.mmc_id)
+        self.assertEqual("0:1", config.mmc_id)
 
     def test_boot_min_size(self):
         config = self.get_config(self.valid_complete_v2 + 

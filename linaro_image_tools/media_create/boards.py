@@ -292,6 +292,8 @@ class BoardConfig(object):
                 cls.extra_boot_args_options = None
                 cls.boot_script = None
                 cls.kernel_flavors = None
+                cls.mmc_option = None
+                cls.mmc_part_offset = None
                 cls.SAMSUNG_V310_BL1_START = None
                 cls.SAMSUNG_V310_BL1_LEN = None
                 cls.SAMSUNG_V310_ENV_START = None
@@ -308,7 +310,6 @@ class BoardConfig(object):
             cls.wired_interfaces = cls.get_metadata_field('wired_interfaces')
             cls.wireless_interfaces = cls.get_metadata_field(
                 'wireless_interfaces')
-            cls.mmc_id = cls.get_metadata_field('mmc_id')
             cls.vmlinuz = cls.get_metadata_field('kernel_file')
             cls.initrd = cls.get_metadata_field('initrd_file')
             cls.dtb_file = cls.get_metadata_field('dtb_file')
@@ -328,6 +329,10 @@ class BoardConfig(object):
             else:
                 raise AssertionError("Unknown partition layout '%s'." % \
                                          cls.partition_layout)
+
+            cls.mmc_option = cls.get_metadata_field('mmc_id')
+            if cls.mmc_option is not None:
+                cls.mmc_part_offset = int(cls.mmc_option.split(':')[1]) - 1
 
             boot_min_size = cls.get_metadata_field('boot_min_size')
             if boot_min_size is not None:
@@ -635,7 +640,6 @@ class BoardConfig(object):
     def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        import pdb; pdb.set_trace()
         with cls.hardwarepack_handler:
             spl_file = cls.get_file('spl')
             if cls.spl_in_boot_part:
@@ -765,7 +769,7 @@ class BoardConfig(object):
                 if cls.dtb_file is not None:
                     dtb = _get_file_matching(os.path.join(path, cls.dtb_file))
                 logger = logging.getLogger("linaro_image_tools")
-                logger.info( "Will use kernel=%s, initrd=%s, dtb=%s." % \
+                logger.info("Will use kernel=%s, initrd=%s, dtb=%s." % \
                                  (kernel, initrd, dtb))
                 return (kernel, initrd, dtb)
             raise ValueError(
