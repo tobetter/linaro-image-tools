@@ -376,14 +376,15 @@ class TestSetMetadata(TestCaseWithFixtures):
                 linaro_image_tools.media_create.boards, 'HardwarepackHandler',
                 self.MockHardwarepackHandler))
         field_to_test = 'mmc_id'
-        data_to_set = '1'
+        data_to_set = '0:1'
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
-        self.assertEquals(data_to_set, config.mmc_id)
+        self.assertEquals(data_to_set, config.mmc_option)
+        self.assertEquals(0, config.mmc_part_offset)
 
     def test_sets_boot_min_size(self):
         self.useFixture(MockSomethingFixture(

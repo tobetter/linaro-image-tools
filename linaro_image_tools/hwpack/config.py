@@ -124,7 +124,6 @@ class Config(object):
             self._validate_wired_interfaces()
             self._validate_wireless_interfaces()
             self._validate_partition_layout()
-            self._validate_mmc_id()
             self._validate_boot_min_size()
             self._validate_root_min_size()
             self._validate_loader_min_size()
@@ -134,6 +133,7 @@ class Config(object):
             self._validate_vmlinuz()
             self._validate_initrd()
             self._validate_dtb_file()
+            self._validate_mmc_id()
             self._validate_extra_boot_options()
             self._validate_boot_script()
             self._validate_uboot_in_boot_part()
@@ -664,12 +664,13 @@ class Config(object):
 
     def _validate_mmc_id(self):
         mmc_id = self.mmc_id
-        if mmc_id is None:
-            return
-        try:
-            int(mmc_id)
-        except:
-            raise HwpackConfigError("Invalid mmc id %s" % (mmc_id))
+        if not mmc_id:
+            raise HwpackConfigError(
+                "No mmc_id in the [%s] section" % \
+                    self.MAIN_SECTION)
+        else:
+            self._assert_matches_pattern(
+                r"[0-9]:[0-9]", mmc_id, "Invalid mmc_id %s" % mmc_id)
 
     def _validate_root_min_size(self):
         root_min_size = self.root_min_size
