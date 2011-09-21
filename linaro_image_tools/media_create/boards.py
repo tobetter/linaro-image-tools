@@ -612,7 +612,6 @@ class BoardConfig(object):
         logger.info("Writing '%s' to '%s' at %s." % (from_file, to_file, seek))
         _dd(from_file, to_file, seek=seek)
 
-
     @classmethod
     def install_samsung_boot_loader(cls, samsung_spl_file, uboot_file,
                                     boot_device_or_file):
@@ -622,7 +621,6 @@ class BoardConfig(object):
                 cls._dd_file(uboot_file, boot_device_or_file,
                              cls.SAMSUNG_V310_BL2_START,
                              cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE)
-
 
     @classmethod
     def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
@@ -663,6 +661,11 @@ class BoardConfig(object):
 
         if cls.snowball_startup_files_config is not None:
             cls.populate_raw_partition(chroot_dir, boot_device_or_file)
+
+        if cls.SAMSUNG_V310_ENV_LEN is not None:
+            env_size = cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
+            env_file = make_flashable_env(boot_env, env_size)
+            cls._dd_file(env_file, boot_device_or_file, cls.SAMSUNG_V310_ENV_START)
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
