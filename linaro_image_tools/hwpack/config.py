@@ -76,6 +76,7 @@ class Config(object):
     UBOOT_DD_KEY = 'u_boot_dd'
     SPL_IN_BOOT_PART_KEY = 'spl_in_boot_part'
     SPL_DD_KEY = 'spl_dd'
+    ENV_DD_KEY = 'env_dd'
     EXTRA_SERIAL_OPTS_KEY = 'extra_serial_options'
     SNOWBALL_STARTUP_FILES_CONFIG_KEY = 'snowball_startup_files_config'
     SAMSUNG_BL1_START_KEY = 'samsung_bl1_start'
@@ -141,6 +142,7 @@ class Config(object):
             self._validate_uboot_dd()
             self._validate_spl_in_boot_part()
             self._validate_spl_dd()
+            self._validate_env_dd()
             self._validate_extra_serial_opts()
             self._validate_snowball_startup_files_config()
             self._validate_samsung_bl1_start()
@@ -208,6 +210,11 @@ class Config(object):
         """If the spl binary should be dd:d to the boot partition
         this field specifies the offset. An int."""
         return self._get_option_from_main_section(self.SPL_DD_KEY)
+
+    @property
+    def env_dd(self):
+        """If the env should be dd:d to the boot partition. 'Yes' or 'No'."""
+        return self._get_option_from_main_section(self.ENV_DD_KEY)
 
     def _get_option_from_main_section(self, key):
         """Get the value from the main section for the given key.
@@ -735,6 +742,15 @@ class Config(object):
             raise HwpackConfigError(
                 "Invalid value for spl_in_boot_part: %s"
                 % self.parser.get("hwpack", "spl_in_boot_part"))
+
+    def _validate_env_dd(self):
+        env_dd = self.env_dd
+        if env_dd is None:
+            return
+        if string.lower(env_dd) not in ['yes', 'no']:
+            raise HwpackConfigError(
+                "Invalid value for env_dd: %s"
+                % self.parser.get("hwpack", "env_dd"))
 
     def _validate_uboot_dd(self):
         uboot_dd = self.uboot_dd

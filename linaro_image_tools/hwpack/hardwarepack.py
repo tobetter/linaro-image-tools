@@ -82,7 +82,7 @@ class Metadata(object):
                       wireless_interfaces=[], partition_layout=None,
                       mmc_id=None, boot_min_size=None, root_min_size=None,
                       loader_min_size=None, vmlinuz=None, initrd=None,
-                      dtb_addr=None, extra_boot_options=None,
+                      dtb_addr=None, extra_boot_options=None, env_dd=None,
                       boot_script=None, uboot_in_boot_part=None,
                       uboot_dd=None, spl_in_boot_part=None, spl_dd=None,
                       extra_serial_opts=None, loader_start=None,
@@ -117,6 +117,7 @@ class Metadata(object):
         self.uboot_dd = uboot_dd
         self.spl_in_boot_part = spl_in_boot_part
         self.spl_dd = spl_dd
+        self.env_dd = env_dd
         self.extra_serial_opts = extra_serial_opts
         self.snowball_startup_files_config = snowball_startup_files_config
         self.samsung_bl1_start = samsung_bl1_start
@@ -170,6 +171,7 @@ class Metadata(object):
                                    uboot_dd=config.uboot_dd,
                                    spl_in_boot_part=config.spl_in_boot_part,
                                    spl_dd=config.spl_dd,
+                                   env_dd=config.env_dd,
                                    extra_serial_opts=config.extra_serial_opts,
                                    snowball_startup_files_config=config.snowball_startup_files_config,
                                    samsung_bl1_start=config.samsung_bl1_start,
@@ -241,7 +243,9 @@ class Metadata(object):
         if self.uboot_dd is not None:
             metadata += "U_BOOT_DD=%s\n" % self.uboot_dd
         if self.spl_dd is not None:
-            metadata += "SPL_BOOT_DD=%s\n" % self.spl_dd
+            metadata += "SPL_DD=%s\n" % self.spl_dd
+        if self.env_dd is not None:
+            metadata += "ENV_DD=%s\n" % self.env_dd
         if self.extra_serial_opts is not None:
             metadata += "EXTRA_SERIAL_OPTIONS=%s\n" % self.extra_serial_opts
         if self.snowball_startup_files_config is not None:

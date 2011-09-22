@@ -200,6 +200,7 @@ class BoardConfig(object):
     uboot_dd = False
     spl_in_boot_part = False
     spl_dd = False
+    env_dd = False
     mmc_option = '0:1'
     mmc_part_offset = 0
     fat_size = 32
@@ -349,18 +350,25 @@ class BoardConfig(object):
 
             uboot_in_boot_part = cls.get_metadata_field('u_boot_in_boot_part')
             if uboot_in_boot_part is None:
-                cls.uboot_in_boot_part = None
+                cls.uboot_in_boot_part = False
             elif string.lower(uboot_in_boot_part) == 'yes':
                 cls.uboot_in_boot_part = True
             elif string.lower(uboot_in_boot_part) == 'no':
                 cls.uboot_in_boot_part = False
             spl_in_boot_part = cls.get_metadata_field('spl_in_boot_part')
             if spl_in_boot_part is None:
-                cls.spl_in_boot_part = None
+                cls.spl_in_boot_part = False
             elif string.lower(spl_in_boot_part) == 'yes':
                 cls.spl_in_boot_part = True
             elif string.lower(spl_in_boot_part) == 'no':
                 cls.spl_in_boot_part = False
+            env_dd = cls.get_metadata_field('env_dd')
+            if env_dd is None:
+                cls.env_dd = False
+            elif string.lower(env_dd) == 'yes':
+                cls.env_dd = True
+            elif string.lower(env_dd) == 'no':
+                cls.env_dd = False
 
             uboot_dd = cls.get_metadata_field('u_boot_dd')
             # Either uboot_dd is not specified, or it contains the dd offset.
@@ -674,9 +682,10 @@ class BoardConfig(object):
         make_boot_ini(boot_script_path, boot_dir)
 
         if cls.snowball_startup_files_config is not None:
+            # This should only happen for --dev snowball_emmc!!!
             cls.populate_raw_partition(chroot_dir, boot_device_or_file)
 
-        if cls.SAMSUNG_V310_ENV_LEN is not None:
+        if cls.env_dd:
             # Do we need to zero out the env before flashing it?
             _dd("/dev/zero", boot_device_or_file, count=cls.SAMSUNG_V310_ENV_LEN,
                 seek=cls.SAMSUNG_V310_ENV_START)
