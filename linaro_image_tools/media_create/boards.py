@@ -198,6 +198,9 @@ class BoardConfig(object):
     # whether to copy u-boot to the boot partition
     uboot_in_boot_part = False
     uboot_dd = False
+    spl_in_boot_part = False
+    spl_dd = False
+    env_dd = False
     mmc_option = '0:1'
     mmc_part_offset = 0
     fat_size = 32
@@ -347,19 +350,38 @@ class BoardConfig(object):
 
             uboot_in_boot_part = cls.get_metadata_field('u_boot_in_boot_part')
             if uboot_in_boot_part is None:
-                cls.uboot_in_boot_part = None
+                cls.uboot_in_boot_part = False
             elif string.lower(uboot_in_boot_part) == 'yes':
                 cls.uboot_in_boot_part = True
             elif string.lower(uboot_in_boot_part) == 'no':
                 cls.uboot_in_boot_part = False
+            spl_in_boot_part = cls.get_metadata_field('spl_in_boot_part')
+            if spl_in_boot_part is None:
+                cls.spl_in_boot_part = False
+            elif string.lower(spl_in_boot_part) == 'yes':
+                cls.spl_in_boot_part = True
+            elif string.lower(spl_in_boot_part) == 'no':
+                cls.spl_in_boot_part = False
+            env_dd = cls.get_metadata_field('env_dd')
+            if env_dd is None:
+                cls.env_dd = False
+            elif string.lower(env_dd) == 'yes':
+                cls.env_dd = True
+            elif string.lower(env_dd) == 'no':
+                cls.env_dd = False
 
             uboot_dd = cls.get_metadata_field('u_boot_dd')
+            # Either uboot_dd is not specified, or it contains the dd offset.
             if uboot_dd is None:
-                cls.uboot_dd = None
-            elif string.lower(uboot_dd) == 'yes':
-                cls.uboot_dd = True
-            elif string.lower(uboot_dd) == 'no':
                 cls.uboot_dd = False
+            else:
+                cls.uboot_dd = int(uboot_dd)
+            spl_dd = cls.get_metadata_field('spl_dd')
+            # Either spl_dd is not specified, or it contains the dd offset.
+            if spl_dd is None:
+                cls.spl_dd = False
+            else:
+                cls.spl_dd = int(spl_dd)
 
             loader_start = cls.get_metadata_field('loader_start')
             if loader_start is not None:
@@ -612,7 +634,6 @@ class BoardConfig(object):
         logger.info("Writing '%s' to '%s' at %s." % (from_file, to_file, seek))
         _dd(from_file, to_file, seek=seek)
 
-
     @classmethod
     def install_samsung_boot_loader(cls, samsung_spl_file, uboot_file,
                                     boot_device_or_file):
@@ -623,30 +644,30 @@ class BoardConfig(object):
                              cls.SAMSUNG_V310_BL2_START,
                              cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE)
 
-
     @classmethod
     def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
         with cls.hardwarepack_handler:
-            x_loader_file = cls.get_file('x_loader')
-            if x_loader_file is not None:
+            spl_file = cls.get_file('spl')
+            if cls.spl_in_boot_part:
+                assert spl_file is not None, (
+                    "SPL binary could not be found")
                 logger = logging.getLogger("linaro_image_tools")
                 logger.info(
-                    "Copying x-loader '%s' to boot partition." % x_loader_file)
-                cmd_runner.run(["cp", "-v", x_loader_file, boot_dir],
+                    "Copying spl '%s' to boot partition." % spl_file)
+                cmd_runner.run(["cp", "-v", spl_file, boot_dir],
                                as_root=True).wait()
                 # XXX: Is this really needed?
                 cmd_runner.run(["sync"]).wait()
 
+            if cls.spl_dd:
+                cls._dd_file(spl_file, boot_device_or_file, cls.spl_dd)
+
             uboot_file = cls.get_file('u_boot')
             if cls.uboot_dd:
-                cls._dd_file(uboot_file, boot_device_or_file, 2)
+                cls._dd_file(uboot_file, boot_device_or_file, cls.uboot_dd)
 
-            samsung_spl_file = cls.get_file('spl')
-            if samsung_spl_file is not None:
-                cls.install_samsung_boot_loader(samsung_spl_file, uboot_file,
-                                    boot_device_or_file)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
 
@@ -661,7 +682,16 @@ class BoardConfig(object):
         make_boot_ini(boot_script_path, boot_dir)
 
         if cls.snowball_startup_files_config is not None:
+            # This should only happen for --dev snowball_emmc!!!
             cls.populate_raw_partition(chroot_dir, boot_device_or_file)
+
+        if cls.env_dd:
+            # Do we need to zero out the env before flashing it?
+            _dd("/dev/zero", boot_device_or_file, count=cls.SAMSUNG_V310_ENV_LEN,
+                seek=cls.SAMSUNG_V310_ENV_START)
+            env_size = cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
+            env_file = make_flashable_env(boot_env, env_size)
+            cls._dd_file(env_file, boot_device_or_file, cls.SAMSUNG_V310_ENV_START)
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
@@ -1540,7 +1570,7 @@ def install_omap_boot_loader(chroot_dir, boot_disk, cls):
             default = _get_mlo_file(chroot_dir)
         except AssertionError:
             default = None
-        mlo_file = cls.get_file('x_loader', default=default)
+        mlo_file = cls.get_file('spl', default=default)
         cmd_runner.run(["cp", "-v", mlo_file, boot_disk], as_root=True).wait()
         # XXX: Is this really needed?
         cmd_runner.run(["sync"]).wait()

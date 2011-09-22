@@ -172,22 +172,6 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             [available_package, wanted_package], wanted_package_name)
         self.assertEquals(wanted_package, found_package)
 
-    def test_find_fetched_package_removes(self):
-        package_name = "dummy-package"
-        wanted_package_name = "wanted-package"
-        available_package = DummyFetchedPackage(package_name, "1.1")
-        wanted_package = DummyFetchedPackage(wanted_package_name, "1.1")
-
-        sources_dict = self.sourcesDictForPackages([available_package,
-                                                    wanted_package])
-        _, config = self.makeMetaDataAndConfigFixture(
-            [package_name, wanted_package_name], sources_dict,
-            extra_config=self.extra_config)
-        builder = HardwarePackBuilder(config.filename, "1.0", [])
-        packages = [available_package, wanted_package]
-        builder.find_fetched_package(packages, wanted_package_name)
-        self.assertEquals(packages, [available_package])
-
     def test_find_fetched_package_raises(self):
         package_name = "dummy-package"
         wanted_package_name = "wanted-package"

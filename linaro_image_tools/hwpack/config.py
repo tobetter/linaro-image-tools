@@ -66,8 +66,7 @@ class Config(object):
     ROOT_MIN_SIZE_KEY = "root_min_size"
     LOADER_MIN_SIZE_KEY = "loader_min_size"
     LOADER_START_KEY = "loader_start"
-    X_LOADER_PACKAGE_KEY = "x_loader_package"
-    X_LOADER_FILE_KEY = "x_loader_file"
+    SPL_PACKAGE_KEY = "spl_package"
     VMLINUZ_KEY = "kernel_file"
     INITRD_KEY = "initrd_file"
     DTB_FILE_KEY = "dtb_file"
@@ -75,6 +74,9 @@ class Config(object):
     BOOT_SCRIPT_KEY = 'boot_script'
     UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
     UBOOT_DD_KEY = 'u_boot_dd'
+    SPL_IN_BOOT_PART_KEY = 'spl_in_boot_part'
+    SPL_DD_KEY = 'spl_dd'
+    ENV_DD_KEY = 'env_dd'
     EXTRA_SERIAL_OPTS_KEY = 'extra_serial_options'
     SNOWBALL_STARTUP_FILES_CONFIG_KEY = 'snowball_startup_files_config'
     SAMSUNG_BL1_START_KEY = 'samsung_bl1_start'
@@ -128,8 +130,8 @@ class Config(object):
             self._validate_root_min_size()
             self._validate_loader_min_size()
             self._validate_loader_start()
-            self._validate_x_loader_package()
-            self._validate_x_loader_file()
+            self._validate_spl_package()
+            self._validate_spl_file()
             self._validate_vmlinuz()
             self._validate_initrd()
             self._validate_dtb_file()
@@ -138,6 +140,9 @@ class Config(object):
             self._validate_boot_script()
             self._validate_uboot_in_boot_part()
             self._validate_uboot_dd()
+            self._validate_spl_in_boot_part()
+            self._validate_spl_dd()
+            self._validate_env_dd()
             self._validate_extra_serial_opts()
             self._validate_snowball_startup_files_config()
             self._validate_samsung_bl1_start()
@@ -191,8 +196,25 @@ class Config(object):
 
     @property
     def uboot_dd(self):
-        """Whether uboot binary should be dd:d to the boot partition. A str."""
+        """If the uboot binary should be dd:d to the boot partition
+        this field specifies the offset. An int."""
         return self._get_option_from_main_section(self.UBOOT_DD_KEY)
+
+    @property
+    def spl_in_boot_part(self):
+        """Whether spl binary should be put in the boot partition. A str."""
+        return self._get_option_from_main_section(self.SPL_IN_BOOT_PART_KEY)
+
+    @property
+    def spl_dd(self):
+        """If the spl binary should be dd:d to the boot partition
+        this field specifies the offset. An int."""
+        return self._get_option_from_main_section(self.SPL_DD_KEY)
+
+    @property
+    def env_dd(self):
+        """If the env should be dd:d to the boot partition. 'Yes' or 'No'."""
+        return self._get_option_from_main_section(self.ENV_DD_KEY)
 
     def _get_option_from_main_section(self, key):
         """Get the value from the main section for the given key.
@@ -418,20 +440,12 @@ class Config(object):
         return self._get_option_from_main_section(self.SPL_FILE_KEY)
 
     @property
-    def x_loader_package(self):
-        """The x-loader package that contains the x-loader bin.
+    def spl_package(self):
+        """The spl package that contains the spl bin.
 
         A str.
         """
-        return self._get_option_from_main_section(self.X_LOADER_PACKAGE_KEY)
-
-    @property
-    def x_loader_file(self):
-        """The x-loader bin file that will be unpacked from the x-loader package.
-
-        A str.
-        """
-        return self._get_option_from_main_section(self.X_LOADER_FILE_KEY)
+        return self._get_option_from_main_section(self.SPL_PACKAGE_KEY)
 
     @property
     def vmlinuz(self):
@@ -554,13 +568,6 @@ class Config(object):
         if spl_file is not None:
             self._assert_matches_pattern(
                 self.PATH_REGEX, spl_file, "Invalid path: %s" % spl_file)
-
-    def _validate_x_loader_file(self):
-        x_loader_file = self.x_loader_file
-        if x_loader_file is not None:
-            self._assert_matches_pattern(
-                self.PATH_REGEX, x_loader_file, "Invalid path: %s" % \
-                    x_loader_file)
 
     def _validate_vmlinuz(self):
         vmlinuz = self.vmlinuz
@@ -727,12 +734,43 @@ class Config(object):
                 "Invalid value for u_boot_in_boot_part: %s"
                 % self.parser.get("hwpack", "u_boot_in_boot_part"))
 
+    def _validate_spl_in_boot_part(self):
+        spl_in_boot_part = self.spl_in_boot_part
+        if spl_in_boot_part is None:
+            return
+        if string.lower(spl_in_boot_part) not in ['yes', 'no']:
+            raise HwpackConfigError(
+                "Invalid value for spl_in_boot_part: %s"
+                % self.parser.get("hwpack", "spl_in_boot_part"))
+
+    def _validate_env_dd(self):
+        env_dd = self.env_dd
+        if env_dd is None:
+            return
+        if string.lower(env_dd) not in ['yes', 'no']:
+            raise HwpackConfigError(
+                "Invalid value for env_dd: %s"
+                % self.parser.get("hwpack", "env_dd"))
+
     def _validate_uboot_dd(self):
         uboot_dd = self.uboot_dd
-        if uboot_dd is not None and string.lower(uboot_dd) not in ['yes', 'no']:
+        if uboot_dd is None:
+            return
+        try:
+            assert int(uboot_dd) > 0
+        except:
             raise HwpackConfigError(
-                "Invalid value for u_boot_dd: %s"
-                % self.parser.get("hwpack", "u_boot_dd"))
+                "Invalid uboot_dd %s" % (uboot_dd))
+
+    def _validate_spl_dd(self):
+        spl_dd = self.spl_dd
+        if spl_dd is None:
+            return
+        try:
+            assert int(spl_dd) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid spl_dd %s" % (spl_dd))
 
     def _validate_support(self):
         support = self.support
@@ -760,14 +798,14 @@ class Config(object):
                     "the [%s] section: %s" % (self.U_BOOT_PACKAGE_KEY,
                                               self.MAIN_SECTION, u_boot_package))
 
-    def _validate_x_loader_package(self):
-        x_loader_package = self.x_loader_package
-        if x_loader_package is not None:
+    def _validate_spl_package(self):
+        spl_package = self.spl_package
+        if spl_package is not None:
             self._assert_matches_pattern(
-                self.PACKAGE_REGEX, x_loader_package, "Invalid value in %s in " \
-                    "the [%s] section: %s" % (self.X_LOADER_PACKAGE_KEY,
+                self.PACKAGE_REGEX, spl_package, "Invalid value in %s in " \
+                    "the [%s] section: %s" % (self.SPL_PACKAGE_KEY,
                                               self.MAIN_SECTION,
-                                              x_loader_package))
+                                              spl_package))
 
     def _validate_samsung_bl1_start(self):
         samsung_bl1_start = self.samsung_bl1_start
