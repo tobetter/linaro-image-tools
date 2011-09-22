@@ -113,6 +113,7 @@ if __name__ == '__main__':
 
     board_config = board_configs[args.board]
     board_config.set_metadata(args.hwpacks)
+    board_config.set_board(args.board)
 
     ensure_required_commands(args)
 

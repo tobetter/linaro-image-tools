@@ -191,6 +191,7 @@ class HardwarepackHandler(object):
 
 
 class BoardConfig(object):
+    board = None
     """The configuration used when building an image for a board."""
     hwpack_format = None
     # These attributes may not need to be redefined on some subclasses.
@@ -272,6 +273,10 @@ class BoardConfig(object):
         data, _ = cls.hardwarepack_handler.get_field(
             cls.hardwarepack_handler.main_section, field_name)
         return data
+
+    @classmethod
+    def set_board(cls, board):
+        cls.board = board
 
     @classmethod
     def set_metadata(cls, hwpacks):
@@ -526,7 +531,8 @@ class BoardConfig(object):
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
-        if cls.partition_layout in ['bootfs_rootfs', 'bootfs16_rootfs']:
+        if (cls.partition_layout in ['bootfs_rootfs', 'bootfs16_rootfs'] or
+            cls.board == 'snowball_sd'):
             return cls.get_normal_sfdisk_cmd(should_align_boot_part)
         elif cls.partition_layout in ['reserved_bootfs_rootfs']:
             return cls.get_reserved_sfdisk_cmd(should_align_boot_part)
@@ -681,8 +687,8 @@ class BoardConfig(object):
         # Only used for Omap and Igep, will this be bad for the other boards?
         make_boot_ini(boot_script_path, boot_dir)
 
-        if cls.snowball_startup_files_config is not None:
-            # This should only happen for --dev snowball_emmc!!!
+        if (cls.snowball_startup_files_config is not None and
+            cls.board != 'snowball_sd'):
             cls.populate_raw_partition(chroot_dir, boot_device_or_file)
 
         if cls.env_dd:
