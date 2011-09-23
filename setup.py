@@ -5,7 +5,7 @@ import DistUtilsExtra.auto
 
 DistUtilsExtra.auto.setup(
         name="linaro-image-tools",
-        version="2011.09",
+        version="2011.09.1",
         description="Tools to create and write Linaro images",
         url="https://launchpad.net/linaro-image-tools",
         license="GPL v3 or later",
