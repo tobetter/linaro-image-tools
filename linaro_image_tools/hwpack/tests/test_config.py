@@ -242,16 +242,6 @@ class ConfigTests(TestCase):
                                      "initrd_file = \n")
         self.assertValidationError("No initrd_file in the [hwpack] section", config)
 
-    def test_validate_empty_boot_script(self):
-        config = self.get_config(self.valid_start_v2 + 
-                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
-                                     "u-boot-file = u-boot.bin\n"
-                                     "partition_layout = bootfs_rootfs\n"\
-                                     "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
-                                     "mmc_id = 0:1\n"\
-                                     "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n")
-        self.assertValidationError("No boot_script in the [hwpack] section", config)
-
     def test_validate_invalid_boot_script(self):
         config = self.get_config(self.valid_start_v2 + 
                                  "u-boot-package = u-boot-linaro-s5pv310\n" \
