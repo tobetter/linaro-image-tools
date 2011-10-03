@@ -89,13 +89,6 @@ def ensure_required_commands(args):
 
 if __name__ == '__main__':
     parser = get_android_args_parser()
-    print "===================================================================="
-    print "            linaro-android-media-create is EXPERIMENTAL             "
-    print "                                                                    "
-    print " The command line parameters as well as the distribution format will" 
-    print " be changed and we will not keep backward compatibility for the     " 
-    print " current version here.                                              "
-    print "===================================================================="
     args = parser.parse_args()
 
     # If --help was specified this won't execute.
