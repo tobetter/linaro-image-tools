@@ -21,6 +21,7 @@ import argparse
 
 from linaro_image_tools.media_create.boards import board_configs
 from linaro_image_tools.media_create.android_boards import android_board_configs
+from linaro_image_tools.__version__ import __version__
 
 
 KNOWN_BOARDS = board_configs.keys()
@@ -47,7 +48,7 @@ class Live256MegsAction(argparse.Action):
 
 def get_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(version='%(prog)s ' + __version__)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         '--mmc', dest='device', help='The storage device to use.')
@@ -128,7 +129,7 @@ def get_args_parser():
 
 def get_android_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(version='%(prog)s ' + __version__)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         '--mmc', dest='device', help='The storage device to use.')

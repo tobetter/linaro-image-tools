@@ -47,8 +47,8 @@ if bzr tags | awk '{print $1}' | grep -qFx "$version"; then
     die "Tag $version already exists"
 fi
 
-log_i "Setting version to $version in setup.py"
-sed -i "s/^\\([[:space:]]*version=\"\\)[^\"]*\",\$/\1$version\",/" setup.py
+log_i "Setting version to $version in __version__.py"
+sed -i "s/^\\([[:space:]]*__version__=\"\\)[^\"]*\",\$/\1$version\",/" linaro_image_tools/__version__.py
 
 log_i "Committing $version"
 bzr commit -m "Release $version"
@@ -69,7 +69,7 @@ log_i "Signing tarball"
 gpg --armor --sign --detach-sig "../linaro-image-tools-$version.tar.gz"
 
 log_i "Setting version to $version.1 in setup.py"
-sed -i "s/^\\([[:space:]]*version=\"\\)[^\"]*\",\$/\1$version.1\",/" setup.py
+sed -i "s/^\\([[:space:]]*__version__=\"\\)[^\"]*\",\$/\1$version.1\",/" linaro_image_tools/__version__.py
 
 log_i "Committing $version"
 bzr commit -m "Post-release version bump to $version.1"
