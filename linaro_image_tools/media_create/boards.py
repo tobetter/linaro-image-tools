@@ -834,6 +834,8 @@ class OmapConfig(BoardConfig):
         If the kernel found in the chroot dir is << 2.6.36 we use tyyS2, else
         we use the default value (_serial_tty).
         """
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         # XXX: This is also part of our temporary hack to fix bug 697824.
         cls.serial_tty = classproperty(lambda cls: cls._serial_tty)
         vmlinuz = _get_file_matching(
@@ -852,7 +854,8 @@ class OmapConfig(BoardConfig):
         # XXX: This is also part of our temporary hack to fix bug 697824; we
         # need to call set_appropriate_serial_tty() before doing anything that
         # may use cls.serial_tty.
-        cls.set_appropriate_serial_tty(chroot_dir)
+        if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
+            cls.set_appropriate_serial_tty(chroot_dir)
         super(OmapConfig, cls).make_boot_files(
             uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
             rootfs_uuid, boot_dir, boot_device_or_file)
@@ -861,6 +864,8 @@ class OmapConfig(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         install_omap_boot_loader(chroot_dir, boot_dir, cls)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
@@ -926,6 +931,8 @@ class IgepConfig(BeagleConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         make_dtb(d_img_data, boot_dir)
@@ -962,6 +969,8 @@ class Ux500Config(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
@@ -979,6 +988,8 @@ class SnowballSdConfig(Ux500Config):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
@@ -1032,6 +1043,8 @@ class SnowballEmmcConfig(SnowballSdConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
@@ -1185,6 +1198,8 @@ class Mx5Config(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         with cls.hardwarepack_handler:
             uboot_file = cls.get_file('u_boot', default=os.path.join(
                     chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
@@ -1299,6 +1314,8 @@ class SamsungConfig(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         cls.install_samsung_boot_loader(cls._get_samsung_spl(chroot_dir),
                                         cls._get_samsung_uboot(chroot_dir),
                                         boot_device_or_file)
@@ -1316,6 +1333,8 @@ class SamsungConfig(BoardConfig):
 
     @classmethod
     def _get_samsung_spl(cls, chroot_dir):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         spl_dir = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor)
         old_spl_path = os.path.join(spl_dir, 'v310_mmc_spl.bin')
@@ -1339,6 +1358,8 @@ class SamsungConfig(BoardConfig):
 
     @classmethod
     def _get_samsung_uboot(cls, chroot_dir):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
             'u-boot.bin')

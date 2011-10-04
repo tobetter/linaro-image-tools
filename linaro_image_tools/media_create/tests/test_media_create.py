@@ -1066,6 +1066,24 @@ class TestFixForBug697824(TestCaseWithFixtures):
             self.set_appropriate_serial_tty_called,
             "make_boot_files didn't call set_appropriate_serial_tty")
 
+    def test_omap_make_boot_files_v2(self):
+        self.set_appropriate_serial_tty_called = False
+        class config(boards.BeagleConfig):
+            hwpack_format = HardwarepackHandler.FORMAT_2
+        self.mock_set_appropriate_serial_tty(config)
+        self.useFixture(MockSomethingFixture(
+            boards.BoardConfig, 'make_boot_files',
+            classmethod(lambda *args: None)))
+        # We don't need to worry about what's passed to make_boot_files()
+        # because we mock the method which does the real work above and here
+        # we're only interested in ensuring that OmapConfig.make_boot_files()
+        # does not call set_appropriate_serial_tty().
+        config.make_boot_files(
+            None, None, None, None, None, None, None, None)
+        self.assertFalse(
+            self.set_appropriate_serial_tty_called,
+            "make_boot_files called set_appropriate_serial_tty")
+
     def test_set_appropriate_serial_tty_old_kernel(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         boot_dir = os.path.join(tempdir, 'boot')
