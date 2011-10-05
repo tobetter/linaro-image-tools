@@ -106,6 +106,10 @@ if __name__ == '__main__':
 
     board_config = android_board_configs[args.board]
 
+    if args.board == 'iMX53':
+        # XXX: remove this and the corresponding entry in android_board_configs
+        print "DEPRECATION WARNING: iMX53 is deprecated, please use mx53loco."
+
     ensure_required_commands(args)
 
     media = Media(args.device)
