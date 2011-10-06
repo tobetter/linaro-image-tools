@@ -684,8 +684,8 @@ class BoardConfig(object):
             boot_script_path = os.path.join(boot_dir, cls.boot_script)
             make_boot_script(boot_env, boot_script_path)
 
-        # Only used for Omap and Igep, will this be bad for the other boards?
-        make_boot_ini(boot_script_path, boot_dir)
+            # Only used for Omap, will this be bad for the other boards?
+            make_boot_ini(boot_script_path, boot_dir)
 
         if (cls.snowball_startup_files_config is not None and
             cls.board != 'snowball_sd'):

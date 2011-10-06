@@ -602,9 +602,7 @@ class Config(object):
     def _validate_boot_script(self):
         boot_script = self.boot_script
         if not boot_script:
-            raise HwpackConfigError(
-                "No boot_script in the [%s] section" % \
-                    self.MAIN_SECTION)
+            return
         else:
             self._assert_matches_pattern(
                 self.PATH_REGEX, boot_script, "Invalid path: %s" % boot_script)
