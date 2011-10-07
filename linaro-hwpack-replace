@@ -115,16 +115,21 @@ def modify_manifest_info(tempdir, new_debpack_info, prefix_pkg_remove):
     """ Modify the manifest file to include the new debian information """
 
     debpack_manifest_fname = os.path.join(tempdir, "manifest")
-    new_debpack_line = '%s=%s\n' % (new_debpack_info.name, new_debpack_info.version)
+    if new_debpack_info is not None:
+        new_debpack_line = '%s=%s\n' % (new_debpack_info.name,
+                                        new_debpack_info.version)
 
     for line in fileinput.FileInput(debpack_manifest_fname, inplace=1):
         if not should_remove(line, prefix_pkg_remove):
             sys.stdout.write(line)
 
-    logger.debug("Adding the new debian package info to manifest")
-    fout = open(debpack_manifest_fname, "a")
-    fout.write(new_debpack_line)
-    fout.close()
+    if new_debpack_info is not None:
+        logger.debug("Adding the new debian package info to manifest")
+        fout = open(debpack_manifest_fname, "a")
+        fout.write(new_debpack_line)
+        fout.close()
+    else:
+        logger.debug("Removed the debian package info from manifest")
 
 
 def modify_Packages_info(debpack_dirname, new_debpack_info, prefix_pkg_remove):
@@ -138,7 +143,8 @@ def modify_Packages_info(debpack_dirname, new_debpack_info, prefix_pkg_remove):
         for stanza in Packages.iter_paragraphs(f):
             if not should_remove(stanza["Package"], prefix_pkg_remove):
                 output.append(stanza)
-        output.append(DummyStanza(new_debpack_info))
+        if new_debpack_info is not None:
+            output.append(DummyStanza(new_debpack_info))
 
         f.seek(0,0)
         f.truncate()
@@ -152,8 +158,7 @@ def modify_Packages_info(debpack_dirname, new_debpack_info, prefix_pkg_remove):
 def main():
     # Validate that all the required information is passed on the command line
     args = parser.parse_args()
-    if (args.hwpack_name == None or args.deb_pack == None or
-        args.prefix_pkg_remove == None):
+    if (args.hwpack_name == None or args.prefix_pkg_remove == None):
         parser.print_help()
         parser.error("You must specify both hwpack name "\
                      "and the debian package information\n")
@@ -186,12 +191,15 @@ def main():
             logger.error("Failed to extract the hwpack: %s ", old_hwpack)
             return status
 
-        new_debpack_info = FetchedPackage.from_deb(new_deb_file_to_copy)
+        new_debpack_info = None
+        if new_deb_file_to_copy is not None:
+            new_debpack_info = FetchedPackage.from_deb(new_deb_file_to_copy)
 
         verify_existing_debians(debpack_dirname, prefix_pkg_remove)
 
         # Copy the new debian file to the pkgs dir,
-        shutil.copy2(new_deb_file_to_copy, debpack_dirname)
+        if new_deb_file_to_copy is not None:
+            shutil.copy2(new_deb_file_to_copy, debpack_dirname)
 
         modify_manifest_info(tempdir, new_debpack_info, prefix_pkg_remove)
 
