@@ -78,7 +78,7 @@ def set_logging_param(args):
 
 
 def get_hwpack_name(old_hwpack):
-    timestamp = [datetime.datetime.now().strftime("%Y%m%d-%H%M")]
+    timestamp = [datetime.datetime.utcnow().strftime("%Y%m%d-%H%M")]
     hwpack_name_parts = (old_hwpack.split('_', 3))
     return('_'.join(hwpack_name_parts[:2] + timestamp + hwpack_name_parts[3:]))
 
@@ -172,6 +172,7 @@ def main():
     new_deb_file_to_copy = args.deb_pack
     prefix_pkg_remove = args.prefix_pkg_remove
     status = 0
+    tempdir = ""
 
     try:
         # Get the new hardware pack name
@@ -227,7 +228,8 @@ def main():
         status = 1
 
     finally:
-        shutil.rmtree(tempdir)
+        if os.path.exists(tempdir):
+            shutil.rmtree(tempdir)
 
     if status == 0:
         logger.info("The debian package '%s' has been been included in '%s'",
