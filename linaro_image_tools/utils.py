@@ -23,6 +23,7 @@ import subprocess
 import re
 import logging
 import tempfile
+import tarfile
 
 try:
     from CommandNotFound import CommandNotFound
@@ -30,6 +31,15 @@ except ImportError:
     CommandNotFound = None
 
 from linaro_image_tools import cmd_runner
+
+
+def path_in_tarfile_exists(path, tar_file):
+    with tarfile.open(tar_file, 'r:gz') as tarinfo:
+        try:
+            tarinfo.getmember(path)
+            return True
+        except KeyError:
+            return False
 
 
 def verify_file_integrity(sig_file_list):
