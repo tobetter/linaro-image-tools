@@ -47,6 +47,7 @@ from linaro_image_tools.utils import (
     ensure_command,
     is_arm_host,
     check_file_integrity_and_log_errors,
+    path_in_tarfile_exists,
     )
 
 # Just define the global variables
@@ -106,8 +107,12 @@ if __name__ == '__main__':
 
     # If --help was specified this won't execute.
     # Create temp dir and initialize rest of path vars.
+    filesystem_dir = 'binary'
+    if not path_in_tarfile_exists('binary/etc', args.binary):
+        # The binary image is in the new live format.
+        filesystem_dir = 'binary/boot/filesystem.dir'
     TMP_DIR = tempfile.mkdtemp()
-    ROOTFS_DIR = os.path.join(TMP_DIR, 'binary')
+    ROOTFS_DIR = os.path.join(TMP_DIR, filesystem_dir)
     BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
     ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
 

@@ -23,6 +23,7 @@ import subprocess
 import sys
 import logging
 import tempfile
+import tarfile
 
 from linaro_image_tools import cmd_runner, utils
 from linaro_image_tools.testing import TestCaseWithFixtures
@@ -39,10 +40,30 @@ from linaro_image_tools.utils import (
     UnableToFindPackageProvidingCommand,
     verify_file_integrity,
     check_file_integrity_and_log_errors,
+    path_in_tarfile_exists,
     )
 
 
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
+
+
+class TestPathInTarfile(TestCaseWithFixtures):
+    def setUp(self):
+        super(TestPathInTarfile, self).setUp()
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        self.tarfile_name = os.path.join(tempdir, 'test_tarfile.tar.gz')
+        self.tempfile_added = self.createTempFileAsFixture()
+        self.tempfile_unused = self.createTempFileAsFixture()
+        with tarfile.open(self.tarfile_name, 'w:gz') as tar:
+            tar.add(self.tempfile_added)
+
+    def test_file_exists(self):
+        self.assertTrue(path_in_tarfile_exists(self.tempfile_added[1:],
+                                               self.tarfile_name))
+
+    def test_file_does_not_exist(self):
+        self.assertFalse(path_in_tarfile_exists(self.tempfile_unused[1:],
+                                                self.tarfile_name))
 
 
 class TestVerifyFileIntegrity(TestCaseWithFixtures):
