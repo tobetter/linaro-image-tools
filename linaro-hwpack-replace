@@ -90,9 +90,9 @@ def get_hwpack_name(old_hwpack, build_number):
 
     if build_number is not None:
         job_build_number = [''.join('b' + build_number)]
-        return('_'.join(new_hwpack_name + job_build_number + ['armel.tar.gz']))
-    else:
-        return('_'.join(new_hwpack_name + ['armel.tar.gz']))
+        new_hwpack_name = [('_'.join(new_hwpack_name + job_build_number))]
+    
+    return('_'.join(new_hwpack_name + hwpack_name_parts[3:]))
 
 
 def should_remove(package_name, prefix_pkg_remove):
