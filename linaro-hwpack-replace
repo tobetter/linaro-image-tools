@@ -45,6 +45,9 @@ parser.add_argument("-p", "--deb-pack", dest="deb_pack",
 parser.add_argument("-r", "--prefix-pkg-remove", dest="prefix_pkg_remove",
                     help="Specify the prefix of the old debian package to "\
                           "replace (default: None).")
+parser.add_argument("-n", "--append-build-number", dest="build_number",
+                    help="Specify the build number if any to be used in new "\
+                          "hwpack name (default: None).")
 parser.add_argument("-i", "--in-place", action="store_true", dest="inplace",
                     help="Modify the hwpack rather than creating a new one")
 parser.add_argument("-d", "--debug-output", action="store_true", dest="debug",
@@ -77,10 +80,19 @@ def set_logging_param(args):
         logger.setLevel(logging.DEBUG)
 
 
-def get_hwpack_name(old_hwpack):
+def get_hwpack_name(old_hwpack, build_number):
+    # The build_number would be the job build number.
+    # Valid value for the build_number would be available for ex 
+    # when l-h-r is used in the jenkins.
     timestamp = [datetime.datetime.utcnow().strftime("%Y%m%d-%H%M")]
     hwpack_name_parts = (old_hwpack.split('_', 3))
-    return('_'.join(hwpack_name_parts[:2] + timestamp + hwpack_name_parts[3:]))
+    new_hwpack_name = [('_'.join(hwpack_name_parts[:2] + timestamp))]
+
+    if build_number is not None:
+        job_build_number = [''.join('b' + build_number)]
+        return('_'.join(new_hwpack_name + job_build_number + ['armel.tar.gz']))
+    else:
+        return('_'.join(new_hwpack_name + ['armel.tar.gz']))
 
 
 def should_remove(package_name, prefix_pkg_remove):
@@ -171,12 +183,13 @@ def main():
     old_hwpack = args.hwpack_name
     new_deb_file_to_copy = args.deb_pack
     prefix_pkg_remove = args.prefix_pkg_remove
+    build_number = args.build_number
     status = 0
     tempdir = ""
 
     try:
         # Get the new hardware pack name
-        hwpack_name = get_hwpack_name(old_hwpack)
+        hwpack_name = get_hwpack_name(old_hwpack, build_number)
         if hwpack_name == None:
             logger.error("Did not get a valid hwpack name, exiting")
             return status
