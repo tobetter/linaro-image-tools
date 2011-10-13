@@ -34,13 +34,13 @@ from linaro_image_tools import cmd_runner
 
 
 def path_in_tarfile_exists(path, tar_file):
-    with tarfile.open(tar_file, 'r:gz') as tarinfo:
-        try:
-            tarinfo.getmember(path)
-            return True
-        except KeyError:
-            return False
-
+    tarinfo = tarfile.open(tar_file, 'r:gz')
+    try:
+        tarinfo.getmember(path)
+        return True
+    except KeyError:
+        return False
+    tarinfo.close()
 
 def verify_file_integrity(sig_file_list):
     """Verify a list of signature files.
