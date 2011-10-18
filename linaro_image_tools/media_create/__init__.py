@@ -53,7 +53,7 @@ def get_args_parser():
     group.add_argument(
         '--mmc', dest='device', help='The storage device to use.')
     group.add_argument(
-        '--image_file', dest='device',
+        '--image-file', '--image_file', dest='device',
         help='File where we should write the QEMU image.')
     parser.add_argument(
         '--dev', required=True, dest='board', choices=KNOWN_BOARDS,
@@ -62,13 +62,13 @@ def get_args_parser():
         '--rootfs', default='ext4', choices=['ext2', 'ext3', 'ext4', 'btrfs'],
         help='Type of filesystem to use for the rootfs')
     parser.add_argument(
-        '--rfs_label', default='rootfs',
+        '--rfs-label', '--rfs_label', default='rootfs',
         help='Label to use for the root filesystem.')
     parser.add_argument(
-        '--boot_label', default='boot',
+        '--boot-label', '--boot_label', default='boot',
         help='Label to use for the boot filesystem.')
     parser.add_argument(
-        '--swap_file', type=int,
+        '--swap-file', '--swap_file', type=int,
         help='Create a swap file of the given size (in MBs).')
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
@@ -97,7 +97,7 @@ def get_args_parser():
         '--hwpack-force-yes', action='store_true',
         help='Pass --force-yes to linaro-hwpack-install')
     parser.add_argument(
-        '--image_size', default='3G',
+        '--image-size', '--image_size', default='3G',
         help=('The image size, specified in mega/giga bytes (e.g. 3000M or '
               '3G); use with --image_file only'))
     parser.add_argument(
@@ -134,17 +134,17 @@ def get_android_args_parser():
     group.add_argument(
         '--mmc', dest='device', help='The storage device to use.')
     group.add_argument(
-        '--image_file', dest='device',
+        '--image-file', '--image_file', dest='device',
         help='File where we should write the image file.')
     parser.add_argument(
-        '--image_size', default='2G',
+        '--image-size', '--image_size', default='2G',
         help=('The image size, specified in mega/giga bytes (e.g. 3000M or '
               '3G); use with --image_file only'))
     parser.add_argument(
         '--dev', required=True, dest='board', choices=ANDROID_KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
     parser.add_argument(
-        '--boot_label', default='boot',
+        '--boot-label', '--boot_label', default='boot',
         help='Label to use for the boot filesystem.')
     parser.add_argument(
         '--console', action='append', dest='consoles', default=[],
