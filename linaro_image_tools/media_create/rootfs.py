@@ -43,7 +43,7 @@ def rootfs_mount_options(rootfs_type):
 
 def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
                     rootfs_uuid, should_create_swap, swap_size,
-                    partition_offset):
+                    partition_offset, board_config=None):
     """Populate the rootfs and make the necessary tweaks to make it usable.
 
     This consists of:
@@ -88,6 +88,26 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
 
         print "\nCreating /etc/flash-kernel.conf\n"
         create_flash_kernel_config(root_disk, 1 + partition_offset)
+
+        if board_config is not None:
+            print "\nUpdating /etc/network/interfaces\n"
+            update_network_interfaces(root_disk, board_config)
+
+
+def update_network_interfaces(root_disk, board_config):
+    interfaces = []
+    if board_config.wired_interfaces is not None:
+        interfaces.extend(board_config.wired_interfaces)
+    if board_config.wireless_interfaces is not None:
+        interfaces.extend(board_config.wireless_interfaces)
+
+    if_path = os.path.join(root_disk, 'etc', 'network', 'interfaces')
+    with open(if_path) as if_file:
+        config = if_file.read()
+    for interface in interfaces:
+        if interface not in config:
+            config += "auto %(if)s\niface %(if)s inet dhcp\n" % ({ 'if': interface })
+    write_data_to_protected_file(if_path, config)
 
 
 def create_flash_kernel_config(root_disk, boot_partition_number):
