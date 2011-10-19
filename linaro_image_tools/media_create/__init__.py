@@ -56,7 +56,7 @@ def get_version():
     if os.path.exists(qemu_path):
         try:
             # qemu-arm-static has no --version option so it fails,
-            # but still prints it's version plus usage
+            # but still prints its version plus usage
             cmd_runner.run(["/usr/bin/qemu-arm-static", "--version"],
                            stdout=p.stdin).communicate()
             p.communicate()
