@@ -101,6 +101,7 @@ from linaro_image_tools.media_create.rootfs import (
     populate_rootfs,
     rootfs_mount_options,
     write_data_to_protected_file,
+    update_network_interfaces,
     )
 from linaro_image_tools.media_create.tests.fixtures import (
     CreateTarballFixture,
@@ -355,7 +356,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
-        self.assertEquals(data_to_set, config.wired_interfaces)
+        self.assertEquals(data_to_set.split(' '), config.wired_interfaces)
 
     def test_sets_wireless_interfaces(self):
         self.useFixture(MockSomethingFixture(
@@ -369,7 +370,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
-        self.assertEquals(data_to_set, config.wireless_interfaces)
+        self.assertEquals(data_to_set.split(' '), config.wireless_interfaces)
 
     def test_sets_mmc_id(self):
         self.useFixture(MockSomethingFixture(
@@ -2388,6 +2389,59 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         swap_size_in_megs = (space_left / (1024**2)) + 1
         self.assertFalse(
             has_space_left_for_swap('/', swap_size_in_megs))
+
+    def test_update_interfaces_no_interfaces_no_update(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        os.makedirs(os.path.join(tempdir, 'etc', 'network'))
+        if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
+        class board_config(boards.BoardConfig):
+            pass
+
+        update_network_interfaces(tempdir, board_config)
+        self.assertFalse(os.path.exists(if_path))
+
+    def test_update_interfaces_creates_entry(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        os.makedirs(os.path.join(tempdir, 'etc', 'network'))
+        if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
+        class board_config(boards.BoardConfig):
+            wired_interfaces = ['eth0']
+
+        expected = 'auto eth0\n' \
+            'iface eth0 inet dhcp\n'
+        update_network_interfaces(tempdir, board_config)
+        self.assertEqual(expected, open(if_path).read())
+
+    def test_update_interfaces_creates_entries(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        os.makedirs(os.path.join(tempdir, 'etc', 'network'))
+        if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
+        class board_config(boards.BoardConfig):
+            wired_interfaces = ['eth0', 'eth1']
+            wireless_interfaces = ['wlan0']
+
+        expected = 'auto %(if)s\n' \
+            'iface %(if)s inet dhcp\n'
+
+        update_network_interfaces(tempdir, board_config)
+        self.assertIn(expected % {'if': 'eth1'}, open(if_path).read())
+        self.assertIn(expected % {'if': 'eth0'}, open(if_path).read())
+        self.assertIn(expected % {'if': 'wlan0'}, open(if_path).read())
+
+    def test_update_interfaces_leaves_original(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        os.makedirs(os.path.join(tempdir, 'etc', 'network'))
+        if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
+        with open(if_path, 'w') as interfaces:
+            interfaces.write('Original contents of file.\n')
+        class board_config(boards.BoardConfig):
+            wired_interfaces = ['eth0']
+
+        expected = 'Original contents of file.\n' \
+            'auto eth0\n' \
+            'iface eth0 inet dhcp\n'
+        update_network_interfaces(tempdir, board_config)
+        self.assertEqual(expected, open(if_path).read())
 
     def test_write_data_to_protected_file(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())

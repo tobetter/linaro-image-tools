@@ -102,12 +102,16 @@ def update_network_interfaces(root_disk, board_config):
         interfaces.extend(board_config.wireless_interfaces)
 
     if_path = os.path.join(root_disk, 'etc', 'network', 'interfaces')
-    with open(if_path) as if_file:
-        config = if_file.read()
+    if os.path.exists(if_path):
+        with open(if_path) as if_file:
+            config = if_file.read()
+    else:
+        config = ''
     for interface in interfaces:
         if interface not in config:
             config += "auto %(if)s\niface %(if)s inet dhcp\n" % ({ 'if': interface })
-    write_data_to_protected_file(if_path, config)
+    if config != '':
+        write_data_to_protected_file(if_path, config)
 
 
 def create_flash_kernel_config(root_disk, boot_partition_number):
