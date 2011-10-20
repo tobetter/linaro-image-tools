@@ -313,9 +313,13 @@ class BoardConfig(object):
             cls.load_addr = cls.get_metadata_field('load_addr')
             cls.dtb_addr = cls.get_metadata_field('dtb_addr')
             cls.serial_tty = cls.get_metadata_field('serial_tty')
-            cls.wired_interfaces = cls.get_metadata_field('wired_interfaces')
-            cls.wireless_interfaces = cls.get_metadata_field(
+            wired_interfaces = cls.get_metadata_field('wired_interfaces')
+            if wired_interfaces is not None:
+                cls.wired_interfaces = wired_interfaces.split(' ')
+            wireless_interfaces = cls.get_metadata_field(
                 'wireless_interfaces')
+            if wireless_interfaces is not None:
+                cls.wireless_interfaces = wireless_interfaces.split(' ')
             cls.vmlinuz = cls.get_metadata_field('kernel_file')
             cls.initrd = cls.get_metadata_field('initrd_file')
             cls.dtb_file = cls.get_metadata_field('dtb_file')
