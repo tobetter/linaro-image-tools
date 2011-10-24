@@ -25,8 +25,8 @@ UI:
     bsp-omap4: (DEPRECATED) - Used in Maverick release
     lt-panda: TI Landing Team kernel (kernel-tilt.git)
     lt-panda-x11-base-natty: TI Landing Team kernel (kernel-tilt.git) plus support for 3D acceleration
-    s5pv310: Basic support from linux-linaro-3.0
-    lt-s5pv310: Samsung Landing Team kernel
+    s5pv310: Support for this has been dropped in order to focus development efforts on Origen
+    lt-s5pv310: Support for this has been dropped in order to focus development efforts on Origen
 
   help:
     latest snapshot: Latest Snapshot help text
