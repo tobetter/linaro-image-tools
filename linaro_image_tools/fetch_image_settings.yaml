@@ -133,6 +133,8 @@ choice:
     - final
     '11.08':
     - final
+    '11.09':
+    - final
 
 platform: linaro-n
 repository: release

@@ -597,12 +597,12 @@ class FileHandler():
                "specify either an image file, or an mmc target, not both.")
 
         self.append_setting_to(args, settings, 'mmc')
-        self.append_setting_to(args, settings, 'image_file')
-        self.append_setting_to(args, settings, 'image_size')
-        self.append_setting_to(args, settings, 'swap_size')
-        self.append_setting_to(args, settings, 'swap_file')
+        self.append_setting_to(args, settings, 'image_file', '--image-file')
+        self.append_setting_to(args, settings, 'image_size', '--image-size')
+        self.append_setting_to(args, settings, 'swap_size', '--swap-size')
+        self.append_setting_to(args, settings, 'swap_file', '--swap-file')
         self.append_setting_to(args, settings, 'yes_to_mmc_selection',
-                                               '--nocheck_mmc')
+                                               '--nocheck-mmc')
 
         args.append("--dev")
         args.append(settings['hardware'])
