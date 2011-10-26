@@ -148,48 +148,13 @@ if __name__ == '__main__':
                                          ["platform", "image", "build"])
     else:
         # 11.06/ubuntu/panda
-        crawler.add_directory_parse_list(
-                    RELEASES_WWW_DOCUMENT_ROOT,
-                    RELEASE_URL,
-                    ([], ["/latest/", "/platform/", "/old/", "hwpack"]),
-                    ["platform", "image", "build"],
-                    "release_binaries",
-                    ["platform", "image", ""])
-
-#    if old:
-#        #releases.linaro.org/platform/linaro-m/hwpacks/final/
-#        # hwpack_linaro-bsp-omap4_20101109-1_armel_unsupported.tar.gz
-#        crawler.add_directory_parse_list(RELEASES_WWW_DOCUMENT_ROOT,
-#                                         RELEASE_URL,
-#                                         (["/hwpacks/"], ["/platform/"]),
-#                                         "release_hwpacks",
-#                                         ["plaform", "build", "hardware"],
-#                                         ["platform", "", "build",
-#                                          ("hardware", r"hwpack_linaro-(.*?)_")])
-#    else:
-#        # 11.06/ubuntu/panda
-#        crawler.add_directory_parse_list(
-#                  RELEASES_WWW_DOCUMENT_ROOT,
-#                  RELEASE_URL,
-#                  (["/hwpacks/"], ["/platform/"]),
-#                  ["plaform", "build", "hardware"],
-#                  "release_hwpacks",
-#                  ["platform", "", "", ("hardware", r"hwpack_linaro-(.*?)_")])
-#
-#    #http://snapshots.linaro.org/11.05-daily/linaro-alip/20110420/0/images/tar/
-#    crawler.add_directory_parse_list(SNAPSHOTS_WWW_DOCUMENT_ROOT,
-#                                     SNAPSHOTS_URL,
-#                                     r"^((?!hwpack).)*$",
-#                                     "snapshot_binaries",
-#                                     ["platform", "image", "date", "build"])
-#
-#    #http://snapshots.linaro.org/11.05-daily/linaro-hwpacks/omap3/20110420/0/images/hwpack/
-#    crawler.add_directory_parse_list(SNAPSHOTS_WWW_DOCUMENT_ROOT,
-#                                     SNAPSHOTS_URL,
-#                                     r"/hwpack/",
-#                                     "snapshot_hwpacks",
-#                                     ["platform", "", "hardware", "date",
-#                                      "build"])
+        crawler.add_directory_parse_list(RELEASES_WWW_DOCUMENT_ROOT,
+                                         RELEASE_URL,
+                                         ([], ["/latest/", "/platform/", "/old/",
+                                               "hwpack"]),
+                                         ["platform", "image", "build"],
+                                         "release_binaries",
+                                         ["platform", "image", ""])
 
     crawler.crawl()
     crawler.clean_removed_urls_from_db()
