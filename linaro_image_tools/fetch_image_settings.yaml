@@ -10,12 +10,21 @@ UI:
       platform: Which Linaro platform to build an image from. Specify 'snapshot' to
         use a snapshot rather than a release.
     developer: Developer Tools
+    o-developer: Developer Tools
     graphics: Graphics
+    o-graphics: Graphics
     multimedia: Multimedia
+    o-multimedia: Multimedia
     nano: Nano
+    o-nano: Nano
     ubuntu-desktop: 'LEB: Linaro Ubuntu Desktop'
+    o-ubuntu-desktop: 'LEB: Linaro Ubuntu Desktop'
     ubuntu-desktop::long: Linux for humans on low power machines
     ubuntu-desktop::release_note: Shiny!
+    o-alip: ARM Linux Internet Platform
+    alip: ARM Linux Internet Platform
+    server: Server
+    o-server: Server
   hwpack-descriptions:
     omap3: Basic support for Beagle boards
     omap3-x11-base: Includes support for 3D acceleration
