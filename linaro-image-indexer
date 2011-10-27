@@ -27,10 +27,12 @@ import logging
 import bz2
 import linaro_image_tools.fetch_image
 
-RELEASES_WWW_DOCUMENT_ROOT  = "/home/dooferlad/dev/to_index"
-RELEASE_URL                 = "http://releases.linaro.org/platform/"
+RELEASES_WWW_DOCUMENT_ROOT = "/home/mabac/linaro/linaro-image-tools/indexer_update/srv/releases.linaro.org/www"
+RELEASE_URL = "http://releases.linaro.org/11.10/"
+OLD_RELEASES_WWW_DOCUMENT_ROOT = "/srv/releases.linaro.org/www/platform"
+OLD_RELEASE_URL = "http://releases.linaro.org/platform/"
 SNAPSHOTS_WWW_DOCUMENT_ROOT = "/srv/snapshots.linaro.org/www/"
-SNAPSHOTS_URL               = "http://snapshots.linaro.org/"
+SNAPSHOTS_URL = "http://snapshots.linaro.org/"
 
 class ServerIndexer():
     """Create a database of files on the linaro image servers for use by image
@@ -55,13 +57,14 @@ class ServerIndexer():
 
     def crawl(self):
         self.db.set_url_parse_info(self.url_parse)
-        logging.info(self.url_parse.items())
-        
+        logging.getLogger("linaro_image_tools").info(self.url_parse.items())
+
         for table, info in self.url_parse.items():
-            logging.info(info["base_dir"], ":", info["base_url"], table,
-                         info["url_validator"], info["url_chunks"])
+            logging.getLogger("linaro_image_tools").info("%s %s %s %s %s" % \
+                (info["base_dir"], info["base_url"], table,
+                info["url_validator"], info["url_chunks"]))
             self.go(info, table)
-            logging.info("")
+            logging.getLogger("linaro_image_tools").info("")
 
     def go(self, info, table):
         root_url = info["base_url"]
@@ -84,7 +87,7 @@ class ServerIndexer():
                 url = urlparse.urljoin(root_url, relative_location)
                 url = urlparse.urljoin(url, file)
 
-                logging.info(url)
+                logging.getLogger("linaro_image_tools").info(url)
                 self.db.record_url(url, table)
                     
         self.dump() 
@@ -115,7 +118,7 @@ class ServerIndexer():
                                    "url_validator": url_validator,
                                    "db_columns": db_columns,
                                    "url_chunks": url_chunks}
-            logging.info(self.url_parse[id]["base_dir"])
+            logging.getLogger("linaro_image_tools").info(self.url_parse[id]["base_dir"])
 
             # Construct data needed to create the table
             items = []
@@ -136,25 +139,44 @@ class ServerIndexer():
 if __name__ == '__main__':
     crawler = ServerIndexer()
 
-    old = False
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(message)s")
+    ch.setFormatter(formatter)
+    logger = logging.getLogger("linaro_image_tools")
+    logger.setLevel(logging.INFO)
+    logger.addHandler(ch)
 
-    if old:
-        #releases.linaro.org/platform/linaro-m/plasma/final/
-        crawler.add_directory_parse_list(RELEASES_WWW_DOCUMENT_ROOT,
-                                         RELEASE_URL,
-                                         ([], ["/platform/", "/old/", "hwpack"]),
-                                         ["platform", "image", "build"],
-                                         "release_binaries",
-                                         ["platform", "image", "build"])
-    else:
-        # 11.06/ubuntu/panda
-        crawler.add_directory_parse_list(RELEASES_WWW_DOCUMENT_ROOT,
-                                         RELEASE_URL,
-                                         ([], ["/latest/", "/platform/", "/old/",
-                                               "hwpack"]),
-                                         ["platform", "image", "build"],
-                                         "release_binaries",
-                                         ["platform", "image", ""])
+    #releases.linaro.org/platform/linaro-m/plasma/final/
+    crawler.add_directory_parse_list(OLD_RELEASES_WWW_DOCUMENT_ROOT,
+                                     OLD_RELEASE_URL,
+                                     ([], ["/platform/", "/old/", "hwpack"]),
+                                     ["platform", "image", "build"],
+                                     "release_binaries",
+                                     ["platform", "image", "build"])
+    # 11.06/ubuntu/panda
+    crawler.add_directory_parse_list(RELEASES_WWW_DOCUMENT_ROOT,
+                                     RELEASE_URL,
+                                     ([], ["/latest/", "/platform/", "/old/",
+                                           "hwpack"]),
+                                     ["platform", "image", "build"],
+                                     "release_binaries",
+                                     ["platform", "image", ""])
+
+    #http://snapshots.linaro.org/11.05-daily/linaro-alip/20110420/0/images/tar/
+#    crawler.add_directory_parse_list(SNAPSHOTS_WWW_DOCUMENT_ROOT,
+#                                     SNAPSHOTS_URL,
+#                                     r"^((?!hwpack).)*$",
+#                                     "snapshot_binaries",
+#                                     ["platform", "image", "date", "build"])
+
+    #http://snapshots.linaro.org/11.05-daily/linaro-hwpacks/omap3/20110420/0/images/hwpack/
+#    crawler.add_directory_parse_list(SNAPSHOTS_WWW_DOCUMENT_ROOT,
+#                                     SNAPSHOTS_URL,
+#                                     r"/hwpack/",
+#                                     "snapshot_hwpacks",
+#                                     ["platform", "", "hardware", "date",
+#                                      "build"])
 
     crawler.crawl()
     crawler.clean_removed_urls_from_db()

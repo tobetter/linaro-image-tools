@@ -904,7 +904,8 @@ class DB():
         assert self.url_parse[table]["base_url"], ("Can not match the "
                "URL received (%s) to an entry provided by add_url_parse_list",
                url)
-        assert re.search('^' + self.url_parse[table]["base_url"], url)
+        assert re.search('^' + self.url_parse[table]["base_url"], url), (
+            "Base url is not part of the url to record.")
 
         logging.info("Recording URL", url)
 
