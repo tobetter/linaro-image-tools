@@ -21,6 +21,7 @@
 
 import ConfigParser
 import re
+import string
 
 from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
@@ -42,17 +43,20 @@ class Config(object):
     SOURCES_ENTRY_KEY = "sources-entry"
     PACKAGES_KEY = "packages"
     PACKAGE_REGEX = NAME_REGEX
-    PATH_REGEX = r"[a-z0-9][a-z0-9+\-./_]+$"
+    PATH_REGEX = r"\w[\w+\-./_]+$"
+    GLOB_REGEX = r"[\w+\-./_\*]+$"
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
     ASSUME_INSTALLED_KEY = "assume-installed"
-    U_BOOT_PACKAGE_KEY = "u-boot-package"
-    U_BOOT_FILE_KEY = "u-boot-file"
+    U_BOOT_PACKAGE_KEY = "u_boot_package"
+    U_BOOT_FILE_KEY = "u_boot_file"
+    SPL_FILE_KEY = "spl_file"
     SERIAL_TTY_KEY = "serial_tty"
     KERNEL_ADDR_KEY = "kernel_addr"
     INITRD_ADDR_KEY = "initrd_addr"
     LOAD_ADDR_KEY = "load_addr"
+    DTB_ADDR_KEY = "dtb_addr"
     WIRED_INTERFACES_KEY = "wired_interfaces"
     WIRELESS_INTERFACES_KEY = "wireless_interfaces"
     PARTITION_LAYOUT_KEY = "partition_layout"
@@ -61,11 +65,30 @@ class Config(object):
     BOOT_MIN_SIZE_KEY = "boot_min_size"
     ROOT_MIN_SIZE_KEY = "root_min_size"
     LOADER_MIN_SIZE_KEY = "loader_min_size"
+    LOADER_START_KEY = "loader_start"
+    SPL_PACKAGE_KEY = "spl_package"
+    VMLINUZ_KEY = "kernel_file"
+    INITRD_KEY = "initrd_file"
+    DTB_FILE_KEY = "dtb_file"
+    EXTRA_BOOT_OPTIONS_KEY = 'extra_boot_options'
+    BOOT_SCRIPT_KEY = 'boot_script'
+    UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
+    UBOOT_DD_KEY = 'u_boot_dd'
+    SPL_IN_BOOT_PART_KEY = 'spl_in_boot_part'
+    SPL_DD_KEY = 'spl_dd'
+    ENV_DD_KEY = 'env_dd'
+    EXTRA_SERIAL_OPTS_KEY = 'extra_serial_options'
+    SNOWBALL_STARTUP_FILES_CONFIG_KEY = 'snowball_startup_files_config'
+    SAMSUNG_BL1_START_KEY = 'samsung_bl1_start'
+    SAMSUNG_BL1_LEN_KEY = 'samsung_bl1_len'
+    SAMSUNG_ENV_LEN_KEY = 'samsung_env_len'
+    SAMSUNG_BL2_LEN_KEY = 'samsung_bl2_len'
+
 
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
         'bootfs_rootfs',
-        #'reserved_bootfs_rootfs',
+        'reserved_bootfs_rootfs',
         ]
 
 
@@ -99,13 +122,33 @@ class Config(object):
             self._validate_kernel_addr()
             self._validate_initrd_addr()
             self._validate_load_addr()
+            self._validate_dtb_addr()
             self._validate_wired_interfaces()
             self._validate_wireless_interfaces()
             self._validate_partition_layout()
-            self._validate_mmc_id()
             self._validate_boot_min_size()
             self._validate_root_min_size()
             self._validate_loader_min_size()
+            self._validate_loader_start()
+            self._validate_spl_package()
+            self._validate_spl_file()
+            self._validate_vmlinuz()
+            self._validate_initrd()
+            self._validate_dtb_file()
+            self._validate_mmc_id()
+            self._validate_extra_boot_options()
+            self._validate_boot_script()
+            self._validate_uboot_in_boot_part()
+            self._validate_uboot_dd()
+            self._validate_spl_in_boot_part()
+            self._validate_spl_dd()
+            self._validate_env_dd()
+            self._validate_extra_serial_opts()
+            self._validate_snowball_startup_files_config()
+            self._validate_samsung_bl1_start()
+            self._validate_samsung_bl1_len()
+            self._validate_samsung_env_len()
+            self._validate_samsung_bl2_len()
 
         self._validate_sections()
 
@@ -146,6 +189,33 @@ class Config(object):
         except ConfigParser.NoOptionError:
             return True
 
+    @property
+    def uboot_in_boot_part(self):
+        """Whether uboot binary should be put in the boot partition. A str."""
+        return self.parser.get(self.MAIN_SECTION, self.UBOOT_IN_BOOT_PART_KEY)
+
+    @property
+    def uboot_dd(self):
+        """If the uboot binary should be dd:d to the boot partition
+        this field specifies the offset. An int."""
+        return self._get_option_from_main_section(self.UBOOT_DD_KEY)
+
+    @property
+    def spl_in_boot_part(self):
+        """Whether spl binary should be put in the boot partition. A str."""
+        return self._get_option_from_main_section(self.SPL_IN_BOOT_PART_KEY)
+
+    @property
+    def spl_dd(self):
+        """If the spl binary should be dd:d to the boot partition
+        this field specifies the offset. An int."""
+        return self._get_option_from_main_section(self.SPL_DD_KEY)
+
+    @property
+    def env_dd(self):
+        """If the env should be dd:d to the boot partition. 'Yes' or 'No'."""
+        return self._get_option_from_main_section(self.ENV_DD_KEY)
+
     def _get_option_from_main_section(self, key):
         """Get the value from the main section for the given key.
 
@@ -172,6 +242,39 @@ class Config(object):
         return self._get_option_from_main_section(self.SERIAL_TTY_KEY)
 
     @property
+    def extra_boot_options(self):
+        """Extra boot arg options.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.EXTRA_BOOT_OPTIONS_KEY)
+
+    @property
+    def extra_serial_opts(self):
+        """Extra serial options.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.EXTRA_SERIAL_OPTS_KEY)
+
+    @property
+    def boot_script(self):
+        """File name of the target boot script.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.BOOT_SCRIPT_KEY)
+
+    @property
+    def snowball_startup_files_config(self):
+        """File name of the snowball startfiles config file.
+
+        A str.
+        """
+        return self._get_option_from_main_section(
+            self.SNOWBALL_STARTUP_FILES_CONFIG_KEY)
+
+    @property
     def kernel_addr(self):
         """address where u-boot should load the kernel 
 
@@ -194,6 +297,14 @@ class Config(object):
         An int.
         """
         return self._get_option_from_main_section(self.LOAD_ADDR_KEY)
+
+    @property
+    def dtb_addr(self):
+        """address for dtb image generation
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.DTB_ADDR_KEY)
 
     @property
     def wired_interfaces(self):
@@ -252,6 +363,14 @@ class Config(object):
         An int.
         """
         return self._get_option_from_main_section(self.LOADER_MIN_SIZE_KEY)
+
+    @property
+    def loader_start(self):
+        """Start of loader partition. If left out, defaults to 1.
+
+        An int.
+        """
+        return self._get_option_from_main_section(self.LOADER_START_KEY)
 
     @property
     def origin(self):
@@ -313,6 +432,78 @@ class Config(object):
         return self._get_option_from_main_section(self.U_BOOT_FILE_KEY)
 
     @property
+    def spl_file(self):
+        """The spl bin file that will be unpacked from the u-boot package.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.SPL_FILE_KEY)
+
+    @property
+    def spl_package(self):
+        """The spl package that contains the spl bin.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.SPL_PACKAGE_KEY)
+
+    @property
+    def vmlinuz(self):
+        """The path to the vmlinuz kernel.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.VMLINUZ_KEY)
+
+    @property
+    def initrd(self):
+        """The path to initrd
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.INITRD_KEY)
+
+    @property
+    def dtb_file(self):
+        """The path to the device tree binary.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.DTB_FILE_KEY)
+
+    @property
+    def samsung_bl1_start(self):
+        """BL1 start offset for Samsung boards.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.SAMSUNG_BL1_START_KEY)
+
+    @property
+    def samsung_bl1_len(self):
+        """BL1 length for Samsung boards.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.SAMSUNG_BL1_LEN_KEY)
+
+    @property
+    def samsung_env_len(self):
+        """Env length for Samsung boards.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.SAMSUNG_ENV_LEN_KEY)
+
+    @property
+    def samsung_bl2_len(self):
+        """BL2 length for Samsung boards.
+
+        A str.
+        """
+        return self._get_option_from_main_section(self.SAMSUNG_BL2_LEN_KEY)
+
+    @property
     def architectures(self):
         """The architectures to build the hwpack for.
 
@@ -368,11 +559,61 @@ class Config(object):
 
     def _validate_u_boot_file(self):
         u_boot_file = self.u_boot_file
-        if not u_boot_file:
-            raise HwpackConfigError("No u_boot_file in the [%s] section" % \
+        if u_boot_file is not None:
+            self._assert_matches_pattern(
+                self.PATH_REGEX, u_boot_file, "Invalid path: %s" % u_boot_file)
+
+    def _validate_spl_file(self):
+        spl_file = self.spl_file
+        if spl_file is not None:
+            self._assert_matches_pattern(
+                self.PATH_REGEX, spl_file, "Invalid path: %s" % spl_file)
+
+    def _validate_vmlinuz(self):
+        vmlinuz = self.vmlinuz
+        if not vmlinuz:
+            raise HwpackConfigError("No kernel_file in the [%s] section" % \
                                         self.MAIN_SECTION)
         self._assert_matches_pattern(
-            self.PATH_REGEX, u_boot_file, "Invalid path: %s" % u_boot_file)
+            self.GLOB_REGEX, vmlinuz, "Invalid path: %s" % vmlinuz)
+
+    def _validate_initrd(self):
+        initrd = self.initrd
+        if not initrd:
+            raise HwpackConfigError("No initrd_file in the [%s] section" % \
+                                        self.MAIN_SECTION)
+        self._assert_matches_pattern(
+            self.GLOB_REGEX, initrd, "Invalid path: %s" % initrd)
+
+    def _validate_dtb_file(self):
+        dtb_file = self.dtb_file
+        if dtb_file is not None:
+            self._assert_matches_pattern(
+                self.GLOB_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
+        
+    def _validate_extra_boot_options(self):
+        # Optional and tricky to determine a valid pattern.
+        pass
+
+    def _validate_extra_serial_opts(self):
+        # Optional and tricky to determine a valid pattern.
+        pass
+
+    def _validate_boot_script(self):
+        boot_script = self.boot_script
+        if not boot_script:
+            return
+        else:
+            self._assert_matches_pattern(
+                self.PATH_REGEX, boot_script, "Invalid path: %s" % boot_script)
+
+
+    def _validate_snowball_startup_files_config(self):
+        snowball_startup_files_config = self.snowball_startup_files_config
+        if snowball_startup_files_config is not None:
+            self._assert_matches_pattern(
+                self.PATH_REGEX, snowball_startup_files_config,
+                "Invalid path: %s" % snowball_startup_files_config)
 
     def _validate_serial_tty(self):
         serial_tty = self.serial_tty
@@ -405,6 +646,13 @@ class Config(object):
         if not self._validate_addr(addr):
             raise HwpackConfigError("Invalid load address: %s" % addr)
 
+    def _validate_dtb_addr(self):
+        addr = self.dtb_addr
+        if addr is None:
+            return
+        if not self._validate_addr(addr):
+            raise HwpackConfigError("Invalid dtb address: %s" % addr)
+
     def _validate_wired_interfaces(self):
         pass
 
@@ -421,12 +669,13 @@ class Config(object):
 
     def _validate_mmc_id(self):
         mmc_id = self.mmc_id
-        if mmc_id is None:
-            return
-        try:
-            int(mmc_id)
-        except:
-            raise HwpackConfigError("Invalid mmc id %s" % (mmc_id))
+        if not mmc_id:
+            raise HwpackConfigError(
+                "No mmc_id in the [%s] section" % \
+                    self.MAIN_SECTION)
+        else:
+            self._assert_matches_pattern(
+                r"[0-9]:[0-9]", mmc_id, "Invalid mmc_id %s" % mmc_id)
 
     def _validate_root_min_size(self):
         root_min_size = self.root_min_size
@@ -458,6 +707,16 @@ class Config(object):
             raise HwpackConfigError(
                 "Invalid loader min size %s" % (loader_min_size))
 
+    def _validate_loader_start(self):
+        loader_start = self.loader_start
+        if loader_start is None:
+            return
+        try:
+            assert int(loader_start) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid loader start %s" % (loader_start))
+
     def _validate_include_debs(self):
         try:
             self.include_debs
@@ -465,6 +724,51 @@ class Config(object):
             raise HwpackConfigError(
                 "Invalid value for include-debs: %s"
                 % self.parser.get("hwpack", "include-debs"))
+
+    def _validate_uboot_in_boot_part(self):
+        uboot_in_boot_part = self.uboot_in_boot_part
+        if string.lower(uboot_in_boot_part) not in ['yes', 'no']:
+            raise HwpackConfigError(
+                "Invalid value for u_boot_in_boot_part: %s"
+                % self.parser.get("hwpack", "u_boot_in_boot_part"))
+
+    def _validate_spl_in_boot_part(self):
+        spl_in_boot_part = self.spl_in_boot_part
+        if spl_in_boot_part is None:
+            return
+        if string.lower(spl_in_boot_part) not in ['yes', 'no']:
+            raise HwpackConfigError(
+                "Invalid value for spl_in_boot_part: %s"
+                % self.parser.get("hwpack", "spl_in_boot_part"))
+
+    def _validate_env_dd(self):
+        env_dd = self.env_dd
+        if env_dd is None:
+            return
+        if string.lower(env_dd) not in ['yes', 'no']:
+            raise HwpackConfigError(
+                "Invalid value for env_dd: %s"
+                % self.parser.get("hwpack", "env_dd"))
+
+    def _validate_uboot_dd(self):
+        uboot_dd = self.uboot_dd
+        if uboot_dd is None:
+            return
+        try:
+            assert int(uboot_dd) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid uboot_dd %s" % (uboot_dd))
+
+    def _validate_spl_dd(self):
+        spl_dd = self.spl_dd
+        if spl_dd is None:
+            return
+        try:
+            assert int(spl_dd) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid spl_dd %s" % (spl_dd))
 
     def _validate_support(self):
         support = self.support
@@ -486,14 +790,60 @@ class Config(object):
 
     def _validate_u_boot_package(self):
         u_boot_package = self.u_boot_package
-        if not u_boot_package:
+        if u_boot_package is not None:
+            self._assert_matches_pattern(
+                self.PACKAGE_REGEX, u_boot_package, "Invalid value in %s in " \
+                    "the [%s] section: %s" % (self.U_BOOT_PACKAGE_KEY,
+                                              self.MAIN_SECTION, u_boot_package))
+
+    def _validate_spl_package(self):
+        spl_package = self.spl_package
+        if spl_package is not None:
+            self._assert_matches_pattern(
+                self.PACKAGE_REGEX, spl_package, "Invalid value in %s in " \
+                    "the [%s] section: %s" % (self.SPL_PACKAGE_KEY,
+                                              self.MAIN_SECTION,
+                                              spl_package))
+
+    def _validate_samsung_bl1_start(self):
+        samsung_bl1_start = self.samsung_bl1_start
+        if samsung_bl1_start is None:
+            return
+        try:
+            assert int(samsung_bl1_start) > 0
+        except:
             raise HwpackConfigError(
-                "No %s in the [%s] section"
-                % (self.U_BOOT_PACKAGE_KEY, self.MAIN_SECTION))
-        self._assert_matches_pattern(
-            self.PACKAGE_REGEX, u_boot_package, "Invalid value in %s in the " \
-                "[%s] section: %s" % (self.U_BOOT_PACKAGE_KEY,
-                                      self.MAIN_SECTION, u_boot_package))
+                "Invalid samsung_bl1_start %s" % (samsung_bl1_start))
+
+    def _validate_samsung_bl1_len(self):
+        samsung_bl1_len = self.samsung_bl1_len
+        if samsung_bl1_len is None:
+            return
+        try:
+            assert int(samsung_bl1_len) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid samsung_bl1_len %s" % (samsung_bl1_len))
+
+    def _validate_samsung_env_len(self):
+        samsung_env_len = self.samsung_env_len
+        if samsung_env_len is None:
+            return
+        try:
+            assert int(samsung_env_len) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid samsung_env_len %s" % (samsung_env_len))
+
+    def _validate_samsung_bl2_len(self):
+        samsung_bl2_len = self.samsung_bl2_len
+        if samsung_bl2_len is None:
+            return
+        try:
+            assert int(samsung_bl2_len) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid samsung_bl2_len %s" % (samsung_bl2_len))
 
     def _validate_architectures(self):
         architectures = self.architectures

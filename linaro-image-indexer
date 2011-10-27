@@ -27,28 +27,26 @@ import logging
 import bz2
 import linaro_image_tools.fetch_image
 
-RELEASES_WWW_DOCUMENT_ROOT  = "/home/dooferlad/dev/to_index"
-RELEASE_URL                 = "http://releases.linaro.org/platform/"
-SNAPSHOTS_WWW_DOCUMENT_ROOT = "/srv/snapshots.linaro.org/www/"
-SNAPSHOTS_URL               = "http://snapshots.linaro.org/"
-
-# Log everything, and send it to stderr.
-logging.basicConfig(level=logging.DEBUG)
+RELEASES_WWW_DOCUMENT_ROOT = "/home/dooferlad/dev/fetch_image/layout/srv/releases.linaro.org/www/"
+RELEASE_URL = "http://releases.linaro.org/"
+OLD_RELEASES_WWW_DOCUMENT_ROOT = "/home/dooferlad/dev/fetch_image/layout/srv/releases.linaro.org/www/platform"
+OLD_RELEASE_URL = "http://releases.linaro.org/platform/"
+SNAPSHOTS_WWW_DOCUMENT_ROOT = "/home/dooferlad/dev/fetch_image/layout/srv/snapshots.linaro.org/www/"
+SNAPSHOTS_URL = "http://snapshots.linaro.org/"
 
 class ServerIndexer():
     """Create a database of files on the linaro image servers for use by image
        creation tools."""
     def reset(self):
-        self.url_parse = {}
+        self.url_parse = []
 
     def __init__(self):
         self.reset()
         self.db_file_name = "server_index"
         self.db = linaro_image_tools.fetch_image.DB(self.db_file_name)
 
-    def regexp_list_matches(self, to_search, list):
-        if len(list) == 0:
-            return True
+    def regexp_list_matches_some(self, to_search, list):
+        assert len(list), "empty list passed"
 
         for item in list:
             if re.search(item, to_search):
@@ -56,19 +54,33 @@ class ServerIndexer():
 
         return False
 
+    def regexp_list_matches_all(self, to_search, list):
+        assert len(list), "empty list passed"
+
+        for item in list:
+            if not re.search(item, to_search):
+                return False
+
+        return True
+
     def crawl(self):
         self.db.set_url_parse_info(self.url_parse)
-        logging.info(self.url_parse.items())
-        
-        for table, info in self.url_parse.items():
-            logging.info("------------------------------------------")
-            logging.info("{0}: {1}".format(table, info['db_columns']))
-            logging.info("{0} {1} {2} {3}".format(
-                          info["base_dir"], info["base_url"],
-                          info["url_validator"], info["url_chunks"]))
-            self.go(info, table)
+        logging.getLogger("linaro_image_tools").info(self.url_parse)
 
-    def go(self, info, table):
+        for index in range(len(self.url_parse)):
+            info = self.url_parse[index]
+            table = info["table"]
+            
+            logging.getLogger("linaro_image_tools").info("%s %s %s %s %s" % \
+                (info["base_dir"], info["base_url"], table,
+                info["url_validator"], info["url_chunks"]))
+
+            self.go(info, table, index)
+
+            logging.getLogger("linaro_image_tools").info("")
+
+
+    def go(self, info, table, index):
         root_url = info["base_url"]
         root_dir = info["base_dir"]
 
@@ -81,17 +93,28 @@ class ServerIndexer():
                 to_match = info["url_validator"][0]
                 not_match = info["url_validator"][1]
 
-                if(not (self.regexp_list_matches(relative_location, to_match)
-                        and not self.regexp_list_matches(relative_location,
-                                                         not_match))
-                   or not re.search("\.gz$", file)):
-                    continue  # URL doesn't match the validator. Ignore.
-
                 url = urlparse.urljoin(root_url, relative_location)
                 url = urlparse.urljoin(url, file)
 
+                to_match_ok = False
+                if len(to_match) == 0:
+                    to_match_ok = True
+                if len(to_match) and self.regexp_list_matches_all(
+                                            relative_location, to_match):
+                    to_match_ok = True
+
+                not_match_ok = True
+                if len(not_match) and self.regexp_list_matches_some(
+                                        relative_location, not_match):
+                    not_match_ok = False
+
+                if( not (to_match_ok and not_match_ok)
+                   or not re.search("\.gz$", file)):
+                    continue  # URL doesn't match the validator. Ignore.
+
                 logging.info("{0}: {1}".format(table, url))
-                self.db.record_url(url, table)
+                logging.getLogger("linaro_image_tools").info(url)
+                self.db.record_url(url, index)
                     
         self.dump() 
 
@@ -112,16 +135,17 @@ class ServerIndexer():
                                  base_url,
                                  url_validator,
                                  db_columns,
-                                 id,
+                                 table,
                                  url_chunks):
         
         if not id in self.url_parse:
-            self.url_parse[id] = {"base_dir": base_dir,
+            self.url_parse.append({"base_dir": base_dir,
                                    "base_url": base_url,
                                    "url_validator": url_validator,
                                    "db_columns": db_columns,
-                                   "url_chunks": url_chunks}
-            logging.info(self.url_parse[id]["base_dir"])
+                                   "url_chunks": url_chunks,
+                                   "table": table})
+            logging.getLogger("linaro_image_tools").info(base_dir)
 
             # Construct data needed to create the table
             items = []
@@ -134,7 +158,7 @@ class ServerIndexer():
                     else:
                         items.append(item)
 
-            self.db.create_table_with_name_columns(id, db_columns)
+            self.db.create_table_with_name_columns(table, db_columns)
 
     def clean_removed_urls_from_db(self):
         self.db.clean_removed_urls_from_db()
@@ -142,60 +166,72 @@ class ServerIndexer():
 if __name__ == '__main__':
     crawler = ServerIndexer()
 
-    old = False
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.CRITICAL)
+    formatter = logging.Formatter("%(message)s")
+    ch.setFormatter(formatter)
+    logger = logging.getLogger("linaro_image_tools")
+    logger.setLevel(logging.CRITICAL)
+    logger.addHandler(ch)
 
-    if old:
-        #releases.linaro.org/platform/linaro-m/plasma/final/
-        crawler.add_directory_parse_list(RELEASES_WWW_DOCUMENT_ROOT,
-                                         RELEASE_URL,
-                                         ([], ["/platform/", "/old/", "hwpack"]),
-                                         ["platform", "image", "build"],
-                                         "release_binaries",
-                                         ["platform", "image", "build"])
-    else:
-        # 11.06/ubuntu/panda
-        crawler.add_directory_parse_list(
-                    RELEASES_WWW_DOCUMENT_ROOT,
-                    RELEASE_URL,
-                    ([], ["/latest/", "/platform/", "/old/", "hwpack"]),
-                    ["platform", "image", "build"],
-                    "release_binaries",
-                    ["platform", "image", ""])
+    #linaro-n/ubuntu-desktop/11.09
+    crawler.add_directory_parse_list(OLD_RELEASES_WWW_DOCUMENT_ROOT,
+                                     OLD_RELEASE_URL,
+                                     ([], ["platform/", "old/", "hwpack",
+                                           "alpha", "beta", "final", "leb",
+                                           "leb", "release-candidate"]),
+                                     ["platform", "image", "build=final"],
+                                     "release_binaries",
+                                     ["", "image", "platform"])
 
-    if old:
-        #releases.linaro.org/platform/linaro-m/hwpacks/final/
-        # hwpack_linaro-bsp-omap4_20101109-1_armel_unsupported.tar.gz
-        crawler.add_directory_parse_list(RELEASES_WWW_DOCUMENT_ROOT,
-                                         RELEASE_URL,
-                                         (["/hwpacks/"], ["/platform/"]),
-                                         "release_hwpacks",
-                                         ["plaform", "build", "hardware"],
-                                         ["platform", "", "build",
-                                          ("hardware", r"hwpack_linaro-(.*?)_")])
-    else:
-        # 11.06/ubuntu/panda
-        crawler.add_directory_parse_list(
-                  RELEASES_WWW_DOCUMENT_ROOT,
-                  RELEASE_URL,
-                  (["hwpack"], ["/platform/"]),
-                  ["platform", "build", "hardware"],
-                  "release_hwpacks",
-                  ["platform", "", "", ("hardware", r"hwpack_linaro-(.*?)_")])
-#
-#    #http://snapshots.linaro.org/11.05-daily/linaro-alip/20110420/0/images/tar/
-#    crawler.add_directory_parse_list(SNAPSHOTS_WWW_DOCUMENT_ROOT,
-#                                     SNAPSHOTS_URL,
-#                                     r"^((?!hwpack).)*$",
-#                                     "snapshot_binaries",
-#                                     ["platform", "image", "date", "build"])
-#
-#    #http://snapshots.linaro.org/11.05-daily/linaro-hwpacks/omap3/20110420/0/images/hwpack/
-#    crawler.add_directory_parse_list(SNAPSHOTS_WWW_DOCUMENT_ROOT,
-#                                     SNAPSHOTS_URL,
-#                                     r"/hwpack/",
-#                                     "snapshot_hwpacks",
-#                                     ["platform", "", "hardware", "date",
-#                                      "build"])
+    #linaro-n/hwpacks/11.09
+    crawler.add_directory_parse_list(OLD_RELEASES_WWW_DOCUMENT_ROOT,
+                                     OLD_RELEASE_URL,
+                                     (["/hwpacks/"],
+                                      ["alpha", "beta", "final", "leb",
+                                       "release-candidate"]),
+                                     ["platform", "hardware", "build=final"],
+                                     "release_hwpacks",
+                                     ["", "", "platform",
+                                      ("hardware", r"hwpack_linaro-(.*?)_")])
+
+    # 11.10/ubuntu/oneiric-images/ubuntu-desktop/
+    # NOT images/...
+    crawler.add_directory_parse_list(RELEASES_WWW_DOCUMENT_ROOT,
+                                     RELEASE_URL,
+                                     (["\d+\.\d+", "ubuntu", "oneiric-images"],
+                                      ["latest/", "platform/", "old/",
+                                       "hwpack", "^images/"]),
+                                     ["platform", "image", "build=final"],
+                                     "release_binaries",
+                                     ["platform", "", "", "image"])
+
+    # 11.10/ubuntu/oneiric-hwpacks/
+    crawler.add_directory_parse_list(RELEASES_WWW_DOCUMENT_ROOT,
+                                     RELEASE_URL,
+                                     (["\d+\.\d+", "ubuntu", "oneiric-hwpacks"],
+                                      ["latest/", "platform/", "old/",
+                                       "^images/"]),
+                                     ["platform", "hardware", "build=final"],
+                                     "release_hwpacks",
+                                     ["platform", "", "",
+                                      ("hardware", r"hwpack_linaro-(.*?)_")])
+
+    #oneiric/linaro-o-alip/20111026/0/images/tar/
+    crawler.add_directory_parse_list(SNAPSHOTS_WWW_DOCUMENT_ROOT,
+                                     SNAPSHOTS_URL,
+                                     (["^oneiric/"], ["/hwpack"]),
+                                     ["platform", "image", "date", "build"],
+                                     "snapshot_binaries",
+                                     ["platform", "image", "date", "build"])
+
+    #oneiric/lt-panda-oneiric/20111026/0/images/hwpack/
+    crawler.add_directory_parse_list(SNAPSHOTS_WWW_DOCUMENT_ROOT,
+                                     SNAPSHOTS_URL,
+                                     (["^oneiric/", "/hwpack"], []),
+                                     ["platform", "hardware", "date", "build"],
+                                     "snapshot_hwpacks",
+                                     ["platform", "hardware", "date", "build"])
 
     crawler.crawl()
     crawler.clean_removed_urls_from_db()

@@ -18,9 +18,13 @@
 # along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
+import subprocess
+import os
 
+from linaro_image_tools import cmd_runner
 from linaro_image_tools.media_create.boards import board_configs
 from linaro_image_tools.media_create.android_boards import android_board_configs
+from linaro_image_tools.__version__ import __version__
 
 
 KNOWN_BOARDS = board_configs.keys()
@@ -45,14 +49,31 @@ class Live256MegsAction(argparse.Action):
         setattr(namespace, 'is_live', True)
 
 
+def get_version():
+    qemu_path = '/usr/bin/qemu-arm-static'
+    p = cmd_runner.run(["head", "-n", "1"],
+                       stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    if os.path.exists(qemu_path):
+        try:
+            # qemu-arm-static has no --version option so it fails,
+            # but still prints its version plus usage
+            cmd_runner.run(["/usr/bin/qemu-arm-static", "--version"],
+                           stdout=p.stdin).communicate()
+            p.communicate()
+        except:
+            qemu_version = p.stdout.read()
+    else:
+        qemu_version = "Cannot find %s." % qemu_path
+    return "%s\n: %s" % (__version__, qemu_version)
+
 def get_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(version='%(prog)s ' + get_version())
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         '--mmc', dest='device', help='The storage device to use.')
     group.add_argument(
-        '--image_file', dest='device',
+        '--image-file', '--image_file', dest='device',
         help='File where we should write the QEMU image.')
     parser.add_argument(
         '--dev', required=True, dest='board', choices=KNOWN_BOARDS,
@@ -61,13 +82,13 @@ def get_args_parser():
         '--rootfs', default='ext4', choices=['ext2', 'ext3', 'ext4', 'btrfs'],
         help='Type of filesystem to use for the rootfs')
     parser.add_argument(
-        '--rfs_label', default='rootfs',
+        '--rfs-label', '--rfs_label', default='rootfs',
         help='Label to use for the root filesystem.')
     parser.add_argument(
-        '--boot_label', default='boot',
+        '--boot-label', '--boot_label', default='boot',
         help='Label to use for the boot filesystem.')
     parser.add_argument(
-        '--swap_file', type=int,
+        '--swap-file', '--swap_file', type=int,
         help='Create a swap file of the given size (in MBs).')
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
@@ -96,7 +117,7 @@ def get_args_parser():
         '--hwpack-force-yes', action='store_true',
         help='Pass --force-yes to linaro-hwpack-install')
     parser.add_argument(
-        '--image_size', default='3G',
+        '--image-size', '--image_size', default='3G',
         help=('The image size, specified in mega/giga bytes (e.g. 3000M or '
               '3G); use with --image_file only'))
     parser.add_argument(
@@ -128,22 +149,22 @@ def get_args_parser():
 
 def get_android_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(version='%(prog)s ' + get_version())
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         '--mmc', dest='device', help='The storage device to use.')
     group.add_argument(
-        '--image_file', dest='device',
+        '--image-file', '--image_file', dest='device',
         help='File where we should write the image file.')
     parser.add_argument(
-        '--image_size', default='2G',
+        '--image-size', '--image_size', default='2G',
         help=('The image size, specified in mega/giga bytes (e.g. 3000M or '
               '3G); use with --image_file only'))
     parser.add_argument(
         '--dev', required=True, dest='board', choices=ANDROID_KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
     parser.add_argument(
-        '--boot_label', default='boot',
+        '--boot-label', '--boot_label', default='boot',
         help='Label to use for the boot filesystem.')
     parser.add_argument(
         '--console', action='append', dest='consoles', default=[],

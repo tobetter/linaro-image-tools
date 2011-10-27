@@ -34,6 +34,8 @@ from binascii import crc32
 import tarfile
 import ConfigParser
 import shutil
+import string
+import logging
 
 from linaro_image_tools import cmd_runner
 
@@ -67,37 +69,6 @@ PART_ALIGN_S = 4 * 1024 * 1024 / SECTOR_SIZE
 def align_up(value, align):
     """Round value to the next multiple of align."""
     return (value + align - 1) / align * align
-
-# Samsung v310 implementation notes and terminology
-#
-# * BL0, BL1 etc. are the various bootloaders in order of execution
-# * BL0 is the first stage bootloader, located in ROM; it loads a 32s long BL1
-#   from MMC offset +1s and runs it
-# * BL1 is the secondary program loader (SPL), a small (< 14k) version of
-#   U-Boot with a checksum; it inits DRAM and loads a 1024s long BL2 to DRAM
-#   from MMC offset +65s
-# * BL2 is U-Boot; it loads its 32s (16 KiB) long environment from MMC offset
-#   +33s which tells it to load a boot.scr from the first FAT partition of the
-#   MMC
-#
-# Layout:
-# +0s: part table / MBR, 1s long
-# +1s: BL1/SPL, 32s long
-# +33s: U-Boot environment, 32s long
-# +65s: U-Boot, 1024s long
-# >= +1089s: FAT partition with boot script (boot.scr), kernel (uImage) and
-#            initrd (uInitrd)
-SAMSUNG_V310_BL1_START = 1
-SAMSUNG_V310_BL1_LEN = 32
-SAMSUNG_V310_ENV_START = SAMSUNG_V310_BL1_START + SAMSUNG_V310_BL1_LEN
-SAMSUNG_V310_ENV_LEN = 32
-assert SAMSUNG_V310_ENV_START == 33, "BL1 expects u-boot environment at +33s"
-assert SAMSUNG_V310_ENV_LEN * SECTOR_SIZE == 16 * 1024, (
-    "BL1 expects u-boot environment to be 16 KiB")
-SAMSUNG_V310_BL2_START = SAMSUNG_V310_ENV_START + SAMSUNG_V310_ENV_LEN
-SAMSUNG_V310_BL2_LEN = 1024
-assert SAMSUNG_V310_BL2_LEN * SECTOR_SIZE == 512 * 1024, (
-    "BL1 expects BL2 (u-boot) to be 512 KiB")
 
 
 def align_partition(min_start, min_length, start_alignment, end_alignment):
@@ -139,7 +110,7 @@ class HardwarepackHandler(object):
     def __init__(self, hwpacks):
         self.hwpacks = hwpacks
         self.hwpack_tarfiles = []
-    
+
     class FakeSecHead(object):
         """ Add a fake section header to the metadata file.
 
@@ -178,15 +149,17 @@ class HardwarepackHandler(object):
         hwpack_with_data = None
         for hwpack_tarfile in self.hwpack_tarfiles:
             metadata = hwpack_tarfile.extractfile(self.metadata_filename)
-            # Use RawConfigParser which does not support the magical interpolation
-            # behavior of ConfigParser so we don't mess up metadata accidentally.
+            # Use RawConfigParser which does not support the magical
+            # interpolation behavior of ConfigParser so we don't mess up
+            # metadata accidentally.
             parser = ConfigParser.RawConfigParser()
             parser.readfp(self.FakeSecHead(metadata))
             try:
                 new_data = parser.get(section, field)
                 if new_data is not None:
                     assert data is None, "The metadata field '%s' is set to " \
-                        "'%s' and new value '%s' is found" % (field, data, new_data)
+                        "'%s' and new value '%s' is found" % (field, data,
+                                                              new_data)
                     data = new_data
                     hwpack_with_data = hwpack_tarfile
             except ConfigParser.NoOptionError:
@@ -201,8 +174,7 @@ class HardwarepackHandler(object):
             format_string = format_file.read().strip()
             if not format_string in supported_formats:
                 raise AssertionError(
-                    "Format version '%s' is not supported." % \
-                        format_string)
+                    "Format version '%s' is not supported." % format_string)
             if format is None:
                 format = format_string
             elif format != format_string:
@@ -219,11 +191,17 @@ class HardwarepackHandler(object):
 
 
 class BoardConfig(object):
+    board = None
     """The configuration used when building an image for a board."""
+    hwpack_format = None
     # These attributes may not need to be redefined on some subclasses.
     uboot_flavor = None
     # whether to copy u-boot to the boot partition
     uboot_in_boot_part = False
+    uboot_dd = False
+    spl_in_boot_part = False
+    spl_dd = False
+    env_dd = False
     mmc_option = '0:1'
     mmc_part_offset = 0
     fat_size = 32
@@ -231,9 +209,9 @@ class BoardConfig(object):
     _live_serial_opts = ''
     extra_boot_args_options = None
     supports_writing_to_mmc = True
-    LOADER_MIN_SIZE_S = align_up(1 * 1024**2, SECTOR_SIZE) / SECTOR_SIZE
-    BOOT_MIN_SIZE_S = align_up(50 * 1024**2, SECTOR_SIZE) / SECTOR_SIZE
-    ROOT_MIN_SIZE_S = align_up(50 * 1024**2, SECTOR_SIZE) / SECTOR_SIZE
+    LOADER_MIN_SIZE_S = align_up(1 * 1024 ** 2, SECTOR_SIZE) / SECTOR_SIZE
+    BOOT_MIN_SIZE_S = align_up(50 * 1024 ** 2, SECTOR_SIZE) / SECTOR_SIZE
+    ROOT_MIN_SIZE_S = align_up(50 * 1024 ** 2, SECTOR_SIZE) / SECTOR_SIZE
 
     # These attributes must be defined on all subclasses for backwards
     # compatibility with hwpacks v1 format. Hwpacks v2 format allows these to
@@ -243,17 +221,53 @@ class BoardConfig(object):
     load_addr = None
     dtb_addr = None
     dtb_name = None
+    dtb_file = None
     kernel_flavors = None
     boot_script = None
     serial_tty = None
     wired_interfaces = None
     wireless_interfaces = None
     mmc_id = None
+    vmlinuz = None
+    initrd = None
+    partition_layout = None
+    LOADER_START_S = 1
+
+    # Samsung v310 implementation notes and terminology
+    #
+    # * BL0, BL1 etc. are the various bootloaders in order of execution
+    # * BL0 is the first stage bootloader, located in ROM; it loads a 32s long BL1
+    #   from MMC offset +1s and runs it
+    # * BL1 is the secondary program loader (SPL), a small (< 14k) version of
+    #   U-Boot with a checksum; it inits DRAM and loads a 1024s long BL2 to DRAM
+    #   from MMC offset +65s
+    # * BL2 is U-Boot; it loads its 32s (16 KiB) long environment from MMC offset
+    #   +33s which tells it to load a boot.scr from the first FAT partition of the
+    #   MMC
+    #
+    # Layout:
+    # +0s: part table / MBR, 1s long
+    # +1s: BL1/SPL, 32s long
+    # +33s: U-Boot environment, 32s long
+    # +65s: U-Boot, 1024s long
+    # >= +1089s: FAT partition with boot script (boot.scr), kernel (uImage) and
+    #            initrd (uInitrd)
+    SAMSUNG_V310_BL1_START = 1
+    SAMSUNG_V310_BL1_LEN = 32
+    SAMSUNG_V310_ENV_START = SAMSUNG_V310_BL1_START + SAMSUNG_V310_BL1_LEN
+    SAMSUNG_V310_ENV_LEN = 32
+    assert SAMSUNG_V310_ENV_START == 33, "BL1 expects u-boot environment at +33s"
+    assert SAMSUNG_V310_ENV_LEN * SECTOR_SIZE == 16 * 1024, (
+        "BL1 expects u-boot environment to be 16 KiB")
+    SAMSUNG_V310_BL2_START = SAMSUNG_V310_ENV_START + SAMSUNG_V310_ENV_LEN
+    SAMSUNG_V310_BL2_LEN = 1024
+    assert SAMSUNG_V310_BL2_LEN * SECTOR_SIZE == 512 * 1024, (
+        "BL1 expects BL2 (u-boot) to be 512 KiB")
 
     hardwarepack_handler = None
 
     @classmethod
-    def get_metadata_field(cls, target, field_name):
+    def get_metadata_field(cls, field_name):
         """ Return the metadata value for field_name if it can be found.
         """
         data, _ = cls.hardwarepack_handler.get_field(
@@ -261,68 +275,155 @@ class BoardConfig(object):
         return data
 
     @classmethod
+    def set_board(cls, board):
+        cls.board = board
+
+    @classmethod
     def set_metadata(cls, hwpacks):
         cls.hardwarepack_handler = HardwarepackHandler(hwpacks)
         with cls.hardwarepack_handler:
-            if (cls.hardwarepack_handler.get_format() ==
-                cls.hardwarepack_handler.FORMAT_1):
+            cls.hwpack_format = cls.hardwarepack_handler.get_format()
+            if (cls.hwpack_format == cls.hardwarepack_handler.FORMAT_1):
                 return
 
-            if (cls.hardwarepack_handler.get_format() ==
-                cls.hardwarepack_handler.FORMAT_2):
+            if (cls.hwpack_format == cls.hardwarepack_handler.FORMAT_2):
                 # Clear V1 defaults.
                 cls.kernel_addr = None
                 cls.initrd_addr = None
                 cls.load_addr = None
                 cls.serial_tty = None
                 cls.fat_size = None
-                cls.BOOT_MIN_SIZE_S = None
-                cls.ROOT_MIN_SIZE_S = None
-                cls.LOADER_MIN_SIZE_S = None
+                cls.dtb_name = None
+                cls.dtb_addr = None
+                cls.extra_boot_args_options = None
+                cls.boot_script = None
+                cls.kernel_flavors = None
+                cls.mmc_option = None
+                cls.mmc_part_offset = None
+                cls.SAMSUNG_V310_BL1_START = None
+                cls.SAMSUNG_V310_BL1_LEN = None
+                cls.SAMSUNG_V310_ENV_START = None
+                cls.SAMSUNG_V310_ENV_LEN = None
+                cls.SAMSUNG_V310_BL2_START = None
+                cls.SAMSUNG_V310_BL2_LEN = None
 
             # Set new values from metadata.
-            cls.kernel_addr = cls.get_metadata_field(
-                cls.kernel_addr, 'kernel_addr')
-            cls.initrd_addr = cls.get_metadata_field(
-                cls.initrd_addr, 'initrd_addr')
-            cls.load_addr = cls.get_metadata_field(
-                cls.load_addr, 'load_addr')
-            cls.serial_tty = cls.get_metadata_field(
-                cls.serial_tty, 'serial_tty')
-            cls.wired_interfaces = cls.get_metadata_field(
-                cls.wired_interfaces, 'wired_interfaces')
-            cls.wireless_interfaces = cls.get_metadata_field(
-                cls.wireless_interfaces, 'wireless_interfaces')
-            cls.mmc_id = cls.get_metadata_field(
-                cls.mmc_id, 'mmc_id')
+            cls.kernel_addr = cls.get_metadata_field('kernel_addr')
+            cls.initrd_addr = cls.get_metadata_field('initrd_addr')
+            cls.load_addr = cls.get_metadata_field('load_addr')
+            cls.dtb_addr = cls.get_metadata_field('dtb_addr')
+            cls.serial_tty = cls.get_metadata_field('serial_tty')
+            wired_interfaces = cls.get_metadata_field('wired_interfaces')
+            if wired_interfaces is not None:
+                cls.wired_interfaces = wired_interfaces.split(' ')
+            wireless_interfaces = cls.get_metadata_field(
+                'wireless_interfaces')
+            if wireless_interfaces is not None:
+                cls.wireless_interfaces = wireless_interfaces.split(' ')
+            cls.vmlinuz = cls.get_metadata_field('kernel_file')
+            cls.initrd = cls.get_metadata_field('initrd_file')
+            cls.dtb_file = cls.get_metadata_field('dtb_file')
+            cls.extra_boot_args_options = cls.get_metadata_field(
+                'extra_boot_options')
+            cls.boot_script = cls.get_metadata_field('boot_script')
+            cls.extra_serial_opts = cls.get_metadata_field('extra_serial_options')
+            cls.snowball_startup_files_config = cls.get_metadata_field(
+                'snowball_startup_files_config')
 
-            partition_layout = cls.get_metadata_field(cls.fat_size, 'partition_layout')
-            if partition_layout == 'bootfs_rootfs' or partition_layout is None:
+            cls.partition_layout = cls.get_metadata_field('partition_layout')
+            if cls.partition_layout in ['bootfs_rootfs', 'reserved_bootfs_rootfs',
+                                    None]:
                 cls.fat_size = 32
-            elif partition_layout == 'bootfs16_rootfs':
+            elif cls.partition_layout == 'bootfs16_rootfs':
                 cls.fat_size = 16
             else:
-                raise AssertionError("Unknown partition layout '%s'." % partition_layout)
+                raise AssertionError("Unknown partition layout '%s'." % \
+                                         cls.partition_layout)
 
-            boot_min_size = cls.get_metadata_field(
-                cls.BOOT_MIN_SIZE_S, 'boot_min_size')
+            cls.mmc_option = cls.get_metadata_field('mmc_id')
+            if cls.mmc_option is not None:
+                cls.mmc_part_offset = int(cls.mmc_option.split(':')[1]) - 1
+
+            boot_min_size = cls.get_metadata_field('boot_min_size')
             if boot_min_size is not None:
-                cls.BOOT_MIN_SIZE_S = align_up(int(boot_min_size) * 1024**2,
+                cls.BOOT_MIN_SIZE_S = align_up(int(boot_min_size) * 1024 ** 2,
                                                SECTOR_SIZE) / SECTOR_SIZE
-            root_min_size = cls.get_metadata_field(
-                cls.ROOT_MIN_SIZE_S, 'root_min_size')
+            root_min_size = cls.get_metadata_field('root_min_size')
             if root_min_size is not None:
-                cls.ROOT_MIN_SIZE_S = align_up(int(root_min_size) * 1024**2,
+                cls.ROOT_MIN_SIZE_S = align_up(int(root_min_size) * 1024 ** 2,
                                                SECTOR_SIZE) / SECTOR_SIZE
-            loader_min_size = cls.get_metadata_field(
-                cls.LOADER_MIN_SIZE_S, 'loader_min_size')
+            loader_min_size = cls.get_metadata_field('loader_min_size')
             if loader_min_size is not None:
-                cls.LOADER_MIN_SIZE_S = align_up(int(loader_min_size) * 1024**2,
+                cls.LOADER_MIN_SIZE_S = align_up(int(loader_min_size) * 1024 ** 2,
                                                SECTOR_SIZE) / SECTOR_SIZE
 
+            uboot_in_boot_part = cls.get_metadata_field('u_boot_in_boot_part')
+            if uboot_in_boot_part is None:
+                cls.uboot_in_boot_part = False
+            elif string.lower(uboot_in_boot_part) == 'yes':
+                cls.uboot_in_boot_part = True
+            elif string.lower(uboot_in_boot_part) == 'no':
+                cls.uboot_in_boot_part = False
+            spl_in_boot_part = cls.get_metadata_field('spl_in_boot_part')
+            if spl_in_boot_part is None:
+                cls.spl_in_boot_part = False
+            elif string.lower(spl_in_boot_part) == 'yes':
+                cls.spl_in_boot_part = True
+            elif string.lower(spl_in_boot_part) == 'no':
+                cls.spl_in_boot_part = False
+            env_dd = cls.get_metadata_field('env_dd')
+            if env_dd is None:
+                cls.env_dd = False
+            elif string.lower(env_dd) == 'yes':
+                cls.env_dd = True
+            elif string.lower(env_dd) == 'no':
+                cls.env_dd = False
+
+            uboot_dd = cls.get_metadata_field('u_boot_dd')
+            # Either uboot_dd is not specified, or it contains the dd offset.
+            if uboot_dd is None:
+                cls.uboot_dd = False
+            else:
+                cls.uboot_dd = int(uboot_dd)
+            spl_dd = cls.get_metadata_field('spl_dd')
+            # Either spl_dd is not specified, or it contains the dd offset.
+            if spl_dd is None:
+                cls.spl_dd = False
+            else:
+                cls.spl_dd = int(spl_dd)
+
+            loader_start = cls.get_metadata_field('loader_start')
+            if loader_start is not None:
+                cls.LOADER_START_S = int(loader_start)
+            samsung_bl1_start = cls.get_metadata_field('samsung_bl1_start')
+            if samsung_bl1_start is not None:
+                cls.SAMSUNG_V310_BL1_START = int(samsung_bl1_start)
+            samsung_bl1_len = cls.get_metadata_field('samsung_bl1_len')
+            if samsung_bl1_len is not None:
+                cls.SAMSUNG_V310_BL1_LEN = int(samsung_bl1_len)
+            samsung_env_len = cls.get_metadata_field('samsung_env_len')
+            if samsung_env_len is not None:
+                cls.SAMSUNG_V310_ENV_LEN = int(samsung_env_len)
+                assert cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE == 16 * 1024, (
+                    "BL1 expects u-boot environment to be 16 KiB")
+            samsung_bl2_len = cls.get_metadata_field('samsung_bl2_len')
+            if samsung_bl2_len is not None:
+                cls.SAMSUNG_V310_BL2_LEN = int(samsung_bl2_len)
+                assert cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE == 512 * 1024, (
+                    "BL1 expects BL2 (u-boot) to be 512 KiB")
+
+            if (cls.SAMSUNG_V310_BL1_START and cls.SAMSUNG_V310_BL1_LEN):
+                cls.SAMSUNG_V310_ENV_START = (cls.SAMSUNG_V310_BL1_START +
+                                              cls.SAMSUNG_V310_BL1_LEN)
+                assert cls.SAMSUNG_V310_ENV_START == 33, (
+                    "BL1 expects u-boot environment at +33s")
+            if (cls.SAMSUNG_V310_ENV_START and cls.SAMSUNG_V310_ENV_LEN):
+                cls.SAMSUNG_V310_BL2_START = (cls.SAMSUNG_V310_ENV_START +
+                                              cls.SAMSUNG_V310_ENV_LEN)
 
     @classmethod
     def get_file(cls, file_alias, default=None):
+        # XXX remove the 'default' parameter when V1 support is removed!
         file_in_hwpack = cls.hardwarepack_handler.get_file(file_alias)
         if file_in_hwpack is not None:
             return file_in_hwpack
@@ -330,13 +431,17 @@ class BoardConfig(object):
             return default
 
     @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+    def get_v1_sfdisk_cmd(cls, should_align_boot_part=False):
         """Return the sfdisk command to partition the media.
 
         :param should_align_boot_part: Whether to align the boot partition too.
 
         This default implementation returns a boot vfat partition of type FAT16
         or FAT32, followed by a root partition.
+
+        XXX: This default implementation and all overrides are left for V1
+        compatibility only. They should be removed as part of the work to
+        kill off hwpacks V1.
         """
         if cls.fat_size == 32:
             partition_type = '0x0C'
@@ -366,6 +471,79 @@ class BoardConfig(object):
 
         return '%s,%s,%s,*\n%s,,,-' % (
             boot_start, boot_len, partition_type, root_start)
+
+    @classmethod
+    def get_normal_sfdisk_cmd(cls, should_align_boot_part=False):
+        """Return the sfdisk command to partition the media.
+
+        :param should_align_boot_part: Whether to align the boot partition too.
+
+        This returns a boot vfat partition of type FAT16
+        or FAT32, followed by a root partition.
+        """
+        if cls.fat_size == 32:
+            partition_type = '0x0C'
+        else:
+            partition_type = '0x0E'
+
+        # align on sector 63 for compatibility with broken versions of x-loader
+        # unless align_boot_part is set
+        # XXX OMAP specific, might break other boards?
+        boot_align = 63
+        if should_align_boot_part:
+            boot_align = PART_ALIGN_S
+
+        # can only start on sector 1 (sector 0 is MBR / partition table)
+        boot_start, boot_end, boot_len = align_partition(
+            1, cls.BOOT_MIN_SIZE_S, boot_align, PART_ALIGN_S)
+        # apparently OMAP3 ROMs require the vfat length to be an even number
+        # of sectors (multiple of 1 KiB); decrease the length if it's odd,
+        # there should still be enough room
+        # XXX OMAP specific, might break other boards?
+        boot_len = boot_len - boot_len % 2
+        boot_end = boot_start + boot_len - 1
+
+        # we ignore _root_end / _root_len and return a sfdisk command to
+        # instruct the use of all remaining space; XXX we now have root size
+        # config, so we can do something more sensible
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, cls.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return '%s,%s,%s,*\n%s,,,-' % (
+            boot_start, boot_len, partition_type, root_start)
+
+    @classmethod
+    def get_reserved_sfdisk_cmd(cls, should_align_boot_part=None):
+        """Return the sfdisk command to partition the media.
+
+        :param should_align_boot_part: Ignored.
+
+        This returns a loader partition, then a boot vfat partition of type
+        FAT16 or FAT32, followed by a root partition.
+        """
+        loader_start, loader_end, loader_len = align_partition(
+            cls.LOADER_START_S, cls.LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
+
+        boot_start, boot_end, boot_len = align_partition(
+            loader_end + 1, cls.BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, cls.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
+        loader_start, loader_len, boot_start, boot_len, root_start)
+
+    @classmethod
+    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+        if (cls.partition_layout in ['bootfs_rootfs', 'bootfs16_rootfs'] or
+            cls.board == 'snowball_sd'):
+            return cls.get_normal_sfdisk_cmd(should_align_boot_part)
+        elif cls.partition_layout in ['reserved_bootfs_rootfs']:
+            return cls.get_reserved_sfdisk_cmd(should_align_boot_part)
+        else:
+            assert (cls.hwpack_format == HardwarepackHandler.FORMAT_1), (
+                "Hwpack format is not 1.0 but partition_layout is unspecified.")
+            return cls.get_v1_sfdisk_cmd(should_align_boot_part)
 
     @classmethod
     def _get_bootcmd(cls, d_img_data):
@@ -438,13 +616,92 @@ class BoardConfig(object):
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
+        if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
+            parts_dir = uboot_parts_dir
+        else:
+            parts_dir = chroot_dir
         (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
-                                                   uboot_parts_dir)
+            parts_dir)
         boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
                                      d_img_data)
-        cls._make_boot_files(
-            boot_env, chroot_dir, boot_dir,
-            boot_device_or_file, k_img_data, i_img_data, d_img_data)
+
+        if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
+            cls._make_boot_files(
+                boot_env, chroot_dir, boot_dir,
+                boot_device_or_file, k_img_data, i_img_data, d_img_data)
+        else:
+            cls._make_boot_files_v2(
+                boot_env, chroot_dir, boot_dir,
+                boot_device_or_file, k_img_data, i_img_data, d_img_data)
+
+    @classmethod
+    def _dd_file(cls, from_file, to_file, seek, max_size=None):
+        assert from_file is not None, "No source file name given."
+        if max_size is not None:
+            assert os.path.getsize(from_file) <= max_size, (
+                    "'%s' is larger than %s" % (from_file, max_size))
+        logger = logging.getLogger("linaro_image_tools")
+        logger.info("Writing '%s' to '%s' at %s." % (from_file, to_file, seek))
+        _dd(from_file, to_file, seek=seek)
+
+    @classmethod
+    def install_samsung_boot_loader(cls, samsung_spl_file, uboot_file,
+                                    boot_device_or_file):
+                cls._dd_file(samsung_spl_file, boot_device_or_file,
+                             cls.SAMSUNG_V310_BL1_START,
+                             cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE)
+                cls._dd_file(uboot_file, boot_device_or_file,
+                             cls.SAMSUNG_V310_BL2_START,
+                             cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE)
+
+    @classmethod
+    def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
+        with cls.hardwarepack_handler:
+            spl_file = cls.get_file('spl')
+            if cls.spl_in_boot_part:
+                assert spl_file is not None, (
+                    "SPL binary could not be found")
+                logger = logging.getLogger("linaro_image_tools")
+                logger.info(
+                    "Copying spl '%s' to boot partition." % spl_file)
+                cmd_runner.run(["cp", "-v", spl_file, boot_dir],
+                               as_root=True).wait()
+                # XXX: Is this really needed?
+                cmd_runner.run(["sync"]).wait()
+
+            if cls.spl_dd:
+                cls._dd_file(spl_file, boot_device_or_file, cls.spl_dd)
+
+            uboot_file = cls.get_file('u_boot')
+            if cls.uboot_dd:
+                cls._dd_file(uboot_file, boot_device_or_file, cls.uboot_dd)
+
+        make_uImage(cls.load_addr, k_img_data, boot_dir)
+        make_uInitrd(i_img_data, boot_dir)
+
+        if d_img_data is not None:
+            make_dtb(d_img_data, boot_dir)
+
+        if cls.boot_script is not None:
+            boot_script_path = os.path.join(boot_dir, cls.boot_script)
+            make_boot_script(boot_env, boot_script_path)
+
+            # Only used for Omap, will this be bad for the other boards?
+            make_boot_ini(boot_script_path, boot_dir)
+
+        if (cls.snowball_startup_files_config is not None and
+            cls.board != 'snowball_sd'):
+            cls.populate_raw_partition(chroot_dir, boot_device_or_file)
+
+        if cls.env_dd:
+            # Do we need to zero out the env before flashing it?
+            _dd("/dev/zero", boot_device_or_file, count=cls.SAMSUNG_V310_ENV_LEN,
+                seek=cls.SAMSUNG_V310_ENV_START)
+            env_size = cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
+            env_file = make_flashable_env(boot_env, env_size)
+            cls._dd_file(env_file, boot_device_or_file, cls.SAMSUNG_V310_ENV_START)
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
@@ -468,17 +725,23 @@ class BoardConfig(object):
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
         with partition_mounted(boot_partition, boot_disk):
             if cls.uboot_in_boot_part:
-                assert cls.uboot_flavor is not None, (
-                    "uboot_in_boot_part is set but not uboot_flavor")
                 with cls.hardwarepack_handler:
-                    default = os.path.join(
-                        chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
-                        'u-boot.img')
-                    if not os.path.exists(default):
+                    # <legacy v1 support>
+                    if cls.uboot_flavor is not None:
                         default = os.path.join(
                             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
-                            'u-boot.bin')
+                            'u-boot.img')
+                        if not os.path.exists(default):
+                            default = os.path.join(
+                                chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+                                'u-boot.bin')
+                    else:
+                        default = None
+                    # </legacy v1 support>
                     uboot_bin = cls.get_file('u_boot', default=default)
+                    assert uboot_bin is not None, (
+                        "uboot binary could not be found")
+
                     proc = cmd_runner.run(
                         ['cp', '-v', uboot_bin, boot_disk], as_root=True)
                     proc.wait()
@@ -490,11 +753,16 @@ class BoardConfig(object):
     @classmethod
     def _get_kflavor_files(cls, path):
         """Search for kernel, initrd and optional dtb in path."""
+        if cls.kernel_flavors is None:
+            # V2 metadata specifies each glob, not flavors.
+            # XXX This duplication is temporary until V1 dies.
+            return cls._get_kflavor_files_v2(path)
+
         for flavor in cls.kernel_flavors:
-            kregex = KERNEL_GLOB % {'kernel_flavor' : flavor}
-            iregex = INITRD_GLOB % {'kernel_flavor' : flavor}
-            dregex = DTB_GLOB % {'kernel_flavor' : flavor,
-                                 'dtb_name' : cls.dtb_name}
+            kregex = KERNEL_GLOB % {'kernel_flavor': flavor}
+            iregex = INITRD_GLOB % {'kernel_flavor': flavor}
+            dregex = DTB_GLOB % {'kernel_flavor': flavor,
+                                 'dtb_name': cls.dtb_name}
             kernel = _get_file_matching(os.path.join(path, kregex))
             if kernel is not None:
                 initrd = _get_file_matching(os.path.join(path, iregex))
@@ -509,6 +777,25 @@ class BoardConfig(object):
         raise ValueError(
             "No kernel found matching %s for flavors %s" % (
                 KERNEL_GLOB, " ".join(cls.kernel_flavors)))
+
+    @classmethod
+    def _get_kflavor_files_v2(cls, path):
+        kernel = _get_file_matching(os.path.join(path, cls.vmlinuz))
+        if kernel is not None:
+            initrd = _get_file_matching(os.path.join(path, cls.initrd))
+            if initrd is not None:
+                dtb = None
+                if cls.dtb_file is not None:
+                    dtb = _get_file_matching(os.path.join(path, cls.dtb_file))
+                logger = logging.getLogger("linaro_image_tools")
+                logger.info("Will use kernel=%s, initrd=%s, dtb=%s." % \
+                                 (kernel, initrd, dtb))
+                return (kernel, initrd, dtb)
+            raise ValueError(
+                "Found kernel matching %s but no initrd matching %s" % (
+                    cls.vmlinuz, cls.initrd))
+        raise ValueError(
+            "No kernel found matching %s." % (cls.vmlinuz))
 
     @classmethod
     def populate_raw_partition(cls, media, boot_dir):
@@ -551,6 +838,8 @@ class OmapConfig(BoardConfig):
         If the kernel found in the chroot dir is << 2.6.36 we use tyyS2, else
         we use the default value (_serial_tty).
         """
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         # XXX: This is also part of our temporary hack to fix bug 697824.
         cls.serial_tty = classproperty(lambda cls: cls._serial_tty)
         vmlinuz = _get_file_matching(
@@ -569,7 +858,8 @@ class OmapConfig(BoardConfig):
         # XXX: This is also part of our temporary hack to fix bug 697824; we
         # need to call set_appropriate_serial_tty() before doing anything that
         # may use cls.serial_tty.
-        cls.set_appropriate_serial_tty(chroot_dir)
+        if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
+            cls.set_appropriate_serial_tty(chroot_dir)
         super(OmapConfig, cls).make_boot_files(
             uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
             rootfs_uuid, boot_dir, boot_device_or_file)
@@ -578,7 +868,9 @@ class OmapConfig(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        install_omap_boot_loader(chroot_dir, boot_dir)
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
+        install_omap_boot_loader(chroot_dir, boot_dir, cls)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         make_dtb(d_img_data, boot_dir)
@@ -643,6 +935,8 @@ class IgepConfig(BeagleConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         make_dtb(d_img_data, boot_dir)
@@ -679,6 +973,8 @@ class Ux500Config(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
@@ -696,6 +992,8 @@ class SnowballSdConfig(Ux500Config):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
@@ -710,11 +1008,11 @@ class SnowballEmmcConfig(SnowballSdConfig):
     # puts the MBR, so the boot loader skips that address.
     supports_writing_to_mmc = False
     SNOWBALL_LOADER_START_S = (128 * 1024) / SECTOR_SIZE
-    SNOWBALL_STARTUP_FILES_CONFIG = 'startfiles.cfg'
+    snowball_startup_files_config = 'startfiles.cfg'
     TOC_SIZE = 512
 
     @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=None):
+    def get_v1_sfdisk_cmd(cls, should_align_boot_part=None):
         """Return the sfdisk command to partition the media.
 
         :param should_align_boot_part: Ignored.
@@ -749,6 +1047,8 @@ class SnowballEmmcConfig(SnowballSdConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
@@ -759,7 +1059,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
         # Populate created raw partition with TOC and startup files.
         config_files_path = os.path.join(chroot_dir, 'boot')
         _, toc_filename = tempfile.mkstemp()
-        new_files = cls.get_file_info(config_files_path)
+        new_files = cls.get_file_info(chroot_dir)
         with open(toc_filename, 'wb') as toc:
             cls.create_toc(toc, new_files)
         cls.install_snowball_boot_loader(toc_filename, new_files,
@@ -767,7 +1067,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
                                      cls.SNOWBALL_LOADER_START_S)
         cls.delete_file(toc_filename)
         cls.delete_file(os.path.join(config_files_path,
-                                     cls.SNOWBALL_STARTUP_FILES_CONFIG))
+                                     cls.snowball_startup_files_config))
 
     @classmethod
     def install_snowball_boot_loader(cls, toc_file_name, files,
@@ -820,19 +1120,26 @@ class SnowballEmmcConfig(SnowballSdConfig):
             f.write(data)
 
     @classmethod
-    def get_file_info(cls, bin_dir):
+    def get_file_info(cls, chroot_dir):
         ''' Fills in the offsets of files that are located in
         non-absolute memory locations depending on their sizes.'
         Also fills in file sizes'''
         ofs = cls.TOC_SIZE
         files = []
-        with open(os.path.join(bin_dir, cls.SNOWBALL_STARTUP_FILES_CONFIG),
+        bin_dir = os.path.join(chroot_dir, 'boot')
+        with open(os.path.join(bin_dir, cls.snowball_startup_files_config),
                   'r') as info_file:
             for line in info_file:
                 file_data = line.split()
                 if file_data[0][0] == '#':
                     continue
-                filename = os.path.join(bin_dir, file_data[1])
+                if file_data[1].startswith('/'):
+                    filename = os.path.join(chroot_dir,
+                                            file_data[1].lstrip('/'))
+                else:
+                    filename = os.path.join(bin_dir, file_data[1])
+                assert os.path.exists(filename), "File %s does not exist, " \
+                    "please check the startfiles config file." % file_data[1]
                 address = long(file_data[3], 16)
                 if address != 0:
                     ofs = address
@@ -864,7 +1171,7 @@ class Mx5Config(BoardConfig):
         return cls._extra_serial_opts % cls.serial_tty
 
     @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=None):
+    def get_v1_sfdisk_cmd(cls, should_align_boot_part=None):
         """Return the sfdisk command to partition the media.
 
         :param should_align_boot_part: Ignored.
@@ -895,6 +1202,8 @@ class Mx5Config(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         with cls.hardwarepack_handler:
             uboot_file = cls.get_file('u_boot', default=os.path.join(
                     chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
@@ -974,17 +1283,18 @@ class VexpressConfig(BoardConfig):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
 
+
 class SamsungConfig(BoardConfig):
     @classproperty
     def extra_serial_opts(cls):
         return cls._extra_serial_opts % cls.serial_tty
 
     @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+    def get_v1_sfdisk_cmd(cls, should_align_boot_part=False):
         # bootloaders partition needs to hold BL1, U-Boot environment, and BL2
         loaders_min_len = (
-            SAMSUNG_V310_BL2_START + SAMSUNG_V310_BL2_LEN -
-            SAMSUNG_V310_BL1_START)
+            cls.SAMSUNG_V310_BL2_START + cls.SAMSUNG_V310_BL2_LEN -
+            cls.SAMSUNG_V310_BL1_START)
 
         # bootloaders partition
         loaders_start, loaders_end, loaders_len = align_partition(
@@ -1008,10 +1318,14 @@ class SamsungConfig(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        cls.install_samsung_boot_loader(chroot_dir, boot_device_or_file)
-        env_size = SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
+        cls.install_samsung_boot_loader(cls._get_samsung_spl(chroot_dir),
+                                        cls._get_samsung_uboot(chroot_dir),
+                                        boot_device_or_file)
+        env_size = cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
-        _dd(env_file, boot_device_or_file, seek=SAMSUNG_V310_ENV_START)
+        _dd(env_file, boot_device_or_file, seek=cls.SAMSUNG_V310_ENV_START)
 
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
@@ -1023,15 +1337,22 @@ class SamsungConfig(BoardConfig):
 
     @classmethod
     def _get_samsung_spl(cls, chroot_dir):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         spl_dir = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor)
         old_spl_path = os.path.join(spl_dir, 'v310_mmc_spl.bin')
         new_spl_path = os.path.join(spl_dir, 'u-boot-mmc-spl.bin')
+        new_new_spl_path = os.path.join(spl_dir, 'origen-spl.bin')
 
         spl_file = old_spl_path
         # The new upstream u-boot filename has changed
         if not os.path.exists(spl_file):
             spl_file = new_spl_path
+
+        # The new upstream u-boot filename has changed again
+        if not os.path.exists(spl_file):
+            spl_file = new_new_spl_path
 
         if not os.path.exists(spl_file):
             # missing SPL loader
@@ -1041,40 +1362,27 @@ class SamsungConfig(BoardConfig):
 
     @classmethod
     def _get_samsung_uboot(cls, chroot_dir):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         uboot_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
             'u-boot.bin')
         return uboot_file
 
-
     @classmethod
     def populate_raw_partition(cls, chroot_dir, boot_device_or_file):
-        # Populate created raw partition with BL1, env and u-boot
+        # Zero the env so that the boot_script will get loaded
+        _dd("/dev/zero", boot_device_or_file, count=cls.SAMSUNG_V310_ENV_LEN,
+            seek=cls.SAMSUNG_V310_ENV_START)
+        # Populate created raw partition with BL1 and u-boot
         spl_file = os.path.join(chroot_dir, 'boot', 'u-boot-mmc-spl.bin')
-        assert os.path.getsize(spl_file) <= (SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
+        assert os.path.getsize(spl_file) <= (cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
             "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
-        _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
+        _dd(spl_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL1_START)
         uboot_file = os.path.join(chroot_dir, 'boot', 'u-boot.bin')
-        assert os.path.getsize(uboot_file) <= (SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
+        assert os.path.getsize(uboot_file) <= (cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
             "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
-        _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
-
-
-    @classmethod
-    def install_samsung_boot_loader(cls, chroot_dir, boot_device_or_file):
-        spl_file = cls._get_samsung_spl(chroot_dir)
-        bl1_max_size = SAMSUNG_V310_BL1_LEN * SECTOR_SIZE
-        assert os.path.getsize(spl_file) <= bl1_max_size, (
-            "%s is larger than %s" % (spl_file, bl1_max_size))
-        _dd(spl_file, boot_device_or_file, seek=SAMSUNG_V310_BL1_START)
-
-        with cls.hardwarepack_handler:
-            uboot_file = cls.get_file(
-                'u_boot', default=cls._get_samsung_uboot(chroot_dir))
-        bl2_max_size = SAMSUNG_V310_BL2_LEN * SECTOR_SIZE
-        assert os.path.getsize(uboot_file) <= bl2_max_size, (
-            "%s is larger than %s" % (uboot_file, bl2_max_size))
-        _dd(uboot_file, boot_device_or_file, seek=SAMSUNG_V310_BL2_START)
+        _dd(uboot_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL2_START)
 
 
 class SMDKV310Config(SamsungConfig):
@@ -1287,11 +1595,16 @@ def _get_mlo_file(chroot_dir):
         raise AssertionError("No MLO files found on %s" % chroot_dir)
 
 
-def install_omap_boot_loader(chroot_dir, boot_disk):
-    mlo_file = _get_mlo_file(chroot_dir)
-    cmd_runner.run(["cp", "-v", mlo_file, boot_disk], as_root=True).wait()
-    # XXX: Is this really needed?
-    cmd_runner.run(["sync"]).wait()
+def install_omap_boot_loader(chroot_dir, boot_disk, cls):
+    with cls.hardwarepack_handler:
+        try:
+            default = _get_mlo_file(chroot_dir)
+        except AssertionError:
+            default = None
+        mlo_file = cls.get_file('spl', default=default)
+        cmd_runner.run(["cp", "-v", mlo_file, boot_disk], as_root=True).wait()
+        # XXX: Is this really needed?
+        cmd_runner.run(["sync"]).wait()
 
 
 def make_boot_ini(boot_script_path, boot_disk):

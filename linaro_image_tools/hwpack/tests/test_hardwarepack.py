@@ -147,6 +147,15 @@ class MetadataTests(TestCase):
             "LOAD_ADDR=0x80000000\n",
             str(metadata))
 
+    def test_str_with_dtb_addr(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(dtb_addr='0x80000000')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "DTB_ADDR=0x80000000\n",
+            str(metadata))
+
     def test_str_with_wired_interfaces(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
@@ -208,6 +217,60 @@ class MetadataTests(TestCase):
         self.assertEqual(
             "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
             "LOADER_MIN_SIZE=1\n",
+            str(metadata))
+
+    def test_str_with_kernel_file(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(vmlinuz='boot/vmlinuz-3.0.0-1002-linaro-omap')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "KERNEL_FILE=boot/vmlinuz-3.0.0-1002-linaro-omap\n",
+            str(metadata))
+
+    def test_str_with_initrd_file(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(initrd='boot/initrd.img-3.0.0-1002-linaro-omap')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "INITRD_FILE=boot/initrd.img-3.0.0-1002-linaro-omap\n",
+            str(metadata))
+
+    def test_str_with_dtb_file(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(dtb_file='boot/dt-3.0.0-1002-linaro-omap/omap4-panda.dtb')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "DTB_FILE=boot/dt-3.0.0-1002-linaro-omap/omap4-panda.dtb\n",
+            str(metadata))
+
+    def test_str_with_boot_script(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(boot_script='boot.scr')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "BOOT_SCRIPT=boot.scr\n",
+            str(metadata))
+
+    def test_str_with_extra_boot_options(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(extra_boot_options='earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "EXTRA_BOOT_OPTIONS=earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000\n",
+            str(metadata))
+
+    def test_str_with_extra_serial_options(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                            format=HardwarePackFormatV2())
+        metadata.add_v2_config(extra_serial_opts='console=tty0 console=ttyO2,115200n8')
+        self.assertEqual(
+            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+            "EXTRA_SERIAL_OPTIONS=console=tty0 console=ttyO2,115200n8\n",
             str(metadata))
 
     def test_from_config(self):

@@ -529,8 +529,11 @@ class FileHandler():
     """Downloads files and creates images from them by calling
     linaro-media-create"""
     def __init__(self):
+        # Import xdg here so it isn't required to index the server.
+        # (package not installed)
         import xdg.BaseDirectory as xdgBaseDir
-        self.homedir = os.path.join(xdgBaseDir.xdg_config_home,
+
+        self.datadir = os.path.join(xdgBaseDir.xdg_data_home,
                                      "linaro",
                                      "image-tools",
                                      "fetch_image")
@@ -597,12 +600,12 @@ class FileHandler():
                "specify either an image file, or an mmc target, not both.")
 
         self.append_setting_to(args, settings, 'mmc')
-        self.append_setting_to(args, settings, 'image_file')
-        self.append_setting_to(args, settings, 'image_size')
-        self.append_setting_to(args, settings, 'swap_size')
-        self.append_setting_to(args, settings, 'swap_file')
+        self.append_setting_to(args, settings, 'image_file', '--image-file')
+        self.append_setting_to(args, settings, 'image_size', '--image-size')
+        self.append_setting_to(args, settings, 'swap_size', '--swap-size')
+        self.append_setting_to(args, settings, 'swap_file', '--swap-file')
         self.append_setting_to(args, settings, 'yes_to_mmc_selection',
-                                               '--nocheck_mmc')
+                                               '--nocheck-mmc')
 
         args.append("--dev")
         args.append(settings['hardware'])
@@ -610,6 +613,12 @@ class FileHandler():
         args.append(binary_file)
         args.append("--hwpack")
         args.append(hwpack_file)
+
+        if not os.path.isdir(self.datadir):
+            os.makedirs(self.datadir)
+        with open(os.path.join(self.datadir, "linaro-media-create.log"),
+                               mode='w') as lmc_log:
+            lmc_log.write(" ".join(args) + "\n")
 
         logging.info(" ".join(args))
 
@@ -656,6 +665,11 @@ class FileHandler():
             self.settings       = settings
             self.tools_dir      = tools_dir
 
+            self.datadir = os.path.join(xdgBaseDir.xdg_data_home,
+                                     "linaro",
+                                     "image-tools",
+                                     "fetch_image")
+
         def run(self):
             """
             1. Download required files.
@@ -699,6 +713,9 @@ class FileHandler():
             self.waiting_for_event_response = False
             self.event_queue.put(("start", "unpack"))
 
+            lmc_log = open(os.path.join(self.datadir,
+                                        "linaro-media-create.log"), mode='a')
+
             while(1):
                 if self.create_process.poll() != None:
                     # linaro-media-create has finished. Tell the GUI the return
@@ -722,6 +739,8 @@ class FileHandler():
                     if self.save_lines:
                         self.saved_lines += self.line
 
+                    lmc_log.write(self.line + "\n")
+                    lmc_log.flush()
                     self.line = ""
                 else:
                     self.line += self.input
@@ -764,6 +783,8 @@ class FileHandler():
 
                 while self.waiting_for_event_response:
                     time.sleep(0.2)
+
+            lmc_log.close()
 
         def send_to_create_process(self, text):
             print >> self.create_process.stdin, text
@@ -898,27 +919,29 @@ class DB():
     def set_url_parse_info(self, url_parse):
         self.url_parse = url_parse
 
-    def record_url(self, url, table):
+    def record_url(self, url, index):
         """Check to see if the record exists in the index, if not, add it"""
 
-        assert self.url_parse[table]["base_url"], ("Can not match the "
+        assert self.url_parse[index]["base_url"], ("Can not match the "
                "URL received (%s) to an entry provided by add_url_parse_list",
                url)
-        assert re.search('^' + self.url_parse[table]["base_url"], url)
+        assert re.search('^' + self.url_parse[index]["base_url"], url), (
+            "Base url is not part of the url to record.")
 
-        logging.info("Recording URL %s", url)
+        logging.info("Recording URL %s %d", url, index)
 
         assert url not in self.touched_urls, ("URLs expected to only be added "
                                               "to 1 place\n" + url)
 
         self.touched_urls[url] = True
+        table = self.url_parse[index]["table"]
 
         # Do not add the record if it already exists
         self.c.execute("select url from " + table + " where url == ?", (url,))
         if self.c.fetchone():
             return
 
-        url_match = re.search(self.url_parse[table]["base_url"] + r"(.*)$",
+        url_match = re.search(self.url_parse[index]["base_url"] + r"(.*)$",
                               url)
         url_chunks = url_match.group(1).lstrip('/').encode('ascii').split('/')
         # url_chunks now contains all parts of the url, split on /,
@@ -929,11 +952,18 @@ class DB():
 
         sqlcmd = "INSERT INTO " + table + " ("
         length = 0
-        for name in (self.url_parse[table]["url_chunks"] + ["url"]):
+        for name in (self.url_parse[index]["url_chunks"] + ["url"]):
             if name != "":
                 if isinstance(name, tuple):
                     name = name[0]
                 sqlcmd += name + ", "
+                length += 1
+
+        # Handle fixed value columns
+        for name in self.url_parse[index]["db_columns"]:
+            name_search = re.search("(\w+)=(.*)", name)
+            if name_search:
+                sqlcmd += name_search.group(1) + ", "
                 length += 1
 
         sqlcmd = sqlcmd.rstrip(", ")  # get rid of unwanted space & comma
@@ -947,7 +977,7 @@ class DB():
         # Get the parameters from the URL to record in the SQL database
         sqlparams = []
         chunk_index = 0
-        for name in self.url_parse[table]["url_chunks"]:
+        for name in self.url_parse[index]["url_chunks"]:
             # If this part of the URL isn't a parameter, don't insert it
             if name != "":
                 # If the entry is a tuple, it indicates it is of the form
@@ -965,6 +995,13 @@ class DB():
             chunk_index += 1
 
         sqlparams.append(url)
+
+        # Handle fixed value columns
+        for name in self.url_parse[index]["db_columns"]:
+            name_search = re.search("(\w+)=(.*)", name)
+            if name_search:
+                sqlparams.append(name_search.group(2))
+
         logging.info("{0}: {1}".format(sqlcmd, sqlparams))
         self.c.execute(sqlcmd, tuple(sqlparams))
 
@@ -980,7 +1017,9 @@ class DB():
         cmd = "create table if not exists "
         cmd += table + " ("
 
+        # Handle fixed items (kept in because a field can no longer be derived)
         for item in items:
+            item = re.sub("=.*", "", item)
             cmd += item + " TEXT, "
 
         cmd += "url TEXT)"
@@ -1012,7 +1051,9 @@ class DB():
     def clean_removed_urls_from_db(self):
         self.c = self.database.cursor()
 
-        for table, info in self.url_parse.items():
+        for info in self.url_parse:
+            table = info["table"]
+
             self.c.execute("select url from " + table)
             to_delete = []
 

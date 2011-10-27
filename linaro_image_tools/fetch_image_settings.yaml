@@ -16,18 +16,23 @@ UI:
     ubuntu-desktop: 'LEB: Linaro Ubuntu Desktop'
     ubuntu-desktop::long: Linux for humans on low power machines
     ubuntu-desktop::release_note: Shiny!
+  hwpack-descriptions:
+    omap3: Basic support for Beagle boards
+    omap3-x11-base: Includes support for 3D acceleration
+    overo: Same kernel as omap3.
+    panda: Basic support for Panda from linux-linaro-3.0
+    panda-x11-base: Basic support for Panda from linux-linaro-3.0 plus support for 3D acceleration
+    bsp-omap4: (DEPRECATED) - Used in Maverick release
+    lt-panda: TI Landing Team kernel (kernel-tilt.git)
+    lt-panda-x11-base-natty: TI Landing Team kernel (kernel-tilt.git) plus support for 3D acceleration
+    s5pv310: Basic support from linux-linaro-3.0
+    lt-s5pv310: Samsung Landing Team kernel
+
   help:
     latest snapshot: Latest Snapshot help text
     release: Release help text
     snapshot: Snapshot help text
   translate:
-    linaro-m: '10.11'
-    linaro-n: '11.05'
-    '11.06': '11.06'
-    '11.07': '11.07'
-    '11.08': '11.08'
-    '11.09': '11.09'
-    '11.10': '11.10'
   cmdline short names:
     build: b
     hardware: w
@@ -45,7 +50,7 @@ choice:
     efikamx: EFIKA MX Smarttop 
     efikasb: EFIKA MX Smartbook
     mx51evk: i.MX51
-    mx53loco: i.MX53 Loco
+    mx53loco: i.MX53 Quick Start
     # I don't have a --dev setting to linaro-media-create for a u8500 yet.
     # u8500: U8500
     overo: Overo
@@ -58,9 +63,12 @@ choice:
     beagle:
     - omap3
     - omap3-x11-base
+    - omap3-oneiric
+    - omap3-x11-base-oneiric
     
     igep:
     - igep
+    - igep-oneiric
     
     panda:
     - panda
@@ -68,31 +76,41 @@ choice:
     - bsp-omap4
     - lt-panda-x11-base-natty
     - lt-panda
+    - panda-oneiric
+    - panda-x11-base-oneiric
+    - lt-panda-x11-base-oneiric
+    - lt-panda-oneiric
     
     vexpress:
     - vexpress
+    - vexpress-oneiric
+    - lt-vexpress-a9-oneiric
     
     ux500:
     - bsp-ux500
     
     efikamx:
     - efikamx
+    - efikamx-oneiric
     
     efikasb:
     - efikamx
+    - efikamx-oneiric
     
     mx51evk:
     - imx51
+    - imx51-oneiric
     
     mx53loco:
-    - lt-mx53loco
     - lt-mx5
+    - lt-mx5-oneiric
      
     u8500:
      - lt-u8500
      
     overo:
     - overo
+    - overo-oneiric
      
     smdkv310:
      - lt-s5pv310
@@ -100,9 +118,13 @@ choice:
 
     origen:
      - lt-origen
+     - lt-origen-oneiric
 
     snowball_sd:
      - lt-snowball
+     - lt-snowball-v2
+     - lt-snowball-v3-oneiric
+     - lt-snowball-v2-oneiric
 
   image:
   - alip
@@ -119,9 +141,19 @@ choice:
     - beta
     - rc
     - final
+
+  platform:
+    '11.05':
+    - final
     '11.06':
     - final
     '11.07':
+    - final
+    '11.08':
+    - final
+    '11.09':
+    - final
+    '11.10':
     - final
 
 platform: linaro-n

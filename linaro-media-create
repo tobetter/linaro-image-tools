@@ -22,6 +22,7 @@ import atexit
 import os
 import sys
 import tempfile
+import logging
 
 from linaro_image_tools import cmd_runner
 
@@ -46,6 +47,7 @@ from linaro_image_tools.utils import (
     ensure_command,
     is_arm_host,
     check_file_integrity_and_log_errors,
+    path_in_tarfile_exists,
     )
 
 # Just define the global variables
@@ -95,15 +97,28 @@ if __name__ == '__main__':
     parser = get_args_parser()
     args = parser.parse_args()
 
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(message)s")
+    ch.setFormatter(formatter)
+    logger = logging.getLogger("linaro_image_tools")
+    logger.setLevel(logging.INFO)
+    logger.addHandler(ch)
+
     # If --help was specified this won't execute.
     # Create temp dir and initialize rest of path vars.
+    filesystem_dir = 'binary'
+    if not path_in_tarfile_exists('binary/etc', args.binary):
+        # The binary image is in the new live format.
+        filesystem_dir = 'binary/boot/filesystem.dir'
     TMP_DIR = tempfile.mkdtemp()
-    ROOTFS_DIR = os.path.join(TMP_DIR, 'binary')
+    ROOTFS_DIR = os.path.join(TMP_DIR, filesystem_dir)
     BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
     ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
 
     board_config = board_configs[args.board]
     board_config.set_metadata(args.hwpacks)
+    board_config.set_board(args.board)
 
     ensure_required_commands(args)
 
@@ -166,6 +181,6 @@ if __name__ == '__main__':
             create_swap = True
         populate_rootfs(ROOTFS_DIR, ROOT_DISK, root_partition, args.rootfs,
             rootfs_uuid, create_swap, str(args.swap_file),
-            board_config.mmc_part_offset)
+            board_config.mmc_part_offset, board_config)
 
     print "Done creating Linaro image on %s" % args.device

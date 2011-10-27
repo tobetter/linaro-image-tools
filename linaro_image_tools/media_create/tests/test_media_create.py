@@ -44,8 +44,6 @@ from linaro_image_tools.media_create import (
     android_boards,
     )
 from linaro_image_tools.media_create.boards import (
-    SAMSUNG_V310_BL1_START,
-    SAMSUNG_V310_BL2_START,
     SECTOR_SIZE,
     align_up,
     align_partition,
@@ -103,6 +101,7 @@ from linaro_image_tools.media_create.rootfs import (
     populate_rootfs,
     rootfs_mount_options,
     write_data_to_protected_file,
+    update_network_interfaces,
     )
 from linaro_image_tools.media_create.tests.fixtures import (
     CreateTarballFixture,
@@ -357,7 +356,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
-        self.assertEquals(data_to_set, config.wired_interfaces)
+        self.assertEquals(data_to_set.split(' '), config.wired_interfaces)
 
     def test_sets_wireless_interfaces(self):
         self.useFixture(MockSomethingFixture(
@@ -371,21 +370,22 @@ class TestSetMetadata(TestCaseWithFixtures):
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
-        self.assertEquals(data_to_set, config.wireless_interfaces)
+        self.assertEquals(data_to_set.split(' '), config.wireless_interfaces)
 
     def test_sets_mmc_id(self):
         self.useFixture(MockSomethingFixture(
                 linaro_image_tools.media_create.boards, 'HardwarepackHandler',
                 self.MockHardwarepackHandler))
         field_to_test = 'mmc_id'
-        data_to_set = '1'
+        data_to_set = '0:1'
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
-        self.assertEquals(data_to_set, config.mmc_id)
+        self.assertEquals(data_to_set, config.mmc_option)
+        self.assertEquals(0, config.mmc_part_offset)
 
     def test_sets_boot_min_size(self):
         self.useFixture(MockSomethingFixture(
@@ -685,7 +685,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                     ('UBOOT_ENV', 'u-boot-env.bin', 0, 0x00C1F000, '10')]
         # Create a config file
         cfg_file = os.path.join(self.temp_bootdir_path,
-        boards.SnowballEmmcConfig.SNOWBALL_STARTUP_FILES_CONFIG)
+        boards.SnowballEmmcConfig.snowball_startup_files_config)
         with open(cfg_file, 'w') as f:
             for line in src_data:
                 # Write comments, so we test that the parser can read them
@@ -715,6 +715,45 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                              'load_adress': line[4]})
             i += 1
         return expected
+
+    def test_get_file_info_relative_path(self):
+        # Create a config file
+        cfg_file = os.path.join(self.temp_bootdir_path,
+                      boards.SnowballEmmcConfig.snowball_startup_files_config)
+        uboot_file = 'u-boot.bin'
+        with open(cfg_file, 'w') as f:
+                f.write('%s %s %i %#x %s\n' % ('NORMAL', uboot_file, 0,
+                                               0xBA0000, '9'))
+        with open(os.path.join(self.temp_bootdir_path, uboot_file), 'w') as f:
+            file_info = boards.SnowballEmmcConfig.get_file_info(
+                self.tempdir)
+        self.assertEquals(file_info[0]['filename'],
+                          os.path.join(self.temp_bootdir_path, uboot_file))
+
+    def test_get_file_info_abs_path(self):
+        # Create a config file
+        cfg_file = os.path.join(self.temp_bootdir_path,
+                      boards.SnowballEmmcConfig.snowball_startup_files_config)
+        uboot_dir = tempfile.mkdtemp(dir=self.tempdir)
+        uboot_file = os.path.join(uboot_dir, 'u-boot.bin')
+        uboot_relative_file = uboot_file.replace(self.tempdir, '')
+        with open(cfg_file, 'w') as f:
+                f.write('%s %s %i %#x %s\n' % ('NORMAL', uboot_relative_file, 0,
+                                               0xBA0000, '9'))
+        with open(uboot_file, 'w') as f:
+            file_info = boards.SnowballEmmcConfig.get_file_info(
+                self.tempdir)
+        self.assertEquals(file_info[0]['filename'], uboot_file)
+
+    def test_get_file_info_raises(self):
+        # Create a config file
+        cfg_file = os.path.join(self.temp_bootdir_path,
+                      boards.SnowballEmmcConfig.snowball_startup_files_config)
+        with open(cfg_file, 'w') as f:
+                f.write('%s %s %i %#x %s\n' % ('NORMAL', 'u-boot.bin', 0,
+                                               0xBA0000, '9'))
+        self.assertRaises(AssertionError, boards.SnowballEmmcConfig.get_file_info,
+                          self.tempdir)
 
     def test_file_name_size(self):
         ''' Test using a to large toc file '''
@@ -829,7 +868,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
     def test_normal_case(self):
         expected = self.setupFiles()
         actual = boards.SnowballEmmcConfig.get_file_info(
-            self.temp_bootdir_path)
+            self.tempdir)
         self.assertEquals(expected, actual)
 
 
@@ -839,6 +878,7 @@ class TestBootSteps(TestCaseWithFixtures):
         super(TestBootSteps, self).setUp()
         self.funcs_calls = []
         self.mock_all_boards_funcs()
+        linaro_image_tools.media_create.boards.BoardConfig.hwpack_format = '1.0'
 
     def mock_all_boards_funcs(self):
         """Mock functions of boards module with a call tracer."""
@@ -901,6 +941,8 @@ class TestBootSteps(TestCaseWithFixtures):
                 linaro_image_tools.media_create.boards.SMDKV310Config,
                 'install_samsung_boot_loader',
                 mock_func_creator('install_samsung_boot_loader')))
+        self.useFixture(MockSomethingFixture(os.path, 'exists',
+                                             lambda file: True))
         boards.SMDKV310Config.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         boards.SMDKV310Config.hardwarepack_handler.get_format = (
@@ -920,6 +962,8 @@ class TestBootSteps(TestCaseWithFixtures):
                 linaro_image_tools.media_create.boards.OrigenConfig,
                 'install_samsung_boot_loader',
                 mock_func_creator('install_samsung_boot_loader')))
+        self.useFixture(MockSomethingFixture(os.path, 'exists',
+                                             lambda file: True))
         boards.OrigenConfig.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         boards.OrigenConfig.hardwarepack_handler.get_format = (
@@ -1023,6 +1067,24 @@ class TestFixForBug697824(TestCaseWithFixtures):
             self.set_appropriate_serial_tty_called,
             "make_boot_files didn't call set_appropriate_serial_tty")
 
+    def test_omap_make_boot_files_v2(self):
+        self.set_appropriate_serial_tty_called = False
+        class config(boards.BeagleConfig):
+            hwpack_format = HardwarepackHandler.FORMAT_2
+        self.mock_set_appropriate_serial_tty(config)
+        self.useFixture(MockSomethingFixture(
+            boards.BoardConfig, 'make_boot_files',
+            classmethod(lambda *args: None)))
+        # We don't need to worry about what's passed to make_boot_files()
+        # because we mock the method which does the real work above and here
+        # we're only interested in ensuring that OmapConfig.make_boot_files()
+        # does not call set_appropriate_serial_tty().
+        config.make_boot_files(
+            None, None, None, None, None, None, None, None)
+        self.assertFalse(
+            self.set_appropriate_serial_tty_called,
+            "make_boot_files called set_appropriate_serial_tty")
+
     def test_set_appropriate_serial_tty_old_kernel(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         boot_dir = os.path.join(tempdir, 'boot')
@@ -1091,11 +1153,61 @@ class TestGetSfdiskCmd(TestCase):
                 '1318912,-,E\n1318912,1048576,L\n2367488,,,-', 
                 android_boards.AndroidPandaConfig.get_sfdisk_cmd())
 
+    def test_origen_android(self):
+        self.assertEqual(
+            '1,8191,0xDA\n8253,270274,0x0C,*\n278528,524288,L\n' \
+                '802816,-,E\n802816,524288,L\n1327104,1048576,L\n2375680,,,-',
+                android_boards.AndroidOrigenConfig.get_sfdisk_cmd())
+
     def test_snowball_emmc_android(self):
         self.assertEqual(
             '256,7936,0xDA\n8192,262144,0x0C,*\n270336,524288,L\n' \
                 '794624,-,E\n794624,524288,L\n1318912,1048576,L\n2367488,,,-', 
                 android_boards.AndroidSnowballEmmcConfig.get_sfdisk_cmd())
+
+class TestGetSfdiskCmdV2(TestCase):
+
+    def test_mx5(self):
+        class config(boards.Mx5Config):
+            partition_layout = 'reserved_bootfs_rootfs'
+        self.assertEqual(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            config.get_sfdisk_cmd())
+
+    def test_snowball_sd(self):
+        class config(boards.SnowballSdConfig):
+            partition_layout = 'bootfs_rootfs'
+        self.assertEqual(
+            '63,106432,0x0C,*\n106496,,,-',
+            config.get_sfdisk_cmd())
+
+    def test_snowball_emmc(self):
+        class config(boards.SnowballEmmcConfig):
+            partition_layout = 'reserved_bootfs_rootfs'
+            LOADER_START_S = (128 * 1024) / SECTOR_SIZE
+        self.assertEqual(
+            '256,7936,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            config.get_sfdisk_cmd())
+
+    def test_smdkv310(self):
+        class config(board_configs['smdkv310']):
+            partition_layout = 'reserved_bootfs_rootfs'
+            LOADER_MIN_SIZE_S = (boards.BoardConfig.SAMSUNG_V310_BL2_START +
+                                 boards.BoardConfig.SAMSUNG_V310_BL2_LEN -
+                                 boards.BoardConfig.SAMSUNG_V310_BL1_START)
+        self.assertEquals(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            config.get_sfdisk_cmd())
+
+    def test_origen(self):
+        class config(board_configs['origen']):
+            partition_layout = 'reserved_bootfs_rootfs'
+            LOADER_MIN_SIZE_S = (boards.BoardConfig.SAMSUNG_V310_BL2_START +
+                                 boards.BoardConfig.SAMSUNG_V310_BL2_LEN -
+                                 boards.BoardConfig.SAMSUNG_V310_BL1_START)
+        self.assertEquals(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            config.get_sfdisk_cmd())
 
 
 class TestGetBootCmd(TestCase):
@@ -1301,6 +1413,18 @@ class TestGetBootCmdAndroid(TestCase):
         self.assertEqual(expected, boot_commands)
 
 
+    def test_android_origen(self):
+        boot_commands = (android_boards.AndroidOrigenConfig.
+                         _get_boot_env(consoles=[]))
+        expected = {
+            'bootargs': 'console=tty0 console=ttySAC2,115200n8 '
+                        'rootwait ro init=/init androidboot.console=ttySAC2',
+            'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
+                       'fatload mmc 0:2 0x42000000 uInitrd; '
+                       'bootm 0x40007000 0x42000000'}
+        self.assertEqual(expected, boot_commands)
+
+
 class TestUnpackBinaryTarball(TestCaseWithFixtures):
 
     def setUp(self):
@@ -1419,7 +1543,10 @@ class TestBoards(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             boards, '_get_mlo_file',
             lambda chroot_dir: "%s/MLO" % chroot_dir))
-        install_omap_boot_loader("chroot_dir", "boot_disk")
+        class config(BoardConfig):
+            pass
+        config.set_metadata([])
+        install_omap_boot_loader("chroot_dir", "boot_disk", config)
         expected = [
             '%s cp -v chroot_dir/MLO boot_disk' % sudo_args, 'sync']
         self.assertEqual(expected, fixture.mock.commands_executed)
@@ -1427,27 +1554,16 @@ class TestBoards(TestCaseWithFixtures):
     def test_install_smdk_u_boot(self):
         fixture = self._mock_Popen()
         uboot_flavor = boards.SMDKV310Config.uboot_flavor
-        self.useFixture(MockSomethingFixture(
-            boards.SMDKV310Config, '_get_samsung_spl',
-            classmethod(lambda cls, chroot_dir: "%s/%s/SPL" % (
-                chroot_dir, uboot_flavor))))
-        self.useFixture(MockSomethingFixture(
-            boards.SMDKV310Config, '_get_samsung_uboot',
-            classmethod(lambda cls, chroot_dir: "%s/%s/uboot" % (
-                chroot_dir, uboot_flavor))))
-        boards.SMDKV310Config.hardwarepack_handler = (
-            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
-        boards.SMDKV310Config.hardwarepack_handler.get_format = (
-            lambda: '1.0')
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
                                              lambda file: 1))
         boards.SMDKV310Config.install_samsung_boot_loader(
-            "chroot_dir", "boot_disk")
+            "%s/%s/SPL" % ("chroot_dir", uboot_flavor),
+            "%s/%s/uboot" % ("chroot_dir", uboot_flavor), "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL1_START),
+            'seek=%d' % (sudo_args, uboot_flavor, boards.SMDKV310Config.SAMSUNG_V310_BL1_START),
             '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL2_START)]
+            'seek=%d' % (sudo_args, uboot_flavor, boards.SMDKV310Config.SAMSUNG_V310_BL2_START)]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_install_origen_u_boot(self):
@@ -1468,12 +1584,13 @@ class TestBoards(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
                                              lambda file: 1))
         boards.OrigenConfig.install_samsung_boot_loader(
-            "chroot_dir", "boot_disk")
+            boards.OrigenConfig._get_samsung_spl("chroot_dir"),
+            boards.OrigenConfig._get_samsung_uboot("chroot_dir"), "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL1_START),
+            'seek=%d' % (sudo_args, uboot_flavor, boards.OrigenConfig.SAMSUNG_V310_BL1_START),
             '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor, SAMSUNG_V310_BL2_START)]
+            'seek=%d' % (sudo_args, uboot_flavor, boards.OrigenConfig.SAMSUNG_V310_BL2_START)]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_get_plain_boot_script_contents(self):
@@ -1625,6 +1742,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # Stub time.sleep() as create_partitions() use that.
         self.orig_sleep = time.sleep
         time.sleep = lambda s: None
+        linaro_image_tools.media_create.boards.BoardConfig.hwpack_format = '1.0'
 
     def tearDown(self):
         super(TestCreatePartitions, self).tearDown()
@@ -2271,6 +2389,59 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         swap_size_in_megs = (space_left / (1024**2)) + 1
         self.assertFalse(
             has_space_left_for_swap('/', swap_size_in_megs))
+
+    def test_update_interfaces_no_interfaces_no_update(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        os.makedirs(os.path.join(tempdir, 'etc', 'network'))
+        if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
+        class board_config(boards.BoardConfig):
+            pass
+
+        update_network_interfaces(tempdir, board_config)
+        self.assertFalse(os.path.exists(if_path))
+
+    def test_update_interfaces_creates_entry(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        os.makedirs(os.path.join(tempdir, 'etc', 'network'))
+        if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
+        class board_config(boards.BoardConfig):
+            wired_interfaces = ['eth0']
+
+        expected = 'auto eth0\n' \
+            'iface eth0 inet dhcp\n'
+        update_network_interfaces(tempdir, board_config)
+        self.assertEqual(expected, open(if_path).read())
+
+    def test_update_interfaces_creates_entries(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        os.makedirs(os.path.join(tempdir, 'etc', 'network'))
+        if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
+        class board_config(boards.BoardConfig):
+            wired_interfaces = ['eth0', 'eth1']
+            wireless_interfaces = ['wlan0']
+
+        expected = 'auto %(if)s\n' \
+            'iface %(if)s inet dhcp\n'
+
+        update_network_interfaces(tempdir, board_config)
+        self.assertIn(expected % {'if': 'eth1'}, open(if_path).read())
+        self.assertIn(expected % {'if': 'eth0'}, open(if_path).read())
+        self.assertIn(expected % {'if': 'wlan0'}, open(if_path).read())
+
+    def test_update_interfaces_leaves_original(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        os.makedirs(os.path.join(tempdir, 'etc', 'network'))
+        if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
+        with open(if_path, 'w') as interfaces:
+            interfaces.write('Original contents of file.\n')
+        class board_config(boards.BoardConfig):
+            wired_interfaces = ['eth0']
+
+        expected = 'Original contents of file.\n' \
+            'auto eth0\n' \
+            'iface eth0 inet dhcp\n'
+        update_network_interfaces(tempdir, board_config)
+        self.assertEqual(expected, open(if_path).read())
 
     def test_write_data_to_protected_file(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
