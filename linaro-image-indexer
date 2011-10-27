@@ -27,11 +27,11 @@ import logging
 import bz2
 import linaro_image_tools.fetch_image
 
-RELEASES_WWW_DOCUMENT_ROOT = "/home/dooferlad/dev/fetch_image/layout/srv/releases.linaro.org/www/"
+RELEASES_WWW_DOCUMENT_ROOT = "/srv/releases.linaro.org/www"
 RELEASE_URL = "http://releases.linaro.org/"
-OLD_RELEASES_WWW_DOCUMENT_ROOT = "/home/dooferlad/dev/fetch_image/layout/srv/releases.linaro.org/www/platform"
+OLD_RELEASES_WWW_DOCUMENT_ROOT = "/srv/releases.linaro.org/www/platform"
 OLD_RELEASE_URL = "http://releases.linaro.org/platform/"
-SNAPSHOTS_WWW_DOCUMENT_ROOT = "/home/dooferlad/dev/fetch_image/layout/srv/snapshots.linaro.org/www/"
+SNAPSHOTS_WWW_DOCUMENT_ROOT = "/srv/snapshots.linaro.org/www/"
 SNAPSHOTS_URL = "http://snapshots.linaro.org/"
 
 class ServerIndexer():
@@ -112,7 +112,6 @@ class ServerIndexer():
                    or not re.search("\.gz$", file)):
                     continue  # URL doesn't match the validator. Ignore.
 
-                logging.info("{0}: {1}".format(table, url))
                 logging.getLogger("linaro_image_tools").info(url)
                 self.db.record_url(url, index)
                     
