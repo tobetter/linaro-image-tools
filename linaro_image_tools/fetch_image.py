@@ -36,7 +36,6 @@ import datetime
 import threading
 import subprocess
 import utils
-import xdg.BaseDirectory as xdgBaseDir
 
 QEMU = "qemu"
 HARDWARE = "hardware"
@@ -530,6 +529,10 @@ class FileHandler():
     """Downloads files and creates images from them by calling
     linaro-media-create"""
     def __init__(self):
+        # Import xdg here so it isn't required to index the server.
+        # (package not installed)
+        import xdg.BaseDirectory as xdgBaseDir
+
         self.datadir = os.path.join(xdgBaseDir.xdg_data_home,
                                      "linaro",
                                      "image-tools",
@@ -916,31 +919,29 @@ class DB():
     def set_url_parse_info(self, url_parse):
         self.url_parse = url_parse
 
-    def record_url(self, url, table):
+    def record_url(self, url, index):
         """Check to see if the record exists in the index, if not, add it"""
 
-        assert self.url_parse[table]["base_url"] != None, ("Can not match the "
+        assert self.url_parse[index]["base_url"], ("Can not match the "
                "URL received (%s) to an entry provided by add_url_parse_list",
                url)
-        assert re.search('^' + self.url_parse[table]["base_url"], url)
+        assert re.search('^' + self.url_parse[index]["base_url"], url), (
+            "Base url is not part of the url to record.")
 
-        if(not re.search(self.url_parse[table]["url_validator"], url)):
-            #Make sure that the URL matches the validator
-            return
-
-        logging.info("Recording URL", url)
+        logging.info("Recording URL %s %d", url, index)
 
         assert url not in self.touched_urls, ("URLs expected to only be added "
                                               "to 1 place\n" + url)
 
         self.touched_urls[url] = True
+        table = self.url_parse[index]["table"]
 
         # Do not add the record if it already exists
         self.c.execute("select url from " + table + " where url == ?", (url,))
-        if(self.c.fetchone()):
+        if self.c.fetchone():
             return
 
-        url_match = re.search(self.url_parse[table]["base_url"] + r"(.*)$",
+        url_match = re.search(self.url_parse[index]["base_url"] + r"(.*)$",
                               url)
         url_chunks = url_match.group(1).lstrip('/').encode('ascii').split('/')
         # url_chunks now contains all parts of the url, split on /,
@@ -949,29 +950,39 @@ class DB():
         # We now construct an SQL command to insert the index data into the
         # database using the information we have.
 
-        # Work out how many values we will insert into the database
+        sqlcmd = "INSERT INTO " + table + " ("
         length = 0
-        for name in self.url_parse[table]["url_chunks"]:
-            if(name != ""):
+        for name in (self.url_parse[index]["url_chunks"] + ["url"]):
+            if name != "":
+                if isinstance(name, tuple):
+                    name = name[0]
+                sqlcmd += name + ", "
                 length += 1
 
-        sqlcmd = "insert into " + table + " values ("
+        # Handle fixed value columns
+        for name in self.url_parse[index]["db_columns"]:
+            name_search = re.search("(\w+)=(.*)", name)
+            if name_search:
+                sqlcmd += name_search.group(1) + ", "
+                length += 1
+
+        sqlcmd = sqlcmd.rstrip(", ")  # get rid of unwanted space & comma
+        sqlcmd += ") VALUES ("
 
         # Add the appropriate number of ?s (+1 is so we have room for url)
-        sqlcmd += "".join(["?, " for x in range(length + 1)])
-        sqlcmd = sqlcmd.rstrip(" ")  # get rid of unwanted space
-        sqlcmd = sqlcmd.rstrip(",")  # get rid of unwanted comma
+        sqlcmd += "".join(["?, " for x in range(length)])
+        sqlcmd = sqlcmd.rstrip(", ")  # get rid of unwanted space and comma
         sqlcmd += ")"
 
         # Get the parameters from the URL to record in the SQL database
         sqlparams = []
         chunk_index = 0
-        for name in self.url_parse[table]["url_chunks"]:
+        for name in self.url_parse[index]["url_chunks"]:
             # If this part of the URL isn't a parameter, don't insert it
-            if(name != ""):
+            if name != "":
                 # If the entry is a tuple, it indicates it is of the form
                 # name, regexp
-                if(isinstance(name, tuple)):
+                if isinstance(name, tuple):
                     # use stored regexp to extract data for the database
                     match = re.search(name[1], url_chunks[chunk_index])
                     assert match, ("Unable to match regexp to string ",
@@ -985,6 +996,13 @@ class DB():
 
         sqlparams.append(url)
 
+        # Handle fixed value columns
+        for name in self.url_parse[index]["db_columns"]:
+            name_search = re.search("(\w+)=(.*)", name)
+            if name_search:
+                sqlparams.append(name_search.group(2))
+
+        logging.info("{0}: {1}".format(sqlcmd, sqlparams))
         self.c.execute(sqlcmd, tuple(sqlparams))
 
     def commit(self):
@@ -995,11 +1013,13 @@ class DB():
             self.commit()
             self.database.close()
 
-    def create_table_with_url_text_items(self, table, items):
+    def create_table_with_name_columns(self, table, items):
         cmd = "create table if not exists "
         cmd += table + " ("
 
+        # Handle fixed items (kept in because a field can no longer be derived)
         for item in items:
+            item = re.sub("=.*", "", item)
             cmd += item + " TEXT, "
 
         cmd += "url TEXT)"
@@ -1031,7 +1051,9 @@ class DB():
     def clean_removed_urls_from_db(self):
         self.c = self.database.cursor()
 
-        for table, info in self.url_parse.items():
+        for info in self.url_parse:
+            table = info["table"]
+
             self.c.execute("select url from " + table)
             to_delete = []
 

@@ -10,12 +10,21 @@ UI:
       platform: Which Linaro platform to build an image from. Specify 'snapshot' to
         use a snapshot rather than a release.
     developer: Developer Tools
+    o-developer: Developer Tools
     graphics: Graphics
+    o-graphics: Graphics
     multimedia: Multimedia
+    o-multimedia: Multimedia
     nano: Nano
+    o-nano: Nano
     ubuntu-desktop: 'LEB: Linaro Ubuntu Desktop'
+    o-ubuntu-desktop: 'LEB: Linaro Ubuntu Desktop'
     ubuntu-desktop::long: Linux for humans on low power machines
     ubuntu-desktop::release_note: Shiny!
+    o-alip: ARM Linux Internet Platform
+    alip: ARM Linux Internet Platform
+    server: Server
+    o-server: Server
   hwpack-descriptions:
     omap3: Basic support for Beagle boards
     omap3-x11-base: Includes support for 3D acceleration
@@ -63,9 +72,12 @@ choice:
     beagle:
     - omap3
     - omap3-x11-base
+    - omap3-oneiric
+    - omap3-x11-base-oneiric
     
     igep:
     - igep
+    - igep-oneiric
     
     panda:
     - panda
@@ -73,30 +85,41 @@ choice:
     - bsp-omap4
     - lt-panda-x11-base-natty
     - lt-panda
+    - panda-oneiric
+    - panda-x11-base-oneiric
+    - lt-panda-x11-base-oneiric
+    - lt-panda-oneiric
     
     vexpress:
     - vexpress
+    - vexpress-oneiric
+    - lt-vexpress-a9-oneiric
     
     ux500:
     - bsp-ux500
     
     efikamx:
     - efikamx
+    - efikamx-oneiric
     
     efikasb:
     - efikamx
+    - efikamx-oneiric
     
     mx51evk:
     - imx51
+    - imx51-oneiric
     
     mx53loco:
     - lt-mx5
+    - lt-mx5-oneiric
      
     u8500:
      - lt-u8500
      
     overo:
     - overo
+    - overo-oneiric
      
     smdkv310:
      - lt-s5pv310
@@ -104,9 +127,13 @@ choice:
 
     origen:
      - lt-origen
+     - lt-origen-oneiric
 
     snowball_sd:
      - lt-snowball
+     - lt-snowball-v2
+     - lt-snowball-v3-oneiric
+     - lt-snowball-v2-oneiric
 
   image:
   - alip
@@ -134,6 +161,8 @@ choice:
     '11.08':
     - final
     '11.09':
+    - final
+    '11.10':
     - final
 
 platform: linaro-n
