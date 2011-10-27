@@ -32,10 +32,21 @@ class ConfigTests(TestCase):
         "[hwpack]\nname = ahwpack\npackages = foo\narchitectures = armel\n")
     valid_start_v2 = valid_start + "format = 2.0\n"
     valid_complete_v2 = (valid_start_v2 +
-                         "u-boot-package = u-boot-linaro-s5pv310\n" \
-                             "u-boot-file = usr/lib/u-boot/smdkv310/" \
+                         "u_boot_package = u-boot-linaro-s5pv310\n" \
+                             "u_boot_file = usr/lib/u-boot/smdkv310/" \
                              "u-boot.bin\nserial_tty=ttySAC1\n" \
-                             "partition_layout = bootfs_rootfs\n")
+                             "partition_layout = bootfs_rootfs\n"\
+                             "spl_package = x-loader-omap4-panda\n"\
+                             "spl_file = usr/lib/x-loader/omap4430panda/MLO\n"\
+                             "kernel_file = boot/vmlinuz-*-linaro-omap\n"\
+                             "initrd_file = boot/initrd.img-*-linaro-omap\n"\
+                             "dtb_file = boot/dt-*-linaro-omap/omap4-panda.dtb\n"\
+                             "boot_script = boot.scr\n"\
+                             "extra_serial_options = console=tty0 console=ttyO2,115200n8\n"\
+                             "extra_boot_options = earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000\n"\
+                             "boot_script = boot.scr\n"\
+                             "mmc_id = 0:1\n"\
+                             "u_boot_in_boot_part = Yes\n")
     valid_end = "[ubuntu]\nsources-entry = foo bar\n"
 
     def test_create(self):
@@ -186,39 +197,100 @@ class ConfigTests(TestCase):
 
     def test_validate_invalid_u_boot_package_name(self):
         config = self.get_config(
-                self.valid_start_v2 + "u-boot-package = ~~\n")
+                self.valid_start_v2 + "u_boot_package = ~~\n")
         self.assertValidationError(
-            "Invalid value in u-boot-package in the [hwpack] section: ~~",
+            "Invalid value in u_boot_package in the [hwpack] section: ~~",
             config)
-
-    def test_validate_empty_u_boot_package(self):
-        config = self.get_config(
-            self.valid_start_v2 + "u-boot-package = \n")
-        self.assertValidationError(
-            "No u-boot-package in the [hwpack] section", config)
-
-    def test_validate_no_u_boot_file(self):
-        config = self.get_config(self.valid_start_v2 + 
-                                 "u-boot-package = u-boot-linaro-s5pv310\n")
-        self.assertValidationError("No u_boot_file in the [hwpack] section",
-                                   config)
-
-    def test_validate_empty_u_boot_file(self):
-        config = self.get_config(self.valid_start_v2 + 
-                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
-                                     "u-boot-file = \n")
-        self.assertValidationError("No u_boot_file in the [hwpack] section", config)
 
     def test_validate_invalid_u_boot_file(self):
         config = self.get_config(self.valid_start_v2 + 
+                                 "u_boot_package = u-boot-linaro-s5pv310\n" \
+                                     "u_boot_file = ~~\n")
+        self.assertValidationError("Invalid path: ~~", config)
+
+    def test_validate_invalid_kernel_file(self):
+        config = self.get_config(self.valid_start_v2 + 
                                  "u-boot-package = u-boot-linaro-s5pv310\n" \
-                                     "u-boot-file = ~~\n")
+                                     "u-boot-file = u-boot.bin\n" \
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = ~~\n")
+        self.assertValidationError("Invalid path: ~~", config)
+
+    def test_validate_empty_kernel_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n"
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = \n")
+        self.assertValidationError("No kernel_file in the [hwpack] section", config)
+
+    def test_validate_invalid_initrd_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n" \
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                                     "initrd_file = ~~\n")
+        self.assertValidationError("Invalid path: ~~", config)
+
+    def test_validate_empty_initrd_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n"
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                                     "initrd_file = \n")
+        self.assertValidationError("No initrd_file in the [hwpack] section", config)
+
+    def test_validate_invalid_boot_script(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "mmc_id = 0:1\n"\
+                                     "u-boot-file = u-boot.bin\n" \
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                                     "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
+                                     "u_boot_in_boot_part = No\n"\
+                                     "boot_script = ~~\n")
+        self.assertValidationError("Invalid path: ~~", config)
+
+    def test_validate_invalid_dtb_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n" \
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                                     "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
+                                     "boot_script = boot.scr\n"\
+                                     "u_boot_in_boot_part = No\n"\
+                                     "mmc_id = 0:1\n"\
+                                     "dtb_file = ~~\n")
+        self.assertValidationError("Invalid path: ~~", config)
+
+    def test_validate_invalid_spl_package_name(self):
+        config = self.get_config(
+            self.valid_start_v2 + "u-boot-package = u-boot-linaro-s5pv310\n" \
+                "u-boot-file = usr/bin/version/MLO\n" \
+                "partition_layout = bootfs_rootfs\n"\
+                "mmc_id = 0:1\n"\
+                "spl_package = ~~\n")
+        self.assertValidationError(
+            "Invalid value in spl_package in the [hwpack] section: ~~",
+            config)
+
+    def test_validate_invalid_spl_file(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = usr/bin/version/MLO\n" \
+                                     "partition_layout = bootfs_rootfs\n" \
+                                     "spl_package = x-loader--linaro-s5pv310\n" \
+                                     "spl_file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
     def test_validate_partition_layout(self):
         partition_layout = 'apafs_bananfs'
-        config = self.get_config(self.valid_start_v2 + "u-boot-package = " \
-                                     "u-boot-linaro-s5pv310\nu-boot-file = " \
+        config = self.get_config(self.valid_start_v2 + "u_boot_package = " \
+                                     "u-boot-linaro-s5pv310\nu_boot_file = " \
                                      "u-boot.bin\npartition_layout = %s\n" % \
                                      partition_layout)
         self.assertValidationError(
@@ -233,21 +305,45 @@ class ConfigTests(TestCase):
     def test_validate_wireless_interfaces(self):
         self.assertTrue("XXX What is an invalid interface name?")
 
-    def test_validate_serial_tty(self):
-        config = self.get_config(self.valid_start_v2 +
-                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
-                                     "u-boot-file = u-boot.bin\nserial_tty=tty\n")
-        self.assertValidationError("Invalid serial tty: tty", config)
-        config = self.get_config(self.valid_start_v2 +
+    def test_validate_u_boot_in_boot_part(self):
+        config = self.get_config(self.valid_start_v2 + 
                                  "u-boot-package = u-boot-linaro-s5pv310\n" \
                                      "u-boot-file = u-boot.bin\n" \
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                                     "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
+                                     "boot_script = boot.scr\n"\
+                                     "mmc_id = 0:1\n"\
+                                     "u_boot_in_boot_part = Nope\n")
+        self.assertValidationError("Invalid value for u_boot_in_boot_part: Nope", config)
+
+    def test_validate_u_boot_in_boot_part_bool(self):
+        config = self.get_config(self.valid_start_v2 + 
+                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
+                                     "u-boot-file = u-boot.bin\n" \
+                                     "partition_layout = bootfs_rootfs\n"\
+                                     "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
+                                     "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
+                                     "boot_script = boot.scr\n"\
+                                     "mmc_id = 0:1\n"\
+                                     "u_boot_in_boot_part = True\n")
+        self.assertValidationError("Invalid value for u_boot_in_boot_part: True", config)
+
+    def test_validate_serial_tty(self):
+        config = self.get_config(self.valid_start_v2 +
+                                 "u_boot_package = u-boot-linaro-s5pv310\n" \
+                                     "u_boot_file = u-boot.bin\nserial_tty=tty\n")
+        self.assertValidationError("Invalid serial tty: tty", config)
+        config = self.get_config(self.valid_start_v2 +
+                                 "u_boot_package = u-boot-linaro-s5pv310\n" \
+                                     "u_boot_file = u-boot.bin\n" \
                                      "serial_tty=ttxSAC1\n")
         self.assertValidationError("Invalid serial tty: ttxSAC1", config)
 
     def test_validate_mmc_id(self):
         config = self.get_config(self.valid_complete_v2 + 
                                  "mmc_id = x\n")
-        self.assertValidationError("Invalid mmc id x", config)
+        self.assertValidationError("Invalid mmc_id x", config)
 
     def test_validate_boot_min_size(self):
         config = self.get_config(self.valid_complete_v2 + 
@@ -297,6 +393,17 @@ class ConfigTests(TestCase):
                                  "load_addr = 80000000\n")
         self.assertValidationError("Invalid load address: 80000000", config)
 
+    def test_validate_dtb_addr(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "dtb_addr = 0x8000000\n")
+        self.assertValidationError("Invalid dtb address: 0x8000000", config)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "dtb_addr = 0x8000000x\n")
+        self.assertValidationError("Invalid dtb address: 0x8000000x", config)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "dtb_addr = 80000000\n")
+        self.assertValidationError("Invalid dtb address: 80000000", config)
+
     def test_wired_interfaces(self):
         config = self.get_config(self.valid_complete_v2 + 
                                  "wired_interfaces = eth0\n" + 
@@ -333,6 +440,66 @@ class ConfigTests(TestCase):
         self.assertEqual("usr/lib/u-boot/smdkv310/u-boot.bin",
                          config.u_boot_file)
 
+    def test_u_boot_package(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("u-boot-linaro-s5pv310",
+                         config.u_boot_package)
+
+    def test_spl_file(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("usr/lib/x-loader/omap4430panda/MLO",
+                         config.spl_file)
+
+    def test_kernel_file(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("boot/vmlinuz-*-linaro-omap",
+                         config.vmlinuz)
+
+    def test_initrd_file(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("boot/initrd.img-*-linaro-omap",
+                         config.initrd)
+
+    def test_dtb_file(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("boot/dt-*-linaro-omap/omap4-panda.dtb",
+                         config.dtb_file)
+
+    def test_extra_boot_options(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000",
+                         config.extra_boot_options)
+
+    def test_extra_serial_opts(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("console=tty0 console=ttyO2,115200n8",
+                         config.extra_serial_opts)
+
+    def test_boot_script(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("boot.scr",
+                         config.boot_script)
+
+    def test_u_boot_in_boot_part(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("Yes",
+                         config.uboot_in_boot_part)
+
+    def test_spl_package(self):
+        config = self.get_config(self.valid_complete_v2 + self.valid_end)
+        config.validate()
+        self.assertEqual("x-loader-omap4-panda",
+                         config.spl_package)
+
     def test_serial_tty(self):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)
         config.validate()
@@ -340,10 +507,10 @@ class ConfigTests(TestCase):
 
     def test_mmc_id(self):
         config = self.get_config(self.valid_complete_v2 + 
-                                 "mmc_id = 1\n" + 
+                                 "mmc_id = 0:1\n" + 
                                  self.valid_end)
         config.validate()
-        self.assertEqual("1", config.mmc_id)
+        self.assertEqual("0:1", config.mmc_id)
 
     def test_boot_min_size(self):
         config = self.get_config(self.valid_complete_v2 + 
@@ -401,6 +568,18 @@ class ConfigTests(TestCase):
                                  self.valid_end)
         config.validate()
         self.assertEqual("0x8aBcdEFf", config.load_addr)
+
+    def test_dtb_addr(self):
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "dtb_addr = 0x80000000\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual("0x80000000", config.dtb_addr)
+        config = self.get_config(self.valid_complete_v2 + 
+                                 "dtb_addr = 0x8aBcdEFf\n" + 
+                                 self.valid_end)
+        config.validate()
+        self.assertEqual("0x8aBcdEFf", config.dtb_addr)
 
     def test_name(self):
         config = self.get_config(

@@ -102,7 +102,6 @@ class HardwarePackBuilder(object):
         else:
             raise AssertionError("Package '%s' was not fetched." % \
                                 wanted_package_name)
-        packages.remove(wanted_package)
         return wanted_package
 
     def add_file_to_hwpack(self, package, wanted_file, package_unpacker, hwpack, target_path):
@@ -123,6 +122,8 @@ class HardwarePackBuilder(object):
                 packages = self.config.packages[:]
                 if self.config.u_boot_package is not None:
                     packages.append(self.config.u_boot_package)
+                if self.config.spl_package is not None:
+                    packages.append(self.config.spl_package)
                 local_packages = [
                     FetchedPackage.from_deb(deb)
                     for deb in self.local_debs]
@@ -141,12 +142,31 @@ class HardwarePackBuilder(object):
                             packages,
                             download_content=self.config.include_debs)
 
-                        if self.config.u_boot_package is not None:
+                        u_boot_package = None
+                        if self.config.u_boot_file is not None:
+                            assert self.config.u_boot_package is not None
                             u_boot_package = self.find_fetched_package(
                                 packages, self.config.u_boot_package)
                             hwpack.metadata.u_boot = self.add_file_to_hwpack(
                                 u_boot_package, self.config.u_boot_file,
                                 package_unpacker, hwpack, hwpack.U_BOOT_DIR)
+
+                        spl_package = None
+                        if self.config.spl_file is not None:
+                            assert self.config.spl_package is not None
+                            spl_package = self.find_fetched_package(
+                                packages, self.config.spl_package)
+                            hwpack.metadata.spl = self.add_file_to_hwpack(
+                                spl_package, self.config.spl_file,
+                                package_unpacker, hwpack, hwpack.SPL_DIR)
+
+                        # u_boot_package and spl_package can be identical
+                        if (u_boot_package is not None and
+                            u_boot_package in packages):
+                            packages.remove(u_boot_package)
+                        if (spl_package is not None and
+                            spl_package in packages):
+                            packages.remove(spl_package)
 
                         logger.debug("Adding packages to hwpack")
                         hwpack.add_packages(packages)
