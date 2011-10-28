@@ -36,6 +36,8 @@ import datetime
 import threading
 import subprocess
 import utils
+import xdg.BaseDirectory as xdgBaseDir
+
 
 QEMU = "qemu"
 HARDWARE = "hardware"
@@ -529,10 +531,6 @@ class FileHandler():
     """Downloads files and creates images from them by calling
     linaro-media-create"""
     def __init__(self):
-        # Import xdg here so it isn't required to index the server.
-        # (package not installed)
-        import xdg.BaseDirectory as xdgBaseDir
-
         self.datadir = os.path.join(xdgBaseDir.xdg_data_home,
                                      "linaro",
                                      "image-tools",
