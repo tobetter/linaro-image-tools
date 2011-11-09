@@ -185,11 +185,11 @@ class AndroidPandaConfig(AndroidOmapConfig, PandaConfig):
 
 
 class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
+    boot_script = 'boot.scr'
+    initrd_addr = '0x05000000'
     extra_boot_args_options = (
-        'earlyprintk rootdelay=1 fixrtc nocompcache '
-        'mem=128M@0 mali.mali_mem=64M@128M mem=24M@192M hwmem=167M@216M '
-        'mem_issw=1M@383M mem=640M@384M vmalloc=256M')
-    _extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
+        'earlyprintk vmalloc=256M vmalloc=256M mem=128M@0 mali.mali_mem=32M@128M hwmem=168M@160M mem=48M@328M mem_issw=1M@383M mem=640M@384M')
+    _extra_serial_opts = 'console=ttyAMA2,115200n8'
     android_specific_args = 'init=/init androidboot.console=ttyAMA2'
 
 
