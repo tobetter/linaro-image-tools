@@ -191,6 +191,8 @@ class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
         'earlyprintk vmalloc=256M vmalloc=256M mem=128M@0 mali.mali_mem=32M@128M hwmem=168M@160M mem=48M@328M mem_issw=1M@383M mem=640M@384M')
     _extra_serial_opts = 'console=ttyAMA2,115200n8'
     android_specific_args = 'init=/init androidboot.console=ttyAMA2'
+    # Snowball uses a custom uboot
+    fatload_command = 'fat load'
 
 
 class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
