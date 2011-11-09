@@ -205,6 +205,7 @@ class BoardConfig(object):
     fatload_command = 'fatload'
     mmc_option = '0:1'
     mmc_part_offset = 0
+    uimage_path = ''
     fat_size = 32
     _extra_serial_opts = ''
     _live_serial_opts = ''
@@ -553,12 +554,12 @@ class BoardConfig(object):
         In general subclasses should not have to override this.
         """
         replacements = dict(
-            fatload_command=cls.fatload_command,
+            fatload_command=cls.fatload_command, uimage_path=cls.uimage_path,
             mmc_option=cls.mmc_option, kernel_addr=cls.kernel_addr,
             initrd_addr=cls.initrd_addr, dtb_addr=cls.dtb_addr)
         boot_script = (
-            "%(fatload_command)s mmc %(mmc_option)s %(kernel_addr)s uImage; "
-            "%(fatload_command)s mmc %(mmc_option)s %(initrd_addr)s uInitrd; "
+            "%(fatload_command)s mmc %(mmc_option)s %(kernel_addr)s %(uimage_path)suImage; "
+            "%(fatload_command)s mmc %(mmc_option)s %(initrd_addr)s %(uimage_path)suInitrd; "
             % replacements)
         if d_img_data is not None:
             assert cls.dtb_addr is not None, (
