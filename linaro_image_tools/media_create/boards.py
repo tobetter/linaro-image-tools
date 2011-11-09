@@ -557,14 +557,14 @@ class BoardConfig(object):
             mmc_option=cls.mmc_option, kernel_addr=cls.kernel_addr,
             initrd_addr=cls.initrd_addr, dtb_addr=cls.dtb_addr)
         boot_script = (
-            "%(fatload_command) mmc %(mmc_option)s %(kernel_addr)s uImage; "
-            "%(fatload_command) mmc %(mmc_option)s %(initrd_addr)s uInitrd; "
+            "%(fatload_command)s mmc %(mmc_option)s %(kernel_addr)s uImage; "
+            "%(fatload_command)s mmc %(mmc_option)s %(initrd_addr)s uInitrd; "
             % replacements)
         if d_img_data is not None:
             assert cls.dtb_addr is not None, (
                 "Need a dtb_addr when passing d_img_data")
             boot_script += (
-                "%(fatload_command) mmc %(mmc_option)s %(dtb_addr)s board.dtb; "
+                "%(fatload_command)s mmc %(mmc_option)s %(dtb_addr)s board.dtb; "
                 "bootm %(kernel_addr)s %(initrd_addr)s %(dtb_addr)s"
                 % replacements)
         else:
