@@ -2390,7 +2390,17 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         self.assertFalse(
             has_space_left_for_swap('/', swap_size_in_megs))
 
+    def mock_write_data_to_protected_file(self, path, data):
+        # Duplicate of write_data_to_protected_file() but does not sudo.
+        _, tmpfile = tempfile.mkstemp()
+        with open(tmpfile, 'w') as fd:
+            fd.write(data)
+            cmd_runner.run(['mv', '-f', tmpfile, path], as_root=False).wait()
+
     def test_update_interfaces_no_interfaces_no_update(self):
+        self.useFixture(MockSomethingFixture(
+                rootfs, 'write_data_to_protected_file',
+                self.mock_write_data_to_protected_file))
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         os.makedirs(os.path.join(tempdir, 'etc', 'network'))
         if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
@@ -2401,6 +2411,9 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         self.assertFalse(os.path.exists(if_path))
 
     def test_update_interfaces_creates_entry(self):
+        self.useFixture(MockSomethingFixture(
+                rootfs, 'write_data_to_protected_file',
+                self.mock_write_data_to_protected_file))
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         os.makedirs(os.path.join(tempdir, 'etc', 'network'))
         if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
@@ -2413,6 +2426,9 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         self.assertEqual(expected, open(if_path).read())
 
     def test_update_interfaces_creates_entries(self):
+        self.useFixture(MockSomethingFixture(
+                rootfs, 'write_data_to_protected_file',
+                self.mock_write_data_to_protected_file))
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         os.makedirs(os.path.join(tempdir, 'etc', 'network'))
         if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
@@ -2429,6 +2445,9 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         self.assertIn(expected % {'if': 'wlan0'}, open(if_path).read())
 
     def test_update_interfaces_leaves_original(self):
+        self.useFixture(MockSomethingFixture(
+                rootfs, 'write_data_to_protected_file',
+                self.mock_write_data_to_protected_file))
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         os.makedirs(os.path.join(tempdir, 'etc', 'network'))
         if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
