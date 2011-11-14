@@ -1396,22 +1396,34 @@ class TestGetBootCmdAndroid(TestCase):
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'bootm 0x80200000 0x81600000'}
         self.assertEqual(expected, boot_commands)
-	
+
+    def test_android_snowball_sd(self):
+        boot_commands = (android_boards.AndroidSnowballSdConfig.
+                         _get_boot_env(consoles=[]))
+        expected = {
+            'bootargs': 'console=ttyAMA2,115200n8 '
+                        'rootwait ro earlyprintk '
+                        'mem=128M@0 mali.mali_mem=32M@128M hwmem=168M@160M '
+                        'mem=48M@328M mem_issw=1M@383M mem=640M@384M '
+                        'vmalloc=256M init=/init androidboot.console=ttyAMA2',
+            'bootcmd': 'fat load mmc 1:1 0x00100000 /uImage; '
+                       'fat load mmc 1:1 0x05000000 /uInitrd; '
+                       'bootm 0x00100000 0x05000000'}
+        self.assertEqual(expected, boot_commands)
+
     def test_android_snowball_emmc(self):
         boot_commands = (android_boards.AndroidSnowballEmmcConfig.
                          _get_boot_env(consoles=[]))
         expected = {
-            'bootargs': 'console=tty0 console=ttyAMA2,115200n8 '
+            'bootargs': 'console=ttyAMA2,115200n8 '
                         'rootwait ro earlyprintk '
-                        'rootdelay=1 fixrtc nocompcache '
-                        'mem=128M@0 mali.mali_mem=64M@128M mem=24M@192M '
-                        'hwmem=167M@216M mem_issw=1M@383M mem=640M@384M '
+                        'mem=128M@0 mali.mali_mem=32M@128M hwmem=168M@160M '
+                        'mem=48M@328M mem_issw=1M@383M mem=640M@384M '
                         'vmalloc=256M init=/init androidboot.console=ttyAMA2',
-            'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
-                       'fatload mmc 1:1 0x08000000 uInitrd; '
-                       'bootm 0x00100000 0x08000000'}
+            'bootcmd': 'fat load mmc 1:1 0x00100000 /uImage; '
+                       'fat load mmc 1:1 0x05000000 /uInitrd; '
+                       'bootm 0x00100000 0x05000000'}
         self.assertEqual(expected, boot_commands)
-
 
     def test_android_origen(self):
         boot_commands = (android_boards.AndroidOrigenConfig.
