@@ -506,6 +506,8 @@ class IsolatedAptCache(object):
                     'Package: *\n'
                     'Pin: release l=%s\n'
                     'Pin-Priority: 1001\n' % self.prefer_label)
+        # XXX: This is a temporary workaround for bug 885895.
+        apt_pkg.config.set("Dir::bin::dpkg", "/bin/false")
         self.cache = Cache(rootdir=self.tempdir, memonly=True)
         logger.debug("Updating apt cache")
         self.cache.update()
