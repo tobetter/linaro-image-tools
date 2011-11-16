@@ -2682,6 +2682,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             'prepare_chroot %(chroot_dir)s %(tmp_dir)s',
             'cp %(linaro_hwpack_install)s %(chroot_dir)s/usr/bin',
             'mount proc %(chroot_dir)s/proc -t proc',
+            'chroot chroot_dir true',
             'cp hwpack1.tgz %(chroot_dir)s',
             ('%(chroot_args)s %(chroot_dir)s linaro-hwpack-install '
              '--force-yes /hwpack1.tgz'),
