@@ -919,6 +919,11 @@ class TestBootSteps(TestCaseWithFixtures):
         expected = ['make_uImage', 'make_uInitrd']
         self.assertEqual(expected, self.funcs_calls)
 
+    def test_vexpress_a9_steps(self):
+        self.make_boot_files(boards.VexpressA9Config)
+        expected = ['make_uImage', 'make_uInitrd']
+        self.assertEqual(expected, self.funcs_calls)
+
     def test_mx5_steps(self):
         class SomeMx5Config(boards.Mx5Config):
             uboot_flavor = 'uboot_flavor'
@@ -1214,6 +1219,18 @@ class TestGetBootCmd(TestCase):
 
     def test_vexpress(self):
         boot_commands = board_configs['vexpress']._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
+            rootfs_uuid="deadbeef", d_img_data=None)
+        expected = {
+            'bootargs': 'console=tty0 console=ttyAMA0,38400n8 '
+                        'console=ttyXXX  root=UUID=deadbeef rootwait ro',
+            'bootcmd': 'fatload mmc 0:1 0x60008000 uImage; '
+                       'fatload mmc 0:1 0x81000000 uInitrd; '
+                       'bootm 0x60008000 0x81000000'}
+        self.assertEqual(expected, boot_commands)
+
+    def test_vexpress_a9(self):
+        boot_commands = board_configs['vexpress-a9']._get_boot_env(
             is_live=False, is_lowmem=False, consoles=['ttyXXX'],
             rootfs_uuid="deadbeef", d_img_data=None)
         expected = {
