@@ -1453,6 +1453,17 @@ class TestGetBootCmdAndroid(TestCase):
                        'bootm 0x40007000 0x42000000'}
         self.assertEqual(expected, boot_commands)
 
+    def test_android_vexpress_a9(self):
+        boot_commands = (android_boards.AndroidVexpressA9Config.
+                         _get_boot_env(consoles=[]))
+        expected = {
+            'bootargs': 'console=tty0 console=ttyAMA0,38400n8 '
+                        'rootwait ro init=/init androidboot.console=ttyAMA0',
+            'bootcmd': 'fatload mmc 0:1 0x60008000 uImage; '
+                       'fatload mmc 0:1 0x81000000 uInitrd; '
+                       'bootm 0x60008000 0x81000000'}
+        self.assertEqual(expected, boot_commands)
+
 
 class TestUnpackBinaryTarball(TestCaseWithFixtures):
 
