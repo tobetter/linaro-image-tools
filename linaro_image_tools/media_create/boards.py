@@ -1131,12 +1131,11 @@ class SnowballEmmcConfig(SnowballSdConfig):
                   'r') as info_file:
             for line in info_file:
                 file_data = line.split()
+                if len(file_data) == 0:
+                    # Line contains only whitespace
+                    continue
                 if file_data[0][0] == '#':
                     continue
-# 797135  proposal
-		if not file_data[1].rstrip():
-		    continue
-# /797135
                 if file_data[1].startswith('/'):
                     filename = os.path.join(chroot_dir,
                                             file_data[1].lstrip('/'))
