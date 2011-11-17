@@ -919,6 +919,11 @@ class TestBootSteps(TestCaseWithFixtures):
         expected = ['make_uImage', 'make_uInitrd']
         self.assertEqual(expected, self.funcs_calls)
 
+    def test_vexpress_a9_steps(self):
+        self.make_boot_files(boards.VexpressA9Config)
+        expected = ['make_uImage', 'make_uInitrd']
+        self.assertEqual(expected, self.funcs_calls)
+
     def test_mx5_steps(self):
         class SomeMx5Config(boards.Mx5Config):
             uboot_flavor = 'uboot_flavor'
@@ -1165,6 +1170,12 @@ class TestGetSfdiskCmd(TestCase):
                 '794624,-,E\n794624,524288,L\n1318912,1048576,L\n2367488,,,-', 
                 android_boards.AndroidSnowballEmmcConfig.get_sfdisk_cmd())
 
+    def test_vexpress_android(self):
+        self.assertEqual(
+            '63,270272,0x0E,*\n270336,524288,L\n794624,524288,L\n' \
+                '1318912,-,E\n1318912,1048576,L\n2367488,,,-', 
+                android_boards.AndroidVexpressA9Config.get_sfdisk_cmd())
+
 class TestGetSfdiskCmdV2(TestCase):
 
     def test_mx5(self):
@@ -1214,6 +1225,18 @@ class TestGetBootCmd(TestCase):
 
     def test_vexpress(self):
         boot_commands = board_configs['vexpress']._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
+            rootfs_uuid="deadbeef", d_img_data=None)
+        expected = {
+            'bootargs': 'console=tty0 console=ttyAMA0,38400n8 '
+                        'console=ttyXXX  root=UUID=deadbeef rootwait ro',
+            'bootcmd': 'fatload mmc 0:1 0x60008000 uImage; '
+                       'fatload mmc 0:1 0x81000000 uInitrd; '
+                       'bootm 0x60008000 0x81000000'}
+        self.assertEqual(expected, boot_commands)
+
+    def test_vexpress_a9(self):
+        boot_commands = board_configs['vexpress-a9']._get_boot_env(
             is_live=False, is_lowmem=False, consoles=['ttyXXX'],
             rootfs_uuid="deadbeef", d_img_data=None)
         expected = {
@@ -1434,6 +1457,17 @@ class TestGetBootCmdAndroid(TestCase):
             'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
                        'fatload mmc 0:2 0x42000000 uInitrd; '
                        'bootm 0x40007000 0x42000000'}
+        self.assertEqual(expected, boot_commands)
+
+    def test_android_vexpress_a9(self):
+        boot_commands = (android_boards.AndroidVexpressA9Config.
+                         _get_boot_env(consoles=[]))
+        expected = {
+            'bootargs': 'console=tty0 console=ttyAMA0,38400n8 '
+                        'rootwait ro init=/init androidboot.console=ttyAMA0',
+            'bootcmd': 'fatload mmc 0:1 0x60008000 uImage; '
+                       'fatload mmc 0:1 0x81000000 uInitrd; '
+                       'bootm 0x60008000 0x81000000'}
         self.assertEqual(expected, boot_commands)
 
 

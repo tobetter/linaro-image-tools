@@ -1266,7 +1266,7 @@ class VexpressConfig(BoardConfig):
     initrd_addr = '0x81000000'
     load_addr = kernel_addr
     kernel_flavors = ['linaro-vexpress']
-    boot_script = None
+    boot_script = 'boot.scr'
     # ARM Boot Monitor is used to load u-boot, uImage etc. into flash and
     # only allows for FAT16
     fat_size = 16
@@ -1285,6 +1285,13 @@ class VexpressConfig(BoardConfig):
                          d_img_data):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
+
+
+class VexpressA9Config(VexpressConfig):
+    # For now, this is a duplicate of VexpressConfig.
+    # In future, there will also be A5 and A15 variants.
+    # For all of these, there should never be any V1 hardware packs.
+    pass
 
 
 class SamsungConfig(BoardConfig):
@@ -1430,6 +1437,7 @@ board_configs = {
     'igep': IgepConfig,
     'panda': PandaConfig,
     'vexpress': VexpressConfig,
+    'vexpress-a9': VexpressA9Config,
     'ux500': Ux500Config,
     'snowball_sd': SnowballSdConfig,
     'snowball_emmc': SnowballEmmcConfig,

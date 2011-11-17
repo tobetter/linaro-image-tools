@@ -33,6 +33,7 @@ from linaro_image_tools.media_create.boards import SnowballSdConfig
 from linaro_image_tools.media_create.boards import SnowballEmmcConfig
 from linaro_image_tools.media_create.boards import SMDKV310Config
 from linaro_image_tools.media_create.boards import OrigenConfig
+from linaro_image_tools.media_create.boards import VexpressA9Config
 from linaro_image_tools.media_create.boards import (
     align_up,
     align_partition,
@@ -167,6 +168,7 @@ class AndroidBoardConfig(object):
     def install_boot_loader(cls, boot_partition, boot_device_or_file):
         pass
 
+
 class AndroidOmapConfig(AndroidBoardConfig):
     pass
 
@@ -228,6 +230,7 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
         return '%s,%s,0xDA\n%s' % (
             loader_start, loader_len, command)
 
+
 class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
     extra_boot_args_options = (
         'earlyprintk rootdelay=1 fixrtc nocompcache di1_primary tve')
@@ -282,6 +285,11 @@ class AndroidOrigenConfig(AndroidSamsungConfig, OrigenConfig):
     android_specific_args = 'init=/init androidboot.console=ttySAC2'
 
 
+class AndroidVexpressA9Config(AndroidBoardConfig, VexpressA9Config):
+    _extra_serial_opts = 'console=tty0 console=ttyAMA0,38400n8'
+    android_specific_args = 'init=/init androidboot.console=ttyAMA0'
+
+
 android_board_configs = {
     'beagle': AndroidBeagleConfig,
     'panda': AndroidPandaConfig,
@@ -291,4 +299,5 @@ android_board_configs = {
     'mx53loco': AndroidMx53LoCoConfig,
     'iMX53': AndroidMx53LoCoConfig,
     'origen': AndroidOrigenConfig,
+    'vexpress-a9': AndroidVexpressA9Config,
     }
