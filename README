@@ -16,6 +16,8 @@ installed:
   - qemu-user-static >= 0.13.0 (only if you're running on x86)
   - btrfs-tools
   - command-not-found
+  - python-testtools >= 0.9.8
+     (available at https://launchpad.net/~linaro-maintainers/+archive/tools)
 
 = Running tests =
 
@@ -32,6 +34,7 @@ Before running any tests you need to install the following packages:
   - python-apt
   - qemu-kvm
   - sfdisk
+  - apt-utils
 
 Also consider installing pyflakes, which is optional but will enable more
 tests.
