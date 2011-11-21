@@ -57,6 +57,21 @@ def install_hwpacks(
 
     try:
         mount_chroot_proc(chroot_dir)
+        try:
+            # Sometimes the host will have qemu-user-static installed but
+            # another package (i.e. scratchbox) will have mangled its config
+            # and thus we won't be able to chroot and install the hwpack, so
+            # we fail here and tell the user to ensure qemu-arm-static is
+            # setup before trying again.
+            cmd_runner.run(['true'], as_root=True, chroot=chroot_dir).wait()
+        except:
+            print ("Cannot proceed with hwpack installation because "
+                   "there doesn't seem to be a binfmt interpreter registered "
+                   "to execute armel binaries in the chroot. Please check "
+                   "that qemu-user-static is installed and properly "
+                   "configured before trying again.")
+            raise
+
         for hwpack_file in hwpack_files:
             hwpack_verified = False
             if os.path.basename(hwpack_file) in verified_files:
