@@ -690,6 +690,8 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
             for line in src_data:
                 # Write comments, so we test that the parser can read them
                 f.write('#Yet another comment\n')
+                # Write whitespace, so we test that the parser can handle them
+                f.write('   \n\t\n \t \t \n')
                 f.write('%s %s %i %#x %s\n' % line)
         expected = []
         # Define dummy binary files, containing nothing but their own

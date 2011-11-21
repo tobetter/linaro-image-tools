@@ -1134,6 +1134,9 @@ class SnowballEmmcConfig(SnowballSdConfig):
                   'r') as info_file:
             for line in info_file:
                 file_data = line.split()
+                if len(file_data) == 0:
+                    # Line contains only whitespace
+                    continue
                 if file_data[0][0] == '#':
                     continue
                 if file_data[1].startswith('/'):
