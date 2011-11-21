@@ -25,12 +25,11 @@ import logging
 import tempfile
 import tarfile
 
-try:
-    from CommandNotFound import CommandNotFound
-except ImportError:
-    CommandNotFound = None
+from testtools import try_import
 
 from linaro_image_tools import cmd_runner
+
+CommandNotFound = try_import('CommandNotFound.CommandNotFound')
 
 
 def path_in_tarfile_exists(path, tar_file):
