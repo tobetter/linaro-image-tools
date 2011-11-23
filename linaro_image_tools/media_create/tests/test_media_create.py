@@ -1232,9 +1232,9 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=tty0 console=ttyAMA0,38400n8 '
                         'console=ttyXXX  root=UUID=deadbeef rootwait ro',
-            'bootcmd': 'fatload mmc 0:1 0x60008000 uImage; '
-                       'fatload mmc 0:1 0x81000000 uInitrd; '
-                       'bootm 0x60008000 0x81000000'}
+            'bootcmd': 'fatload mmc 0:1 0x60000000 uImage; '
+                       'fatload mmc 0:1 0x62000000 uInitrd; '
+                       'bootm 0x60000000 0x62000000'}
         self.assertEqual(expected, boot_commands)
 
     def test_vexpress_a9(self):
@@ -1244,9 +1244,9 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=tty0 console=ttyAMA0,38400n8 '
                         'console=ttyXXX  root=UUID=deadbeef rootwait ro',
-            'bootcmd': 'fatload mmc 0:1 0x60008000 uImage; '
-                       'fatload mmc 0:1 0x81000000 uInitrd; '
-                       'bootm 0x60008000 0x81000000'}
+            'bootcmd': 'fatload mmc 0:1 0x60000000 uImage; '
+                       'fatload mmc 0:1 0x62000000 uInitrd; '
+                       'bootm 0x60000000 0x62000000'}
         self.assertEqual(expected, boot_commands)
 
     def test_mx51(self):
@@ -1467,9 +1467,9 @@ class TestGetBootCmdAndroid(TestCase):
         expected = {
             'bootargs': 'console=tty0 console=ttyAMA0,38400n8 '
                         'rootwait ro init=/init androidboot.console=ttyAMA0',
-            'bootcmd': 'fatload mmc 0:1 0x60008000 uImage; '
-                       'fatload mmc 0:1 0x81000000 uInitrd; '
-                       'bootm 0x60008000 0x81000000'}
+            'bootcmd': 'fatload mmc 0:1 0x60000000 uImage; '
+                       'fatload mmc 0:1 0x62000000 uInitrd; '
+                       'bootm 0x60000000 0x62000000'}
         self.assertEqual(expected, boot_commands)
 
 

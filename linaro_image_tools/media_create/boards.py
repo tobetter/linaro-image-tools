@@ -1265,9 +1265,9 @@ class VexpressConfig(BoardConfig):
     serial_tty = 'ttyAMA0'
     _extra_serial_opts = 'console=tty0 console=%s,38400n8'
     _live_serial_opts = 'serialtty=%s'
-    kernel_addr = '0x60008000'
-    initrd_addr = '0x81000000'
-    load_addr = kernel_addr
+    kernel_addr = '0x60000000'
+    initrd_addr = '0x62000000'
+    load_addr = '0x60008000'
     kernel_flavors = ['linaro-vexpress']
     boot_script = 'boot.scr'
     # ARM Boot Monitor is used to load u-boot, uImage etc. into flash and
