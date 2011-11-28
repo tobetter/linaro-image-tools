@@ -24,10 +24,49 @@ import re
 import logging
 import tempfile
 import tarfile
-
-from testtools import try_import
+import sys
 
 from linaro_image_tools import cmd_runner
+
+
+def try_import(name, alternative=None, error_callback=None):
+    """Attempt to import ``name``.  If it fails, return ``alternative``.
+
+    When supporting multiple versions of Python or optional dependencies, it
+    is useful to be able to try to import a module.
+
+    :param name: The name of the object to import, e.g. ``os.path`` or
+        ``os.path.join``.
+    :param alternative: The value to return if no module can be imported.
+        Defaults to None.
+    :param error_callback: If non-None, a callable that is passed the ImportError
+        when the module cannot be loaded.
+    """
+    module_segments = name.split('.')
+    last_error = None
+    while module_segments:
+        module_name = '.'.join(module_segments)
+        try:
+            module = __import__(module_name)
+        except ImportError:
+            last_error = sys.exc_info()[1]
+            module_segments.pop()
+            continue
+        else:
+            break
+    else:
+        if last_error is not None and error_callback is not None:
+            error_callback(last_error)
+        return alternative
+    nonexistent = object()
+    for segment in name.split('.')[1:]:
+        module = getattr(module, segment, nonexistent)
+        if module is nonexistent:
+            if last_error is not None and error_callback is not None:
+                error_callback(last_error)
+            return alternative
+    return module
+
 
 CommandNotFound = try_import('CommandNotFound.CommandNotFound')
 
