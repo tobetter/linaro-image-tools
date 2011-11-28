@@ -29,6 +29,10 @@ import sys
 from linaro_image_tools import cmd_runner
 
 
+# try_import was copied from python-testtools 0.9.12 and was originally
+# licensed under a MIT-style license but relicensed under the GPL in Linaro
+# Image Tools.
+# Copyright (c) 2011 Jonathan M. Lange <jml@mumak.net>.
 def try_import(name, alternative=None, error_callback=None):
     """Attempt to import ``name``.  If it fails, return ``alternative``.
 
