@@ -18,6 +18,7 @@ installed:
   - command-not-found
   - python-testtools >= 0.9.8
      (available at https://launchpad.net/~linaro-maintainers/+archive/tools)
+  - python-yaml
 
 = Running tests =
 
