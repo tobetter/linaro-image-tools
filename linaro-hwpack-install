@@ -29,6 +29,7 @@
 
 set -e
 
+unset TMPDIR
 LOCKFILE="/var/lock/hwpack"
 TEMP_DIR=$(mktemp -d)
 HWPACK_DIR="${TEMP_DIR}/unpacked"
