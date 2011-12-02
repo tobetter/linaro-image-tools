@@ -16,8 +16,6 @@ installed:
   - qemu-user-static >= 0.13.0 (only if you're running on x86)
   - btrfs-tools
   - command-not-found
-  - python-testtools >= 0.9.8
-     (available at https://launchpad.net/~linaro-maintainers/+archive/tools)
   - python-yaml
 
 = Running tests =
