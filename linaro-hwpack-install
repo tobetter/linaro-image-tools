@@ -29,7 +29,11 @@
 
 set -e
 
-unset TMPDIR
+if [ -n "${TMPDIR+x}" ]; then
+ echo -e "\nWARNING: TMPDIR variable is set. It will be unset because in chroot environment it likely doesn't exist and can lead to error messages.\n"
+ unset TMPDIR
+fi
+
 LOCKFILE="/var/lock/hwpack"
 TEMP_DIR=$(mktemp -d)
 HWPACK_DIR="${TEMP_DIR}/unpacked"
