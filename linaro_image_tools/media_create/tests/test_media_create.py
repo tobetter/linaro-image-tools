@@ -1805,7 +1805,9 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
-             'sync'],
+             '%s sfdisk -l %s' % (sudo_args, self.media.path),
+             'sync',
+             '%s sfdisk -l %s' % (sudo_args, self.media.path)],
             popen_fixture.mock.commands_executed)
         # Notice that we create all partitions in a single sfdisk run because
         # every time we run sfdisk it actually repartitions the device,
@@ -1825,7 +1827,9 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
-             'sync'],
+             '%s sfdisk -l %s' % (sudo_args, self.media.path),
+             'sync',
+             '%s sfdisk -l %s' % (sudo_args, self.media.path)],
             popen_fixture.mock.commands_executed)
         # Notice that we create all partitions in a single sfdisk run because
         # every time we run sfdisk it actually repartitions the device,
@@ -1844,7 +1848,9 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
-             'sync'],
+             '%s sfdisk -l %s' % (sudo_args, self.media.path),
+             'sync',
+             '%s sfdisk -l %s' % (sudo_args, self.media.path)],
             popen_fixture.mock.commands_executed)
         # Notice that we create all partitions in a single sfdisk run because
         # every time we run sfdisk it actually repartitions the device,
@@ -1862,7 +1868,9 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
-             'sync'],
+             '%s sfdisk -l %s' % (sudo_args, self.media.path),
+             'sync',
+             '%s sfdisk -l %s' % (sudo_args, self.media.path)],
             popen_fixture.mock.commands_executed)
         self.assertEqual(
             [('63,106432,0x0C,*\n106496,,,-', HEADS, SECTORS, '',
@@ -1880,7 +1888,11 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # Unlike the test for partitioning of a regular block device, in this
         # case parted was not called as there's no existing partition table
         # for us to overwrite on the image file.
-        self.assertEqual(['sync'], popen_fixture.mock.commands_executed)
+        self.assertEqual(
+            ['%s sfdisk -l %s' % (sudo_args, tmpfile),
+             'sync',
+             '%s sfdisk -l %s' % (sudo_args, tmpfile)],
+            popen_fixture.mock.commands_executed)
 
         self.assertEqual(
             [('63,106432,0x0C,*\n106496,,,-', HEADS, SECTORS, '', tmpfile)],
@@ -2152,11 +2164,13 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.assertEqual(
              # This is the call that would create a 2 GiB image file.
             ['dd of=%s bs=1 seek=2147483648 count=0' % tmpfile,
+             '%s sfdisk -l %s' % (sudo_args, tmpfile),
              # This call would partition the image file.
              '%s sfdisk --force -D -uS -H %s -S %s -C 1024 %s' % (
                  sudo_args, HEADS, SECTORS, tmpfile),
              # Make sure changes are written to disk.
              'sync',
+             '%s sfdisk -l %s' % (sudo_args, tmpfile),
              '%s mkfs.vfat -F 32 %s -n boot' % (sudo_args, bootfs_dev),
              '%s mkfs.ext3 %s -L root' % (sudo_args, rootfs_dev)],
             popen_fixture.mock.commands_executed)
@@ -2180,9 +2194,11 @@ class TestPartitionSetup(TestCaseWithFixtures):
             True, True, True)
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, tmpfile),
+             '%s sfdisk -l %s' % (sudo_args, tmpfile),
              '%s sfdisk --force -D -uS -H %s -S %s %s' % (
                  sudo_args, HEADS, SECTORS, tmpfile),
              'sync',
+             '%s sfdisk -l %s' % (sudo_args, tmpfile),
              # Since the partitions are mounted, setup_partitions will umount
              # them before running mkfs.
              '%s umount %s' % (sudo_args, bootfs_dev),
