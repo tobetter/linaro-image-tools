@@ -110,7 +110,7 @@ class ReleaseOrSnapshotPage(wiz.PyWizardPage):
                   self.cp)
         self.make_pane_content(self.cp.GetPane())
         self.box2 = wx.BoxSizer(wx.VERTICAL)
-        self.box2.Add(self.cp)
+        self.box2.Add(self.cp, 0)
 
         self.help_text_main = wx.StaticText(self, -1, "")
 
@@ -118,6 +118,7 @@ class ReleaseOrSnapshotPage(wiz.PyWizardPage):
         self.sizer.Add(self.box1, 0, wx.ALIGN_LEFT | wx.ALL, 5)
         self.sizer.Add(self.box2, 0, wx.ALIGN_LEFT | wx.ALL, 5)
         self.sizer.Add(self.help_text_main, 0, wx.ALIGN_LEFT | wx.ALL, 5)
+        self.cp.SetSizer(self.sizer)
         self.SetSizerAndFit(self.sizer)
         self.sizer.Fit(self)
         self.Move((50, 50))
@@ -132,6 +133,7 @@ class ReleaseOrSnapshotPage(wiz.PyWizardPage):
         self.adv_box.Add(header)
         self.grid1 = wx.FlexGridSizer(0, 2, 0, 0)
         self.grid2 = wx.FlexGridSizer(0, 2, 0, 0)
+        self.grid3 = wx.FlexGridSizer(0, 1, 0, 0)
 
         platforms = []
         for key, value in self.settings['choice']['platform'].items():
@@ -165,8 +167,18 @@ class ReleaseOrSnapshotPage(wiz.PyWizardPage):
         self.grid2.Add(wx.StaticText(pane, -1, "Available milestones"),
                           0, align_text, 5)
 
+        # The following line is here because when the pane is shown and grid2
+        # is not visible and an option is then selected to make it visible,
+        # the pane does not (and seemingly can not) resize to accommodate
+        # the contents of grid2. This results in some content staying
+        # invisible until the pane is hidden and shown again. This blank bit
+        # of text is just there to bulk up the size of the pane so work around
+        # this.
+        self.grid3.Add(wx.StaticText(pane, -1, ""), 0, align_text, 50)
+
         self.adv_box.Add(self.grid1, 0, alignment, 0)
         self.adv_box.Add(self.grid2, 0, alignment, 0)
+        self.adv_box.Add(self.grid3, 0, alignment, 0)
         self.update_visibility()
         self.adv_box.Add(self.help_text, 0, alignment, 5)
 
@@ -178,9 +190,6 @@ class ReleaseOrSnapshotPage(wiz.PyWizardPage):
             self.adv_box.Hide(self.grid2, True)
         else:
             self.adv_box.Show(self.grid2, True)
-
-        self.Fit()
-        self.Layout()
 
     def update_next_active(self):
         if self.build_available and self.os_selected:
@@ -460,9 +469,7 @@ class ReleaseOrSnapshotPage(wiz.PyWizardPage):
         else:
             self.settings['release_or_snapshot'] = "snapshot"
 
-        self.update_release_and_build_boxes()
-        self.update_visibility()
-        self.update_next_active()
+        self.event_on_pane_changed(event)
 
     def event_on_pane_changed(self, event):
         self.fill_os_list()
