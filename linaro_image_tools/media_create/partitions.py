@@ -24,7 +24,6 @@ import logging
 import re
 import subprocess
 import time
-import sys
 
 import dbus
 from parted import (
@@ -43,7 +42,9 @@ SECTOR_SIZE = 512 # bytes
 CYLINDER_SIZE = HEADS * SECTORS * SECTOR_SIZE
 DBUS_PROPERTIES = 'org.freedesktop.DBus.Properties'
 UDISKS = "org.freedesktop.UDisks"
-MAX_TTS = 10 # max number of attempts to sleep (total sleep time in seconds = 1+2+...+MAX_TTS)
+# Max number of attempts to sleep (total sleep time in seconds =
+# 1+2+...+MAX_TTS)
+MAX_TTS = 10
 
 
 def setup_android_partitions(board_config, media, image_size, bootfs_label,
@@ -144,7 +145,6 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
             should_align_boot_part=should_align_boot_part)
 
     if media.is_block_device:
-#!!!!        wait_partition_to_settle(media)
         bootfs, rootfs = get_boot_and_root_partitions_for_media(
             media, board_config)
         # It looks like KDE somehow automounts the partitions after you
@@ -431,23 +431,35 @@ def _get_device_file_for_partition_number(device, partition):
     """
     # This could be simpler but UDisks doesn't make it easy for us:
     # https://bugs.freedesktop.org/show_bug.cgi?id=33113.
-    tts = 1
-    while not glob.glob("%s?*" % device) and (tts <= MAX_TTS):
-        print "Sleeping for %s second(s) to wait for the partitions available" % tts
-        time.sleep(tts)
-        tts += 1
-    if tts > MAX_TTS:
-        print "Error: Couldn't read partitions for a reasonable time."
-        sys.exit(1)
-
-    for dev_file in glob.glob("%s?*" % device):
-        device_path = _get_udisks_device_path(dev_file)
-        udisks_dev = dbus.SystemBus().get_object(UDISKS, device_path)
-        part_number = udisks_dev.Get(
-            device_path, 'PartitionNumber', dbus_interface=DBUS_PROPERTIES)
-        if part_number == partition:
-            return str(udisks_dev.Get(
-                device_path, 'DeviceFile', dbus_interface=DBUS_PROPERTIES))
+    time_to_sleep = 1
+    dev_files = glob.glob("%s?*" % device)
+    i = 0
+    while i < len(dev_files):
+        dev_file = dev_files[i]
+        try:
+            device_path = _get_udisks_device_path(dev_file)
+            udisks_dev = dbus.SystemBus().get_object(UDISKS, device_path)
+            part_number = udisks_dev.Get(
+                device_path, 'PartitionNumber', dbus_interface=DBUS_PROPERTIES)
+            if part_number == partition:
+                return str(udisks_dev.Get(
+                    device_path, 'DeviceFile', dbus_interface=DBUS_PROPERTIES))
+            i += 1
+        except dbus.exceptions.DBusException, e:
+            if time_to_sleep > MAX_TTS:
+                print "We've waited long enough..."
+                raise
+            print "*" * 60
+            print "UDisks doesn't know about %s: %s" % (dev_file, e)
+            bus = dbus.SystemBus()
+            manager = dbus.Interface(
+                bus.get_object(UDISKS, "/org/freedesktop/UDisks"), UDISKS)
+            print "This is what UDisks know about: %s" % (
+                manager.EnumerateDevices())
+            print "Sleeping for %d seconds" % time_to_sleep
+            time.sleep(time_to_sleep)
+            time_to_sleep += 1
+            print "*" * 60
     return None
 
 
@@ -558,7 +570,7 @@ def wait_partition_to_settle(media):
             tts += 1
     if tts:
         print "Error: Couldn't read partition table for a reasonable time."
-        sys.exit(1)
+        raise
 
 
 class Media(object):

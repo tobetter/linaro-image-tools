@@ -1156,27 +1156,27 @@ class TestGetSfdiskCmd(TestCase):
 
     def test_panda_android(self):
         self.assertEqual(
-            '63,270272,0x0C,*\n270336,524288,L\n794624,524288,L\n' \
-                '1318912,-,E\n1318912,1048576,L\n2367488,,,-', 
-                android_boards.AndroidPandaConfig.get_sfdisk_cmd())
+            '63,270272,0x0C,*\n270336,1048576,L\n1318912,524288,L\n'
+            '1843200,-,E\n1843200,1048576,L\n2891776,,,-',
+            android_boards.AndroidPandaConfig.get_sfdisk_cmd())
 
     def test_origen_android(self):
         self.assertEqual(
-            '1,8191,0xDA\n8253,270274,0x0C,*\n278528,524288,L\n' \
-                '802816,-,E\n802816,524288,L\n1327104,1048576,L\n2375680,,,-',
-                android_boards.AndroidOrigenConfig.get_sfdisk_cmd())
+            '1,8191,0xDA\n8253,270274,0x0C,*\n278528,1048576,L\n'
+            '1327104,-,E\n1327104,524288,L\n1851392,1048576,L\n2899968,,,-',
+            android_boards.AndroidOrigenConfig.get_sfdisk_cmd())
 
     def test_snowball_emmc_android(self):
         self.assertEqual(
-            '256,7936,0xDA\n8192,262144,0x0C,*\n270336,524288,L\n' \
-                '794624,-,E\n794624,524288,L\n1318912,1048576,L\n2367488,,,-', 
-                android_boards.AndroidSnowballEmmcConfig.get_sfdisk_cmd())
+            '256,7936,0xDA\n8192,262144,0x0C,*\n270336,1048576,L\n'
+            '1318912,-,E\n1318912,524288,L\n1843200,1048576,L\n2891776,,,-',
+            android_boards.AndroidSnowballEmmcConfig.get_sfdisk_cmd())
 
     def test_vexpress_android(self):
         self.assertEqual(
-            '63,270272,0x0E,*\n270336,524288,L\n794624,524288,L\n' \
-                '1318912,-,E\n1318912,1048576,L\n2367488,,,-', 
-                android_boards.AndroidVexpressA9Config.get_sfdisk_cmd())
+            '63,270272,0x0E,*\n270336,1048576,L\n1318912,524288,L\n'
+            '1843200,-,E\n1843200,1048576,L\n2891776,,,-',
+            android_boards.AndroidVexpressA9Config.get_sfdisk_cmd())
 
 class TestGetSfdiskCmdV2(TestCase):
 
