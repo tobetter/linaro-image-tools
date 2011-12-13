@@ -540,8 +540,6 @@ def create_partitions(board_config, media, heads, sectors, cylinders=None,
             ['parted', '-s', media.path, 'mklabel', 'msdos'], as_root=True)
         proc.wait()
 
-    wait_partition_to_settle(media)
-
     sfdisk_cmd = board_config.get_sfdisk_cmd(
         should_align_boot_part=should_align_boot_part)
 
@@ -549,28 +547,11 @@ def create_partitions(board_config, media, heads, sectors, cylinders=None,
 
     # Sync and sleep to wait for the partition to settle.
     cmd_runner.run(['sync']).wait()
-    wait_partition_to_settle(media)
-
-
-def wait_partition_to_settle(media):
-    """Sleep in a loop to wait partition to settle
-
-    :param media: A setup_partitions.Media object to partition.
-    """
-    tts = 1
-    while (tts > 0) and (tts <= MAX_TTS):
-        try:
-            print "Sleeping for %s second(s) to wait for the partition to settle" % tts
-            time.sleep(tts)
-            proc = cmd_runner.run(['sfdisk', '-l', media.path], as_root=True, stdout=open('/dev/null', 'w'))
-            proc.wait()
-            tts = 0
-        except cmd_runner.SubcommandNonZeroReturnValue:
-            print "Partition table is not available."
-            tts += 1
-    if tts:
-        print "Error: Couldn't read partition table for a reasonable time."
-        raise
+    # Sleeping just 1 second seems to be enough here, but if we start getting
+    # errors because the disk is not partitioned then we should revisit this.
+    # XXX: This sleep can probably die now; need to do more tests before doing
+    # so, though.
+    time.sleep(1)
 
 
 class Media(object):
