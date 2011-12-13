@@ -167,15 +167,6 @@ class ReleaseOrSnapshotPage(wiz.PyWizardPage):
         self.grid2.Add(wx.StaticText(pane, -1, "Available milestones"),
                           0, align_text, 5)
 
-        # The following line is here because when the pane is shown and grid2
-        # is not visible and an option is then selected to make it visible,
-        # the pane does not (and seemingly can not) resize to accommodate
-        # the contents of grid2. This results in some content staying
-        # invisible until the pane is hidden and shown again. This blank bit
-        # of text is just there to bulk up the size of the pane so work around
-        # this.
-        self.grid3.Add(wx.StaticText(pane, -1, ""), 0, align_text, 50)
-
         self.adv_box.Add(self.grid1, 0, alignment, 0)
         self.adv_box.Add(self.grid2, 0, alignment, 0)
         self.adv_box.Add(self.grid3, 0, alignment, 0)
@@ -183,6 +174,19 @@ class ReleaseOrSnapshotPage(wiz.PyWizardPage):
         self.adv_box.Add(self.help_text, 0, alignment, 5)
 
         pane.SetSizer(self.adv_box)
+        self.adv_box.Fit(pane)
+
+        # The following line is here because when the pane is shown and grid2
+        # is not visible and an option is then selected to make it visible,
+        # the pane does not (and seemingly can not) resize to accommodate
+        # the contents of grid2. This results in some content staying
+        # invisible until the pane is hidden and shown again. This blank bit
+        # of text is just there to bulk up the size of the pane so work around
+        # this. Padding is the size of grid2 / 2 (padding is applied all around
+        # the StaticText).
+
+        self.grid3.Add(wx.StaticText(pane, -1, ""), 0, align_text,
+                       self.grid2.GetSize().height/2)
         self.adv_box.Fit(pane)
 
     def update_visibility(self):
