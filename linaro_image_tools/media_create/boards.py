@@ -1451,6 +1451,7 @@ board_configs = {
     'overo': OveroConfig,
     'smdkv310': SMDKV310Config,
     'origen': OrigenConfig,
+    'mx6qsabrelite': BoardConfig,
     }
 
 
