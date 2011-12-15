@@ -1412,7 +1412,7 @@ class TestGetBootCmdAndroid(TestCase):
         config.serial_tty = config._serial_tty
         boot_commands = config._get_boot_env(consoles=[])
         expected = {
-            'bootargs': 'console=tty0 console=ttyO2,115200n8 '
+            'bootargs': 'console=ttyO2,115200n8 '
                         'rootwait ro earlyprintk fixrtc '
                         'nocompcache vram=48M omapfb.vram=0:24M,1:24M '
                         'mem=456M@0x80000000 mem=512M@0xA0000000 '
