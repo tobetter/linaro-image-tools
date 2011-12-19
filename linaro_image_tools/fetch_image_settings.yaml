@@ -166,6 +166,8 @@ choice:
     - final
     '11.11':
     - final
+    '11.12':
+    - final
 
 platform: linaro-n
 repository: release
