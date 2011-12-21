@@ -93,7 +93,7 @@ def setup_android_partitions(board_config, media, image_size, bootfs_label,
         proc.wait()
 
     proc = cmd_runner.run(
-        ['mkfs.vfat', '-F', str(board_config.fat_size), sdcard, '-n',
+        ['mkfs.vfat', '-F32', sdcard, '-n',
          "sdcard"],
         as_root=True)
     proc.wait()
