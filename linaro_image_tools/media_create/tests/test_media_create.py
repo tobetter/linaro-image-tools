@@ -92,6 +92,7 @@ from linaro_image_tools.media_create.partitions import (
     setup_partitions,
     get_uuid,
     _parse_blkid_output,
+    wait_partition_to_settle,
     )
 from linaro_image_tools.media_create.rootfs import (
     append_to_fstab,
@@ -1916,6 +1917,53 @@ class TestCreatePartitions(TestCaseWithFixtures):
             run_sfdisk_commands,
             ',1,0xDA', HEADS, SECTORS, '', tmpfile, as_root=False,
             stderr=subprocess.PIPE)
+
+    def test_wait_partitions_to_settle(self):
+	class Namespace: pass
+
+	ns = Namespace()
+	ns.count = 0
+
+	class MockCmdRunnerPopen(object):
+            def __call__(self, cmd, *args, **kwargs):
+		ns.count += 1
+            	self.returncode = 0
+		if ns.count < 5:
+		    raise cmd_runner.SubcommandNonZeroReturnValue(args, 1)
+		else:
+            	    return self
+    
+            def communicate(self, input=None):
+            	self.wait()
+            	return '', ''
+            
+	    def wait(self):
+            	return self.returncode
+
+	fixture = self.useFixture(MockCmdRunnerPopenFixture())
+
+        tmpfile = self.createTempFileAsFixture()
+        media = Media(tmpfile)
+        media.is_block_device = True
+
+	self.assertEqual(0, wait_partition_to_settle(media))
+
+    def test_wait_partitions_to_settle_raises_SubcommandNonZeroReturnValue(self):
+        def mock_run(args, as_root=False, chroot=None, stdin=None, stdout=None,
+	    stderr=None, cwd=None):
+	    raise cmd_runner.SubcommandNonZeroReturnValue(args, 1)
+
+        self.useFixture(MockSomethingFixture(
+            cmd_runner, 'run',
+            mock_run))
+
+        tmpfile = self.createTempFileAsFixture()
+        media = Media(tmpfile)
+        media.is_block_device = True
+
+	self.assertRaises(cmd_runner.SubcommandNonZeroReturnValue,
+            wait_partition_to_settle,
+            media)
 
 
 class TestPartitionSetup(TestCaseWithFixtures):

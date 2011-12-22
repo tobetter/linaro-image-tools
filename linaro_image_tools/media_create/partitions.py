@@ -543,13 +543,12 @@ def wait_partition_to_settle(media):
             time.sleep(tts)
             proc = cmd_runner.run(['sfdisk', '-l', media.path], as_root=True, stdout=open('/dev/null', 'w'))
             proc.wait()
-            tts = 0
+            return 0
         except cmd_runner.SubcommandNonZeroReturnValue:
-            print "Partition table is not available."
+            print "Partition table is not available for device %s" % media.path
             tts += 1
-    if tts:
-        print "Error: Couldn't read partition table for a reasonable time."
-        raise
+    print "Error: Couldn't read partition table for a reasonable time for device %s" % media.path
+    raise
 
 
 class Media(object):
