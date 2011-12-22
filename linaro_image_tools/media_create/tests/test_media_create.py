@@ -2223,7 +2223,6 @@ class TestPartitionSetup(TestCaseWithFixtures):
 	ns.count = 0
 
 	def mock_get_udisks_device_path(dev):
-	    print ns.count 
 	    ns.count += 1
 	    if ns.count < 5:
 		raise dbus.exceptions.DBusException
