@@ -30,6 +30,7 @@ import time
 import types
 import struct
 import tarfile
+import dbus
 
 from StringIO import StringIO
 from testtools import TestCase
@@ -92,6 +93,7 @@ from linaro_image_tools.media_create.partitions import (
     setup_partitions,
     get_uuid,
     _parse_blkid_output,
+    _get_device_file_for_partition_number,
     )
 from linaro_image_tools.media_create.rootfs import (
     append_to_fstab,
@@ -2209,6 +2211,71 @@ class TestPartitionSetup(TestCaseWithFixtures):
              '%s mkfs.vfat -F 32 %s -n boot' % (sudo_args, bootfs_dev),
              '%s mkfs.ext3 %s -L root' % (sudo_args, rootfs_dev)],
             popen_fixture.mock.commands_executed)
+
+    def test_get_device_file_for_partition_number_raises_DBusException(self):
+	def mock_get_udisks_device_path(d):
+	    raise dbus.exceptions.DBusException
+
+        self.useFixture(MockSomethingFixture(
+            partitions, '_get_udisks_device_path',
+            mock_get_udisks_device_path))
+
+        tmpfile = self.createTempFileAsFixture()
+	partition = board_configs['beagle'].mmc_part_offset
+
+        self.useFixture(MockSomethingFixture(
+            glob, 'glob',
+            lambda pathname: ['%s%d' % (tmpfile, partition)]))
+
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+
+        media = Media(tmpfile)
+        media.is_block_device = True
+        self.assertRaises(dbus.exceptions.DBusException,
+	    _get_device_file_for_partition_number,
+            media.path, partition)
+
+    def test_get_device_file_for_partition_number(self):
+	class Namespace: pass
+	ns = Namespace()
+	ns.count = 0
+
+	def mock_get_udisks_device_path(dev):
+	    ns.count += 1
+	    if ns.count < 5:
+		raise dbus.exceptions.DBusException
+	    else:
+		return '/abc/123'
+
+	def mock_get_udisks_device_file(dev, part):
+	    if ns.count < 5:
+		raise dbus.exceptions.DBusException
+	    else:
+		return '/abc/123'
+
+        self.useFixture(MockSomethingFixture(
+            partitions, '_get_udisks_device_path',
+            mock_get_udisks_device_path))
+
+        self.useFixture(MockSomethingFixture(
+            partitions, '_get_udisks_device_file',
+            mock_get_udisks_device_file))
+
+        tmpfile = self.createTempFileAsFixture()
+	partition = board_configs['beagle'].mmc_part_offset
+
+        self.useFixture(MockSomethingFixture(
+            glob, 'glob',
+            lambda pathname: ['%s%d' % (tmpfile, partition)]))
+
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+
+        media = Media(tmpfile)
+        media.is_block_device = True
+        self.assertIsNotNone(_get_device_file_for_partition_number(
+            media.path, partition))
 
 
 class TestException(Exception):
