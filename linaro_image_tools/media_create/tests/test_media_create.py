@@ -30,6 +30,7 @@ import time
 import types
 import struct
 import tarfile
+import dbus
 
 from StringIO import StringIO
 from testtools import TestCase
@@ -93,6 +94,7 @@ from linaro_image_tools.media_create.partitions import (
     get_uuid,
     _parse_blkid_output,
     wait_partition_to_settle,
+    _get_device_file_for_partition_number,
     )
 from linaro_image_tools.media_create.rootfs import (
     append_to_fstab,
@@ -1179,6 +1181,12 @@ class TestGetSfdiskCmd(TestCase):
             '1843200,-,E\n1843200,1048576,L\n2891776,,,-',
             android_boards.AndroidVexpressA9Config.get_sfdisk_cmd())
 
+    def test_mx5_android(self):
+        self.assertEqual(
+            '1,8191,0xDA\n8192,262144,0x0C,*\n270336,1048576,L\n'
+            '1318912,-,E\n1318912,524288,L\n1843200,1048576,L\n2891776,,,-',
+            android_boards.AndroidMx53LoCoConfig.get_sfdisk_cmd())
+
 class TestGetSfdiskCmdV2(TestCase):
 
     def test_mx5(self):
@@ -1413,7 +1421,7 @@ class TestGetBootCmdAndroid(TestCase):
         config.serial_tty = config._serial_tty
         boot_commands = config._get_boot_env(consoles=[])
         expected = {
-            'bootargs': 'console=tty0 console=ttyO2,115200n8 '
+            'bootargs': 'console=ttyO2,115200n8 '
                         'rootwait ro earlyprintk fixrtc '
                         'nocompcache vram=48M omapfb.vram=0:24M,1:24M '
                         'mem=456M@0x80000000 mem=512M@0xA0000000 '
@@ -1471,6 +1479,19 @@ class TestGetBootCmdAndroid(TestCase):
             'bootcmd': 'fatload mmc 0:1 0x60000000 uImage; '
                        'fatload mmc 0:1 0x62000000 uInitrd; '
                        'bootm 0x60000000 0x62000000'}
+        self.assertEqual(expected, boot_commands)
+
+    def test_android_mx5(self):
+        boot_commands = (android_boards.AndroidMx53LoCoConfig.
+                         _get_boot_env(consoles=[]))
+        expected = {
+            'bootargs': 'console=ttymxc0,115200n8 '
+                        'rootwait ro earlyprintk rootdelay=1 fixrtc '
+                        'nocompcache di1_primary tve init=/init '
+                        'androidboot.console=ttymxc0',
+            'bootcmd': 'fatload mmc 0:2 0x70000000 uImage; '
+                       'fatload mmc 0:2 0x72000000 uInitrd; '
+                       'bootm 0x70000000 0x72000000'}
         self.assertEqual(expected, boot_commands)
 
 
@@ -2254,6 +2275,71 @@ class TestPartitionSetup(TestCaseWithFixtures):
              '%s mkfs.vfat -F 32 %s -n boot' % (sudo_args, bootfs_dev),
              '%s mkfs.ext3 %s -L root' % (sudo_args, rootfs_dev)],
             popen_fixture.mock.commands_executed)
+
+    def test_get_device_file_for_partition_number_raises_DBusException(self):
+	def mock_get_udisks_device_path(d):
+	    raise dbus.exceptions.DBusException
+
+        self.useFixture(MockSomethingFixture(
+            partitions, '_get_udisks_device_path',
+            mock_get_udisks_device_path))
+
+        tmpfile = self.createTempFileAsFixture()
+	partition = board_configs['beagle'].mmc_part_offset
+
+        self.useFixture(MockSomethingFixture(
+            glob, 'glob',
+            lambda pathname: ['%s%d' % (tmpfile, partition)]))
+
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+
+        media = Media(tmpfile)
+        media.is_block_device = True
+        self.assertRaises(dbus.exceptions.DBusException,
+	    _get_device_file_for_partition_number,
+            media.path, partition)
+
+    def test_get_device_file_for_partition_number(self):
+	class Namespace: pass
+	ns = Namespace()
+	ns.count = 0
+
+	def mock_get_udisks_device_path(dev):
+	    ns.count += 1
+	    if ns.count < 5:
+		raise dbus.exceptions.DBusException
+	    else:
+		return '/abc/123'
+
+	def mock_get_udisks_device_file(dev, part):
+	    if ns.count < 5:
+		raise dbus.exceptions.DBusException
+	    else:
+		return '/abc/123'
+
+        self.useFixture(MockSomethingFixture(
+            partitions, '_get_udisks_device_path',
+            mock_get_udisks_device_path))
+
+        self.useFixture(MockSomethingFixture(
+            partitions, '_get_udisks_device_file',
+            mock_get_udisks_device_file))
+
+        tmpfile = self.createTempFileAsFixture()
+	partition = board_configs['beagle'].mmc_part_offset
+
+        self.useFixture(MockSomethingFixture(
+            glob, 'glob',
+            lambda pathname: ['%s%d' % (tmpfile, partition)]))
+
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+
+        media = Media(tmpfile)
+        media.is_block_device = True
+        self.assertIsNotNone(_get_device_file_for_partition_number(
+            media.path, partition))
 
 
 class TestException(Exception):

@@ -431,14 +431,32 @@ def _get_device_file_for_partition_number(device, partition):
     """
     # This could be simpler but UDisks doesn't make it easy for us:
     # https://bugs.freedesktop.org/show_bug.cgi?id=33113.
-    for dev_file in glob.glob("%s?*" % device):
-        device_path = _get_udisks_device_path(dev_file)
-        udisks_dev = dbus.SystemBus().get_object(UDISKS, device_path)
-        part_number = udisks_dev.Get(
-            device_path, 'PartitionNumber', dbus_interface=DBUS_PROPERTIES)
-        if part_number == partition:
-            return str(udisks_dev.Get(
-                device_path, 'DeviceFile', dbus_interface=DBUS_PROPERTIES))
+    time_to_sleep = 1
+    dev_files = glob.glob("%s?*" % device)
+    i = 0
+    while i < len(dev_files):
+        dev_file = dev_files[i]
+        try:
+            device_path = _get_udisks_device_path(dev_file)
+            partition_str = _get_udisks_device_file(device_path, partition)
+            if partition_str:
+                return partition_str
+            i += 1
+        except dbus.exceptions.DBusException, e:
+            if time_to_sleep > MAX_TTS:
+                print "We've waited long enough..."
+                raise
+            print "*" * 60
+            print "UDisks doesn't know about %s: %s" % (dev_file, e)
+            bus = dbus.SystemBus()
+            manager = dbus.Interface(
+                bus.get_object(UDISKS, "/org/freedesktop/UDisks"), UDISKS)
+            print "This is what UDisks know about: %s" % (
+                manager.EnumerateDevices())
+            print "Sleeping for %d seconds" % time_to_sleep
+            time.sleep(time_to_sleep)
+            time_to_sleep += 1
+            print "*" * 60
     return None
 
 
@@ -448,6 +466,16 @@ def _get_udisks_device_path(device):
     udisks = dbus.Interface(
         bus.get_object(UDISKS, "/org/freedesktop/UDisks"), UDISKS)
     return udisks.get_dbus_method('FindDeviceByDeviceFile')(device)
+
+
+def _get_udisks_device_file(path, part):
+    """Return the UNIX special device file for the given partition."""
+    udisks_dev = dbus.SystemBus().get_object(UDISKS, path)
+    part_number = udisks_dev.Get(
+        path, 'PartitionNumber', dbus_interface=DBUS_PROPERTIES)
+    if part_number == part:
+        return str(udisks_dev.Get(
+            path, 'DeviceFile', dbus_interface=DBUS_PROPERTIES))
 
 
 def convert_size_to_bytes(size):
