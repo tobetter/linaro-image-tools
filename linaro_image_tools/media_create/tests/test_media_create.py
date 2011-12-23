@@ -259,7 +259,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         with hp:
             test_file = hp.get_file(metadata_file)
             self.assertEquals(data, open(test_file, 'r').read())
-        
+
 
 class TestSetMetadata(TestCaseWithFixtures):
 
@@ -1187,6 +1187,7 @@ class TestGetSfdiskCmd(TestCase):
             '1318912,-,E\n1318912,524288,L\n1843200,1048576,L\n2891776,,,-',
             android_boards.AndroidMx53LoCoConfig.get_sfdisk_cmd())
 
+
 class TestGetSfdiskCmdV2(TestCase):
 
     def test_mx5(self):
@@ -1328,7 +1329,6 @@ class TestGetBootCmd(TestCase):
                        'fatload mmc 1:1 0x08000000 uInitrd; '
                        'bootm 0x00100000 0x08000000'}
         self.assertEqual(expected, boot_commands)
-
 
     def test_panda(self):
         # XXX: To fix bug 697824 we have to change class attributes of our
@@ -1940,39 +1940,40 @@ class TestCreatePartitions(TestCaseWithFixtures):
             stderr=subprocess.PIPE)
 
     def test_wait_partitions_to_settle(self):
-	class Namespace: pass
+        class Namespace:
+            pass
 
-	ns = Namespace()
-	ns.count = 0
+        ns = Namespace()
+        ns.count = 0
 
-	class MockCmdRunnerPopen(object):
+        class MockCmdRunnerPopen(object):
             def __call__(self, cmd, *args, **kwargs):
-		ns.count += 1
-            	self.returncode = 0
-		if ns.count < 5:
-		    raise cmd_runner.SubcommandNonZeroReturnValue(args, 1)
-		else:
-            	    return self
-    
-            def communicate(self, input=None):
-            	self.wait()
-            	return '', ''
-            
-	    def wait(self):
-            	return self.returncode
+                ns.count += 1
+                self.returncode = 0
+                if ns.count < 5:
+                    raise cmd_runner.SubcommandNonZeroReturnValue(args, 1)
+                else:
+                    return self
 
-	fixture = self.useFixture(MockCmdRunnerPopenFixture())
+            def communicate(self, input=None):
+                self.wait()
+                return '', ''
+
+            def wait(self):
+                return self.returncode
+
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
 
         tmpfile = self.createTempFileAsFixture()
         media = Media(tmpfile)
         media.is_block_device = True
 
-	self.assertEqual(0, wait_partition_to_settle(media))
+        self.assertEqual(0, wait_partition_to_settle(media))
 
     def test_wait_partitions_to_settle_raises_SubcommandNonZeroReturnValue(self):
         def mock_run(args, as_root=False, chroot=None, stdin=None, stdout=None,
-	    stderr=None, cwd=None):
-	    raise cmd_runner.SubcommandNonZeroReturnValue(args, 1)
+            stderr=None, cwd=None):
+            raise cmd_runner.SubcommandNonZeroReturnValue(args, 1)
 
         self.useFixture(MockSomethingFixture(
             cmd_runner, 'run',
@@ -1982,7 +1983,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         media = Media(tmpfile)
         media.is_block_device = True
 
-	self.assertRaises(cmd_runner.SubcommandNonZeroReturnValue,
+        self.assertRaises(cmd_runner.SubcommandNonZeroReturnValue,
             wait_partition_to_settle,
             media)
 
@@ -1997,7 +1998,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.linux_image_size = 30 * 1024**2
         self.linux_offsets_and_sizes = [
             (16384 * SECTOR_SIZE, 15746 * SECTOR_SIZE),
-            (32768 * SECTOR_SIZE, (self.linux_image_size - 
+            (32768 * SECTOR_SIZE, (self.linux_image_size -
                                         32768 * SECTOR_SIZE))
             ]
         self.android_image_size = 256 * 1024**2
@@ -2009,17 +2010,17 @@ class TestPartitionSetup(TestCaseWithFixtures):
             (98367 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
             ((294975 + ext_part_size) * SECTOR_SIZE,
              (131072 - ext_part_size) * SECTOR_SIZE),
-            ((426047 + ext_part_size) * SECTOR_SIZE, 
+            ((426047 + ext_part_size) * SECTOR_SIZE,
              self.android_image_size - (426047 + ext_part_size) * SECTOR_SIZE)
             ]
-        
+
         self.android_snowball_offsets_and_sizes = [
             (8192 * SECTOR_SIZE, 24639 * SECTOR_SIZE),
             (32831 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
-            ((98367  + ext_part_size)* SECTOR_SIZE, 
+            ((98367 + ext_part_size)* SECTOR_SIZE,
              (65536 - ext_part_size) * SECTOR_SIZE),
             (294975 * SECTOR_SIZE, 131072 * SECTOR_SIZE),
-            ((426047 + ext_part_size) * SECTOR_SIZE, 
+            ((426047 + ext_part_size) * SECTOR_SIZE,
              self.android_image_size - (426047 + ext_part_size) * SECTOR_SIZE)
             ]
 
@@ -2158,7 +2159,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         get_boot_and_root_loopback_devices(tmpfile)
         self.assertEqual(
             ['%s losetup -f --show %s --offset %s --sizelimit %s'
-                % (sudo_args, tmpfile, offset, size) for (offset, size) in 
+                % (sudo_args, tmpfile, offset, size) for (offset, size) in
              self.linux_offsets_and_sizes],
             popen_fixture.mock.commands_executed)
 
@@ -2186,7 +2187,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         get_android_loopback_devices(tmpfile)
         self.assertEqual(
             ['%s losetup -f --show %s --offset %s --sizelimit %s'
-                % (sudo_args, tmpfile, offset, size) for (offset, size) in 
+                % (sudo_args, tmpfile, offset, size) for (offset, size) in
              self.android_offsets_and_sizes],
             popen_fixture.mock.commands_executed)
 
@@ -2277,15 +2278,15 @@ class TestPartitionSetup(TestCaseWithFixtures):
             popen_fixture.mock.commands_executed)
 
     def test_get_device_file_for_partition_number_raises_DBusException(self):
-	def mock_get_udisks_device_path(d):
-	    raise dbus.exceptions.DBusException
+        def mock_get_udisks_device_path(d):
+            raise dbus.exceptions.DBusException
 
         self.useFixture(MockSomethingFixture(
             partitions, '_get_udisks_device_path',
             mock_get_udisks_device_path))
 
         tmpfile = self.createTempFileAsFixture()
-	partition = board_configs['beagle'].mmc_part_offset
+        partition = board_configs['beagle'].mmc_part_offset
 
         self.useFixture(MockSomethingFixture(
             glob, 'glob',
@@ -2297,26 +2298,27 @@ class TestPartitionSetup(TestCaseWithFixtures):
         media = Media(tmpfile)
         media.is_block_device = True
         self.assertRaises(dbus.exceptions.DBusException,
-	    _get_device_file_for_partition_number,
+            _get_device_file_for_partition_number,
             media.path, partition)
 
     def test_get_device_file_for_partition_number(self):
-	class Namespace: pass
-	ns = Namespace()
-	ns.count = 0
+        class Namespace:
+            pass
+        ns = Namespace()
+        ns.count = 0
 
-	def mock_get_udisks_device_path(dev):
-	    ns.count += 1
-	    if ns.count < 5:
-		raise dbus.exceptions.DBusException
-	    else:
-		return '/abc/123'
+        def mock_get_udisks_device_path(dev):
+            ns.count += 1
+            if ns.count < 5:
+                raise dbus.exceptions.DBusException
+            else:
+                return '/abc/123'
 
-	def mock_get_udisks_device_file(dev, part):
-	    if ns.count < 5:
-		raise dbus.exceptions.DBusException
-	    else:
-		return '/abc/123'
+        def mock_get_udisks_device_file(dev, part):
+            if ns.count < 5:
+                raise dbus.exceptions.DBusException
+            else:
+                return '/abc/123'
 
         self.useFixture(MockSomethingFixture(
             partitions, '_get_udisks_device_path',
@@ -2327,7 +2329,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             mock_get_udisks_device_file))
 
         tmpfile = self.createTempFileAsFixture()
-	partition = board_configs['beagle'].mmc_part_offset
+        partition = board_configs['beagle'].mmc_part_offset
 
         self.useFixture(MockSomethingFixture(
             glob, 'glob',
