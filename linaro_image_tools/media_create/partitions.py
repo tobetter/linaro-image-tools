@@ -580,7 +580,7 @@ def wait_partition_to_settle(media):
             logger.info("Partition table is not available "
                         "for device %s" % media.path)
             tts += 1
-    logger.error("Error: Couldn't read partition table "
+    logger.error("Couldn't read partition table "
                  "for a reasonable time for device %s" % media.path)
     raise
 
