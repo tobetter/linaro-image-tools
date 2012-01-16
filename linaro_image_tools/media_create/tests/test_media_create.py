@@ -2008,7 +2008,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
             def wait(self):
                 return self.returncode
 
-        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        self.useFixture(MockCmdRunnerPopenFixture())
 
         tmpfile = self.createTempFileAsFixture()
         media = Media(tmpfile)
