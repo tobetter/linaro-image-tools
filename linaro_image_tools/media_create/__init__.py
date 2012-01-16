@@ -66,6 +66,16 @@ def get_version():
         qemu_version = "Cannot find %s." % qemu_path
     return "%s\n: %s" % (__version__, qemu_version)
 
+def add_common_options(parser):
+    parser.add_argument(
+        '--extra-boot-args', dest='extra_boot_args', required=False,
+        help='Extra boot args.')
+    parser.add_argument(
+        '--extra-boot-args-file', action='append', dest='extra_boot_args_file',
+        required=False, default=[],
+        help=('File containing extra boot arguments. This '
+              'parameter can be defined multiple times.'))
+
 def get_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
     parser = argparse.ArgumentParser(version='%(prog)s ' + get_version())
@@ -145,6 +155,7 @@ def get_args_parser():
         action='store_true',
         help='Assume yes to the question "Are you 100%% sure, on selecting [mmc]"')
     
+    add_common_options(parser)
     return parser
 
 def get_android_args_parser():
@@ -188,4 +199,5 @@ def get_android_args_parser():
         '--align-boot-part', dest='should_align_boot_part',
         action='store_true',
         help='Align boot partition too (might break older x-loaders).')
+    add_common_options(parser)
     return parser
