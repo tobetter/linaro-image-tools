@@ -580,6 +580,13 @@ class BoardConfig(object):
             cls.extra_boot_args_options += ' %s' % extra_args
 
     @classmethod
+    def add_boot_args_from_file(cls, path):
+        if path is not None:
+            with open(path, 'r') as boot_args_file:
+                extra_args = boot_args_file.read().strip()
+                cls.extra_boot_args_options += ' %s' % extra_args
+
+    @classmethod
     def _get_bootargs(cls, is_live, is_lowmem, consoles, rootfs_uuid):
         """Get the bootargs for this board.
 

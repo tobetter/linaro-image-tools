@@ -120,6 +120,7 @@ if __name__ == '__main__':
     board_config.set_metadata(args.hwpacks)
     board_config.set_board(args.board)
     board_config.add_boot_args(args.extra_boot_args)
+    board_config.add_boot_args_from_file(args.extra_boot_args_file)
 
     ensure_required_commands(args)
 
