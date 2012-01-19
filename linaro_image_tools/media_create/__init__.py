@@ -72,8 +72,7 @@ def add_common_options(parser):
         help='Extra boot args.')
     parser.add_argument(
         '--extra-boot-args-file', dest='extra_boot_args_file',
-        required=False, default=[],
-        help=('File containing extra boot arguments.'))
+        required=False, help=('File containing extra boot arguments.'))
 
 def get_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
