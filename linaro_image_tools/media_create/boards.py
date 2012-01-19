@@ -207,6 +207,7 @@ class BoardConfig(object):
     mmc_part_offset = 0
     uimage_path = ''
     fat_size = 32
+    extra_serial_opts = ''
     _extra_serial_opts = ''
     _live_serial_opts = ''
     extra_boot_args_options = None
@@ -572,6 +573,17 @@ class BoardConfig(object):
             boot_script += (
                 "bootm %(kernel_addr)s %(initrd_addr)s" % replacements)
         return boot_script
+
+    @classmethod
+    def add_boot_args(cls, extra_args):
+        if extra_args is not None:
+            cls.extra_boot_args_options += ' %s' % extra_args
+
+    @classmethod
+    def add_boot_args_from_file(cls, path):
+        if path is not None:
+            with open(path, 'r') as boot_args_file:
+                cls.add_boot_args(boot_args_file.read().strip())
 
     @classmethod
     def _get_bootargs(cls, is_live, is_lowmem, consoles, rootfs_uuid):

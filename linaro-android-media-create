@@ -105,6 +105,8 @@ if __name__ == '__main__':
     SDCARD_DISK = os.path.join(TMP_DIR, 'sdcard-disc')
 
     board_config = android_board_configs[args.board]
+    board_config.add_boot_args(args.extra_boot_args)
+    board_config.add_boot_args_from_file(args.extra_boot_args_file)
 
     if args.board == 'iMX53':
         # XXX: remove this and the corresponding entry in android_board_configs

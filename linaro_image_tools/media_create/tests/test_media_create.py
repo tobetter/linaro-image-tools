@@ -1412,6 +1412,100 @@ class TestGetBootCmd(TestCase):
         self.assertEqual(expected, boot_commands)
 
 
+class TestExtraBootCmd(TestCaseWithFixtures):
+
+    def test_no_extra_args(self):
+        boot_args = ''.join(
+            random.choice(string.ascii_lowercase) for x in range(15))
+        class config(BoardConfig):
+            extra_boot_args_options = boot_args
+        boot_commands = config._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
+            rootfs_uuid="deadbeef", d_img_data=None)
+        expected = ' '.join([' console=ttyXXX  root=UUID=deadbeef rootwait ro',
+                             boot_args])
+        self.assertEqual(expected, boot_commands['bootargs'])
+
+    def test_none_extra_args(self):
+        boot_args = ''.join(
+            random.choice(string.ascii_lowercase) for x in range(15))
+        extra_args = None
+        class config(BoardConfig):
+            extra_boot_args_options = boot_args
+        config.add_boot_args(extra_args)
+        boot_commands = config._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
+            rootfs_uuid="deadbeef", d_img_data=None)
+        expected = ' '.join([' console=ttyXXX  root=UUID=deadbeef rootwait ro',
+                             boot_args])
+        self.assertEqual(expected, boot_commands['bootargs'])
+
+    def test_string_extra_args(self):
+        boot_args = ''.join(
+            random.choice(string.ascii_lowercase) for x in range(15))
+        extra_args = ''.join(
+            random.choice(string.ascii_lowercase) for x in range(15))
+        class config(BoardConfig):
+            extra_boot_args_options = boot_args
+        config.add_boot_args(extra_args)
+        boot_commands = config._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
+            rootfs_uuid="deadbeef", d_img_data=None)
+        expected = ' '.join([' console=ttyXXX  root=UUID=deadbeef rootwait ro',
+                             boot_args, extra_args])
+        self.assertEqual(expected, boot_commands['bootargs'])
+
+    def test_file_extra_args(self):
+        boot_args = ''.join(
+            random.choice(string.ascii_lowercase) for x in range(15))
+        extra_args = ''.join(
+            random.choice(string.ascii_lowercase) for x in range(15))
+        boot_arg_path = self.createTempFileAsFixture()
+        with open(boot_arg_path, 'w') as boot_arg_file:
+            boot_arg_file.write(extra_args)
+        class config(BoardConfig):
+            extra_boot_args_options = boot_args
+        config.add_boot_args_from_file(boot_arg_path)
+        boot_commands = config._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
+            rootfs_uuid="deadbeef", d_img_data=None)
+        expected = ' '.join([' console=ttyXXX  root=UUID=deadbeef rootwait ro',
+                             boot_args, extra_args])
+        self.assertEqual(expected, boot_commands['bootargs'])
+
+    def test_none_file_extra_args(self):
+        boot_args = ''.join(
+            random.choice(string.ascii_lowercase) for x in range(15))
+        boot_arg_path = None
+        class config(BoardConfig):
+            extra_boot_args_options = boot_args
+        config.add_boot_args_from_file(boot_arg_path)
+        boot_commands = config._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
+            rootfs_uuid="deadbeef", d_img_data=None)
+        expected = ' '.join([' console=ttyXXX  root=UUID=deadbeef rootwait ro',
+                             boot_args])
+        self.assertEqual(expected, boot_commands['bootargs'])
+
+    def test_whitespace_file_extra_args(self):
+        boot_args = ''.join(
+            random.choice(string.ascii_lowercase) for x in range(15))
+        extra_args = ''.join(
+            random.choice(string.ascii_lowercase) for x in range(15))
+        boot_arg_path = self.createTempFileAsFixture()
+        with open(boot_arg_path, 'w') as boot_arg_file:
+            boot_arg_file.write('\n\n \t ' + extra_args + '  \n\n')
+        class config(BoardConfig):
+            extra_boot_args_options = boot_args
+        config.add_boot_args_from_file(boot_arg_path)
+        boot_commands = config._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
+            rootfs_uuid="deadbeef", d_img_data=None)
+        expected = ' '.join([' console=ttyXXX  root=UUID=deadbeef rootwait ro',
+                             boot_args, extra_args])
+        self.assertEqual(expected, boot_commands['bootargs'])
+
+
 class TestGetBootCmdAndroid(TestCase):
     def test_panda(self):
         # XXX: To fix bug 697824 we have to change class attributes of our
@@ -1962,7 +2056,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
             def wait(self):
                 return self.returncode
 
-        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        self.useFixture(MockCmdRunnerPopenFixture())
 
         tmpfile = self.createTempFileAsFixture()
         media = Media(tmpfile)
