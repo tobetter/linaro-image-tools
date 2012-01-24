@@ -1414,96 +1414,70 @@ class TestGetBootCmd(TestCase):
 
 class TestExtraBootCmd(TestCaseWithFixtures):
 
-    def test_no_extra_args(self):
-        boot_args = ''.join(
-            random.choice(string.ascii_lowercase) for x in range(15))
+    def test_extra_boot_args_options_is_picked_by_get_boot_env(self):
+        boot_args = 'whatever'
         class config(BoardConfig):
             extra_boot_args_options = boot_args
         boot_commands = config._get_boot_env(
             is_live=False, is_lowmem=False, consoles=['ttyXXX'],
             rootfs_uuid="deadbeef", d_img_data=None)
-        expected = ' '.join([' console=ttyXXX  root=UUID=deadbeef rootwait ro',
-                             boot_args])
+        expected = (
+            ' console=ttyXXX  root=UUID=deadbeef rootwait ro %s' % boot_args)
         self.assertEqual(expected, boot_commands['bootargs'])
 
-    def test_none_extra_args(self):
-        boot_args = ''.join(
-            random.choice(string.ascii_lowercase) for x in range(15))
-        extra_args = None
+    def test_passing_None_to_add_boot_args(self):
+        boot_args = 'extra-args'
         class config(BoardConfig):
             extra_boot_args_options = boot_args
-        config.add_boot_args(extra_args)
-        boot_commands = config._get_boot_env(
-            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
-            rootfs_uuid="deadbeef", d_img_data=None)
-        expected = ' '.join([' console=ttyXXX  root=UUID=deadbeef rootwait ro',
-                             boot_args])
-        self.assertEqual(expected, boot_commands['bootargs'])
+        config.add_boot_args(None)
+        self.assertEqual(boot_args, config.extra_boot_args_options)
 
-    def test_string_extra_args(self):
-        boot_args = ''.join(
-            random.choice(string.ascii_lowercase) for x in range(15))
-        extra_args = ''.join(
-            random.choice(string.ascii_lowercase) for x in range(15))
+    def test_passing_string_to_add_boot_args(self):
+        boot_args = 'extra-args'
+        extra_args = 'user-args'
         class config(BoardConfig):
             extra_boot_args_options = boot_args
         config.add_boot_args(extra_args)
-        boot_commands = config._get_boot_env(
-            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
-            rootfs_uuid="deadbeef", d_img_data=None)
-        expected = ' '.join([' console=ttyXXX  root=UUID=deadbeef rootwait ro',
-                             boot_args, extra_args])
-        self.assertEqual(expected, boot_commands['bootargs'])
+        self.assertEqual(
+            "%s %s" % (boot_args, extra_args), config.extra_boot_args_options)
 
-    def test_file_extra_args(self):
-        boot_args = ''.join(
-            random.choice(string.ascii_lowercase) for x in range(15))
-        extra_args = ''.join(
-            random.choice(string.ascii_lowercase) for x in range(15))
+    def test_passing_string_to_add_boot_args_with_no_default_extra_args(self):
+        extra_args = 'user-args'
+        class config(BoardConfig):
+            extra_boot_args_options = None
+        config.add_boot_args(extra_args)
+        self.assertEqual(extra_args, config.extra_boot_args_options)
+
+    def test_add_boot_args_from_file(self):
+        boot_args = 'extra-args'
+        extra_args = 'user-args'
         boot_arg_path = self.createTempFileAsFixture()
         with open(boot_arg_path, 'w') as boot_arg_file:
             boot_arg_file.write(extra_args)
         class config(BoardConfig):
             extra_boot_args_options = boot_args
         config.add_boot_args_from_file(boot_arg_path)
-        boot_commands = config._get_boot_env(
-            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
-            rootfs_uuid="deadbeef", d_img_data=None)
-        expected = ' '.join([' console=ttyXXX  root=UUID=deadbeef rootwait ro',
-                             boot_args, extra_args])
-        self.assertEqual(expected, boot_commands['bootargs'])
+        self.assertEqual(
+            "%s %s" % (boot_args, extra_args), config.extra_boot_args_options)
 
-    def test_none_file_extra_args(self):
-        boot_args = ''.join(
-            random.choice(string.ascii_lowercase) for x in range(15))
-        boot_arg_path = None
+    def test_passing_None_to_add_boot_args_from_file(self):
+        boot_args = 'extra-args'
         class config(BoardConfig):
             extra_boot_args_options = boot_args
-        config.add_boot_args_from_file(boot_arg_path)
-        boot_commands = config._get_boot_env(
-            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
-            rootfs_uuid="deadbeef", d_img_data=None)
-        expected = ' '.join([' console=ttyXXX  root=UUID=deadbeef rootwait ro',
-                             boot_args])
-        self.assertEqual(expected, boot_commands['bootargs'])
+        config.add_boot_args_from_file(None)
+        self.assertEqual(boot_args, config.extra_boot_args_options)
 
-    def test_whitespace_file_extra_args(self):
-        boot_args = ''.join(
-            random.choice(string.ascii_lowercase) for x in range(15))
-        extra_args = ''.join(
-            random.choice(string.ascii_lowercase) for x in range(15))
+    def test_add_boot_args_from_file_strips_whitespace_from_file(self):
+        boot_args = 'extra-args'
+        extra_args = 'user-args'
         boot_arg_path = self.createTempFileAsFixture()
         with open(boot_arg_path, 'w') as boot_arg_file:
             boot_arg_file.write('\n\n \t ' + extra_args + '  \n\n')
         class config(BoardConfig):
             extra_boot_args_options = boot_args
         config.add_boot_args_from_file(boot_arg_path)
-        boot_commands = config._get_boot_env(
-            is_live=False, is_lowmem=False, consoles=['ttyXXX'],
-            rootfs_uuid="deadbeef", d_img_data=None)
-        expected = ' '.join([' console=ttyXXX  root=UUID=deadbeef rootwait ro',
-                             boot_args, extra_args])
-        self.assertEqual(expected, boot_commands['bootargs'])
+        self.assertEqual(
+            "%s %s" % (boot_args, extra_args), config.extra_boot_args_options)
 
 
 class TestGetBootCmdAndroid(TestCase):
