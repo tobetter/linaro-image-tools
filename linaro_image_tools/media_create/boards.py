@@ -577,7 +577,10 @@ class BoardConfig(object):
     @classmethod
     def add_boot_args(cls, extra_args):
         if extra_args is not None:
-            cls.extra_boot_args_options += ' %s' % extra_args
+            if cls.extra_boot_args_options is None:
+                cls.extra_boot_args_options = extra_args
+            else:
+                cls.extra_boot_args_options += ' %s' % extra_args
 
     @classmethod
     def add_boot_args_from_file(cls, path):
