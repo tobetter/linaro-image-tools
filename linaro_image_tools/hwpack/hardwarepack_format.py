@@ -47,7 +47,7 @@ class HardwarePackFormatV1(HardwarePackFormat):
         super(HardwarePackFormatV1, self).__init__()
         self.format_as_string = "1.0"
         self.is_supported = True
-        self.is_deprecated = False
+        self.is_deprecated = True
 
 
 class HardwarePackFormatV2(HardwarePackFormat):
