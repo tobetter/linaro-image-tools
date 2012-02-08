@@ -1505,8 +1505,8 @@ class TestGetBootCmdAndroid(TestCase):
         expected = {
             'bootargs': 'console=ttyAMA2,115200n8 '
                         'rootwait ro earlyprintk '
-                        'mem=128M@0 mali.mali_mem=32M@128M hwmem=168M@160M '
-                        'mem=48M@328M mem_issw=1M@383M mem=640M@384M '
+                        'mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
+                        'mem=22M@360M mem_issw=1M@383M mem=640M@384M '
                         'vmalloc=256M init=/init androidboot.console=ttyAMA2',
             'bootcmd': 'fat load mmc 1:1 0x00100000 /uImage; '
                        'fat load mmc 1:1 0x05000000 /uInitrd; '
@@ -1519,8 +1519,8 @@ class TestGetBootCmdAndroid(TestCase):
         expected = {
             'bootargs': 'console=ttyAMA2,115200n8 '
                         'rootwait ro earlyprintk '
-                        'mem=128M@0 mali.mali_mem=32M@128M hwmem=168M@160M '
-                        'mem=48M@328M mem_issw=1M@383M mem=640M@384M '
+                        'mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
+                        'mem=22M@360M mem_issw=1M@383M mem=640M@384M '
                         'vmalloc=256M init=/init androidboot.console=ttyAMA2',
             'bootcmd': 'fat load mmc 0:2 0x00100000 /uImage; '
                        'fat load mmc 0:2 0x05000000 /uInitrd; '
