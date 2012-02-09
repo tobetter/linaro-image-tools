@@ -231,6 +231,21 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
         return '%s,%s,0xDA\n%s' % (
             loader_start, loader_len, command)
 
+    @classmethod
+    def populate_raw_partition(cls, media, boot_dir):
+        # To avoid adding a Snowball specific command line option, we assume
+        # that the user already has unpacked the startfiles to ./boot
+        new_dir = '.'
+        # We copy the u-boot files from the unpacked boot.tar.bz2
+        # and put it with the startfiles.
+        # We should also copy u-boot-env.bin but it's not in the boot tarball.
+        boot_files = ['u-boot.bin']
+        for boot_file in boot_files:
+            os.path.join(boot_dir, boot_file)
+            cmd_runner.run(['cp', os.path.join(boot_dir, 'boot', boot_file),
+                            os.path.join(new_dir, 'boot')], as_root=True).wait()
+        super(AndroidBoardConfig, cls).populate_raw_partition(new_dir, media)
+
 
 class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
     extra_boot_args_options = (
