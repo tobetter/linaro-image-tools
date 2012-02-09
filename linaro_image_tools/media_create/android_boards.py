@@ -238,7 +238,7 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
         new_dir = '.'
         # We copy the u-boot files from the unpacked boot.tar.bz2
         # and put it with the startfiles.
-        boot_files = ['u-boot.bin', 'u-boot-env.bin']
+        boot_files = ['u-boot.bin']
         for boot_file in boot_files:
             os.path.join(boot_dir, boot_file)
             cmd_runner.run(['cp', os.path.join(boot_dir, 'boot', boot_file),
