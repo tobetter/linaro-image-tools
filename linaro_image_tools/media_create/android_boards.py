@@ -256,6 +256,13 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
     def install_boot_loader(cls, boot_partition, boot_device_or_file):
         install_mx5_boot_loader(os.path.join(boot_device_or_file, "u-boot.imx"), boot_partition, cls.LOADER_MIN_SIZE_S)
 
+class AndroidMx6QSabreliteConfig(AndroidMx53LoCoConfig):
+    uboot_flavor = 'mx6qsabrelite'
+    kernel_addr = '0x10000000'
+    initrd_addr = '0x12000000'
+    load_addr   = '0x10008000'
+    dtb_addr    = '0x11ff0000'
+    dtb_name    = 'board.dtb'
 
 class AndroidSamsungConfig(AndroidBoardConfig):
 
@@ -299,6 +306,7 @@ android_board_configs = {
     'smdkv310': AndroidSMDKV310Config,
     'mx53loco': AndroidMx53LoCoConfig,
     'iMX53': AndroidMx53LoCoConfig,
+    'mx6qsabrelite' : AndroidMx6QSabreliteConfig,
     'origen': AndroidOrigenConfig,
     'vexpress-a9': AndroidVexpressA9Config,
     }
