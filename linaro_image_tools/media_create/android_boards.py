@@ -76,7 +76,7 @@ class AndroidBoardConfig(object):
         """
         boot_env = {}
         boot_env["bootargs"] = cls._get_bootargs(consoles)
-        boot_env["bootcmd"] = cls._get_bootcmd(None)
+        boot_env["bootcmd"] = cls._get_bootcmd(cls.dtb_name)
         return boot_env
 
     @classmethod
