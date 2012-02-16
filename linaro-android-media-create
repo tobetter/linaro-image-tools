@@ -139,7 +139,8 @@ if __name__ == '__main__':
         board_config, media, args.image_size, args.boot_label,
         args.should_create_partitions, args.should_align_boot_part)
 
-    board_config.populate_raw_partition(args.device, BOOT_DIR)
+    board_config.populate_raw_partition(args.device, BOOT_DIR,
+                                        os.path.join(BOOT_DIR, 'boot'))
     populate_partition(BOOT_DIR + "/boot", BOOT_DISK, boot_partition)
     board_config.populate_boot_script(boot_partition, BOOT_DISK, args.consoles)
     with partition_mounted(boot_partition, BOOT_DISK):

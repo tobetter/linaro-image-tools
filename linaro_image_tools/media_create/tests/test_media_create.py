@@ -776,13 +776,40 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
             toc_filename, files, "boot_device_or_file",
             boards.SnowballEmmcConfig.SNOWBALL_LOADER_START_S)
 
-    def test_install_snowball_boot_loader_toc(self):
+    def test_install_snowball_boot_loader_toc_dont_delete(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         toc_filename = self.createTempFileAsFixture()
         files = self.setupFiles()
         boards.SnowballEmmcConfig.install_snowball_boot_loader(toc_filename,
             files, "boot_device_or_file",
             boards.SnowballEmmcConfig.SNOWBALL_LOADER_START_S)
+        expected = [
+            '%s dd if=%s of=boot_device_or_file bs=512 conv=notrunc' \
+            ' seek=%s' % (sudo_args, toc_filename,
+            boards.SnowballEmmcConfig.SNOWBALL_LOADER_START_S),
+            '%s dd if=%s/boot_image_issw.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=257' % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/boot_image_x-loader.bin of=boot_device_or_file' \
+            ' bs=1 conv=notrunc seek=131588'
+            % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/mem_init.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=3072' % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/power_management.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=3200' % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/u-boot.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=24064' % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/u-boot-env.bin of=boot_device_or_file bs=512'
+            ' conv=notrunc seek=25080' % (sudo_args, self.temp_bootdir_path)]
+
+        self.assertEqual(expected, fixture.mock.commands_executed)
+
+    def test_install_snowball_boot_loader_toc_delete(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        toc_filename = self.createTempFileAsFixture()
+        files = self.setupFiles()
+        boards.SnowballEmmcConfig.install_snowball_boot_loader(toc_filename,
+            files, "boot_device_or_file",
+            boards.SnowballEmmcConfig.SNOWBALL_LOADER_START_S, True)
         expected = [
             '%s dd if=%s of=boot_device_or_file bs=512 conv=notrunc' \
             ' seek=%s' % (sudo_args, toc_filename,

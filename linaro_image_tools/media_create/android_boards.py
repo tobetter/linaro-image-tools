@@ -161,8 +161,10 @@ class AndroidBoardConfig(object):
             _userdata_len, sdcard_start)
 
     @classmethod
-    def populate_raw_partition(cls, media, boot_dir):
-        super(AndroidBoardConfig, cls).populate_raw_partition(media, boot_dir)
+    def populate_raw_partition(cls, media, boot_dir, config_files_dir,
+                               delete_startupfiles=False):
+        super(AndroidBoardConfig, cls).populate_raw_partition(
+            media, boot_dir, config_files_dir, delete_startupfiles)
 
     @classmethod
     def install_boot_loader(cls, boot_partition, boot_device_or_file):
@@ -232,18 +234,20 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
             loader_start, loader_len, command)
 
     @classmethod
-    def populate_raw_partition(cls, media, boot_dir):
+    def populate_raw_partition(cls, media, boot_dir, config_files_dir,
+                               delete_startupfiles=False):
         # To avoid adding a Snowball specific command line option, we assume
-        # that the user already has unpacked the startfiles to ./boot
-        new_dir = '.'
+        # that the user already has unpacked the startfiles to ./startupfiles
+        new_dir = os.path.join('.', 'startupfiles')
         # We copy the u-boot files from the unpacked boot.tar.bz2
         # and put it with the startfiles.
         boot_files = ['u-boot.bin']
         for boot_file in boot_files:
             os.path.join(boot_dir, boot_file)
             cmd_runner.run(['cp', os.path.join(boot_dir, 'boot', boot_file),
-                            os.path.join(new_dir, 'boot')], as_root=True).wait()
-        super(AndroidBoardConfig, cls).populate_raw_partition(new_dir, media)
+                            new_dir], as_root=True).wait()
+        super(AndroidSnowballEmmcConfig, cls).populate_raw_partition(
+            media, new_dir, config_files_dir, False)
 
 
 class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):

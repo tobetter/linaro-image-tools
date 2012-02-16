@@ -711,7 +711,8 @@ class BoardConfig(object):
 
         if (cls.snowball_startup_files_config is not None and
             cls.board != 'snowball_sd'):
-            cls.populate_raw_partition(boot_device_or_file, chroot_dir)
+            cls.populate_raw_partition(boot_device_or_file, chroot_dir,
+                                       os.path.join(chroot_dir, 'boot'), True)
 
         if cls.env_dd:
             # Do we need to zero out the env before flashing it?
@@ -816,7 +817,8 @@ class BoardConfig(object):
             "No kernel found matching %s." % (cls.vmlinuz))
 
     @classmethod
-    def populate_raw_partition(cls, media, boot_dir):
+    def populate_raw_partition(cls, media, boot_dir, chroot_dir,
+                               delete_startupfiles=False):
         # Override in subclass if needed
         pass
 
@@ -1070,26 +1072,30 @@ class SnowballEmmcConfig(SnowballSdConfig):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
-        cls.populate_raw_partition(boot_device_or_file, chroot_dir)
+        cls.populate_raw_partition(boot_device_or_file, chroot_dir,
+                                   os.path.join(chroot_dir, 'boot'), True)
 
     @classmethod
-    def populate_raw_partition(cls, boot_device_or_file, chroot_dir):
+    def populate_raw_partition(cls, boot_device_or_file, chroot_dir,
+                               config_files_dir, delete_startupfiles=False):
         # Populate created raw partition with TOC and startup files.
-        config_files_path = os.path.join(chroot_dir, 'boot')
         _, toc_filename = tempfile.mkstemp()
         new_files = cls.get_file_info(chroot_dir)
         with open(toc_filename, 'wb') as toc:
             cls.create_toc(toc, new_files)
         cls.install_snowball_boot_loader(toc_filename, new_files,
-                                     boot_device_or_file,
-                                     cls.SNOWBALL_LOADER_START_S)
+                                         boot_device_or_file,
+                                         cls.SNOWBALL_LOADER_START_S,
+                                         delete_startupfiles)
         cls.delete_file(toc_filename)
-        cls.delete_file(os.path.join(config_files_path,
-                                     cls.snowball_startup_files_config))
+        if delete_startupfiles:
+            cls.delete_file(os.path.join(config_files_dir,
+                                         cls.snowball_startup_files_config))
 
     @classmethod
     def install_snowball_boot_loader(cls, toc_file_name, files,
-                                     boot_device_or_file, start_sector):
+                                     boot_device_or_file, start_sector,
+                                     delete_startupfiles=False):
         ''' Copies TOC and boot files into the boot partition.
         A sector size of 1 is used for some files, as they do not
         necessarily start on an even address. '''
@@ -1107,7 +1113,8 @@ class SnowballEmmcConfig(SnowballSdConfig):
             else:
                 seek_sectors = start_sector + file['offset'] / SECTOR_SIZE
                 _dd(filename, boot_device_or_file, seek=seek_sectors)
-            cls.delete_file(filename)
+            if delete_startupfiles:
+                cls.delete_file(filename)
 
     @classmethod
     def delete_file(cls, file_path):
@@ -1398,7 +1405,8 @@ class SamsungConfig(BoardConfig):
         return uboot_file
 
     @classmethod
-    def populate_raw_partition(cls, boot_device_or_file, chroot_dir):
+    def populate_raw_partition(cls, boot_device_or_file, chroot_dir,
+                               config_files_dir, delete_startupfiles=False):
         # Zero the env so that the boot_script will get loaded
         _dd("/dev/zero", boot_device_or_file, count=cls.SAMSUNG_V310_ENV_LEN,
             seek=cls.SAMSUNG_V310_ENV_START)
