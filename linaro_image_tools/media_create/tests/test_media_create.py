@@ -65,6 +65,7 @@ from linaro_image_tools.media_create.boards import (
     )
 from linaro_image_tools.media_create.android_boards import (
     android_board_configs,
+    AndroidSnowballEmmcConfig,
     )
 from linaro_image_tools.media_create.chroot_utils import (
     copy_file,
@@ -667,10 +668,19 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
         super(TestSnowballBootFiles, self).setUp()
         self.tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         self.temp_bootdir_path = os.path.join(self.tempdir, 'boot')
+        self.temp_configdir_path = os.path.join(self.tempdir, 'startfiles')
         if not os.path.exists(self.temp_bootdir_path):
             os.makedirs(self.temp_bootdir_path)
+        if not os.path.exists(self.temp_configdir_path):
+            os.makedirs(self.temp_configdir_path)
 
     def setupFiles(self):
+        return self.create_test_files(self.temp_bootdir_path)
+
+    def setupAndroidFiles(self):
+        return self.create_test_files(self.temp_configdir_path)
+
+    def create_test_files(self, path):
         ''' Adds some files in the temp dir that the tested function
             can use as input:
             * A config file, which the tested function reads to
@@ -687,8 +697,8 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                     ('NORMAL', 'u-boot.bin', 0, 0xBA0000, '9'),
                     ('UBOOT_ENV', 'u-boot-env.bin', 0, 0x00C1F000, '10')]
         # Create a config file
-        cfg_file = os.path.join(self.temp_bootdir_path,
-        boards.SnowballEmmcConfig.snowball_startup_files_config)
+        cfg_file = os.path.join(
+            path, boards.SnowballEmmcConfig.snowball_startup_files_config)
         with open(cfg_file, 'w') as f:
             for line in src_data:
                 # Write comments, so we test that the parser can read them
@@ -700,7 +710,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
         # Define dummy binary files, containing nothing but their own
         # section names.
         for line in src_data:
-            with open(os.path.join(self.temp_bootdir_path, line[1]), 'w') as f:
+            with open(os.path.join(path, line[1]), 'w') as f:
                 f.write(line[0])
         #define the expected values read from the config file
         expected = []
@@ -711,7 +721,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                 len('PWR_MGT'), len('NORMAL'), len('UBOOT_ENV')]
         i = 0
         for line in src_data:
-            filename = os.path.join(self.temp_bootdir_path, line[1])
+            filename = os.path.join(path, line[1])
             expected.append({'section_name': line[0],
                              'filename': filename,
                              'align': int(line[2]),
@@ -731,7 +741,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                                                0xBA0000, '9'))
         with open(os.path.join(self.temp_bootdir_path, uboot_file), 'w') as f:
             file_info = boards.SnowballEmmcConfig.get_file_info(
-                self.tempdir)
+                self.tempdir, self.temp_bootdir_path)
         self.assertEquals(file_info[0]['filename'],
                           os.path.join(self.temp_bootdir_path, uboot_file))
 
@@ -747,7 +757,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                                                0xBA0000, '9'))
         with open(uboot_file, 'w') as f:
             file_info = boards.SnowballEmmcConfig.get_file_info(
-                self.tempdir)
+                self.tempdir, self.temp_bootdir_path)
         self.assertEquals(file_info[0]['filename'], uboot_file)
 
     def test_get_file_info_raises(self):
@@ -758,7 +768,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
                 f.write('%s %s %i %#x %s\n' % ('NORMAL', 'u-boot.bin', 0,
                                                0xBA0000, '9'))
         self.assertRaises(AssertionError, boards.SnowballEmmcConfig.get_file_info,
-                          self.tempdir)
+                          self.tempdir, self.temp_bootdir_path)
 
     def test_file_name_size(self):
         ''' Test using a to large toc file '''
@@ -839,6 +849,33 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
 
         self.assertEqual(expected, fixture.mock.commands_executed)
 
+    def test_install_snowball_boot_loader_toc_android(self):
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        toc_filename = self.createTempFileAsFixture()
+        files = self.setupFiles()
+        AndroidSnowballEmmcConfig.install_snowball_boot_loader(
+            toc_filename, files, "boot_device_or_file",
+            AndroidSnowballEmmcConfig.SNOWBALL_LOADER_START_S)
+        expected = [
+            '%s dd if=%s of=boot_device_or_file bs=512 conv=notrunc' \
+            ' seek=%s' % (sudo_args, toc_filename,
+            AndroidSnowballEmmcConfig.SNOWBALL_LOADER_START_S),
+            '%s dd if=%s/boot_image_issw.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=257' % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/boot_image_x-loader.bin of=boot_device_or_file' \
+            ' bs=1 conv=notrunc seek=131588'
+            % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/mem_init.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=3072' % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/power_management.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=3200' % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/u-boot.bin of=boot_device_or_file bs=512' \
+            ' conv=notrunc seek=24064' % (sudo_args, self.temp_bootdir_path),
+            '%s dd if=%s/u-boot-env.bin of=boot_device_or_file bs=512'
+            ' conv=notrunc seek=25080' % (sudo_args, self.temp_bootdir_path)]
+
+        self.assertEqual(expected, fixture.mock.commands_executed)
+
     def test_snowball_make_boot_files(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(tempfile, 'mkstemp',
@@ -895,12 +932,12 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
         '''When the files cannot be read, an IOError should be raised'''
         self.assertRaises(IOError,
                           boards.SnowballEmmcConfig.get_file_info,
-                          self.tempdir)
+                          self.tempdir, self.temp_bootdir_path)
 
     def test_normal_case(self):
         expected = self.setupFiles()
         actual = boards.SnowballEmmcConfig.get_file_info(
-            self.tempdir)
+            self.tempdir, self.temp_bootdir_path)
         self.assertEquals(expected, actual)
 
 

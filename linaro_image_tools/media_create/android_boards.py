@@ -243,7 +243,6 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
         # and put it with the startfiles.
         boot_files = ['u-boot.bin']
         for boot_file in boot_files:
-            os.path.join(boot_dir, boot_file)
             cmd_runner.run(['cp', os.path.join(boot_dir, 'boot', boot_file),
                             new_dir], as_root=True).wait()
         super(AndroidSnowballEmmcConfig, cls).populate_raw_partition(
