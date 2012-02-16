@@ -238,15 +238,18 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
                                delete_startupfiles=False):
         # To avoid adding a Snowball specific command line option, we assume
         # that the user already has unpacked the startfiles to ./startupfiles
-        new_dir = os.path.join('.', 'startupfiles')
+        local_config_dir = os.path.join('.', 'startupfiles')
+        assert os.path.exists(local_config_dir), "You need to unpack the "
+        "Snowball startupfiles to the directory 'startupfiles' in your current "
+        "working directory. See igloocommunity.org for more information."
         # We copy the u-boot files from the unpacked boot.tar.bz2
         # and put it with the startfiles.
         boot_files = ['u-boot.bin']
         for boot_file in boot_files:
             cmd_runner.run(['cp', os.path.join(boot_dir, 'boot', boot_file),
-                            new_dir], as_root=True).wait()
+                            local_config_dir], as_root=True).wait()
         super(AndroidSnowballEmmcConfig, cls).populate_raw_partition(
-            media, new_dir, config_files_dir, False)
+            media, boot_dir, local_config_dir, False)
 
 
 class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
