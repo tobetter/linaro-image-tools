@@ -817,7 +817,7 @@ class BoardConfig(object):
             "No kernel found matching %s." % (cls.vmlinuz))
 
     @classmethod
-    def populate_raw_partition(cls, media, boot_dir, chroot_dir,
+    def populate_raw_partition(cls, media, boot_dir, config_files_dir,
                                delete_startupfiles=False):
         # Override in subclass if needed
         pass

@@ -1090,6 +1090,77 @@ class TestBootSteps(TestCaseWithFixtures):
             'make_dtb', 'make_boot_script', 'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
 
+class TestPopulateRawPartition(TestCaseWithFixtures):
+
+    def setUp(self):
+        super(TestPopulateRawPartition, self).setUp()
+        self.funcs_calls = []
+        self.mock_all_boards_funcs()
+#        linaro_image_tools.media_create.boards.BoardConfig.hwpack_format = '1.0'
+
+    def mock_all_boards_funcs(self):
+        """Mock functions of boards module with a call tracer."""
+
+        def mock_func_creator(name):
+            return lambda *args, **kwargs: self.funcs_calls.append(name)
+
+        for name in dir(boards):
+            attr = getattr(boards, name)
+            if type(attr) == types.FunctionType:
+                self.useFixture(MockSomethingFixture(
+                    linaro_image_tools.media_create.boards, name,
+                    mock_func_creator(name)))
+
+    def populate_raw_partition(self, config):
+        config.populate_raw_partition('', '', '')
+
+    def test_snowball_sd_raw(self):
+        self.populate_raw_partition(boards.SnowballSdConfig)
+        expected = []
+        self.assertEqual(expected, self.funcs_calls)
+
+    def test_snowball_emmc_raw(self):
+        def mock_func_creator(name):
+            return classmethod(
+                lambda *args, **kwargs: self.funcs_calls.append(name))
+
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards.SnowballEmmcConfig,
+                'get_file_info',
+                mock_func_creator('get_file_info')))
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards.SnowballEmmcConfig,
+                'create_toc',
+                mock_func_creator('create_toc')))
+        self.useFixture(MockSomethingFixture(
+                linaro_image_tools.media_create.boards.SnowballEmmcConfig,
+                'install_snowball_boot_loader',
+                mock_func_creator('install_snowball_boot_loader')))
+        self.populate_raw_partition(boards.SnowballEmmcConfig)
+        expected = ['get_file_info', 'create_toc',
+                    'install_snowball_boot_loader']
+        self.assertEqual(expected, self.funcs_calls)
+
+
+class TestPopulateRawPartitionAndroid(TestCaseWithFixtures):
+
+    def setUp(self):
+        super(TestPopulateRawPartitionAndroid, self).setUp()
+        self.funcs_calls = []
+
+    def populate_raw_partition(self, config):
+        config.populate_raw_partition('', '', '')
+
+    def test_beagle_raw(self):
+        self.populate_raw_partition(android_boards.AndroidBeagleConfig)
+        expected = []
+        self.assertEqual(expected, self.funcs_calls)
+
+    def test_snowball_sd_raw(self):
+        self.populate_raw_partition(android_boards.AndroidSnowballSdConfig)
+        expected = []
+        self.assertEqual(expected, self.funcs_calls)
+
 
 class TestAlignPartition(TestCase):
 

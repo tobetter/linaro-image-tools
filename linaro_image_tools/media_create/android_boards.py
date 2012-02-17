@@ -239,9 +239,10 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
         # To avoid adding a Snowball specific command line option, we assume
         # that the user already has unpacked the startfiles to ./startupfiles
         local_config_dir = os.path.join('.', 'startupfiles')
-        assert os.path.exists(local_config_dir), "You need to unpack the "
-        "Snowball startupfiles to the directory 'startupfiles' in your current "
-        "working directory. See igloocommunity.org for more information."
+        assert os.path.exists(local_config_dir), (
+            "You need to unpack the Snowball startupfiles to the directory "
+            "'startupfiles' in your current working directory. See "
+            "igloocommunity.org for more information.")
         # We copy the u-boot files from the unpacked boot.tar.bz2
         # and put it with the startfiles.
         boot_files = ['u-boot.bin']
