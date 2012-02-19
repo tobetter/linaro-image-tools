@@ -260,9 +260,9 @@ class AndroidMx6QSabreliteConfig(AndroidMx53LoCoConfig):
     uboot_flavor = 'mx6qsabrelite'
     kernel_addr = '0x10000000'
     initrd_addr = '0x12000000'
-    load_addr   = '0x10008000'
-    dtb_addr    = '0x11ff0000'
-    dtb_name    = 'board.dtb'
+    load_addr = '0x10008000'
+    dtb_addr = '0x11ff0000'
+    dtb_name = 'board.dtb'
 
 class AndroidSamsungConfig(AndroidBoardConfig):
 
