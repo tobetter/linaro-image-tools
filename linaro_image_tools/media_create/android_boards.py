@@ -170,12 +170,13 @@ class AndroidBoardConfig(object):
 
 
 class AndroidOmapConfig(AndroidBoardConfig):
-    pass
+    dtb_name = None
 
 
 class AndroidBeagleConfig(AndroidOmapConfig, BeagleConfig):
     _extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
     android_specific_args = 'init=/init androidboot.console=ttyO2'
+    dtb_name = None
 
 
 class AndroidPandaConfig(AndroidOmapConfig, PandaConfig):
@@ -184,6 +185,7 @@ class AndroidPandaConfig(AndroidOmapConfig, PandaConfig):
         'earlyprintk fixrtc nocompcache vram=48M '
         'omapfb.vram=0:24M,1:24M mem=456M@0x80000000 mem=512M@0xA0000000')
     android_specific_args = 'init=/init androidboot.console=ttyO2'
+    dtb_name = None
 
 
 class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
@@ -198,6 +200,7 @@ class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
     # needs uImage/uInitrd prefixed with /
     fatload_command = 'fat load'
     uimage_path = '/'
+    dtb_name = None
 
 
 class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
@@ -213,6 +216,7 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
     # needs uImage/uInitrd prefixed with /
     fatload_command = 'fat load'
     uimage_path = '/'
+    dtb_name = None
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
@@ -239,6 +243,7 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
         Mx53LoCoConfig.serial_tty)
     android_specific_args = 'init=/init androidboot.console=%s' % (
         Mx53LoCoConfig.serial_tty)
+    dtb_name = None
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
@@ -265,6 +270,7 @@ class AndroidMx6QSabreliteConfig(AndroidMx53LoCoConfig):
     dtb_name = 'board.dtb'
 
 class AndroidSamsungConfig(AndroidBoardConfig):
+    dtb_name = None
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
@@ -286,16 +292,19 @@ class AndroidSamsungConfig(AndroidBoardConfig):
 class AndroidSMDKV310Config(AndroidSamsungConfig, SMDKV310Config):
     _extra_serial_opts = 'console=tty0 console=ttySAC1,115200n8'
     android_specific_args = 'init=/init androidboot.console=ttySAC1'
+    dtb_name = None
 
 
 class AndroidOrigenConfig(AndroidSamsungConfig, OrigenConfig):
     _extra_serial_opts = 'console=tty0 console=ttySAC2,115200n8'
     android_specific_args = 'init=/init androidboot.console=ttySAC2'
+    dtb_name = None
 
 
 class AndroidVexpressA9Config(AndroidBoardConfig, VexpressA9Config):
     _extra_serial_opts = 'console=tty0 console=ttyAMA0,38400n8'
     android_specific_args = 'init=/init androidboot.console=ttyAMA0'
+    dtb_name = None
 
 
 android_board_configs = {
