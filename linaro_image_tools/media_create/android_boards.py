@@ -267,6 +267,9 @@ class AndroidMx6QSabreliteConfig(AndroidMx53LoCoConfig):
     initrd_addr = '0x12000000'
     load_addr = '0x10008000'
     dtb_addr = '0x11ff0000'
+    # On Android, the DTB file is always built as part of the
+    # kernel it comes from - and lives in the same directory
+    # in the boot tarball.
     dtb_name = 'board.dtb'
 
 class AndroidSamsungConfig(AndroidBoardConfig):
