@@ -315,7 +315,7 @@ android_board_configs = {
     'smdkv310': AndroidSMDKV310Config,
     'mx53loco': AndroidMx53LoCoConfig,
     'iMX53': AndroidMx53LoCoConfig,
-    'mx6qsabrelite' : AndroidMx6QSabreliteConfig,
+    'mx6qsabrelite': AndroidMx6QSabreliteConfig,
     'origen': AndroidOrigenConfig,
     'vexpress-a9': AndroidVexpressA9Config,
     }
