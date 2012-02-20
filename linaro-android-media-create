@@ -25,14 +25,14 @@ import tempfile
 
 from linaro_image_tools import cmd_runner
 
-from linaro_image_tools.media_create.android_boards import android_board_configs
+from linaro_image_tools.media_create.android_boards import (
+    android_board_configs,
+    )
 from linaro_image_tools.media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
 from linaro_image_tools.media_create.partitions import (
     Media,
-    setup_partitions,
     setup_android_partitions,
-    get_uuid,
     partition_mounted,
     )
 from linaro_image_tools.media_create.rootfs import populate_partition
