@@ -76,6 +76,9 @@ class AndroidBoardConfig(object):
         """
         boot_env = {}
         boot_env["bootargs"] = cls._get_bootargs(consoles)
+        # On Android, the DTB file is always built as part of the kernel it
+        # comes from - and lives in the same directory in the boot tarball, so
+        # here we don't need to pass the whole path to it.
         boot_env["bootcmd"] = cls._get_bootcmd(cls.dtb_name)
         return boot_env
 
@@ -261,16 +264,15 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
     def install_boot_loader(cls, boot_partition, boot_device_or_file):
         install_mx5_boot_loader(os.path.join(boot_device_or_file, "u-boot.imx"), boot_partition, cls.LOADER_MIN_SIZE_S)
 
+
 class AndroidMx6QSabreliteConfig(AndroidMx53LoCoConfig):
     uboot_flavor = 'mx6qsabrelite'
     kernel_addr = '0x10000000'
     initrd_addr = '0x12000000'
     load_addr = '0x10008000'
     dtb_addr = '0x11ff0000'
-    # On Android, the DTB file is always built as part of the
-    # kernel it comes from - and lives in the same directory
-    # in the boot tarball.
     dtb_name = 'board.dtb'
+
 
 class AndroidSamsungConfig(AndroidBoardConfig):
     dtb_name = None

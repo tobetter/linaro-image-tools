@@ -1187,6 +1187,12 @@ class TestGetSfdiskCmd(TestCase):
             '1318912,-,E\n1318912,524288,L\n1843200,1048576,L\n2891776,,,-',
             android_boards.AndroidMx53LoCoConfig.get_sfdisk_cmd())
 
+    def test_mx6_android(self):
+        self.assertEqual(
+            '1,8191,0xDA\n8192,262144,0x0C,*\n270336,1048576,L\n'
+            '1318912,-,E\n1318912,524288,L\n1843200,1048576,L\n2891776,,,-',
+            android_boards.AndroidMx6QSabreliteConfig.get_sfdisk_cmd())
+
 
 class TestGetSfdiskCmdV2(TestCase):
 
@@ -1481,13 +1487,13 @@ class TestExtraBootCmd(TestCaseWithFixtures):
 
 
 class TestGetBootCmdAndroid(TestCase):
+
     def test_panda(self):
         # XXX: To fix bug 697824 we have to change class attributes of our
         # OMAP board configs, and some tests do that so to make sure they
         # don't interfere with us we'll reset that before doing anything.
         config = android_board_configs['panda']
         config.serial_tty = config._serial_tty
-        boot_commands = config._get_boot_env(consoles=[])
         expected = {
             'bootargs': 'console=ttyO2,115200n8 '
                         'rootwait ro earlyprintk fixrtc '
@@ -1497,11 +1503,9 @@ class TestGetBootCmdAndroid(TestCase):
             'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'bootm 0x80200000 0x81600000'}
-        self.assertEqual(expected, boot_commands)
+        self.assertBootEnv(config, expected)
 
     def test_android_snowball_sd(self):
-        boot_commands = (android_boards.AndroidSnowballSdConfig.
-                         _get_boot_env(consoles=[]))
         expected = {
             'bootargs': 'console=ttyAMA2,115200n8 '
                         'rootwait ro earlyprintk '
@@ -1511,11 +1515,10 @@ class TestGetBootCmdAndroid(TestCase):
             'bootcmd': 'fat load mmc 1:1 0x00100000 /uImage; '
                        'fat load mmc 1:1 0x05000000 /uInitrd; '
                        'bootm 0x00100000 0x05000000'}
-        self.assertEqual(expected, boot_commands)
+        self.assertBootEnv(
+            android_boards.AndroidSnowballSdConfig, expected)
 
     def test_android_snowball_emmc(self):
-        boot_commands = (android_boards.AndroidSnowballEmmcConfig.
-                         _get_boot_env(consoles=[]))
         expected = {
             'bootargs': 'console=ttyAMA2,115200n8 '
                         'rootwait ro earlyprintk '
@@ -1525,33 +1528,30 @@ class TestGetBootCmdAndroid(TestCase):
             'bootcmd': 'fat load mmc 0:2 0x00100000 /uImage; '
                        'fat load mmc 0:2 0x05000000 /uInitrd; '
                        'bootm 0x00100000 0x05000000'}
-        self.assertEqual(expected, boot_commands)
+        self.assertBootEnv(
+            android_boards.AndroidSnowballEmmcConfig, expected)
 
     def test_android_origen(self):
-        boot_commands = (android_boards.AndroidOrigenConfig.
-                         _get_boot_env(consoles=[]))
         expected = {
             'bootargs': 'console=tty0 console=ttySAC2,115200n8 '
                         'rootwait ro init=/init androidboot.console=ttySAC2',
             'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
                        'fatload mmc 0:2 0x42000000 uInitrd; '
                        'bootm 0x40007000 0x42000000'}
-        self.assertEqual(expected, boot_commands)
+        self.assertBootEnv(
+            android_boards.AndroidOrigenConfig, expected)
 
     def test_android_vexpress_a9(self):
-        boot_commands = (android_boards.AndroidVexpressA9Config.
-                         _get_boot_env(consoles=[]))
         expected = {
             'bootargs': 'console=tty0 console=ttyAMA0,38400n8 '
                         'rootwait ro init=/init androidboot.console=ttyAMA0',
             'bootcmd': 'fatload mmc 0:1 0x60000000 uImage; '
                        'fatload mmc 0:1 0x62000000 uInitrd; '
                        'bootm 0x60000000 0x62000000'}
-        self.assertEqual(expected, boot_commands)
+        self.assertBootEnv(
+            android_boards.AndroidVexpressA9Config, expected)
 
     def test_android_mx5(self):
-        boot_commands = (android_boards.AndroidMx53LoCoConfig.
-                         _get_boot_env(consoles=[]))
         expected = {
             'bootargs': 'console=ttymxc0,115200n8 '
                         'rootwait ro earlyprintk rootdelay=1 fixrtc '
@@ -1560,7 +1560,24 @@ class TestGetBootCmdAndroid(TestCase):
             'bootcmd': 'fatload mmc 0:2 0x70000000 uImage; '
                        'fatload mmc 0:2 0x72000000 uInitrd; '
                        'bootm 0x70000000 0x72000000'}
-        self.assertEqual(expected, boot_commands)
+        self.assertBootEnv(
+            android_boards.AndroidMx53LoCoConfig, expected)
+
+    def test_android_mx6(self):
+        expected = {
+            'bootargs': 'console=ttymxc0,115200n8 '
+                        'rootwait ro earlyprintk rootdelay=1 fixrtc '
+                        'nocompcache di1_primary tve init=/init '
+                        'androidboot.console=ttymxc0',
+            'bootcmd': 'fatload mmc 0:2 0x10000000 uImage; '
+                       'fatload mmc 0:2 0x12000000 uInitrd; '
+                       'fatload mmc 0:2 0x11ff0000 board.dtb; '
+                       'bootm 0x10000000 0x12000000 0x11ff0000'}
+        self.assertBootEnv(
+            android_boards.AndroidMx6QSabreliteConfig, expected)
+
+    def assertBootEnv(self, config, expected):
+        self.assertEqual(expected, config._get_boot_env(consoles=[]))
 
 
 class TestUnpackBinaryTarball(TestCaseWithFixtures):
