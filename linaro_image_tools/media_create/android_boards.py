@@ -161,10 +161,9 @@ class AndroidBoardConfig(object):
             _userdata_len, sdcard_start)
 
     @classmethod
-    def populate_raw_partition(cls, media, boot_dir, config_files_dir,
-                               delete_startupfiles=False):
+    def populate_raw_partition(cls, media, boot_dir):
         super(AndroidBoardConfig, cls).populate_raw_partition(
-            media, boot_dir, config_files_dir, delete_startupfiles)
+            media, boot_dir)
 
     @classmethod
     def install_boot_loader(cls, boot_partition, boot_device_or_file):
@@ -234,12 +233,11 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
             loader_start, loader_len, command)
 
     @classmethod
-    def populate_raw_partition(cls, media, boot_dir, config_files_dir,
-                               delete_startupfiles=False):
+    def populate_raw_partition(cls, media, boot_dir):
         # To avoid adding a Snowball specific command line option, we assume
         # that the user already has unpacked the startfiles to ./startupfiles
-        local_config_dir = os.path.join('.', 'startupfiles')
-        assert os.path.exists(local_config_dir), (
+        config_files_dir, delete_startupfiles = cls.snowball_config(boot_dir)
+        assert os.path.exists(config_files_dir), (
             "You need to unpack the Snowball startupfiles to the directory "
             "'startupfiles' in your current working directory. See "
             "igloocommunity.org for more information.")
@@ -248,9 +246,13 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
         boot_files = ['u-boot.bin']
         for boot_file in boot_files:
             cmd_runner.run(['cp', os.path.join(boot_dir, 'boot', boot_file),
-                            local_config_dir], as_root=True).wait()
+                            config_files_dir], as_root=True).wait()
         super(AndroidSnowballEmmcConfig, cls).populate_raw_partition(
-            media, boot_dir, local_config_dir, False)
+            media, boot_dir)
+
+    @classmethod
+    def snowball_config(cls, chroot_dir):        
+        return (os.path.join('.', 'startupfiles'), False)
 
 
 class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
