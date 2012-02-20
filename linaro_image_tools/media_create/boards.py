@@ -711,8 +711,7 @@ class BoardConfig(object):
 
         if (cls.snowball_startup_files_config is not None and
             cls.board != 'snowball_sd'):
-            cls.populate_raw_partition(boot_device_or_file, chroot_dir,
-                                       os.path.join(chroot_dir, 'boot'), True)
+            cls.populate_raw_partition(boot_device_or_file, chroot_dir)
 
         if cls.env_dd:
             # Do we need to zero out the env before flashing it?

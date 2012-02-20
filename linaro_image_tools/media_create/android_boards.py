@@ -162,8 +162,7 @@ class AndroidBoardConfig(object):
 
     @classmethod
     def populate_raw_partition(cls, media, boot_dir):
-        super(AndroidBoardConfig, cls).populate_raw_partition(
-            media, boot_dir)
+        super(AndroidBoardConfig, cls).populate_raw_partition(media, boot_dir)
 
     @classmethod
     def install_boot_loader(cls, boot_partition, boot_device_or_file):
