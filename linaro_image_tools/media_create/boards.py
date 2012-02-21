@@ -1083,22 +1083,30 @@ class SnowballEmmcConfig(SnowballSdConfig):
     def populate_raw_partition(cls, boot_device_or_file, chroot_dir):
         # Populate created raw partition with TOC and startup files.
         _, toc_filename = tempfile.mkstemp()
-        config_files_dir, delete_startupfiles = cls.snowball_config(chroot_dir)
+        config_files_dir = cls.snowball_config(chroot_dir)
         new_files = cls.get_file_info(chroot_dir, config_files_dir)
         with open(toc_filename, 'wb') as toc:
             cls.create_toc(toc, new_files)
         cls.install_snowball_boot_loader(toc_filename, new_files,
                                          boot_device_or_file,
                                          cls.SNOWBALL_LOADER_START_S,
-                                         delete_startupfiles)
+                                         cls.delete_startupfiles)
         cls.delete_file(toc_filename)
-        if delete_startupfiles:
+        if cls.delete_startupfiles:
             cls.delete_file(os.path.join(config_files_dir,
                                          cls.snowball_startup_files_config))
 
     @classmethod
     def snowball_config(cls, chroot_dir):        
-        return (os.path.join(chroot_dir, 'boot'), True)
+        # We will find the startupfiles in the target boot partition.
+        return os.path.join(chroot_dir, 'boot')
+
+    @classproperty
+    def delete_startupfiles(cls):
+        # The startupfiles will have been installed to the target boot
+        # partition by the hwpack, and should be deleted so we don't leave
+        # them on the target system.
+        return True
 
     @classmethod
     def install_snowball_boot_loader(cls, toc_file_name, files,

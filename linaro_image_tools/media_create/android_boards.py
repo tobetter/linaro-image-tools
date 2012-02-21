@@ -37,6 +37,7 @@ from linaro_image_tools.media_create.boards import VexpressA9Config
 from linaro_image_tools.media_create.boards import (
     align_up,
     align_partition,
+    classproperty,
     make_boot_script,
     install_mx5_boot_loader,
     )
@@ -235,7 +236,7 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
     def populate_raw_partition(cls, media, boot_dir):
         # To avoid adding a Snowball specific command line option, we assume
         # that the user already has unpacked the startfiles to ./startupfiles
-        config_files_dir, delete_startupfiles = cls.snowball_config(boot_dir)
+        config_files_dir = cls.snowball_config(boot_dir)
         assert os.path.exists(config_files_dir), (
             "You need to unpack the Snowball startupfiles to the directory "
             "'startupfiles' in your current working directory. See "
@@ -251,7 +252,15 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
 
     @classmethod
     def snowball_config(cls, chroot_dir):        
-        return (os.path.join('.', 'startupfiles'), False)
+        # The user is expected to have unpacked the startupfiles to this subdir
+        # of their working dir.
+        return os.path.join('.', 'startupfiles')
+
+    @classproperty
+    def delete_startupfiles(cls):
+        # The startupfiles will have been unpacked to the user's working dir
+        # and should not be deleted after they have been installed.
+        return False
 
 
 class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
