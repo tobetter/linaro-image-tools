@@ -820,6 +820,13 @@ class BoardConfig(object):
         # Override in subclass if needed
         pass
 
+    @classmethod
+    def snowball_config(cls, chroot_dir):
+        # Override in subclasses where applicable
+        raise NotImplementedError(
+            "snowball_config() must only be called on BoardConfigs that use the "
+            "Snowball startupfiles.")
+
 
 class OmapConfig(BoardConfig):
     kernel_flavors = ['linaro-omap4', 'linaro-lt-omap', 'linaro-omap', 'omap4']
@@ -1075,21 +1082,36 @@ class SnowballEmmcConfig(SnowballSdConfig):
     @classmethod
     def populate_raw_partition(cls, boot_device_or_file, chroot_dir):
         # Populate created raw partition with TOC and startup files.
-        config_files_path = os.path.join(chroot_dir, 'boot')
         _, toc_filename = tempfile.mkstemp()
-        new_files = cls.get_file_info(chroot_dir)
+        config_files_dir = cls.snowball_config(chroot_dir)
+        new_files = cls.get_file_info(chroot_dir, config_files_dir)
         with open(toc_filename, 'wb') as toc:
             cls.create_toc(toc, new_files)
         cls.install_snowball_boot_loader(toc_filename, new_files,
-                                     boot_device_or_file,
-                                     cls.SNOWBALL_LOADER_START_S)
+                                         boot_device_or_file,
+                                         cls.SNOWBALL_LOADER_START_S,
+                                         cls.delete_startupfiles)
         cls.delete_file(toc_filename)
-        cls.delete_file(os.path.join(config_files_path,
-                                     cls.snowball_startup_files_config))
+        if cls.delete_startupfiles:
+            cls.delete_file(os.path.join(config_files_dir,
+                                         cls.snowball_startup_files_config))
+
+    @classmethod
+    def snowball_config(cls, chroot_dir):        
+        # We will find the startupfiles in the target boot partition.
+        return os.path.join(chroot_dir, 'boot')
+
+    @classproperty
+    def delete_startupfiles(cls):
+        # The startupfiles will have been installed to the target boot
+        # partition by the hwpack, and should be deleted so we don't leave
+        # them on the target system.
+        return True
 
     @classmethod
     def install_snowball_boot_loader(cls, toc_file_name, files,
-                                     boot_device_or_file, start_sector):
+                                     boot_device_or_file, start_sector,
+                                     delete_startupfiles=False):
         ''' Copies TOC and boot files into the boot partition.
         A sector size of 1 is used for some files, as they do not
         necessarily start on an even address. '''
@@ -1107,7 +1129,8 @@ class SnowballEmmcConfig(SnowballSdConfig):
             else:
                 seek_sectors = start_sector + file['offset'] / SECTOR_SIZE
                 _dd(filename, boot_device_or_file, seek=seek_sectors)
-            cls.delete_file(filename)
+            if delete_startupfiles:
+                cls.delete_file(filename)
 
     @classmethod
     def delete_file(cls, file_path):
@@ -1138,14 +1161,14 @@ class SnowballEmmcConfig(SnowballSdConfig):
             f.write(data)
 
     @classmethod
-    def get_file_info(cls, chroot_dir):
+    def get_file_info(cls, chroot_dir, config_files_dir):
         ''' Fills in the offsets of files that are located in
         non-absolute memory locations depending on their sizes.'
         Also fills in file sizes'''
         ofs = cls.TOC_SIZE
         files = []
-        bin_dir = os.path.join(chroot_dir, 'boot')
-        with open(os.path.join(bin_dir, cls.snowball_startup_files_config),
+        with open(os.path.join(config_files_dir,
+                               cls.snowball_startup_files_config),
                   'r') as info_file:
             for line in info_file:
                 file_data = line.split()
@@ -1158,7 +1181,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
                     filename = os.path.join(chroot_dir,
                                             file_data[1].lstrip('/'))
                 else:
-                    filename = os.path.join(bin_dir, file_data[1])
+                    filename = os.path.join(config_files_dir, file_data[1])
                 assert os.path.exists(filename), "File %s does not exist, " \
                     "please check the startfiles config file." % file_data[1]
                 address = long(file_data[3], 16)
