@@ -1217,6 +1217,8 @@ class TestPopulateRawPartitionAndroid(TestCaseWithFixtures):
             return classmethod(
                 lambda *args, **kwargs: self.funcs_calls.append(name))
 
+        self.useFixture(MockSomethingFixture(os.path, 'exists',
+                                             lambda file: True))
         fixture = MockCmdRunnerPopenFixture()
         self.useFixture(fixture)
         expected_commands = ['sudo -E cp boot/u-boot.bin ./startupfiles']
