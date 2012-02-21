@@ -711,7 +711,7 @@ class BoardConfig(object):
 
         if (cls.snowball_startup_files_config is not None and
             cls.board != 'snowball_sd'):
-            cls.populate_raw_partition(chroot_dir, boot_device_or_file)
+            cls.populate_raw_partition(boot_device_or_file, chroot_dir)
 
         if cls.env_dd:
             # Do we need to zero out the env before flashing it?
@@ -1070,10 +1070,10 @@ class SnowballEmmcConfig(SnowballSdConfig):
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         boot_script_path = os.path.join(boot_dir, cls.boot_script)
         make_boot_script(boot_env, boot_script_path)
-        cls.populate_raw_partition(chroot_dir, boot_device_or_file)
+        cls.populate_raw_partition(boot_device_or_file, chroot_dir)
 
     @classmethod
-    def populate_raw_partition(cls, chroot_dir, boot_device_or_file):
+    def populate_raw_partition(cls, boot_device_or_file, chroot_dir):
         # Populate created raw partition with TOC and startup files.
         config_files_path = os.path.join(chroot_dir, 'boot')
         _, toc_filename = tempfile.mkstemp()
@@ -1398,7 +1398,7 @@ class SamsungConfig(BoardConfig):
         return uboot_file
 
     @classmethod
-    def populate_raw_partition(cls, chroot_dir, boot_device_or_file):
+    def populate_raw_partition(cls, boot_device_or_file, chroot_dir):
         # Zero the env so that the boot_script will get loaded
         _dd("/dev/zero", boot_device_or_file, count=cls.SAMSUNG_V310_ENV_LEN,
             seek=cls.SAMSUNG_V310_ENV_START)
