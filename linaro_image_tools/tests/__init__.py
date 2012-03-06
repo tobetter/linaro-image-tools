@@ -11,7 +11,6 @@ def test_suite():
     module_names = [
         'linaro_image_tools.tests.test_cmd_runner',
         'linaro_image_tools.tests.test_utils',
-        'linaro_image_tools.tests.test_fetch_image',
         ]
     # if pyflakes is installed and we're running from a bzr checkout...
     if has_command('pyflakes') and not os.path.isabs(__file__):
