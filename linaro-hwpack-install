@@ -89,6 +89,7 @@ cleanup() {
   # Ensure our temp dir and apt sources are removed.
   echo -n "Cleaning up ..."
   rm -rf $TEMP_DIR
+  rm -f /usr/sbin/policy-rc.d
   $sudo apt-get update -qq
   echo "Done"
 }
@@ -147,6 +148,10 @@ for filename in $(ls "${HWPACK_DIR}"/sources.list.d.gpg/); do
   file="${HWPACK_DIR}"/sources.list.d.gpg/$filename
   $sudo apt-key add $file
 done
+
+# Prevent daemons to start in the chroot
+echo "exit 101" > /usr/sbin/policy-rc.d
+chmod a+x /usr/sbin/policy-rc.d
 
 # Add one extra apt source for the packages included in the hwpack and make
 # sure it's the first on the list of sources so that it gets precedence over
