@@ -103,9 +103,15 @@ class ScriptTests(TestCaseWithFixtures):
             '\n[ubuntu]\nsources-entry=%s\n' % (
                 package_name, source.sources_entry)))
         stdout, stderr = self.run_script([config.filename, "1.0"])
+        
+        # XXX Adding in the format deprecation message below is just a hack
+        # until the test can be fixed up to test a new format hwpack.
+        
         self.assertThat(
             stderr,
             DocTestMatches(
                 "Building for %(arch)s\nFetching packages\n"
+                "The format '1.0' is deprecated, please update your hardware "
+                "pack configuration.\n"
                 "Wrote hwpack_ahwpack_1.0_%(arch)s.tar.gz"
                 "\n" % dict(arch=architecture)))

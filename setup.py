@@ -18,6 +18,5 @@ DistUtilsExtra.auto.setup(
             "initrd-do",
             "linaro-hwpack-create", "linaro-hwpack-install",
             "linaro-media-create", "linaro-android-media-create",
-            "linaro-hwpack-replace", "linaro-fetch-image",
-            "linaro-fetch-image-ui"],
+            "linaro-hwpack-replace"],
      )
