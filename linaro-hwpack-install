@@ -90,9 +90,9 @@ cleanup() {
   echo -n "Cleaning up ..."
   rm -rf $TEMP_DIR
   rm -f /usr/sbin/policy-rc.d
-  mv /sbin/start-stop-daemon.REAL /sbin/start-stop-daemon
+  mv -f /sbin/start-stop-daemon.REAL /sbin/start-stop-daemon
   if [ -x /sbin/initctl.REAL ]; then
-    mv /sbin/initctl.REAL /sbin/initctl
+    mv -f /sbin/initctl.REAL /sbin/initctl
   fi
   $sudo apt-get update -qq
   echo "Done"
@@ -157,8 +157,8 @@ done
 echo "exit 101" > /usr/sbin/policy-rc.d
 chmod a+x /usr/sbin/policy-rc.d
 
-mv /sbin/start-stop-daemon /sbin/start-stop-daemon.REAL
-cat >> /sbin/start-stop-daemon << EOF
+mv -f /sbin/start-stop-daemon /sbin/start-stop-daemon.REAL
+cat > /sbin/start-stop-daemon << EOF
 #!/bin/sh
 
 echo "Warning: Fake start-stop-daemon called, doing nothing"
@@ -166,8 +166,8 @@ EOF
 chmod 755 /sbin/start-stop-daemon
 
 if [ -x /sbin/initctl ]; then
-  mv /sbin/initctl /sbin/initctl.REAL
-  cat >> /sbin/initctl << EOF
+  mv -f /sbin/initctl /sbin/initctl.REAL
+  cat > /sbin/initctl << EOF
 #!/bin/sh
 
 echo "Warning: Fake initctl called, doing nothing"
