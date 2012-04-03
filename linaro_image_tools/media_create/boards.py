@@ -37,10 +37,12 @@ import shutil
 import string
 import logging
 
+from parted import Device
+
 from linaro_image_tools import cmd_runner
 
 from linaro_image_tools.media_create.partitions import (
-    partition_mounted, SECTOR_SIZE)
+    partition_mounted, SECTOR_SIZE, register_loopback)
 
 
 KERNEL_GLOB = 'vmlinuz-*-%(kernel_flavor)s'
@@ -1472,6 +1474,69 @@ class OrigenConfig(SamsungConfig):
     mmc_part_offset = 1
     mmc_option = '0:2'
 
+class I386Config(BoardConfig):
+    # define serial
+    serial_tty = 'ttyS0'
+    _extra_serial_opts = 'console=%s,115200n8'
+    _live_serial_opts = 'serialtty=%s'
+
+    # define kernel image
+    kernel_flavors = ['generic']
+    vmlinuz = 'vmlinuz-*-generic'
+    initrd = 'initrd.img-*-generic'
+
+    # define bootloader
+    BOOTLOADER_CMD = 'grub-install'
+    BOOTLOADER_CFG_FILE = 'grub/grub.cfg'
+    BOOTLOADER_CFG = """
+    set timeout=3
+    set default='0'
+    menuentry 'core' {
+            linux /%s root=/dev/sda2 ro %s
+            initrd /%s
+    }"""
+
+    @classproperty
+    def live_serial_opts(cls):
+        return cls._live_serial_opts % cls.serial_tty
+
+    @classproperty
+    def extra_serial_opts(cls):
+        return cls._extra_serial_opts % cls.serial_tty
+
+    @classmethod
+    def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
+        # XXX: delete this method when hwpacks V1 can die
+        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
+
+        # copy image and init into boot partition
+        cmd_runner.run(['cp', k_img_data, boot_dir], as_root=True).wait()
+        cmd_runner.run(['cp', i_img_data, boot_dir], as_root=True).wait()
+
+        # create a loop device with the whole image
+        device = Device(boot_device_or_file)
+        img_size = device.getLength() * SECTOR_SIZE
+        img_loop = register_loopback(boot_device_or_file, 0, img_size)
+        
+        # install bootloader
+        cmd_runner.run([cls.BOOTLOADER_CMD, '--boot-directory=%s' % boot_dir,
+            '--modules', 'part_msdos', img_loop],
+            as_root=True).wait()
+
+        # generate loader config file
+        loader_config = cls.BOOTLOADER_CFG % (os.path.basename(k_img_data),
+            cls.extra_serial_opts, os.path.basename(i_img_data))
+
+        _, tmpfile = tempfile.mkstemp()
+        atexit.register(os.unlink, tmpfile)
+        with open(tmpfile, 'w') as fd:
+            fd.write(loader_config)
+
+        cmd_runner.run(['cp', tmpfile, os.path.join(boot_dir,
+            cls.BOOTLOADER_CFG_FILE)], as_root=True).wait()
+
 
 board_configs = {
     'beagle': BeagleConfig,
@@ -1490,6 +1555,7 @@ board_configs = {
     'smdkv310': SMDKV310Config,
     'origen': OrigenConfig,
     'mx6qsabrelite': BoardConfig,
+    'i386': I386Config,
     }
 
 
