@@ -181,16 +181,16 @@ fi
 echo "deb file:${HWPACK_DIR}/pkgs ./" > "$SOURCES_LIST_FILE"
 cat /etc/apt/sources.list >> "$SOURCES_LIST_FILE"
 
-echo "Updating apt package lists ..."
-$sudo apt-get -o "$APT_GET_OPTIONS" update -q
-
-echo -n "Installing packages ..."
-
 if [ "$FORCE_YES" == "yes" ]; then
   FORCE_OPTIONS="--yes --force-yes"
 else
   FORCE_OPTIONS=""
 fi
+
+echo "Updating apt package lists ..."
+$sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" update -q
+
+echo -n "Installing packages ..."
 
 # "newer" hwpacks contain a dependency package whose Depends is the
 # same as the packages config setting from the file the hwpack was
