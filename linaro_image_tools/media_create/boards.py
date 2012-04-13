@@ -1477,7 +1477,7 @@ class OrigenConfig(SamsungConfig):
 class I386Config(BoardConfig):
     # define serial
     serial_tty = 'ttyS0'
-    _extra_serial_opts = 'console=%s,115200n8'
+    _extra_serial_opts = 'console=tty0 console=%s,115200n8'
     _live_serial_opts = 'serialtty=%s'
 
     # define kernel image
@@ -1492,7 +1492,7 @@ class I386Config(BoardConfig):
     set timeout=3
     set default='0'
     menuentry 'core' {
-            linux /%s root=/dev/sda2 ro %s
+            linux /%s root=LABEL=rootfs ro %s
             initrd /%s
     }"""
 
