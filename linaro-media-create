@@ -48,6 +48,8 @@ from linaro_image_tools.utils import (
     is_arm_host,
     check_file_integrity_and_log_errors,
     path_in_tarfile_exists,
+    BoardAbilityNotMet,
+    prep_media_path,
     )
 
 # Just define the global variables
@@ -136,18 +138,11 @@ if __name__ == '__main__':
         sys.exit(1)
     
     atexit.register(cleanup_tempdir)
-    if args.directory is not None:
-        if not board_config.outputs_directory:
-            print "The board '%s' does not support the --directory option." % args.board
-            sys.exit(1)
-        else:
-            loc=os.path.abspath(args.directory)
-            proc = cmd_runner.run(['mkdir','-p', '-v', loc])
-            proc.wait()
-            media = Media(os.path.join(loc,board_config.board)+".img")
-            media.directory=loc
-    else:
-        media = Media(args.device)
+    try:
+        media = Media(prep_media_path(args, board_config))
+    except BoardAbilityNotMet as e:
+        print e.value
+        sys.exit(1)
 
     if media.is_block_device:
         if not board_config.supports_writing_to_mmc:

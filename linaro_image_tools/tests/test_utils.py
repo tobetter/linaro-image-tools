@@ -41,8 +41,9 @@ from linaro_image_tools.utils import (
     verify_file_integrity,
     check_file_integrity_and_log_errors,
     path_in_tarfile_exists,
+    BoardAbilityNotMet,
+    prep_media_path,
     )
-
 
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
 
@@ -260,3 +261,43 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
             UnableToFindPackageProvidingCommand,
             install_package_providing, 'mkfs.lean')
 
+
+class TestPrepMediaPath(TestCaseWithFixtures):
+
+    def test_prep_media_path(self):
+
+        class Args():
+            def __init__(self, directory, device, board):
+                self.directory = directory
+                self.device = device
+                self.board = board
+
+        class BoardConfig():
+            def __init__(self, outputs_directory, board):
+                self.outputs_directory = outputs_directory
+                self.board = board
+
+        self.useFixture(MockSomethingFixture(
+                        os.path, 'abspath', lambda x: x))
+        self.useFixture(MockCmdRunnerPopenFixture())
+
+        self.assertEqual("testdevice",
+                         prep_media_path(Args(directory=None,
+                                              device="testdevice",
+                                              board="testboard"),
+                                         BoardConfig(outputs_directory=True,
+                                                     board="testboard")))
+
+        self.assertEqual("/foo/bar/testboard.img",
+                         prep_media_path(Args(directory="/foo/bar",
+                                              device="testdevice",
+                                              board="testboard"),
+                                         BoardConfig(outputs_directory=True,
+                                                     board="testboard")))
+
+        self.assertRaises(BoardAbilityNotMet, prep_media_path,
+                          Args(directory="/foo/bar",
+                               device="testdevice",
+                               board="testboard"),
+                          BoardConfig(outputs_directory=False,
+                                      board="testboard"))

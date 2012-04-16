@@ -246,6 +246,24 @@ def preferred_tools_dir():
         prefer_dir = os.getcwd()
     return prefer_dir
 
+class BoardAbilityNotMet(Exception):
+    """Tried to use a feature of a board that isn't supported."""
+    pass
+
+def prep_media_path(args, board_config):
+    if args.directory is not None:
+        if not board_config.outputs_directory:
+            raise BoardAbilityNotMet("The board '%s' does not support the"
+                                     "--directory option." % args.board)
+        else:
+            loc=os.path.abspath(args.directory)
+            proc = cmd_runner.run(['mkdir','-p', '-v', loc])
+            proc.wait()
+            path = os.path.join(loc, board_config.board) + ".img"
+    else:
+        path = args.device
+
+    return path
 
 class UnableToFindPackageProvidingCommand(Exception):
     """We can't find a package which provides the given command."""
