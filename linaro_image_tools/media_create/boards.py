@@ -212,6 +212,7 @@ class BoardConfig(object):
     _live_serial_opts = ''
     extra_boot_args_options = None
     supports_writing_to_mmc = True
+    outputs_directory = False
     LOADER_MIN_SIZE_S = align_up(1 * 1024 ** 2, SECTOR_SIZE) / SECTOR_SIZE
     BOOT_MIN_SIZE_S = align_up(50 * 1024 ** 2, SECTOR_SIZE) / SECTOR_SIZE
     ROOT_MIN_SIZE_S = align_up(50 * 1024 ** 2, SECTOR_SIZE) / SECTOR_SIZE
@@ -1335,6 +1336,34 @@ class VexpressA9Config(VexpressConfig):
     pass
 
 
+class FastModelConfig(BoardConfig):
+    supports_writing_to_mmc = False
+    outputs_directory = True
+      
+    @classmethod
+    def _get_bootcmd(cls, d_img_data):
+        """Get the bootcmd for FastModel.
+
+        We override this as we don't do uboot.
+        """
+        return ""
+
+    @classmethod
+    def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
+                         boot_device_or_file, k_img_data, i_img_data,
+                         d_img_data):
+        logger = logging.getLogger("linaro_image_tools")
+        logger.info("WTF=%s." % boot_device_or_file )
+        output_dir=os.path.dirname(boot_device_or_file)
+        cmd = [ "cp", "-v",  _get_file_matching("%s/boot/img.axf" % chroot_dir), output_dir ]
+        proc = cmd_runner.run(cmd, as_root=True)
+        proc.wait()
+        cmd = [ "cp", "-v",  k_img_data, i_img_data, d_img_data, output_dir ]
+        proc = cmd_runner.run(cmd, as_root=True)
+        proc.wait()
+        return
+
+
 class SamsungConfig(BoardConfig):
     @classproperty
     def extra_serial_opts(cls):
@@ -1479,6 +1508,7 @@ board_configs = {
     'panda': PandaConfig,
     'vexpress': VexpressConfig,
     'vexpress-a9': VexpressA9Config,
+    'fastmodel': FastModelConfig,
     'ux500': Ux500Config,
     'snowball_sd': SnowballSdConfig,
     'snowball_emmc': SnowballEmmcConfig,

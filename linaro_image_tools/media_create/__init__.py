@@ -82,7 +82,10 @@ def get_args_parser():
         '--mmc', dest='device', help='The storage device to use.')
     group.add_argument(
         '--image-file', '--image_file', dest='device',
-        help='File where we should write the QEMU image.')
+        help='File where we should write an image file.')
+    group.add_argument(
+        '--directory', '--directory', dest='directory',
+        help='Directory where image and accessories should be written to.')
     parser.add_argument(
         '--dev', required=True, dest='board', choices=KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')

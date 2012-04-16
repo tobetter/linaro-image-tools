@@ -590,4 +590,5 @@ class Media(object):
 
     def __init__(self, path):
         self.path = path
+        self.directory = None
         self.is_block_device = path.startswith('/dev/')
