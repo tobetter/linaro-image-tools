@@ -41,7 +41,7 @@ from linaro_image_tools.utils import (
     verify_file_integrity,
     check_file_integrity_and_log_errors,
     path_in_tarfile_exists,
-    BoardAbilityNotMet,
+    IncompatableOptions,
     prep_media_path,
     )
 
@@ -277,9 +277,8 @@ class TestPrepMediaPath(TestCaseWithFixtures):
                 self.outputs_directory = outputs_directory
                 self.board = board
 
-        self.useFixture(MockSomethingFixture(
-                        os.path, 'abspath', lambda x: x))
-        self.useFixture(MockCmdRunnerPopenFixture())
+        self.useFixture(MockSomethingFixture(os.path, 'abspath', lambda x: x))
+        self.useFixture(MockSomethingFixture(os, "makedirs", lambda x: x))
 
         self.assertEqual("testdevice",
                          prep_media_path(Args(directory=None,
@@ -290,14 +289,30 @@ class TestPrepMediaPath(TestCaseWithFixtures):
 
         self.assertEqual("/foo/bar/testboard.img",
                          prep_media_path(Args(directory="/foo/bar",
+                                              device=None,
+                                              board="testboard"),
+                                         BoardConfig(outputs_directory=True,
+                                                     board="testboard")))
+
+        self.assertEqual("/foo/bar/testdevice",
+                         prep_media_path(Args(directory="/foo/bar",
                                               device="testdevice",
                                               board="testboard"),
                                          BoardConfig(outputs_directory=True,
                                                      board="testboard")))
 
-        self.assertRaises(BoardAbilityNotMet, prep_media_path,
+        self.assertRaises(IncompatableOptions, prep_media_path,
+                          Args(directory="/foo/bar",
+                               device="/testdevice",
+                               board="testboard"),
+                          BoardConfig(outputs_directory=True,
+                                      board="testboard"))
+
+        sys.argv.append("--mmc")
+        self.assertRaises(IncompatableOptions, prep_media_path,
                           Args(directory="/foo/bar",
                                device="testdevice",
                                board="testboard"),
-                          BoardConfig(outputs_directory=False,
+                          BoardConfig(outputs_directory=True,
                                       board="testboard"))
+        sys.argv.remove("--mmc")

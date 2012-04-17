@@ -246,24 +246,43 @@ def preferred_tools_dir():
         prefer_dir = os.getcwd()
     return prefer_dir
 
-class BoardAbilityNotMet(Exception):
-    """Tried to use a feature of a board that isn't supported."""
-    pass
+
+class IncompatableOptions(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
 
 def prep_media_path(args, board_config):
+
+    # If args.device isn't set, generate a sensible default file name and
+    # tell the user
+    if not args.device:
+        args.device = board_config.board + ".img"
+        print "Setting destination file name to", args.device
+
     if args.directory is not None:
-        if not board_config.outputs_directory:
-            raise BoardAbilityNotMet("The board '%s' does not support the"
-                                     "--directory option." % args.board)
-        else:
-            loc=os.path.abspath(args.directory)
-            proc = cmd_runner.run(['mkdir','-p', '-v', loc])
-            proc.wait()
-            path = os.path.join(loc, board_config.board) + ".img"
+        # If args.device is a path to a device (/dev/) then this is an error
+        if "--mmc" in sys.argv:
+            raise IncompatableOptions("--directory option incompatable with "
+                                      "option --mmc")
+
+        # If directory is used as well as having a full path (rather than just
+        # a file name or relative path) in args.device, this is an error.
+        if re.search(r"^/", args.device):
+            raise IncompatableOptions("--directory option incompatable with "
+                                       "a full path in --image-file")
+
+        loc = os.path.abspath(args.directory)
+        os.makedirs(loc)
+        path = os.path.join(loc, args.device)
     else:
         path = args.device
 
     return path
+
 
 class UnableToFindPackageProvidingCommand(Exception):
     """We can't find a package which provides the given command."""

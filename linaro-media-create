@@ -48,7 +48,7 @@ from linaro_image_tools.utils import (
     is_arm_host,
     check_file_integrity_and_log_errors,
     path_in_tarfile_exists,
-    BoardAbilityNotMet,
+    IncompatableOptions,
     prep_media_path,
     )
 
@@ -99,6 +99,34 @@ if __name__ == '__main__':
     parser = get_args_parser()
     args = parser.parse_args()
 
+    board_config = board_configs[args.board]
+    board_config.set_metadata(args.hwpacks)
+    board_config.set_board(args.board)
+    board_config.add_boot_args(args.extra_boot_args)
+    board_config.add_boot_args_from_file(args.extra_boot_args_file)
+
+    try:
+        media = Media(prep_media_path(args, board_config))
+    except IncompatableOptions as e:
+        print >> sys.stderr, e.value
+        sys.exit(1)
+
+    if media.is_block_device:
+        if not board_config.supports_writing_to_mmc:
+            print "The board '%s' does not support the --mmc option. Please use "\
+                  "--image_file to create an image file for this board." % args.board
+            sys.exit(1)
+        if not confirm_device_selection_and_ensure_it_is_ready(args.device,
+                                                               args.nocheck_mmc):
+            sys.exit(1)
+    elif not args.should_format_rootfs or not args.should_format_bootfs:
+        print ("Do not use --no-boot or --no-part in conjunction with "
+               "--image_file.")
+        sys.exit(1)
+    else:
+        # All good, move on.
+        pass
+
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
     formatter = logging.Formatter("%(message)s")
@@ -118,12 +146,6 @@ if __name__ == '__main__':
     BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
     ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
 
-    board_config = board_configs[args.board]
-    board_config.set_metadata(args.hwpacks)
-    board_config.set_board(args.board)
-    board_config.add_boot_args(args.extra_boot_args)
-    board_config.add_boot_args_from_file(args.extra_boot_args_file)
-
     ensure_required_commands(args)
 
     sig_file_list = args.hwpacksigs[:]
@@ -136,29 +158,8 @@ if __name__ == '__main__':
                                     sig_file_list, args.binary, args.hwpacks)
     if not files_ok:
         sys.exit(1)
-    
-    atexit.register(cleanup_tempdir)
-    try:
-        media = Media(prep_media_path(args, board_config))
-    except BoardAbilityNotMet as e:
-        print e.value
-        sys.exit(1)
 
-    if media.is_block_device:
-        if not board_config.supports_writing_to_mmc:
-            print "The board '%s' does not support the --mmc option. Please use " \
-                "--image_file to create an image file for this board." % args.board
-            sys.exit(1)
-        if not confirm_device_selection_and_ensure_it_is_ready(args.device,
-                                                  args.nocheck_mmc):
-            sys.exit(1)
-    elif not args.should_format_rootfs or not args.should_format_bootfs:
-        print ("Do not use --no-boot or --no-part in conjunction with "
-               "--image_file.")
-        sys.exit(1)
-    else:
-        # All good, move on.
-        pass
+    atexit.register(cleanup_tempdir)
 
     unpack_binary_tarball(args.binary, TMP_DIR)
 
