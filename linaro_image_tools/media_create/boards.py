@@ -1482,8 +1482,6 @@ class I386Config(BoardConfig):
 
     # define kernel image
     kernel_flavors = ['generic']
-    vmlinuz = 'vmlinuz-*-generic'
-    initrd = 'initrd.img-*-generic'
 
     # define bootloader
     BOOTLOADER_CMD = 'grub-install'
