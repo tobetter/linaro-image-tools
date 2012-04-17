@@ -276,7 +276,11 @@ def prep_media_path(args, board_config):
                                        "a full path in --image-file")
 
         loc = os.path.abspath(args.directory)
-        os.makedirs(loc)
+        try:
+            os.makedirs(loc)
+        except OSError:
+            pass # Directory exists.
+        
         path = os.path.join(loc, args.device)
     else:
         path = args.device

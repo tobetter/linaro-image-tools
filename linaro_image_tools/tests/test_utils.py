@@ -273,8 +273,7 @@ class TestPrepMediaPath(TestCaseWithFixtures):
                 self.board = board
 
         class BoardConfig():
-            def __init__(self, outputs_directory, board):
-                self.outputs_directory = outputs_directory
+            def __init__(self, board):
                 self.board = board
 
         self.useFixture(MockSomethingFixture(os.path, 'abspath', lambda x: x))
@@ -284,35 +283,30 @@ class TestPrepMediaPath(TestCaseWithFixtures):
                          prep_media_path(Args(directory=None,
                                               device="testdevice",
                                               board="testboard"),
-                                         BoardConfig(outputs_directory=True,
-                                                     board="testboard")))
+                                         BoardConfig(board="testboard")))
 
         self.assertEqual("/foo/bar/testboard.img",
                          prep_media_path(Args(directory="/foo/bar",
                                               device=None,
                                               board="testboard"),
-                                         BoardConfig(outputs_directory=True,
-                                                     board="testboard")))
+                                         BoardConfig(board="testboard")))
 
         self.assertEqual("/foo/bar/testdevice",
                          prep_media_path(Args(directory="/foo/bar",
                                               device="testdevice",
                                               board="testboard"),
-                                         BoardConfig(outputs_directory=True,
-                                                     board="testboard")))
+                                         BoardConfig(board="testboard")))
 
         self.assertRaises(IncompatableOptions, prep_media_path,
                           Args(directory="/foo/bar",
                                device="/testdevice",
                                board="testboard"),
-                          BoardConfig(outputs_directory=True,
-                                      board="testboard"))
+                          BoardConfig(board="testboard"))
 
         sys.argv.append("--mmc")
         self.assertRaises(IncompatableOptions, prep_media_path,
                           Args(directory="/foo/bar",
                                device="testdevice",
                                board="testboard"),
-                          BoardConfig(outputs_directory=True,
-                                      board="testboard"))
+                          BoardConfig(board="testboard"))
         sys.argv.remove("--mmc")

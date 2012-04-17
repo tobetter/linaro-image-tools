@@ -212,7 +212,6 @@ class BoardConfig(object):
     _live_serial_opts = ''
     extra_boot_args_options = None
     supports_writing_to_mmc = True
-    outputs_directory = False
     LOADER_MIN_SIZE_S = align_up(1 * 1024 ** 2, SECTOR_SIZE) / SECTOR_SIZE
     BOOT_MIN_SIZE_S = align_up(50 * 1024 ** 2, SECTOR_SIZE) / SECTOR_SIZE
     ROOT_MIN_SIZE_S = align_up(50 * 1024 ** 2, SECTOR_SIZE) / SECTOR_SIZE
@@ -1338,7 +1337,6 @@ class VexpressA9Config(VexpressConfig):
 
 class FastModelConfig(BoardConfig):
     supports_writing_to_mmc = False
-    outputs_directory = True
       
     @classmethod
     def _get_bootcmd(cls, d_img_data):
