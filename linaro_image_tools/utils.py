@@ -256,13 +256,6 @@ class IncompatibleOptions(Exception):
 
 
 def prep_media_path(args):
-
-    # If args.device isn't set, generate a sensible default file name and
-    # tell the user
-    if not args.device:
-        args.device = "sd.img"
-        print "Setting destination file name to", args.device
-
     if args.directory is not None:
         # If args.device is a path to a device (/dev/) then this is an error
         if "--mmc" in sys.argv:

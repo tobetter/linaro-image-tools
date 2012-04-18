@@ -79,10 +79,12 @@ def get_args_parser():
     parser = argparse.ArgumentParser(version='%(prog)s ' + get_version())
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
-        '--mmc', dest='device', help='The storage device to use.')
+        '--mmc', dest='device', default="sd.img",
+        help='The storage device to use.')
     group.add_argument(
-        '--image-file', '--image_file', dest='device',
-        help='File where we should write an image file.')
+        '--image-file', '--image_file', dest='device', default="sd.img",
+        help='File where we should write an image file (defaults to sd.img '
+             'if neither --image-file or --mmc are specified.)')
     parser.add_argument(
         '--output-directory', dest='directory',
         help='Directory where image and accessories should be written to.')

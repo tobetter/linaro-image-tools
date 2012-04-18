@@ -280,11 +280,6 @@ class TestPrepMediaPath(TestCaseWithFixtures):
                                               device="testdevice",
                                               board="testboard")))
 
-        self.assertEqual("/foo/bar/sd.img",
-                         prep_media_path(Args(directory="/foo/bar",
-                                              device=None,
-                                              board="testboard")))
-
         self.assertEqual("/foo/bar/testdevice",
                          prep_media_path(Args(directory="/foo/bar",
                                               device="testdevice",
