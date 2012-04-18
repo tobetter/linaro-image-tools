@@ -48,7 +48,7 @@ from linaro_image_tools.utils import (
     is_arm_host,
     check_file_integrity_and_log_errors,
     path_in_tarfile_exists,
-    IncompatableOptions,
+    IncompatibleOptions,
     prep_media_path,
     )
 
@@ -107,7 +107,7 @@ if __name__ == '__main__':
 
     try:
         media = Media(prep_media_path(args, board_config))
-    except IncompatableOptions as e:
+    except IncompatibleOptions as e:
         print >> sys.stderr, e.value
         sys.exit(1)
 

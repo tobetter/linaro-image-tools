@@ -41,7 +41,7 @@ from linaro_image_tools.utils import (
     verify_file_integrity,
     check_file_integrity_and_log_errors,
     path_in_tarfile_exists,
-    IncompatableOptions,
+    IncompatibleOptions,
     prep_media_path,
     )
 
@@ -297,14 +297,14 @@ class TestPrepMediaPath(TestCaseWithFixtures):
                                               board="testboard"),
                                          BoardConfig(board="testboard")))
 
-        self.assertRaises(IncompatableOptions, prep_media_path,
+        self.assertRaises(IncompatibleOptions, prep_media_path,
                           Args(directory="/foo/bar",
                                device="/testdevice",
                                board="testboard"),
                           BoardConfig(board="testboard"))
 
         sys.argv.append("--mmc")
-        self.assertRaises(IncompatableOptions, prep_media_path,
+        self.assertRaises(IncompatibleOptions, prep_media_path,
                           Args(directory="/foo/bar",
                                device="testdevice",
                                board="testboard"),
