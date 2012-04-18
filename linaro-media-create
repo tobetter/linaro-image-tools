@@ -50,6 +50,7 @@ from linaro_image_tools.utils import (
     path_in_tarfile_exists,
     IncompatibleOptions,
     prep_media_path,
+    additional_option_checks,
     )
 
 # Just define the global variables
@@ -99,17 +100,20 @@ if __name__ == '__main__':
     parser = get_args_parser()
     args = parser.parse_args()
 
+    try:
+        additional_option_checks(args)
+    except IncompatibleOptions as e:
+        parser.print_help()
+        print >> sys.stderr, "\nError:", e.value
+        sys.exit(1)
+
     board_config = board_configs[args.board]
     board_config.set_metadata(args.hwpacks)
     board_config.set_board(args.board)
     board_config.add_boot_args(args.extra_boot_args)
     board_config.add_boot_args_from_file(args.extra_boot_args_file)
 
-    try:
-        media = Media(prep_media_path(args))
-    except IncompatibleOptions as e:
-        print >> sys.stderr, e.value
-        sys.exit(1)
+    media = Media(prep_media_path(args))
 
     if media.is_block_device:
         if not board_config.supports_writing_to_mmc:
