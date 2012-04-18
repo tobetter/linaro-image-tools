@@ -255,12 +255,12 @@ class IncompatibleOptions(Exception):
         return repr(self.value)
 
 
-def prep_media_path(args, board_config):
+def prep_media_path(args):
 
     # If args.device isn't set, generate a sensible default file name and
     # tell the user
     if not args.device:
-        args.device = board_config.board + ".img"
+        args.device = "sd.img"
         print "Setting destination file name to", args.device
 
     if args.directory is not None:

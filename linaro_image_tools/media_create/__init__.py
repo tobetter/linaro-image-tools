@@ -84,7 +84,7 @@ def get_args_parser():
         '--image-file', '--image_file', dest='device',
         help='File where we should write an image file.')
     parser.add_argument(
-        '--directory', dest='directory',
+        '--output-directory', dest='directory',
         help='Directory where image and accessories should be written to.')
     parser.add_argument(
         '--dev', required=True, dest='board', choices=KNOWN_BOARDS,

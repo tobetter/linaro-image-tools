@@ -272,41 +272,32 @@ class TestPrepMediaPath(TestCaseWithFixtures):
                 self.device = device
                 self.board = board
 
-        class BoardConfig():
-            def __init__(self, board):
-                self.board = board
-
         self.useFixture(MockSomethingFixture(os.path, 'abspath', lambda x: x))
         self.useFixture(MockSomethingFixture(os, "makedirs", lambda x: x))
 
         self.assertEqual("testdevice",
                          prep_media_path(Args(directory=None,
                                               device="testdevice",
-                                              board="testboard"),
-                                         BoardConfig(board="testboard")))
+                                              board="testboard")))
 
-        self.assertEqual("/foo/bar/testboard.img",
+        self.assertEqual("/foo/bar/sd.img",
                          prep_media_path(Args(directory="/foo/bar",
                                               device=None,
-                                              board="testboard"),
-                                         BoardConfig(board="testboard")))
+                                              board="testboard")))
 
         self.assertEqual("/foo/bar/testdevice",
                          prep_media_path(Args(directory="/foo/bar",
                                               device="testdevice",
-                                              board="testboard"),
-                                         BoardConfig(board="testboard")))
+                                              board="testboard")))
 
         self.assertRaises(IncompatibleOptions, prep_media_path,
                           Args(directory="/foo/bar",
                                device="/testdevice",
-                               board="testboard"),
-                          BoardConfig(board="testboard"))
+                               board="testboard"))
 
         sys.argv.append("--mmc")
         self.assertRaises(IncompatibleOptions, prep_media_path,
                           Args(directory="/foo/bar",
                                device="testdevice",
-                               board="testboard"),
-                          BoardConfig(board="testboard"))
+                               board="testboard"))
         sys.argv.remove("--mmc")

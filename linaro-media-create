@@ -106,7 +106,7 @@ if __name__ == '__main__':
     board_config.add_boot_args_from_file(args.extra_boot_args_file)
 
     try:
-        media = Media(prep_media_path(args, board_config))
+        media = Media(prep_media_path(args))
     except IncompatibleOptions as e:
         print >> sys.stderr, e.value
         sys.exit(1)
