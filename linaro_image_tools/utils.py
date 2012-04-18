@@ -247,5 +247,41 @@ def preferred_tools_dir():
     return prefer_dir
 
 
+def prep_media_path(args):
+    if args.directory is not None:
+        loc = os.path.abspath(args.directory)
+        try:
+            os.makedirs(loc)
+        except OSError:
+            pass # Directory exists.
+
+        path = os.path.join(loc, args.device)
+    else:
+        path = args.device
+
+    return path
+
+
 class UnableToFindPackageProvidingCommand(Exception):
     """We can't find a package which provides the given command."""
+
+
+class IncompatibleOptions(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+def additional_option_checks(args):
+    if args.directory is not None:
+    # If args.device is a path to a device (/dev/) then this is an error
+        if "--mmc" in sys.argv:
+            raise IncompatibleOptions("--directory option incompatable with "
+                                      "option --mmc")
+
+        # If directory is used as well as having a full path (rather than just
+        # a file name or relative path) in args.device, this is an error.
+        if re.search(r"^/", args.device):
+            raise IncompatibleOptions("--directory option incompatable with "
+                                      "a full path in --image-file")

@@ -48,6 +48,9 @@ from linaro_image_tools.utils import (
     is_arm_host,
     check_file_integrity_and_log_errors,
     path_in_tarfile_exists,
+    IncompatibleOptions,
+    prep_media_path,
+    additional_option_checks,
     )
 
 # Just define the global variables
@@ -97,6 +100,37 @@ if __name__ == '__main__':
     parser = get_args_parser()
     args = parser.parse_args()
 
+    try:
+        additional_option_checks(args)
+    except IncompatibleOptions as e:
+        parser.print_help()
+        print >> sys.stderr, "\nError:", e.value
+        sys.exit(1)
+
+    board_config = board_configs[args.board]
+    board_config.set_metadata(args.hwpacks)
+    board_config.set_board(args.board)
+    board_config.add_boot_args(args.extra_boot_args)
+    board_config.add_boot_args_from_file(args.extra_boot_args_file)
+
+    media = Media(prep_media_path(args))
+
+    if media.is_block_device:
+        if not board_config.supports_writing_to_mmc:
+            print "The board '%s' does not support the --mmc option. Please use "\
+                  "--image_file to create an image file for this board." % args.board
+            sys.exit(1)
+        if not confirm_device_selection_and_ensure_it_is_ready(args.device,
+                                                               args.nocheck_mmc):
+            sys.exit(1)
+    elif not args.should_format_rootfs or not args.should_format_bootfs:
+        print ("Do not use --no-boot or --no-part in conjunction with "
+               "--image_file.")
+        sys.exit(1)
+    else:
+        # All good, move on.
+        pass
+
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
     formatter = logging.Formatter("%(message)s")
@@ -116,12 +150,6 @@ if __name__ == '__main__':
     BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
     ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
 
-    board_config = board_configs[args.board]
-    board_config.set_metadata(args.hwpacks)
-    board_config.set_board(args.board)
-    board_config.add_boot_args(args.extra_boot_args)
-    board_config.add_boot_args_from_file(args.extra_boot_args_file)
-
     ensure_required_commands(args)
 
     sig_file_list = args.hwpacksigs[:]
@@ -134,24 +162,8 @@ if __name__ == '__main__':
                                     sig_file_list, args.binary, args.hwpacks)
     if not files_ok:
         sys.exit(1)
-    
+
     atexit.register(cleanup_tempdir)
-    media = Media(args.device)
-    if media.is_block_device:
-        if not board_config.supports_writing_to_mmc:
-            print "The board '%s' does not support the --mmc option. Please use " \
-                "--image_file to create an image file for this board." % args.board
-            sys.exit(1)
-        if not confirm_device_selection_and_ensure_it_is_ready(args.device,
-                                                  args.nocheck_mmc):
-            sys.exit(1)
-    elif not args.should_format_rootfs or not args.should_format_bootfs:
-        print ("Do not use --no-boot or --no-part in conjunction with "
-               "--image_file.")
-        sys.exit(1)
-    else:
-        # All good, move on.
-        pass
 
     unpack_binary_tarball(args.binary, TMP_DIR)
 
@@ -174,7 +186,7 @@ if __name__ == '__main__':
 
     if args.should_format_bootfs:
         board_config.populate_boot(
-            ROOTFS_DIR, rootfs_uuid, boot_partition, BOOT_DISK, args.device,
+            ROOTFS_DIR, rootfs_uuid, boot_partition, BOOT_DISK, media.path,
             args.is_live, args.is_lowmem, args.consoles)
 
     if args.should_format_rootfs:
@@ -185,4 +197,4 @@ if __name__ == '__main__':
             rootfs_uuid, create_swap, str(args.swap_file),
             board_config.mmc_part_offset, board_config)
 
-    print "Done creating Linaro image on %s" % args.device
+    print "Done creating Linaro image on %s" % media.path

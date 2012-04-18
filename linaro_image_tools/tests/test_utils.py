@@ -41,8 +41,10 @@ from linaro_image_tools.utils import (
     verify_file_integrity,
     check_file_integrity_and_log_errors,
     path_in_tarfile_exists,
+    IncompatibleOptions,
+    prep_media_path,
+    additional_option_checks,
     )
-
 
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
 
@@ -260,3 +262,44 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
             UnableToFindPackageProvidingCommand,
             install_package_providing, 'mkfs.lean')
 
+
+class Args():
+    def __init__(self, directory, device, board):
+        self.directory = directory
+        self.device = device
+        self.board = board
+
+
+class TestPrepMediaPath(TestCaseWithFixtures):
+
+    def test_prep_media_path(self):
+        self.useFixture(MockSomethingFixture(os.path, 'abspath', lambda x: x))
+        self.useFixture(MockSomethingFixture(os, "makedirs", lambda x: x))
+
+        self.assertEqual("testdevice",
+                         prep_media_path(Args(directory=None,
+                                              device="testdevice",
+                                              board="testboard")))
+
+        self.assertEqual("/foo/bar/testdevice",
+                         prep_media_path(Args(directory="/foo/bar",
+                                              device="testdevice",
+                                              board="testboard")))
+
+class TestPrepMediaPath(TestCaseWithFixtures):
+
+    def test_additional_option_checks(self):
+        self.useFixture(MockSomethingFixture(os.path, 'abspath', lambda x: x))
+        self.useFixture(MockSomethingFixture(os, "makedirs", lambda x: x))
+
+        self.assertRaises(IncompatibleOptions, additional_option_checks,
+                          Args(directory="/foo/bar",
+                               device="/testdevice",
+                               board="testboard"))
+
+        sys.argv.append("--mmc")
+        self.assertRaises(IncompatibleOptions, additional_option_checks,
+                          Args(directory="/foo/bar",
+                               device="testdevice",
+                               board="testboard"))
+        sys.argv.remove("--mmc")

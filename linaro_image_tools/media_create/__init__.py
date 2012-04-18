@@ -77,12 +77,17 @@ def add_common_options(parser):
 def get_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
     parser = argparse.ArgumentParser(version='%(prog)s ' + get_version())
-    group = parser.add_mutually_exclusive_group(required=True)
+    group = parser.add_mutually_exclusive_group()
     group.add_argument(
-        '--mmc', dest='device', help='The storage device to use.')
+        '--mmc', dest='device', default="sd.img",
+        help='The storage device to use.')
     group.add_argument(
-        '--image-file', '--image_file', dest='device',
-        help='File where we should write the QEMU image.')
+        '--image-file', '--image_file', dest='device', default="sd.img",
+        help='File where we should write an image file (defaults to sd.img '
+             'if neither --image-file or --mmc are specified.)')
+    parser.add_argument(
+        '--output-directory', dest='directory',
+        help='Directory where image and accessories should be written to.')
     parser.add_argument(
         '--dev', required=True, dest='board', choices=KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
