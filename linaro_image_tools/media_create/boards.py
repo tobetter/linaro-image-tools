@@ -206,6 +206,7 @@ class BoardConfig(object):
     env_dd = False
     fatload_command = 'fatload'
     mmc_option = '0:1'
+    mmc_device_id = 0
     mmc_part_offset = 0
     uimage_path = ''
     fat_size = 32
@@ -347,6 +348,7 @@ class BoardConfig(object):
 
             cls.mmc_option = cls.get_metadata_field('mmc_id')
             if cls.mmc_option is not None:
+                cls.mmc_device_id = int(cls.mmc_option.split(':')[0])
                 cls.mmc_part_offset = int(cls.mmc_option.split(':')[1]) - 1
 
             boot_min_size = cls.get_metadata_field('boot_min_size')

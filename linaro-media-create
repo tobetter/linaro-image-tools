@@ -195,6 +195,7 @@ if __name__ == '__main__':
             create_swap = True
         populate_rootfs(ROOTFS_DIR, ROOT_DISK, root_partition, args.rootfs,
             rootfs_uuid, create_swap, str(args.swap_file),
-            board_config.mmc_part_offset, board_config)
+            board_config.mmc_device_id, board_config.mmc_part_offset,
+            board_config)
 
     print "Done creating Linaro image on %s" % media.path

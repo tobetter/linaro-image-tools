@@ -389,6 +389,7 @@ class TestSetMetadata(TestCaseWithFixtures):
             pass
         config.set_metadata('ahwpack.tar.gz')
         self.assertEquals(data_to_set, config.mmc_option)
+        self.assertEquals(0, config.mmc_device_id)
         self.assertEquals(0, config.mmc_part_offset)
 
     def test_sets_boot_min_size(self):
