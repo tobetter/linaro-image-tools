@@ -43,7 +43,7 @@ def rootfs_mount_options(rootfs_type):
 
 def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
                     rootfs_uuid, should_create_swap, swap_size,
-                    partition_offset, board_config=None):
+                    mmc_device_id, partition_offset, board_config=None):
     """Populate the rootfs and make the necessary tweaks to make it usable.
 
     This consists of:
@@ -87,7 +87,8 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
         append_to_fstab(root_disk, fstab_additions)
 
         print "\nCreating /etc/flash-kernel.conf\n"
-        create_flash_kernel_config(root_disk, 1 + partition_offset)
+        create_flash_kernel_config(
+                root_disk, mmc_device_id, 1 + partition_offset)
 
         if board_config is not None:
             print "\nUpdating /etc/network/interfaces\n"
@@ -114,15 +115,16 @@ def update_network_interfaces(root_disk, board_config):
         write_data_to_protected_file(if_path, config)
 
 
-def create_flash_kernel_config(root_disk, boot_partition_number):
+def create_flash_kernel_config(root_disk, mmc_device_id, boot_partition_number):
     """Create a flash-kernel.conf file under root_disk/etc.
 
     Uses the given partition number to figure out the boot partition.
     """
-    target_boot_dev = '/dev/mmcblk0p%s' % boot_partition_number
+    target_boot_dev = '/dev/mmcblk%dp%s' % (
+            mmc_device_id, boot_partition_number)
     flash_kernel = os.path.join(root_disk, 'etc', 'flash-kernel.conf')
     write_data_to_protected_file(
-        flash_kernel, "UBOOT_PART=%s" % target_boot_dev)
+        flash_kernel, "UBOOT_PART=%s\n" % target_boot_dev)
 
 
 def _list_files(directory):
