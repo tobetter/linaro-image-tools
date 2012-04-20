@@ -702,6 +702,9 @@ class PackageFetcher(object):
             return fetched.values()
         acq = apt_pkg.Acquire(DummyProgress())
         acqfiles = []
+        # re to remove the repo private key
+        deb_url_auth_re = re.compile(
+                    r"(?P<transport>.*://)(?P<user>.*):.*@(?P<path>.*$)")
         for package in self.cache.cache.get_changes():
             if (package.marked_delete or package.marked_keep):
                 continue
@@ -717,7 +720,12 @@ class PackageFetcher(object):
                 acq, candidate.uri, candidate.md5, candidate.size,
                 base, destfile=destfile)
             acqfiles.append((acqfile, result_package, destfile))
-            logger.debug(" ... from %s" % acqfile.desc_uri)
+            # check if we have a private key in the pkg url
+            deb_url_auth = deb_url_auth_re.match(acqfile.desc_uri)
+            if deb_url_auth:
+                logger.debug(" ... from %s%s:***@%s" % deb_url_auth.groups())
+            else:
+                logger.debug(" ... from %s" % acqfile.desc_uri)
         self.cache.cache.clear()
         acq.run()
         for acqfile, result_package, destfile in acqfiles:
