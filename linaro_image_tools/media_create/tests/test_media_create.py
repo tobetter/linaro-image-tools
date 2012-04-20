@@ -2828,7 +2828,8 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         def fake_append_to_fstab(disk, additions):
             self.lines_added_to_fstab = additions
 
-        def fake_create_flash_kernel_config(disk, partition_offset):
+        def fake_create_flash_kernel_config(disk, mmc_device_id,
+                                            partition_offset):
             self.create_flash_kernel_config_called = True
 
         # Mock stdout, cmd_runner.Popen(), append_to_fstab and
@@ -2861,7 +2862,7 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         populate_rootfs(
             contents_dir, root_disk, partition='/dev/rootfs',
             rootfs_type='ext3', rootfs_uuid='uuid', should_create_swap=True,
-            swap_size=100, partition_offset=0)
+            swap_size=100, mmc_device_id=0, partition_offset=0)
 
         self.assertEqual(
             ['UUID=uuid / ext3  errors=remount-ro 0 1',
@@ -2884,7 +2885,8 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
 
-        create_flash_kernel_config(tempdir, boot_partition_number=1)
+        create_flash_kernel_config(tempdir, mmc_device_id=0,
+                                   boot_partition_number=1)
 
         calls = fixture.mock.calls
         self.assertEqual(1, len(calls), calls)
@@ -2897,7 +2899,8 @@ class TestPopulateRootFS(TestCaseWithFixtures):
             '%s mv -f %s %s/etc/flash-kernel.conf' % (
                 sudo_args, tmpfile, tempdir),
             fixture.mock.commands_executed[0])
-        self.assertEqual('UBOOT_PART=/dev/mmcblk0p1', open(tmpfile).read())
+        self.assertEqual('UBOOT_PART=/dev/mmcblk0p1',
+                         open(tmpfile).read().rstrip())
 
     def test_list_files(self):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
