@@ -27,8 +27,10 @@ import shutil
 from string import Template
 import subprocess
 import tempfile
+import urlparse
 
 from apt.cache import Cache
+from apt.cache import FetchFailedException
 from apt.package import FetchError
 import apt_pkg
 
@@ -489,9 +491,40 @@ class IsolatedAptCache(object):
         self.set_installed_packages([], reopen=False)
         sources_list = os.path.join(
             self.tempdir, "etc", "apt", "sources.list")
+
         with open(sources_list, 'w') as f:
             for source in self.sources:
+                # To make a file URL look like an HTTP one (for urlparse)
+                # We do this to use urlparse, which is probably more robust
+                # than any regexp we come up with.
+                mangled_source = source
+                if re.search("file:/[^/]", source):
+                    mangled_source = re.sub("file:/", "file://", source)
+
+                url_parsed = urlparse.urlsplit(mangled_source)
+
+                # If the source uses authentication, don't put in sources.list
+                if url_parsed.password:
+                    url_parts_without_user_pass = [url_parsed.scheme,
+                                                   url_parsed.hostname,
+                                                   url_parsed.path,
+                                                   url_parsed.query,
+                                                   url_parsed.fragment]
+
+                    auth_name=os.path.join(
+                        self.tempdir, "etc", "apt", "auth.conf")
+                    with open(auth_name,'w') as auth:
+                        auth.write(
+                            "machine " + url_parsed.hostname + "\n" +
+                            "login " + url_parsed.username + "\n" +
+                            "password " + url_parsed.password + "\n")
+
+                    source = urlparse.urlunsplit(url_parts_without_user_pass)
+
+                    # Get rid of extra / in file URLs
+                    source = re.sub("file://", "file:/", source)
                 f.write("deb %s\n" % source)
+
         if self.architecture is not None:
             apt_conf = os.path.join(self.tempdir, "etc", "apt", "apt.conf")
             with open(apt_conf, 'w') as f:
@@ -510,7 +543,11 @@ class IsolatedAptCache(object):
         apt_pkg.config.set("Dir::bin::dpkg", "/bin/false")
         self.cache = Cache(rootdir=self.tempdir, memonly=True)
         logger.debug("Updating apt cache")
-        self.cache.update()
+        try:
+            self.cache.update()
+        except FetchFailedException, e:
+            obfuscated_e = re.sub(r"([^ ]https://).+?(@)", r"\1***\2", str(e))
+            raise FetchFailedException(obfuscated_e)
         self.cache.open()
         return self
 
