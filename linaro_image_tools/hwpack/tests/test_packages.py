@@ -932,6 +932,21 @@ class AptCacheTests(TestCaseWithFixtures):
                 cache.tempdir, "var", "lib", "dpkg", "status")).read())
 
 
+    def test_package_list_has_no_passwords(self):
+        source1 = self.useFixture(AptSourceFixture([]))
+        path = re.sub("file:/", "file://user:pass@", source1.sources_entry)
+        cache = IsolatedAptCache([path])
+
+        self.addCleanup(cache.cleanup)
+
+        cache.prepare()
+        cache.set_installed_packages([])
+
+        sources_list_location = os.path.join(cache.tempdir, "etc", "apt",
+                                             "sources.list")
+        sources_list = open(sources_list_location).read()
+        self.assertEqual("deb %s\n" % source1.sources_entry, sources_list)
+
 class PackageFetcherTests(TestCaseWithFixtures):
 
     def test_context_manager(self):

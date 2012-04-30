@@ -97,8 +97,12 @@ class Config(object):
 
         :param fp: a file-like object containing the configuration.
         """
-        self.parser = ConfigParser.RawConfigParser()
-        self.parser.readfp(fp)
+        try:
+            self.parser = ConfigParser.RawConfigParser()
+            self.parser.readfp(fp)
+        except ConfigParser.Error, e:
+            obfuscated_e = re.sub(r"([^ ]https://).+?(@)", r"\1***\2", str(e))
+            raise ConfigParser.Error(obfuscated_e)
 
     def validate(self):
         """Check that this configuration follows the schema.

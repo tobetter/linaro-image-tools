@@ -21,6 +21,7 @@
 
 import time
 import os
+import urlparse
 
 from linaro_image_tools.hwpack.better_tarfile import writeable_tarfile
 from linaro_image_tools.hwpack.packages import (
@@ -405,9 +406,14 @@ class HardwarePack(object):
                 get_packages_file(
                     [p for p in self.packages if p.content is not None]))
             tf.create_dir(self.SOURCES_LIST_DIRNAME)
+
             for source_name, source_info in self.sources.items():
-                tf.create_file_from_string(
-                    self.SOURCES_LIST_DIRNAME + "/" + source_name + ".list",
-                    "deb " + source_info + "\n")
+                url_parsed = urlparse.urlsplit(source_info)
+
+                # Don't output sources with passwords in them
+                if not url_parsed.password:
+                    tf.create_file_from_string(
+                        self.SOURCES_LIST_DIRNAME + "/" + source_name + ".list",
+                        "deb " + source_info + "\n")
             # TODO: include sources keys etc.
             tf.create_dir(self.SOURCES_LIST_GPG_DIRNAME)

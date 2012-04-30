@@ -24,7 +24,7 @@ import re
 import tarfile
 
 from testtools import TestCase
-from testtools.matchers import Equals
+from testtools.matchers import Equals, MismatchError
 
 from linaro_image_tools.hwpack.hardwarepack import HardwarePack, Metadata
 from linaro_image_tools.hwpack.packages import get_packages_file
@@ -560,3 +560,19 @@ class HardwarePackTests(TestCase):
         self.assertThat(
             tf,
             HardwarePackHasFile("sources.list.d.gpg", type=tarfile.DIRTYPE))
+
+    def test_password_removed_from_urls(self):
+        hwpack = HardwarePack(self.metadata)
+
+        url = "https://username:password@hostname/url precise main"
+        hwpack.add_apt_sources({"protected": url})
+
+        tf = self.get_tarfile(hwpack)
+        try:
+            self.assertThat(
+                tf, HardwarePackHasFile("sources.list.d/protected.list",
+                                        content="deb " + url + "\n"))
+        except MismatchError:
+            pass  # Expect to not find the password protected URL
+        else:
+            self.assertTrue(False, "Found password protected URL in hwpack")
