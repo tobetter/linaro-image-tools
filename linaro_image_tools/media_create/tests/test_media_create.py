@@ -2408,6 +2408,21 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def test_convert_size_in_gbytes_to_bytes(self):
         self.assertEqual(12 * 1024**3, convert_size_to_bytes('12G'))
 
+    def test_convert_size_float_no_suffix(self):
+        self.assertEqual(1539, convert_size_to_bytes('1539.49'))
+
+    def test_convert_size_float_round_up(self):
+        self.assertEqual(1540, convert_size_to_bytes('1539.50'))
+
+    def test_convert_size_float_in_kbytes_to_bytes(self):
+        self.assertEqual(int(round(234.8 * 1024)), convert_size_to_bytes('234.8K'))
+
+    def test_convert_size_float_in_mbytes_to_bytes(self):
+        self.assertEqual(int(round(876.123 * 1024**2)), convert_size_to_bytes('876.123M'))
+
+    def test_convert_size_float_in_gbytes_to_bytes(self):
+        self.assertEqual(int(round(1.9 * 1024**3)), convert_size_to_bytes('1.9G'))
+
     def test_calculate_partition_size_and_offset(self):
         tmpfile = self._create_tmpfile()
         vfat_size, vfat_offset, linux_size, linux_offset = (
