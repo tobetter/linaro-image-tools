@@ -1510,7 +1510,7 @@ class I386Config(BoardConfig):
     _live_serial_opts = 'serialtty=%s'
 
     # define kernel image
-    kernel_flavors = ['generic']
+    kernel_flavors = ['generic', 'pae']
 
     # define bootloader
     BOOTLOADER_CMD = 'grub-install'
@@ -1535,9 +1535,6 @@ class I386Config(BoardConfig):
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        # XXX: delete this method when hwpacks V1 can die
-        assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
-
         # copy image and init into boot partition
         cmd_runner.run(['cp', k_img_data, boot_dir], as_root=True).wait()
         cmd_runner.run(['cp', i_img_data, boot_dir], as_root=True).wait()
@@ -1563,6 +1560,15 @@ class I386Config(BoardConfig):
 
         cmd_runner.run(['cp', tmpfile, os.path.join(boot_dir,
             cls.BOOTLOADER_CFG_FILE)], as_root=True).wait()
+
+    @classmethod
+    def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
+                            boot_device_or_file, k_img_data, i_img_data,
+                            d_img_data):
+        # reuse hwpack v1 function
+        cls._make_boot_files(boot_env, chroot_dir, boot_dir,
+                             boot_device_or_file, k_img_data, i_img_data,
+                             d_img_data)
 
 
 board_configs = {
