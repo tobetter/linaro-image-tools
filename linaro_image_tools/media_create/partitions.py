@@ -483,8 +483,8 @@ def convert_size_to_bytes(size):
     unit = size[-1].upper()
     # no unit? (ends with a digit)
     if unit in '0123456789':
-        return int(size)
-    real_size = int(size[:-1])
+        return int(round(float(size)))
+    real_size = float(size[:-1])
     if unit == 'K':
         real_size = real_size * 1024
     elif unit == 'M':
@@ -495,7 +495,7 @@ def convert_size_to_bytes(size):
         raise ValueError("Unknown size format: %s.  Use K[bytes], M[bytes] "
                          "or G[bytes]" % size)
 
-    return real_size
+    return int(round(real_size))
 
 
 def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
