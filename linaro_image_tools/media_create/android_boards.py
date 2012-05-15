@@ -202,8 +202,8 @@ class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
     # Snowball uses a custom uboot:
     # it uses "fat load" instead of fatload and
     # needs uImage/uInitrd prefixed with /
-    fatload_command = 'fat load'
-    uimage_path = '/'
+    #fatload_command = 'fat load'
+    #uimage_path = '/'
     dtb_name = None
 
 
@@ -218,8 +218,8 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
     # Snowball uses a custom uboot:
     # it uses "fat load" instead of fatload and
     # needs uImage/uInitrd prefixed with /
-    fatload_command = 'fat load'
-    uimage_path = '/'
+    #fatload_command = 'fat load'
+    #uimage_path = '/'
     dtb_name = None
 
     @classmethod
