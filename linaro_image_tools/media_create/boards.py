@@ -90,6 +90,18 @@ def align_partition(min_start, min_length, start_alignment, end_alignment):
     return start, end, length
 
 
+def copy_drop(src, dest_dir):
+    """Copy a file from src to destdir, dropping root ownership on the
+    way.
+    """
+    cmd = [ "cp", "-v",  src, dest_dir ]
+    cmd_runner.run(cmd, as_root=True).wait()
+
+    final = os.path.join(dest_dir, os.path.basename(src))
+    cmd = [ "chown", "%s:%s" % (os.getuid(), os.getgid()), final ]
+    cmd_runner.run(cmd, as_root=True).wait()
+
+
 class classproperty(object):
     """A descriptor that provides @property behavior on class methods."""
     def __init__(self, getter):
@@ -1354,17 +1366,12 @@ class FastModelConfig(BoardConfig):
     def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        logger = logging.getLogger("linaro_image_tools")
-        logger.info("WTF=%s." % boot_device_or_file )
         output_dir=os.path.dirname(boot_device_or_file)
-        cmd = [ "cp", "-v",  _get_file_matching("%s/boot/img.axf" % chroot_dir), output_dir ]
-        proc = cmd_runner.run(cmd, as_root=True)
-        proc.wait()
-        cmd = [ "cp", "-v",  k_img_data, i_img_data, d_img_data, output_dir ]
-        proc = cmd_runner.run(cmd, as_root=True)
-        proc.wait()
-        return
 
+        copy_drop(_get_file_matching("%s/boot/img.axf" % chroot_dir), output_dir)
+
+        for filename in (k_img_data, i_img_data, d_img_data):
+            copy_drop(filename, output_dir)
 
 class SamsungConfig(BoardConfig):
     @classproperty
