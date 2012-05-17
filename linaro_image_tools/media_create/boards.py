@@ -1368,10 +1368,11 @@ class FastModelConfig(BoardConfig):
                          d_img_data):
         output_dir=os.path.dirname(boot_device_or_file)
 
-        copy_drop(_get_file_matching("%s/boot/img.axf" % chroot_dir), output_dir)
+        bootwrapper=_get_file_matching("%s/boot/img.axf" % chroot_dir)
 
-        for filename in (k_img_data, i_img_data, d_img_data):
-            copy_drop(filename, output_dir)
+        for filename in (bootwrapper, k_img_data, i_img_data, d_img_data):
+            if filename != None:
+                copy_drop(filename, output_dir)
 
 class SamsungConfig(BoardConfig):
     @classproperty
