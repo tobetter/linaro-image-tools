@@ -44,6 +44,7 @@ from linaro_image_tools.utils import (
     IncompatibleOptions,
     prep_media_path,
     additional_option_checks,
+    InvalidHwpackFile,
     )
 
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
@@ -286,6 +287,7 @@ class TestPrepMediaPath(TestCaseWithFixtures):
                                               device="testdevice",
                                               board="testboard")))
 
+
 class TestPrepMediaPath(TestCaseWithFixtures):
 
     def test_additional_option_checks(self):
@@ -303,3 +305,19 @@ class TestPrepMediaPath(TestCaseWithFixtures):
                                device="testdevice",
                                board="testboard"))
         sys.argv.remove("--mmc")
+
+
+class TestHwpackIsFile(TestCaseWithFixtures):
+
+    """Testing '--hwpack' option only allows file."""
+ 
+    def test_hwpack_is_file(self):
+        class HwPackArgs:
+            def __init__(self, hwpack):
+                self.hwpack = hwpack
+                self.directory = None
+
+        
+        self.assertRaises(InvalidHwpackFile, additional_option_checks, 
+                           HwPackArgs(hwpack=tempfile.mkdtemp()))
+

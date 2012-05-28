@@ -266,6 +266,10 @@ class UnableToFindPackageProvidingCommand(Exception):
     """We can't find a package which provides the given command."""
 
 
+class InvalidHwpackFile(Exception):
+    """The hwpack parameter is not a regular file."""
+
+
 class IncompatibleOptions(Exception):
     def __init__(self, value):
         self.value = value
