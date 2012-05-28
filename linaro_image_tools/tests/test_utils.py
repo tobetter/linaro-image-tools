@@ -314,7 +314,7 @@ class TestHwpackIsFile(TestCaseWithFixtures):
     def test_hwpack_is_file(self):
         class HwPackArgs:
             def __init__(self, hwpack):
-                self.hwpacks = hwpack
+                self.hwpacks = [hwpack]
                 self.directory = None
 
         try:

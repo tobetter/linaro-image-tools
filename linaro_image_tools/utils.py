@@ -289,8 +289,9 @@ def additional_option_checks(args):
         if re.search(r"^/", args.device):
             raise IncompatibleOptions("--directory option incompatable with "
                                       "a full path in --image-file")
-                                      
-    if not os.path.isfile(args.hwpacks):
-        raise InvalidHwpackFile(
-            "--hwpack argument (%s) is not a regular file" % args.hwpacks)
+ 
+    for hwpack in args.hwpacks:
+        if not os.path.isfile(hwpack):
+            raise InvalidHwpackFile(
+                "--hwpack argument (%s) is not a regular file" % hwpack)
      
