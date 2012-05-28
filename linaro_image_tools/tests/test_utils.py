@@ -317,7 +317,9 @@ class TestHwpackIsFile(TestCaseWithFixtures):
                 self.hwpacks = hwpack
                 self.directory = None
 
-        
-        self.assertRaises(InvalidHwpackFile, additional_option_checks, 
-                           HwPackArgs(hwpack=tempfile.mkdtemp()))
-
+        try:
+            tmpdir = tempfile.mkdtemp()        
+            self.assertRaises(InvalidHwpackFile, additional_option_checks, 
+                              HwPackArgs(hwpack=tmpdir))
+        finally:
+            os.rmdir(tmpdir)
