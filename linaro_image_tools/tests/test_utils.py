@@ -309,7 +309,7 @@ class TestPrepMediaPath(TestCaseWithFixtures):
 
 class TestHwpackIsFile(TestCaseWithFixtures):
 
-    """Testing '--hwpack' option only allows file."""
+    """Testing '--hwpack' option only allows regular files."""
  
     def test_hwpack_is_file(self):
         class HwPackArgs:
@@ -318,7 +318,7 @@ class TestHwpackIsFile(TestCaseWithFixtures):
                 self.directory = None
 
         try:
-            tmpdir = tempfile.mkdtemp()        
+            tmpdir = tempfile.mkdtemp()
             self.assertRaises(InvalidHwpackFile, additional_option_checks, 
                               HwPackArgs(hwpack=tmpdir))
         finally:

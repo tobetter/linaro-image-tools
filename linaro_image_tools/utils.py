@@ -281,13 +281,13 @@ def additional_option_checks(args):
     if args.directory is not None:
     # If args.device is a path to a device (/dev/) then this is an error
         if "--mmc" in sys.argv:
-            raise IncompatibleOptions("--directory option incompatable with "
+            raise IncompatibleOptions("--directory option incompatible with "
                                       "option --mmc")
 
         # If directory is used as well as having a full path (rather than just
         # a file name or relative path) in args.device, this is an error.
         if re.search(r"^/", args.device):
-            raise IncompatibleOptions("--directory option incompatable with "
+            raise IncompatibleOptions("--directory option incompatible with "
                                       "a full path in --image-file")
  
     for hwpack in args.hwpacks:
