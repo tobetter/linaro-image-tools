@@ -168,6 +168,9 @@ def install_package_providing(command):
 
     If we can't find any package which provides it, raise
     UnableToFindPackageProvidingCommand.
+
+    If the user denies installing the package, raise
+    PackageInstallationRefused.
     """
     if CommandNotFound is None:
         raise UnableToFindPackageProvidingCommand(
@@ -179,8 +182,24 @@ def install_package_providing(command):
             "Unable to find any package providing %s" % command)
 
     # TODO: Ask the user to pick a package when there's more than one that
-    # provide the given command.
+    # provides the given command.
     package, _ = packages[0]
+    out, _ = cmd_runner.run(
+        ['apt-get', '-s', 'install', package], stdout=subprocess.PIPE).communicate()
+    to_install = []
+    for line in out.splitlines():
+        if line.startswith("Inst"):
+            to_install.append(line.split()[1])
+    if not to_install:
+        raise UnableToFindPackageProvidingCommand(
+            "Unable to find any package to be installed.")
+    # TODO: loop through the available packages if there is more than one?
+    resp = raw_input(
+        "You are missing the following package: %s.  Install (y/n)? " %
+        " ".join(to_install))
+    if resp.lower() != 'y':
+        raise PackageInstallationRefused(
+            "Installation of packages refused by the user.")
     print ("Installing required command %s from package %s"
            % (command, package))
     cmd_runner.run(
@@ -264,6 +283,10 @@ def prep_media_path(args):
 
 class UnableToFindPackageProvidingCommand(Exception):
     """We can't find a package which provides the given command."""
+
+
+class PackageInstallationRefused(Exception):
+    """User has chosen not to install a package."""
 
 
 class IncompatibleOptions(Exception):
