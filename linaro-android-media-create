@@ -40,7 +40,7 @@ from linaro_image_tools.media_create.unpack_binary_tarball import (
     unpack_android_binary_tarball
     )
 from linaro_image_tools.media_create import get_android_args_parser
-from linaro_image_tools.utils import ensure_command, is_arm_host
+from linaro_image_tools.utils import ensure_command
 
 
 
@@ -81,8 +81,6 @@ def ensure_required_commands(args):
     """Ensure we have the commands that we know are going to be used."""
     required_commands = [
         'mkfs.vfat', 'sfdisk', 'mkimage', 'parted']
-    if not is_arm_host():
-        required_commands.append('qemu-arm-static')
     for command in required_commands:
         ensure_command(command)
 
