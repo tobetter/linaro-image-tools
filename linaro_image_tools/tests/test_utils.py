@@ -33,18 +33,18 @@ from linaro_image_tools.tests.fixtures import (
     MockSomethingFixture,
     )
 from linaro_image_tools.utils import (
+    IncompatibleOptions,
+    InvalidHwpackFile,
+    UnableToFindPackageProvidingCommand,
+    additional_option_checks,
+    check_file_integrity_and_log_errors,
     ensure_command,
     find_command,
     install_package_providing,
-    preferred_tools_dir,
-    UnableToFindPackageProvidingCommand,
-    verify_file_integrity,
-    check_file_integrity_and_log_errors,
     path_in_tarfile_exists,
-    IncompatibleOptions,
+    preferred_tools_dir,
     prep_media_path,
-    additional_option_checks,
-    InvalidHwpackFile,
+    verify_file_integrity,
     )
 
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
@@ -78,7 +78,7 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
             self.returncode = 0
             return self
 
-        def communicate(self, input=None):
+        def communicate(self, input = None):
             self.wait()
             return ': OK\n'.join(
                 TestVerifyFileIntegrity.filenames_in_shafile) + ': OK\n', ''
@@ -92,7 +92,7 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
             self.returncode = 0
             return self
 
-        def communicate(self, input=None):
+        def communicate(self, input = None):
             self.wait()
             return ': ERROR\n'.join(
                 TestVerifyFileIntegrity.filenames_in_shafile) + ': ERROR\n', ''
@@ -106,7 +106,7 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
             self.returncode = 0
             return self
 
-        def communicate(self, input=None):
+        def communicate(self, input = None):
             self.wait()
             return ': OK\n'.join(
                 TestVerifyFileIntegrity.filenames_in_shafile) + ': OK\n', ''
@@ -137,7 +137,7 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
                                                    signature_filename),
              'sha1sum -c %s' % hash_filename],
             fixture.mock.commands_executed)
-        
+
     def test_verify_files_returns_files(self):
         self.useFixture(MockSomethingFixture(cmd_runner, 'Popen',
                                              self.MockCmdRunnerPopen()))
@@ -237,7 +237,7 @@ class TestFindCommand(TestCaseWithFixtures):
         if prefer_dir is None:
             expected, _ = cmd_runner.run(
                 ['which', lmc, ],
-                stdout=subprocess.PIPE).communicate()
+                stdout = subprocess.PIPE).communicate()
             expected = expected.strip()
         else:
             expected = os.path.join(prefer_dir, lmc)
@@ -278,14 +278,14 @@ class TestPrepMediaPath(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(os, "makedirs", lambda x: x))
 
         self.assertEqual("testdevice",
-                         prep_media_path(Args(directory=None,
-                                              device="testdevice",
-                                              board="testboard")))
+                         prep_media_path(Args(directory = None,
+                                              device = "testdevice",
+                                              board = "testboard")))
 
         self.assertEqual("/foo/bar/testdevice",
-                         prep_media_path(Args(directory="/foo/bar",
-                                              device="testdevice",
-                                              board="testboard")))
+                         prep_media_path(Args(directory = "/foo/bar",
+                                              device = "testdevice",
+                                              board = "testboard")))
 
 
 class TestPrepMediaPath(TestCaseWithFixtures):
@@ -295,22 +295,22 @@ class TestPrepMediaPath(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(os, "makedirs", lambda x: x))
 
         self.assertRaises(IncompatibleOptions, additional_option_checks,
-                          Args(directory="/foo/bar",
-                               device="/testdevice",
-                               board="testboard"))
+                          Args(directory = "/foo/bar",
+                               device = "/testdevice",
+                               board = "testboard"))
 
         sys.argv.append("--mmc")
         self.assertRaises(IncompatibleOptions, additional_option_checks,
-                          Args(directory="/foo/bar",
-                               device="testdevice",
-                               board="testboard"))
+                          Args(directory = "/foo/bar",
+                               device = "testdevice",
+                               board = "testboard"))
         sys.argv.remove("--mmc")
 
 
 class TestHwpackIsFile(TestCaseWithFixtures):
 
     """Testing '--hwpack' option only allows regular files."""
- 
+
     def test_hwpack_is_file(self):
         class HwPackArgs:
             def __init__(self, hwpack):
@@ -319,7 +319,7 @@ class TestHwpackIsFile(TestCaseWithFixtures):
 
         try:
             tmpdir = tempfile.mkdtemp()
-            self.assertRaises(InvalidHwpackFile, additional_option_checks, 
-                              HwPackArgs(hwpack=tmpdir))
+            self.assertRaises(InvalidHwpackFile, additional_option_checks,
+                              HwPackArgs(hwpack = tmpdir))
         finally:
             os.rmdir(tmpdir)
