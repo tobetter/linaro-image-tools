@@ -47,6 +47,7 @@ from linaro_image_tools.utils import (
     verify_file_integrity,
     )
 
+
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
 
 
@@ -323,3 +324,27 @@ class TestHwpackIsFile(TestCaseWithFixtures):
                               HwPackArgs(hwpack = tmpdir))
         finally:
             os.rmdir(tmpdir)
+
+
+    def test_hwpacks_are_files(self):
+
+        """
+        Tests that multiple hwpacks are regular files.
+
+        Tests against a file and a directory, to avoid circumstances in which
+        'additional_option_checks' is tweaked.
+        """
+
+        class HwPacksArgs:
+            def __init__(self, hwpacks):
+                self.hwpacks = hwpacks
+                self.directory = None
+
+        try:
+            tmpdir = tempfile.mkdtemp()
+            _, tmpfile = tempfile.mkstemp()
+            self.assertRaises(InvalidHwpackFile, additional_option_checks,
+                              HwPacksArgs([tmpfile, tmpdir]))
+        finally:
+            os.rmdir(tmpdir)
+            os.remove(tmpfile)
