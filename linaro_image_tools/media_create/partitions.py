@@ -19,13 +19,14 @@
 
 import atexit
 from contextlib import contextmanager
+import dbus
 import glob
 import logging
+from math import floor
 import re
 import subprocess
 import time
 
-import dbus
 from parted import (
     Device,
     Disk,
@@ -34,7 +35,6 @@ from parted import (
     )
 
 from linaro_image_tools import cmd_runner
-
 
 HEADS = 128
 SECTORS = 32
@@ -45,6 +45,9 @@ UDISKS = "org.freedesktop.UDisks"
 # Max number of attempts to sleep (total sleep time in seconds =
 # 1+2+...+MAX_TTS)
 MAX_TTS = 10
+# Image size should be a multiple of 1MiB, expressed in bytes. This is also
+# the minimum image size possible.
+ROUND_IMAGE_TO = 2 ** 20
 
 
 def setup_android_partitions(board_config, media, image_size, bootfs_label,
@@ -481,11 +484,12 @@ def _get_udisks_device_file(path, part):
 def convert_size_to_bytes(size):
     """Convert a size string in Kbytes, Mbytes or Gbytes to bytes."""
     unit = size[-1].upper()
+    real_size = float(size[:-1])
+
     # no unit? (ends with a digit)
     if unit in '0123456789':
-        return int(round(float(size)))
-    real_size = float(size[:-1])
-    if unit == 'K':
+        real_size = float(size)
+    elif unit == 'K':
         real_size = real_size * 1024
     elif unit == 'M':
         real_size = real_size * 1024 * 1024
@@ -494,8 +498,17 @@ def convert_size_to_bytes(size):
     else:
         raise ValueError("Unknown size format: %s.  Use K[bytes], M[bytes] "
                          "or G[bytes]" % size)
-
+    # Guarantee that is a multiple of 1MiB, defined in ROUND_IMAGE_TO
+    real_size = _check_min_size(floor(real_size / ROUND_IMAGE_TO) *
+                                ROUND_IMAGE_TO)
     return int(round(real_size))
+
+
+def _check_min_size(size):
+    """Check that the image size is at least 1MiB (expressed in bytes)."""
+    if (size < ROUND_IMAGE_TO):
+        size = ROUND_IMAGE_TO
+    return size
 
 
 def run_sfdisk_commands(commands, heads, sectors, cylinders, device,

@@ -32,6 +32,8 @@ import struct
 import tarfile
 import dbus
 
+from math import floor
+
 from StringIO import StringIO
 from testtools import TestCase
 
@@ -2396,11 +2398,17 @@ class TestPartitionSetup(TestCaseWithFixtures):
             '98367,-,E\n98367,65536,L\n294975,131072,L\n' \
             '426047,,,-', '%s' % self.android_image_size)
 
+    def test_convert_size_wrong_suffix(self):
+        self.assertRaises(ValueError, convert_size_to_bytes, "123456H")
+
     def test_convert_size_no_suffix(self):
-        self.assertEqual(524288, convert_size_to_bytes('524288'))
+        self.assertEqual(2**20, convert_size_to_bytes('123456'))
+
+    def test_convert_size_one_mbyte(self):
+        self.assertEqual(2**20, convert_size_to_bytes('1M'))
 
     def test_convert_size_in_kbytes_to_bytes(self):
-        self.assertEqual(512 * 1024, convert_size_to_bytes('512K'))
+        self.assertEqual(2 * 2**20, convert_size_to_bytes('2048K'))
 
     def test_convert_size_in_mbytes_to_bytes(self):
         self.assertEqual(100 * 1024**2, convert_size_to_bytes('100M'))
@@ -2409,19 +2417,20 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.assertEqual(12 * 1024**3, convert_size_to_bytes('12G'))
 
     def test_convert_size_float_no_suffix(self):
-        self.assertEqual(1539, convert_size_to_bytes('1539.49'))
-
-    def test_convert_size_float_round_up(self):
-        self.assertEqual(1540, convert_size_to_bytes('1539.50'))
+        self.assertEqual(int(round(floor(2348576.91 / 2**20) * 2**20)),
+                         convert_size_to_bytes('2348576.91'))
 
     def test_convert_size_float_in_kbytes_to_bytes(self):
-        self.assertEqual(int(round(234.8 * 1024)), convert_size_to_bytes('234.8K'))
+        self.assertEqual(int(round(floor(2345.8 * 1024 / 2**20) * 2**20)),
+                         convert_size_to_bytes('2345.8K'))
 
     def test_convert_size_float_in_mbytes_to_bytes(self):
-        self.assertEqual(int(round(876.123 * 1024**2)), convert_size_to_bytes('876.123M'))
+        self.assertEqual(int(round(floor(876.123 * 1024**2 / 2**20) * 2**20)),
+                         convert_size_to_bytes('876.123M'))
 
     def test_convert_size_float_in_gbytes_to_bytes(self):
-        self.assertEqual(int(round(1.9 * 1024**3)), convert_size_to_bytes('1.9G'))
+        self.assertEqual(int(round(floor(1.9 * 1024**3 / 2**20) * 2**20)),
+                         convert_size_to_bytes('1.9G'))
 
     def test_calculate_partition_size_and_offset(self):
         tmpfile = self._create_tmpfile()
