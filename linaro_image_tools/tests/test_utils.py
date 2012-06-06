@@ -24,6 +24,7 @@ import sys
 import logging
 import tempfile
 import tarfile
+from StringIO import StringIO
 
 from linaro_image_tools import cmd_runner, utils
 from linaro_image_tools.testing import TestCaseWithFixtures
@@ -248,14 +249,21 @@ class TestFindCommand(TestCaseWithFixtures):
 class TestInstallPackageProviding(TestCaseWithFixtures):
 
     def test_found_package(self):
-        self.useFixture(MockSomethingFixture(
-            sys, 'stdout', open('/dev/null', 'w')))
-        fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        install_package_providing('mkfs.vfat')
-        self.assertEqual(
-            ['apt-get -s install dosfstools',
-             '%s apt-get --yes install dosfstools' % sudo_args],
-            fixture.mock.commands_executed)
+        try:
+            output = StringIO()
+            self.useFixture(MockSomethingFixture(
+                                                 sys,
+                                                 'stdout',
+                                                 open(output, 'w')))
+            fixture = self.useFixture(MockCmdRunnerPopenFixture())
+            install_package_providing('mkfs.vfat')
+            self.assertEqual(
+                             ['apt-get -s install dosfstools',
+                              '%s apt-get --yes install dosfstools' %
+                              sudo_args],
+                             fixture.mock.commands_executed)
+        finally:
+            output.close()
 
     def test_not_found_package(self):
         self.assertRaises(
