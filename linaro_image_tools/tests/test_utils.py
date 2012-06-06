@@ -85,7 +85,6 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
         def wait(self):
             return self.returncode
 
-
     class MockCmdRunnerPopen_sha1sum_fail(object):
         def __call__(self, cmd, *args, **kwargs):
             self.returncode = 0
@@ -98,7 +97,6 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
 
         def wait(self):
             return self.returncode
-
 
     class MockCmdRunnerPopen_wait_fails(object):
         def __call__(self, cmd, *args, **kwargs):
@@ -136,7 +134,7 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
                                                    signature_filename),
              'sha1sum -c %s' % hash_filename],
             fixture.mock.commands_executed)
-        
+
     def test_verify_files_returns_files(self):
         self.useFixture(MockSomethingFixture(cmd_runner, 'Popen',
                                              self.MockCmdRunnerPopen()))
@@ -193,6 +191,7 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
         # it should look like GPG failed
         self.assertFalse(result)
         logging.getLogger().setLevel(logging.WARNING)
+
 
 class TestEnsureCommand(TestCaseWithFixtures):
 
@@ -254,13 +253,14 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         install_package_providing('mkfs.vfat')
         self.assertEqual(
-            ['%s apt-get --yes install dosfstools' % sudo_args],
+            ['apt-get -s install dosfstools',
+             '%s apt-get --yes install dosfstools' % sudo_args],
             fixture.mock.commands_executed)
 
     def test_not_found_package(self):
         self.assertRaises(
-            UnableToFindPackageProvidingCommand,
-            install_package_providing, 'mkfs.lean')
+                          UnableToFindPackageProvidingCommand,
+                          install_package_providing, 'mkfs.lean')
 
 
 class Args():
@@ -285,6 +285,7 @@ class TestPrepMediaPath(TestCaseWithFixtures):
                          prep_media_path(Args(directory="/foo/bar",
                                               device="testdevice",
                                               board="testboard")))
+
 
 class TestPrepMediaPath(TestCaseWithFixtures):
 

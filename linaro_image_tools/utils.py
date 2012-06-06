@@ -3,7 +3,7 @@
 # Author: Guilherme Salgado <guilherme.salgado@linaro.org>
 #
 # This file is part of Linaro Image Tools.
-# 
+#
 # Linaro Image Tools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -147,20 +147,20 @@ def check_file_integrity_and_log_errors(sig_file_list, binary, hwpacks):
         if not gpg_sig_pass:
             logging.error("GPG signature verification failed.")
             return False, []
-    
+
         if not os.path.basename(binary) in verified_files:
             logging.error("OS Binary verification failed")
             return False, []
-        
+
         for hwpack in hwpacks:
             if not os.path.basename(hwpack) in verified_files:
                 logging.error("Hwpack {0} verification failed".format(hwpack))
                 return False, []
-    
+
         for verified_file in verified_files:
             logging.info('Hash verification of file {0} OK.'.format(
                                                                 verified_file))
-    
+
     return True, verified_files
 
 def install_package_providing(command):
@@ -172,6 +172,7 @@ def install_package_providing(command):
     If the user denies installing the package, raise
     PackageInstallationRefused.
     """
+
     if CommandNotFound is None:
         raise UnableToFindPackageProvidingCommand(
             "Cannot lookup a package which provides %s" % command)
@@ -184,26 +185,27 @@ def install_package_providing(command):
     # TODO: Ask the user to pick a package when there's more than one that
     # provides the given command.
     package, _ = packages[0]
-    out, _ = cmd_runner.run(
-        ['apt-get', '-s', 'install', package], stdout=subprocess.PIPE).communicate()
+    output, _ = cmd_runner.run(['apt-get', '-s', 'install', package],
+                               stdout=subprocess.PIPE).communicate()
     to_install = []
-    for line in out.splitlines():
+    for line in output.splitlines():
         if line.startswith("Inst"):
             to_install.append(line.split()[1])
     if not to_install:
         raise UnableToFindPackageProvidingCommand(
             "Unable to find any package to be installed.")
-    # TODO: loop through the available packages if there is more than one?
     resp = raw_input(
-        "You are missing the following package: %s.  Install (y/n)? " %
+        "You are missing the following packages: %s.  Install (Y/n)? " %
         " ".join(to_install))
     if resp.lower() != 'y':
         raise PackageInstallationRefused(
             "Installation of packages refused by the user.")
-    print ("Installing required command %s from package %s"
+    print ("Installing required command '%s' from package '%s'..."
            % (command, package))
-    cmd_runner.run(
-        ['apt-get', '--yes', 'install', package], as_root=True).wait()
+    cmd_runner.run(['apt-get', '--yes', 'install', package],
+                   stdout=subprocess.PIPE,
+                   stderr=subprocess.PIPE,
+                   as_root=True).wait()
 
 
 def has_command(command):
