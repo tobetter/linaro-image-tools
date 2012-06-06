@@ -79,7 +79,7 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
             self.returncode = 0
             return self
 
-        def communicate(self, input = None):
+        def communicate(self, input=None):
             self.wait()
             return ': OK\n'.join(
                 TestVerifyFileIntegrity.filenames_in_shafile) + ': OK\n', ''
@@ -87,13 +87,12 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
         def wait(self):
             return self.returncode
 
-
     class MockCmdRunnerPopen_sha1sum_fail(object):
         def __call__(self, cmd, *args, **kwargs):
             self.returncode = 0
             return self
 
-        def communicate(self, input = None):
+        def communicate(self, input=None):
             self.wait()
             return ': ERROR\n'.join(
                 TestVerifyFileIntegrity.filenames_in_shafile) + ': ERROR\n', ''
@@ -101,13 +100,12 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
         def wait(self):
             return self.returncode
 
-
     class MockCmdRunnerPopen_wait_fails(object):
         def __call__(self, cmd, *args, **kwargs):
             self.returncode = 0
             return self
 
-        def communicate(self, input = None):
+        def communicate(self, input=None):
             self.wait()
             return ': OK\n'.join(
                 TestVerifyFileIntegrity.filenames_in_shafile) + ': OK\n', ''
@@ -196,6 +194,7 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
         self.assertFalse(result)
         logging.getLogger().setLevel(logging.WARNING)
 
+
 class TestEnsureCommand(TestCaseWithFixtures):
 
     install_pkg_providing_called = False
@@ -238,7 +237,7 @@ class TestFindCommand(TestCaseWithFixtures):
         if prefer_dir is None:
             expected, _ = cmd_runner.run(
                 ['which', lmc, ],
-                stdout = subprocess.PIPE).communicate()
+                stdout=subprocess.PIPE).communicate()
             expected = expected.strip()
         else:
             expected = os.path.join(prefer_dir, lmc)
@@ -279,14 +278,14 @@ class TestPrepMediaPath(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(os, "makedirs", lambda x: x))
 
         self.assertEqual("testdevice",
-                         prep_media_path(Args(directory = None,
-                                              device = "testdevice",
-                                              board = "testboard")))
+                         prep_media_path(Args(directory=None,
+                                              device="testdevice",
+                                              board="testboard")))
 
         self.assertEqual("/foo/bar/testdevice",
-                         prep_media_path(Args(directory = "/foo/bar",
-                                              device = "testdevice",
-                                              board = "testboard")))
+                         prep_media_path(Args(directory="/foo/bar",
+                                              device="testdevice",
+                                              board="testboard")))
 
 
 class TestPrepMediaPath(TestCaseWithFixtures):
@@ -296,15 +295,15 @@ class TestPrepMediaPath(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(os, "makedirs", lambda x: x))
 
         self.assertRaises(IncompatibleOptions, additional_option_checks,
-                          Args(directory = "/foo/bar",
-                               device = "/testdevice",
-                               board = "testboard"))
+                          Args(directory="/foo/bar",
+                               device="/testdevice",
+                               board="testboard"))
 
         sys.argv.append("--mmc")
         self.assertRaises(IncompatibleOptions, additional_option_checks,
-                          Args(directory = "/foo/bar",
-                               device = "testdevice",
-                               board = "testboard"))
+                          Args(directory="/foo/bar",
+                               device="testdevice",
+                               board="testboard"))
         sys.argv.remove("--mmc")
 
 
@@ -321,10 +320,9 @@ class TestHwpackIsFile(TestCaseWithFixtures):
         try:
             tmpdir = tempfile.mkdtemp()
             self.assertRaises(InvalidHwpackFile, additional_option_checks,
-                              HwPackArgs(hwpack = tmpdir))
+                              HwPackArgs(hwpack=tmpdir))
         finally:
             os.rmdir(tmpdir)
-
 
     def test_hwpacks_are_files(self):
 
