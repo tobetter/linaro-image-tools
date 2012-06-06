@@ -3,7 +3,7 @@
 # Author: Guilherme Salgado <guilherme.salgado@linaro.org>
 #
 # This file is part of Linaro Image Tools.
-# 
+#
 # Linaro Image Tools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -147,20 +147,20 @@ def check_file_integrity_and_log_errors(sig_file_list, binary, hwpacks):
         if not gpg_sig_pass:
             logging.error("GPG signature verification failed.")
             return False, []
-    
+
         if not os.path.basename(binary) in verified_files:
             logging.error("OS Binary verification failed")
             return False, []
-        
+
         for hwpack in hwpacks:
             if not os.path.basename(hwpack) in verified_files:
                 logging.error("Hwpack {0} verification failed".format(hwpack))
                 return False, []
-    
+
         for verified_file in verified_files:
             logging.info('Hash verification of file {0} OK.'.format(
                                                                 verified_file))
-    
+
     return True, verified_files
 
 def install_package_providing(command):
@@ -266,6 +266,10 @@ class UnableToFindPackageProvidingCommand(Exception):
     """We can't find a package which provides the given command."""
 
 
+class InvalidHwpackFile(Exception):
+    """The hwpack parameter is not a regular file."""
+
+
 class IncompatibleOptions(Exception):
     def __init__(self, value):
         self.value = value
@@ -277,11 +281,17 @@ def additional_option_checks(args):
     if args.directory is not None:
     # If args.device is a path to a device (/dev/) then this is an error
         if "--mmc" in sys.argv:
-            raise IncompatibleOptions("--directory option incompatable with "
+            raise IncompatibleOptions("--directory option incompatible with "
                                       "option --mmc")
 
         # If directory is used as well as having a full path (rather than just
         # a file name or relative path) in args.device, this is an error.
         if re.search(r"^/", args.device):
-            raise IncompatibleOptions("--directory option incompatable with "
+            raise IncompatibleOptions("--directory option incompatible with "
                                       "a full path in --image-file")
+
+    for hwpack in args.hwpacks:
+        if not os.path.isfile(hwpack):
+            raise InvalidHwpackFile(
+                "--hwpack argument (%s) is not a regular file" % hwpack)
+
