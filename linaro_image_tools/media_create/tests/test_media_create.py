@@ -32,8 +32,6 @@ import struct
 import tarfile
 import dbus
 
-from math import floor
-
 from StringIO import StringIO
 from testtools import TestCase
 
@@ -81,10 +79,12 @@ from linaro_image_tools.media_create.chroot_utils import (
     )
 from linaro_image_tools.media_create.partitions import (
     HEADS,
+    MIN_IMAGE_SIZE,
     SECTORS,
     calculate_partition_size_and_offset,
     calculate_android_partition_size_and_offset,
-    convert_size_to_bytes,
+    _check_min_size,
+    get_partition_size_in_bytes,
     create_partitions,
     ensure_partition_is_not_mounted,
     get_boot_and_root_loopback_devices,
@@ -303,6 +303,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
+
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
@@ -317,6 +318,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
+
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
@@ -331,6 +333,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
+
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
@@ -345,6 +348,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
+
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
@@ -359,6 +363,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
+
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
@@ -373,6 +378,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
+
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
@@ -387,6 +393,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
+
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
@@ -405,6 +412,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
+
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
@@ -421,6 +429,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
+
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
@@ -437,6 +446,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
+
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
@@ -451,6 +461,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
+
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
@@ -465,6 +476,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
+
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
@@ -479,9 +491,12 @@ class TestSetMetadata(TestCaseWithFixtures):
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
             }
+
         class config(BoardConfig):
             pass
-        self.assertRaises(AssertionError, config.set_metadata, 'ahwpack.tar.gz')
+        self.assertRaises(AssertionError,
+                          config.set_metadata,
+                          'ahwpack.tar.gz')
 
 
 class TestGetMLOFile(TestCaseWithFixtures):
@@ -756,8 +771,11 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
         uboot_file = os.path.join(uboot_dir, 'u-boot.bin')
         uboot_relative_file = uboot_file.replace(self.tempdir, '')
         with open(cfg_file, 'w') as f:
-                f.write('%s %s %i %#x %s\n' % ('NORMAL', uboot_relative_file, 0,
-                                               0xBA0000, '9'))
+                f.write('%s %s %i %#x %s\n' % ('NORMAL',
+                                               uboot_relative_file,
+                                               0,
+                                               0xBA0000,
+                                               '9'))
         with open(uboot_file, 'w') as f:
             file_info = boards.SnowballEmmcConfig.get_file_info(
                 self.tempdir, self.temp_bootdir_path)
@@ -770,8 +788,10 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
         with open(cfg_file, 'w') as f:
                 f.write('%s %s %i %#x %s\n' % ('NORMAL', 'u-boot.bin', 0,
                                                0xBA0000, '9'))
-        self.assertRaises(AssertionError, boards.SnowballEmmcConfig.get_file_info,
-                          self.tempdir, self.temp_bootdir_path)
+        self.assertRaises(AssertionError,
+                          boards.SnowballEmmcConfig.get_file_info,
+                          self.tempdir,
+                          self.temp_bootdir_path)
 
     def test_file_name_size(self):
         ''' Test using a to large toc file '''
@@ -950,7 +970,8 @@ class TestBootSteps(TestCaseWithFixtures):
         super(TestBootSteps, self).setUp()
         self.funcs_calls = []
         self.mock_all_boards_funcs()
-        linaro_image_tools.media_create.boards.BoardConfig.hwpack_format = '1.0'
+        linaro_image_tools.media_create.boards.BoardConfig.hwpack_format = \
+        '1.0'
 
     def mock_all_boards_funcs(self):
         """Mock functions of boards module with a call tracer."""
@@ -1026,8 +1047,8 @@ class TestBootSteps(TestCaseWithFixtures):
             lambda: '1.0')
         self.make_boot_files(boards.SMDKV310Config)
         expected = [
-            'install_samsung_boot_loader', 'make_flashable_env', '_dd', 'make_uImage',
-            'make_uInitrd', 'make_boot_script']
+            'install_samsung_boot_loader', 'make_flashable_env', '_dd',
+            'make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_origen_steps(self):
@@ -1047,8 +1068,8 @@ class TestBootSteps(TestCaseWithFixtures):
             lambda: '1.0')
         self.make_boot_files(boards.OrigenConfig)
         expected = [
-            'install_samsung_boot_loader', 'make_flashable_env', '_dd', 'make_uImage',
-            'make_uInitrd', 'make_boot_script']
+            'install_samsung_boot_loader', 'make_flashable_env', '_dd',
+            'make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_ux500_steps(self):
@@ -1092,6 +1113,7 @@ class TestBootSteps(TestCaseWithFixtures):
             'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
             'make_dtb', 'make_boot_script', 'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
+
 
 class TestPopulateRawPartition(TestCaseWithFixtures):
 
@@ -1346,6 +1368,7 @@ class TestFixForBug697824(TestCaseWithFixtures):
 
     def test_omap_make_boot_files_v2(self):
         self.set_appropriate_serial_tty_called = False
+
         class config(boards.BeagleConfig):
             hwpack_format = HardwarepackHandler.FORMAT_2
         self.mock_set_appropriate_serial_tty(config)
@@ -1689,6 +1712,7 @@ class TestExtraBootCmd(TestCaseWithFixtures):
 
     def test_extra_boot_args_options_is_picked_by_get_boot_env(self):
         boot_args = 'whatever'
+
         class config(BoardConfig):
             extra_boot_args_options = boot_args
         boot_commands = config._get_boot_env(
@@ -1700,6 +1724,7 @@ class TestExtraBootCmd(TestCaseWithFixtures):
 
     def test_passing_None_to_add_boot_args(self):
         boot_args = 'extra-args'
+
         class config(BoardConfig):
             extra_boot_args_options = boot_args
         config.add_boot_args(None)
@@ -1708,6 +1733,7 @@ class TestExtraBootCmd(TestCaseWithFixtures):
     def test_passing_string_to_add_boot_args(self):
         boot_args = 'extra-args'
         extra_args = 'user-args'
+
         class config(BoardConfig):
             extra_boot_args_options = boot_args
         config.add_boot_args(extra_args)
@@ -1716,6 +1742,7 @@ class TestExtraBootCmd(TestCaseWithFixtures):
 
     def test_passing_string_to_add_boot_args_with_no_default_extra_args(self):
         extra_args = 'user-args'
+
         class config(BoardConfig):
             extra_boot_args_options = None
         config.add_boot_args(extra_args)
@@ -1727,6 +1754,7 @@ class TestExtraBootCmd(TestCaseWithFixtures):
         boot_arg_path = self.createTempFileAsFixture()
         with open(boot_arg_path, 'w') as boot_arg_file:
             boot_arg_file.write(extra_args)
+
         class config(BoardConfig):
             extra_boot_args_options = boot_args
         config.add_boot_args_from_file(boot_arg_path)
@@ -1735,6 +1763,7 @@ class TestExtraBootCmd(TestCaseWithFixtures):
 
     def test_passing_None_to_add_boot_args_from_file(self):
         boot_args = 'extra-args'
+
         class config(BoardConfig):
             extra_boot_args_options = boot_args
         config.add_boot_args_from_file(None)
@@ -1746,6 +1775,7 @@ class TestExtraBootCmd(TestCaseWithFixtures):
         boot_arg_path = self.createTempFileAsFixture()
         with open(boot_arg_path, 'w') as boot_arg_file:
             boot_arg_file.write('\n\n \t ' + extra_args + '  \n\n')
+
         class config(BoardConfig):
             extra_boot_args_options = boot_args
         config.add_boot_args_from_file(boot_arg_path)
@@ -1965,6 +1995,7 @@ class TestBoards(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             boards, '_get_mlo_file',
             lambda chroot_dir: "%s/MLO" % chroot_dir))
+
         class config(BoardConfig):
             pass
         config.set_metadata([])
@@ -2066,6 +2097,7 @@ class TestBoards(TestCaseWithFixtures):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         flavorx = 'flavorX'
         flavorxy = 'flavorXY'
+
         class config(boards.BoardConfig):
             kernel_flavors = [flavorx, flavorxy]
         for f in reversed(config.kernel_flavors):
@@ -2080,6 +2112,7 @@ class TestBoards(TestCaseWithFixtures):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         flavorx = 'flavorX'
         flavorxy = 'flavorXY'
+
         class config(boards.BoardConfig):
             kernel_flavors = [flavorx, flavorxy]
             dtb_name = 'board_name.dtb'
@@ -2099,6 +2132,7 @@ class TestBoards(TestCaseWithFixtures):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         flavor1 = 'flavorXY'
         flavor2 = 'flavorAA'
+
         class config(boards.BoardConfig):
             kernel_flavors = [flavor1, flavor2]
         kfile = os.path.join(tempdir, 'vmlinuz-1-%s' % flavor1)
@@ -2112,6 +2146,7 @@ class TestBoards(TestCaseWithFixtures):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         flavor1 = 'flavorXY'
         flavor2 = 'flavorAA'
+
         class config(boards.BoardConfig):
             kernel_flavors = [flavor1, flavor2]
             dtb_name = 'board_name.dtb'
@@ -2130,6 +2165,7 @@ class TestBoards(TestCaseWithFixtures):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         flavor1 = 'flavorXY'
         flavor2 = 'flavorAA'
+
         class config(boards.BoardConfig):
             kernel_flavors = [flavor1, flavor2]
         self.assertRaises(ValueError, config._get_kflavor_files, tempdir)
@@ -2347,13 +2383,13 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Stub time.sleep() as create_partitions() use that.
         self.orig_sleep = time.sleep
         time.sleep = lambda s: None
-        self.linux_image_size = 30 * 1024**2
+        self.linux_image_size = 30 * (1024 ** 2)
         self.linux_offsets_and_sizes = [
             (16384 * SECTOR_SIZE, 15746 * SECTOR_SIZE),
             (32768 * SECTOR_SIZE, (self.linux_image_size -
                                         32768 * SECTOR_SIZE))
             ]
-        self.android_image_size = 256 * 1024**2
+        self.android_image_size = 256 * (1024 ** 2)
         # Extended partition info takes 32 sectors from the first ext partition
         ext_part_size = 32
         self.android_offsets_and_sizes = [
@@ -2369,7 +2405,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.android_snowball_offsets_and_sizes = [
             (8192 * SECTOR_SIZE, 24639 * SECTOR_SIZE),
             (32831 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
-            ((98367 + ext_part_size)* SECTOR_SIZE,
+            ((98367 + ext_part_size) * SECTOR_SIZE,
              (65536 - ext_part_size) * SECTOR_SIZE),
             (294975 * SECTOR_SIZE, 131072 * SECTOR_SIZE),
             ((426047 + ext_part_size) * SECTOR_SIZE,
@@ -2398,39 +2434,43 @@ class TestPartitionSetup(TestCaseWithFixtures):
             '98367,-,E\n98367,65536,L\n294975,131072,L\n' \
             '426047,,,-', '%s' % self.android_image_size)
 
+    def test_check_min_size_small(self):
+        """Check that we get back the minimum size as expeceted."""
+        self.assertEqual(MIN_IMAGE_SIZE, _check_min_size(12345))
+
+    def test_check_min_size_big(self):
+        """Check that we get back the same value we pass."""
+        self.assertEqual(MIN_IMAGE_SIZE * 3, _check_min_size(3145728))
+
     def test_convert_size_wrong_suffix(self):
-        self.assertRaises(ValueError, convert_size_to_bytes, "123456H")
+        self.assertRaises(ValueError, get_partition_size_in_bytes, "123456H")
 
     def test_convert_size_no_suffix(self):
-        self.assertEqual(2**20, convert_size_to_bytes('123456'))
+        self.assertEqual(2 ** 20, get_partition_size_in_bytes('123456'))
 
     def test_convert_size_one_mbyte(self):
-        self.assertEqual(2**20, convert_size_to_bytes('1M'))
+        self.assertEqual(2 * (2 ** 20), get_partition_size_in_bytes('1M'))
 
     def test_convert_size_in_kbytes_to_bytes(self):
-        self.assertEqual(2 * 2**20, convert_size_to_bytes('2048K'))
+        self.assertEqual(3 * (2 ** 20), get_partition_size_in_bytes('2048K'))
 
     def test_convert_size_in_mbytes_to_bytes(self):
-        self.assertEqual(100 * 1024**2, convert_size_to_bytes('100M'))
+        self.assertEqual(101 * (2 ** 20), get_partition_size_in_bytes('100M'))
 
     def test_convert_size_in_gbytes_to_bytes(self):
-        self.assertEqual(12 * 1024**3, convert_size_to_bytes('12G'))
+        self.assertEqual(12289 * (2 ** 20), get_partition_size_in_bytes('12G'))
 
     def test_convert_size_float_no_suffix(self):
-        self.assertEqual(int(round(floor(2348576.91 / 2**20) * 2**20)),
-                         convert_size_to_bytes('2348576.91'))
+        self.assertEqual(3 * (2 ** 20), get_partition_size_in_bytes('2348576.91'))
 
     def test_convert_size_float_in_kbytes_to_bytes(self):
-        self.assertEqual(int(round(floor(2345.8 * 1024 / 2**20) * 2**20)),
-                         convert_size_to_bytes('2345.8K'))
+        self.assertEqual(3 * (2 ** 20), get_partition_size_in_bytes('2345.8K'))
 
     def test_convert_size_float_in_mbytes_to_bytes(self):
-        self.assertEqual(int(round(floor(876.123 * 1024**2 / 2**20) * 2**20)),
-                         convert_size_to_bytes('876.123M'))
+        self.assertEqual(877 * (2 ** 20), get_partition_size_in_bytes('876.123M'))
 
     def test_convert_size_float_in_gbytes_to_bytes(self):
-        self.assertEqual(int(round(floor(1.9 * 1024**3 / 2**20) * 2**20)),
-                         convert_size_to_bytes('1.9G'))
+        self.assertEqual(1946 * (2 ** 20), get_partition_size_in_bytes('1.9G'))
 
     def test_calculate_partition_size_and_offset(self):
         tmpfile = self._create_tmpfile()
@@ -2590,6 +2630,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             sys, 'stdout', open('/dev/null', 'w')))
+
         def ensure_partition_not_mounted(part):
             raise AssertionError(
                 "ensure_partition_is_not_mounted must not be called when "
@@ -2607,7 +2648,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             'root', 'ext3', True, True, True)
         self.assertEqual(
              # This is the call that would create a 2 GiB image file.
-            ['dd of=%s bs=1 seek=2147483648 count=0' % tmpfile,
+            ['dd of=%s bs=1 seek=2148532224 count=0' % tmpfile,
              '%s sfdisk -l %s' % (sudo_args, tmpfile),
              # This call would partition the image file.
              '%s sfdisk --force -D -uS -H %s -S %s -C 1024 %s' % (
@@ -2726,6 +2767,7 @@ class TestMountedPartitionContextManager(TestCaseWithFixtures):
 
     def test_basic(self):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+
         def test_func():
             with partition_mounted('foo', 'bar', '-t', 'proc'):
                 pass
@@ -2737,6 +2779,7 @@ class TestMountedPartitionContextManager(TestCaseWithFixtures):
 
     def test_exception_raised_inside_with_block(self):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+
         def test_func():
             with partition_mounted('foo', 'bar'):
                 raise TestException('something')
@@ -2754,10 +2797,12 @@ class TestMountedPartitionContextManager(TestCaseWithFixtures):
         # otherwise it could shadow an exception raised inside the 'with'
         # block.
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+
         def failing_umount(path):
             raise cmd_runner.SubcommandNonZeroReturnValue('umount', 1)
         self.useFixture(MockSomethingFixture(
             partitions, 'umount', failing_umount))
+
         def test_func():
             with partition_mounted('foo', 'bar'):
                 pass
@@ -2932,6 +2977,7 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         # command that it runs, but we need to monkey-patch SUDO_ARGS because
         # we don't want to use 'sudo' in tests.
         orig_sudo_args = cmd_runner.SUDO_ARGS
+
         def restore_sudo_args():
             cmd_runner.SUDO_ARGS = orig_sudo_args
         self.addCleanup(restore_sudo_args)
@@ -2943,6 +2989,7 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         tempdir = self.useFixture(CreateTempDirFixture()).tempdir
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         file1 = self.createTempFileAsFixture(dir=tempdir)
+
         def mock_list_files(directory):
             return [file1]
         self.useFixture(MockSomethingFixture(
@@ -2956,14 +3003,14 @@ class TestPopulateRootFS(TestCaseWithFixtures):
     def test_has_space_left_for_swap(self):
         statvfs = os.statvfs('/')
         space_left = statvfs.f_bavail * statvfs.f_bsize
-        swap_size_in_megs = space_left / (1024**2)
+        swap_size_in_megs = space_left / (1024 ** 2)
         self.assertTrue(
             has_space_left_for_swap('/', swap_size_in_megs))
 
     def test_has_no_space_left_for_swap(self):
         statvfs = os.statvfs('/')
         space_left = statvfs.f_bavail * statvfs.f_bsize
-        swap_size_in_megs = (space_left / (1024**2)) + 1
+        swap_size_in_megs = (space_left / (1024 ** 2)) + 1
         self.assertFalse(
             has_space_left_for_swap('/', swap_size_in_megs))
 
@@ -2981,6 +3028,7 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         os.makedirs(os.path.join(tempdir, 'etc', 'network'))
         if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
+
         class board_config(boards.BoardConfig):
             pass
 
@@ -2994,6 +3042,7 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         os.makedirs(os.path.join(tempdir, 'etc', 'network'))
         if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
+
         class board_config(boards.BoardConfig):
             wired_interfaces = ['eth0']
 
@@ -3009,6 +3058,7 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         os.makedirs(os.path.join(tempdir, 'etc', 'network'))
         if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
+
         class board_config(boards.BoardConfig):
             wired_interfaces = ['eth0', 'eth1']
             wireless_interfaces = ['wlan0']
@@ -3030,6 +3080,7 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
         with open(if_path, 'w') as interfaces:
             interfaces.write('Original contents of file.\n')
+
         class board_config(boards.BoardConfig):
             wired_interfaces = ['eth0']
 
@@ -3114,6 +3165,7 @@ class TestCheckDevice(TestCaseWithFixtures):
 
     def test_ensure_device_partitions_not_mounted(self):
         partitions_umounted = []
+
         def ensure_partition_is_not_mounted_mock(part):
             partitions_umounted.append(part)
         self.useFixture(MockSomethingFixture(
@@ -3310,11 +3362,14 @@ class TestInstallHWPack(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             sys, 'stderr', open('/dev/null', 'w')))
         self.call_order = []
+
         class TestException(Exception):
             pass
+
         def raising_func():
             self.call_order.append('raising_func')
             raise TestException()
+
         def behaving_func():
             self.call_order.append('behaving_func')
             self.behaving_func_called = True
@@ -3365,6 +3420,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
         super(TestInstallHWPack, self).setUp()
         # Ensure the list of cleanup functions gets cleared to make sure tests
         # don't interfere with one another.
+
         def clear_atexits():
             linaro_image_tools.media_create.chroot_utils.local_atexit = []
         self.addCleanup(clear_atexits)

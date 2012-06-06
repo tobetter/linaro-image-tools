@@ -22,7 +22,6 @@ from contextlib import contextmanager
 import dbus
 import glob
 import logging
-from math import floor
 import re
 import subprocess
 import time
@@ -48,13 +47,14 @@ MAX_TTS = 10
 # Image size should be a multiple of 1MiB, expressed in bytes. This is also
 # the minimum image size possible.
 ROUND_IMAGE_TO = 2 ** 20
+MIN_IMAGE_SIZE = ROUND_IMAGE_TO
 
 
 def setup_android_partitions(board_config, media, image_size, bootfs_label,
                      should_create_partitions, should_align_boot_part=False):
     cylinders = None
     if not media.is_block_device:
-        image_size_in_bytes = convert_size_to_bytes(image_size)
+        image_size_in_bytes = get_partition_size_in_bytes(image_size)
         cylinders = image_size_in_bytes / CYLINDER_SIZE
         proc = cmd_runner.run(
             ['dd', 'of=%s' % media.path,
@@ -134,7 +134,7 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
     """
     cylinders = None
     if not media.is_block_device:
-        image_size_in_bytes = convert_size_to_bytes(image_size)
+        image_size_in_bytes = get_partition_size_in_bytes(image_size)
         cylinders = image_size_in_bytes / CYLINDER_SIZE
         proc = cmd_runner.run(
             ['dd', 'of=%s' % media.path,
@@ -481,8 +481,14 @@ def _get_udisks_device_file(path, part):
             path, 'DeviceFile', dbus_interface=DBUS_PROPERTIES))
 
 
-def convert_size_to_bytes(size):
-    """Convert a size string in Kbytes, Mbytes or Gbytes to bytes."""
+def get_partition_size_in_bytes(size):
+    """Convert a size string in Kbytes, Mbytes or Gbytes to bytes.
+
+    The conversion rounds the size to the nearest and smallest MiB, considering
+    a minimum size of MIN_IMAGE_SIZE bytes. During the conversion, a small
+    delta of MIN_IMAGE_SIZE/2 bytes is added in order to always have a big
+    enough partition.
+    """
     unit = size[-1].upper()
     real_size = float(size[:-1])
 
@@ -498,16 +504,19 @@ def convert_size_to_bytes(size):
     else:
         raise ValueError("Unknown size format: %s.  Use K[bytes], M[bytes] "
                          "or G[bytes]" % size)
-    # Guarantee that is a multiple of 1MiB, defined in ROUND_IMAGE_TO
-    real_size = _check_min_size(floor(real_size / ROUND_IMAGE_TO) *
-                                ROUND_IMAGE_TO)
+    # Guarantee that is a multiple of ROUND_IMAGE_TO plus ROUND_IMAGE_TO / 2
+    real_size = _check_min_size(round((real_size + (ROUND_IMAGE_TO / 2)) /
+                                      ROUND_IMAGE_TO) * ROUND_IMAGE_TO)
     return int(round(real_size))
 
 
 def _check_min_size(size):
-    """Check that the image size is at least 1MiB (expressed in bytes)."""
-    if (size < ROUND_IMAGE_TO):
-        size = ROUND_IMAGE_TO
+    """Check that the image size is at least MIN_IMAGE_SIZE bytes.
+
+    @param size: The size of the image to check, as a number.
+    """
+    if (size < MIN_IMAGE_SIZE):
+        size = MIN_IMAGE_SIZE
     return size
 
 
