@@ -291,7 +291,7 @@ class TestPrepMediaPath(TestCaseWithFixtures):
                                               board="testboard")))
 
 
-class TestPrepMediaPath(TestCaseWithFixtures):
+class TestAdditionalOptionChecks(TestCaseWithFixtures):
 
     def test_additional_option_checks(self):
         self.useFixture(MockSomethingFixture(os.path, 'abspath', lambda x: x))
