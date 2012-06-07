@@ -111,4 +111,3 @@ class TestCmdRunner(TestCaseWithFixtures):
         proc = cmd_runner.Popen('true')
         returncode = proc.wait()
         self.assertEqual(0, returncode)
-

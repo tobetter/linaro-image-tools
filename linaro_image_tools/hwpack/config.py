@@ -166,7 +166,7 @@ class Config(object):
             # When this code no longer supports 1.0, it effectively makes
             # explicitly specifying format in hwpack files mandatory.
             format_string = "1.0"
-        
+
         if format_string == '1.0':
             return HardwarePackFormatV1()
         elif format_string == '2.0':
@@ -593,7 +593,7 @@ class Config(object):
         if dtb_file is not None:
             self._assert_matches_pattern(
                 self.GLOB_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
-        
+
     def _validate_extra_boot_options(self):
         # Optional and tricky to determine a valid pattern.
         pass

@@ -26,4 +26,3 @@ def test_suite():
     suite.addTests(hwpack_suite())
     suite.addTests(media_create_suite())
     return suite
-

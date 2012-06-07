@@ -122,4 +122,3 @@ class MockCmdRunnerPopenFixture(MockSomethingFixture):
             raise AssertionError(
                 "You should call wait() or communicate() to ensure "
                 "the subprocess is finished before proceeding.")
-

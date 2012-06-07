@@ -30,4 +30,3 @@ class TestPyflakes(TestCase):
         (stdout, stderr) = proc.communicate()
         self.assertEquals('', stdout)
         self.assertEquals('', stderr)
-

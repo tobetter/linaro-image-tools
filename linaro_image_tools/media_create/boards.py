@@ -1353,7 +1353,7 @@ class VexpressA9Config(VexpressConfig):
 
 class FastModelConfig(BoardConfig):
     supports_writing_to_mmc = False
-      
+
     @classmethod
     def _get_bootcmd(cls, d_img_data):
         """Get the bootcmd for FastModel.
@@ -1553,7 +1553,7 @@ class I386Config(BoardConfig):
         device = Device(boot_device_or_file)
         img_size = device.getLength() * SECTOR_SIZE
         img_loop = register_loopback(boot_device_or_file, 0, img_size)
-        
+
         # install bootloader
         cmd_runner.run([cls.BOOTLOADER_CMD, '--boot-directory=%s' % boot_dir,
             '--modules', 'part_msdos', img_loop],
