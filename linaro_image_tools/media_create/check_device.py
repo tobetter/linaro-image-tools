@@ -112,7 +112,7 @@ def _ensure_device_partitions_not_mounted(device):
 
 def confirm_device_selection_and_ensure_it_is_ready(
                                                 device,
-                                                yes_to_mmc_selection = False):
+                                                yes_to_mmc_selection=False):
     """Confirm this is the device to use and ensure it's ready.
 
     If the device exists, the user is asked to confirm that this is the
