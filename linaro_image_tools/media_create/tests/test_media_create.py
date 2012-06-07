@@ -1104,6 +1104,7 @@ class TestBootSteps(TestCaseWithFixtures):
             'make_dtb', 'make_boot_script', 'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
 
+
 class TestPopulateRawPartition(TestCaseWithFixtures):
 
     def setUp(self):

@@ -24,7 +24,6 @@ from testtools import TestCase
 class TestPep8(TestCase):
     def test_pep8(self):
         ignore = [
-            'E302',
             'E303', 'E501', 'W291', 'W292', 'W293', 'W391']
         # ignore return code
         proc = subprocess.Popen(['pep8',

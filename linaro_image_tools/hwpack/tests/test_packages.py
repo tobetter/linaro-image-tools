@@ -947,6 +947,7 @@ class AptCacheTests(TestCaseWithFixtures):
         sources_list = open(sources_list_location).read()
         self.assertEqual("deb %s\n" % source1.sources_entry, sources_list)
 
+
 class PackageFetcherTests(TestCaseWithFixtures):
 
     def test_context_manager(self):

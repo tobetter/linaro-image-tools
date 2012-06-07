@@ -7,6 +7,7 @@ from linaro_image_tools.media_create.tests import (
     )
 from linaro_image_tools.utils import has_command
 
+
 def test_suite():
     module_names = [
         'linaro_image_tools.tests.test_cmd_runner',

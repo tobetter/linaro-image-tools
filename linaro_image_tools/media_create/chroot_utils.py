@@ -32,6 +32,7 @@ from linaro_image_tools.utils import (
 # functions would only be called after l-m-c.py exits.
 local_atexit = []
 
+
 def prepare_chroot(chroot_dir, tmp_dir):
     """Prepares a chroot to run commands in it (networking and QEMU setup)."""
     chroot_etc = os.path.join(chroot_dir, 'etc')
@@ -41,6 +42,7 @@ def prepare_chroot(chroot_dir, tmp_dir):
     if not is_arm_host():
         copy_file('/usr/bin/qemu-arm-static',
                   os.path.join(chroot_dir, 'usr', 'bin'))
+
 
 def install_hwpacks(
     chroot_dir, tmp_dir, tools_dir, hwpack_force_yes, verified_files, *hwpack_files):

@@ -52,6 +52,7 @@ class TestSanitizePath(TestCaseWithFixtures):
         cmd_runner.sanitize_path(self.env)
         self.assertEqual(cmd_runner.DEFAULT_PATH, self.env['PATH'])
 
+
 class TestCmdRunner(TestCaseWithFixtures):
 
     def test_run(self):

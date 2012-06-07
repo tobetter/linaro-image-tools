@@ -1374,6 +1374,7 @@ class FastModelConfig(BoardConfig):
             if filename != None:
                 copy_drop(filename, output_dir)
 
+
 class SamsungConfig(BoardConfig):
     @classproperty
     def extra_serial_opts(cls):
@@ -1510,6 +1511,7 @@ class OrigenConfig(SamsungConfig):
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
+
 
 class I386Config(BoardConfig):
     # define serial

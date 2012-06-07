@@ -1,5 +1,6 @@
 import unittest
 
+
 def test_suite():
     module_names = ['linaro_image_tools.media_create.tests.test_media_create',
                    ]

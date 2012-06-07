@@ -31,6 +31,7 @@ with the ability to specify file content as strings, and provide
 default values for the mtime, uid, etc. of the created paths.
 """
 
+
 @contextmanager
 def writeable_tarfile(backing_file, mode="w", **kwargs):
     """A context manager to get a writeable better tarfile.

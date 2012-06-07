@@ -20,6 +20,7 @@
 import subprocess
 from testtools import TestCase
 
+
 class TestPyflakes(TestCase):
     def test_pyflakes(self):
         # ignore return code

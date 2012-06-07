@@ -66,6 +66,7 @@ def get_version():
         qemu_version = "Cannot find %s." % qemu_path
     return "%s\n: %s" % (__version__, qemu_version)
 
+
 def add_common_options(parser):
     parser.add_argument(
         '--extra-boot-args', dest='extra_boot_args', required=False,
@@ -73,6 +74,7 @@ def add_common_options(parser):
     parser.add_argument(
         '--extra-boot-args-file', dest='extra_boot_args_file',
         required=False, help=('File containing extra boot arguments.'))
+
 
 def get_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
@@ -160,6 +162,7 @@ def get_args_parser():
     
     add_common_options(parser)
     return parser
+
 
 def get_android_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""

@@ -28,6 +28,7 @@ from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV2,
     )
 
+
 class HwpackConfigError(Exception):
     pass
 
