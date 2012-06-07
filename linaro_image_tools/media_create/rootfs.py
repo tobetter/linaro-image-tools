@@ -110,7 +110,7 @@ def update_network_interfaces(root_disk, board_config):
         config = ''
     for interface in interfaces:
         if interface not in config:
-            config += "auto %(if)s\niface %(if)s inet dhcp\n" % ({ 'if': interface })
+            config += "auto %(if)s\niface %(if)s inet dhcp\n" % ({'if': interface})
     if config != '':
         write_data_to_protected_file(if_path, config)
 

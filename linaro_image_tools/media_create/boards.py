@@ -94,11 +94,11 @@ def copy_drop(src, dest_dir):
     """Copy a file from src to destdir, dropping root ownership on the
     way.
     """
-    cmd = [ "cp", "-v",  src, dest_dir ]
+    cmd = ["cp", "-v",  src, dest_dir]
     cmd_runner.run(cmd, as_root=True).wait()
 
     final = os.path.join(dest_dir, os.path.basename(src))
-    cmd = [ "chown", "%s:%s" % (os.getuid(), os.getgid()), final ]
+    cmd = ["chown", "%s:%s" % (os.getuid(), os.getgid()), final]
     cmd_runner.run(cmd, as_root=True).wait()
 
 
