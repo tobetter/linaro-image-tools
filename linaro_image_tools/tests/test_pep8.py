@@ -23,6 +23,10 @@ from testtools import TestCase
 
 class TestPep8(TestCase):
     def test_pep8(self):
+        # too many of these, should preferably be fixed while updating
+        # surrounding code:
+        #    E501 line too long
+        #    W291 trailing whitespace
         ignore = ['E501', 'W291']
         # ignore return code
         proc = subprocess.Popen(['pep8',
