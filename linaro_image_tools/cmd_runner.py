@@ -72,7 +72,7 @@ class Popen(subprocess.Popen):
 
     def __init__(self, args, env=None, **kwargs):
         self._my_args = args
-        self.except_on_cmd_fail=True
+        self.except_on_cmd_fail = True
         if env is None:
             env = os.environ.copy()
         env['LC_ALL'] = 'C'

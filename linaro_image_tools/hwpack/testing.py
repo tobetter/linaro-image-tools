@@ -169,7 +169,7 @@ class AptSourceFixture(object):
 
     @property
     def sources_entry(self):
-        return "file:" + os.path.abspath(self.rootdir) +" ./"
+        return "file:" + os.path.abspath(self.rootdir) + " ./"
 
 
 class ConfigFileFixture(object):

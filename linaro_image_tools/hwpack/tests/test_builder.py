@@ -115,7 +115,8 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
     def setUp(self):
         super(HardwarePackBuilderTests, self).setUp()
         self.useFixture(ChdirToTempdirFixture())
-        self.extra_config={'format': '2.0', 'u-boot-package': 'wanted-package',
+        self.extra_config = {'format': '2.0',
+                          'u-boot-package': 'wanted-package',
                           'u-boot-file': 'wanted-file', 
                           'partition_layout': 'bootfs_rootfs',
                           'x_loader_package': 'x-loader-omap4-panda',

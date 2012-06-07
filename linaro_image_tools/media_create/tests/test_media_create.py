@@ -2345,13 +2345,13 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Stub time.sleep() as create_partitions() use that.
         self.orig_sleep = time.sleep
         time.sleep = lambda s: None
-        self.linux_image_size = 30 * 1024**2
+        self.linux_image_size = 30 * 1024 ** 2
         self.linux_offsets_and_sizes = [
             (16384 * SECTOR_SIZE, 15746 * SECTOR_SIZE),
             (32768 * SECTOR_SIZE, (self.linux_image_size -
                                         32768 * SECTOR_SIZE))
             ]
-        self.android_image_size = 256 * 1024**2
+        self.android_image_size = 256 * 1024 ** 2
         # Extended partition info takes 32 sectors from the first ext partition
         ext_part_size = 32
         self.android_offsets_and_sizes = [
@@ -2367,7 +2367,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.android_snowball_offsets_and_sizes = [
             (8192 * SECTOR_SIZE, 24639 * SECTOR_SIZE),
             (32831 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
-            ((98367 + ext_part_size)* SECTOR_SIZE,
+            ((98367 + ext_part_size) * SECTOR_SIZE,
              (65536 - ext_part_size) * SECTOR_SIZE),
             (294975 * SECTOR_SIZE, 131072 * SECTOR_SIZE),
             ((426047 + ext_part_size) * SECTOR_SIZE,
@@ -2403,10 +2403,10 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.assertEqual(512 * 1024, convert_size_to_bytes('512K'))
 
     def test_convert_size_in_mbytes_to_bytes(self):
-        self.assertEqual(100 * 1024**2, convert_size_to_bytes('100M'))
+        self.assertEqual(100 * 1024 ** 2, convert_size_to_bytes('100M'))
 
     def test_convert_size_in_gbytes_to_bytes(self):
-        self.assertEqual(12 * 1024**3, convert_size_to_bytes('12G'))
+        self.assertEqual(12 * 1024 ** 3, convert_size_to_bytes('12G'))
 
     def test_convert_size_float_no_suffix(self):
         self.assertEqual(1539, convert_size_to_bytes('1539.49'))
@@ -2418,10 +2418,10 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.assertEqual(int(round(234.8 * 1024)), convert_size_to_bytes('234.8K'))
 
     def test_convert_size_float_in_mbytes_to_bytes(self):
-        self.assertEqual(int(round(876.123 * 1024**2)), convert_size_to_bytes('876.123M'))
+        self.assertEqual(int(round(876.123 * 1024 ** 2)), convert_size_to_bytes('876.123M'))
 
     def test_convert_size_float_in_gbytes_to_bytes(self):
-        self.assertEqual(int(round(1.9 * 1024**3)), convert_size_to_bytes('1.9G'))
+        self.assertEqual(int(round(1.9 * 1024 ** 3)), convert_size_to_bytes('1.9G'))
 
     def test_calculate_partition_size_and_offset(self):
         tmpfile = self._create_tmpfile()
@@ -2947,14 +2947,14 @@ class TestPopulateRootFS(TestCaseWithFixtures):
     def test_has_space_left_for_swap(self):
         statvfs = os.statvfs('/')
         space_left = statvfs.f_bavail * statvfs.f_bsize
-        swap_size_in_megs = space_left / (1024**2)
+        swap_size_in_megs = space_left / (1024 ** 2)
         self.assertTrue(
             has_space_left_for_swap('/', swap_size_in_megs))
 
     def test_has_no_space_left_for_swap(self):
         statvfs = os.statvfs('/')
         space_left = statvfs.f_bavail * statvfs.f_bsize
-        swap_size_in_megs = (space_left / (1024**2)) + 1
+        swap_size_in_megs = (space_left / (1024 ** 2)) + 1
         self.assertFalse(
             has_space_left_for_swap('/', swap_size_in_megs))
 

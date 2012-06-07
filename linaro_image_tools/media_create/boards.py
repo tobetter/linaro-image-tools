@@ -1366,9 +1366,9 @@ class FastModelConfig(BoardConfig):
     def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        output_dir=os.path.dirname(boot_device_or_file)
+        output_dir = os.path.dirname(boot_device_or_file)
 
-        bootwrapper=_get_file_matching("%s/boot/img.axf" % chroot_dir)
+        bootwrapper = _get_file_matching("%s/boot/img.axf" % chroot_dir)
 
         for filename in (bootwrapper, k_img_data, i_img_data, d_img_data):
             if filename != None:
