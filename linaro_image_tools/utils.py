@@ -204,7 +204,7 @@ def install_package_providing(command):
             " ".join(to_install))
         if resp.lower() != 'y':
             raise PackageInstallationRefused(
-                "Installation of packages refused by the user.")
+                "Package installation refused by the user.")
         print ("Installing required command '%s' from package '%s'..."
                 % (command, package))
         cmd_runner.run(['apt-get', '--yes', 'install', package],

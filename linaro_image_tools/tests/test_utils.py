@@ -24,6 +24,7 @@ import sys
 import logging
 import tempfile
 import tarfile
+from StringIO import StringIO
 
 from linaro_image_tools import cmd_runner, utils
 from linaro_image_tools.testing import TestCaseWithFixtures
@@ -250,10 +251,17 @@ class TestFindCommand(TestCaseWithFixtures):
 class TestInstallPackageProviding(TestCaseWithFixtures):
 
     def test_found_package(self):
+        # This is the package we need to fake the installation of, it is a
+        # slightly changed version of 'apt-get -s install' output.
         output_string = 'Inst dosfstools (3.0.12-1ubuntu1 Ubuntu:12.04)'
         self.useFixture(MockSomethingFixture(sys,
                                              'stdout',
                                              open('/dev/null', 'w')))
+        # We need this since we are getting user input via raw_input
+        # and we need a 'Y' to proceed with the operations.
+        self.useFixture(MockSomethingFixture(sys,
+                                             'stdin',
+                                             StringIO('Y')))
         fixture = self.useFixture(MockCmdRunnerPopenFixture(output_string))
         install_package_providing('mkfs.vfat')
         self.assertEqual(
