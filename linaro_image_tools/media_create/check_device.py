@@ -73,7 +73,7 @@ def _print_devices():
     devices.sort()
     for path in devices:
         device = bus.get_object("org.freedesktop.UDisks", path)
-        device_file =  _get_dbus_property('DeviceFile', device, path)
+        device_file = _get_dbus_property('DeviceFile', device, path)
         
         mount_paths = _get_dbus_property('device-mount-paths', device, path)
         mount_point = ''.join(b for b in mount_paths)
