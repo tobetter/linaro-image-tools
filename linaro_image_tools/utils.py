@@ -106,7 +106,7 @@ def verify_file_integrity(sig_file_list):
 
         try:
             cmd_runner.run(['gpg', '--status-file={0}'.format(tmp.name),
-                             '--verify', sig_file]).wait()
+                            '--verify', sig_file]).wait()
         except cmd_runner.SubcommandNonZeroReturnValue:
             gpg_sig_ok = False
             gpg_out = gpg_out + tmp.read()
@@ -305,6 +305,10 @@ class PackageInstallationRefused(Exception):
     """User has chosen not to install a package."""
 
 
+class InvalidHwpackFile(Exception):
+    """The hwpack parameter is not a regular file."""
+
+
 class IncompatibleOptions(Exception):
     def __init__(self, value):
         self.value = value
@@ -317,11 +321,16 @@ def additional_option_checks(args):
     if args.directory is not None:
     # If args.device is a path to a device (/dev/) then this is an error
         if "--mmc" in sys.argv:
-            raise IncompatibleOptions("--directory option incompatable with "
+            raise IncompatibleOptions("--directory option incompatible with "
                                       "option --mmc")
 
         # If directory is used as well as having a full path (rather than just
         # a file name or relative path) in args.device, this is an error.
         if re.search(r"^/", args.device):
-            raise IncompatibleOptions("--directory option incompatable with "
+            raise IncompatibleOptions("--directory option incompatible with "
                                       "a full path in --image-file")
+
+    for hwpack in args.hwpacks:
+        if not os.path.isfile(hwpack):
+            raise InvalidHwpackFile(
+                "--hwpack argument (%s) is not a regular file" % hwpack)
