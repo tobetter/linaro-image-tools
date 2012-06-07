@@ -85,13 +85,11 @@ class Config(object):
     SAMSUNG_ENV_LEN_KEY = 'samsung_env_len'
     SAMSUNG_BL2_LEN_KEY = 'samsung_bl2_len'
 
-
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
         'bootfs_rootfs',
         'reserved_bootfs_rootfs',
         ]
-
 
     def __init__(self, fp):
         """Create a Config.
@@ -611,7 +609,6 @@ class Config(object):
         else:
             self._assert_matches_pattern(
                 self.PATH_REGEX, boot_script, "Invalid path: %s" % boot_script)
-
 
     def _validate_snowball_startup_files_config(self):
         snowball_startup_files_config = self.snowball_startup_files_config

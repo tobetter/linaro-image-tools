@@ -931,7 +931,6 @@ class AptCacheTests(TestCaseWithFixtures):
             open(os.path.join(
                 cache.tempdir, "var", "lib", "dpkg", "status")).read())
 
-
     def test_package_list_has_no_passwords(self):
         source1 = self.useFixture(AptSourceFixture([]))
         path = re.sub("file:/", "file://user:pass@", source1.sources_entry)
