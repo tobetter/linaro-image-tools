@@ -69,8 +69,9 @@ class MockCmdRunnerPopen(object):
     # used in tests to make sure all callsites wait for their child.
     child_finished = True
 
-    def __init__(self, assert_child_finished=True):
+    def __init__(self, output_string='', assert_child_finished=True):
         self.assert_child_finished = assert_child_finished
+        self.output_string = output_string
 
     def __call__(self, cmd, *args, **kwargs):
         if self.assert_child_finished and not self.child_finished:
@@ -91,7 +92,7 @@ class MockCmdRunnerPopen(object):
 
     def communicate(self, input=None):
         self.wait()
-        return '', ''
+        return self.output_string, ''
 
     def wait(self):
         self.child_finished = True
@@ -105,15 +106,16 @@ class MockCmdRunnerPopen(object):
     def stdin(self):
         return StringIO()
 
+
 class MockCmdRunnerPopenFixture(MockSomethingFixture):
     """A test fixture which mocks cmd_runner.do_run with the given mock.
 
     If no mock is given, a MockCmdRunnerPopen instance is used.
     """
 
-    def __init__(self, assert_child_finished=True):
+    def __init__(self, output_string='', assert_child_finished=True):
         super(MockCmdRunnerPopenFixture, self).__init__(
-            cmd_runner, 'Popen', MockCmdRunnerPopen(assert_child_finished))
+            cmd_runner, 'Popen', MockCmdRunnerPopen(output_string, assert_child_finished))
 
     def tearDown(self):
         super(MockCmdRunnerPopenFixture, self).tearDown()
