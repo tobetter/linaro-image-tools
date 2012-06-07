@@ -57,6 +57,7 @@ class MockCallableWithPositionalArgs(object):
     """
     calls = None
     return_value = None
+
     def __call__(self, *args):
         if self.calls is None:
             self.calls = []
