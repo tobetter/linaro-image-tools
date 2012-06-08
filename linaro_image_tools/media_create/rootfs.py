@@ -110,7 +110,7 @@ def update_network_interfaces(root_disk, board_config):
         config = ''
     for interface in interfaces:
         if interface not in config:
-            config += "auto %(if)s\niface %(if)s inet dhcp\n" % ({ 'if': interface })
+            config += "auto %(if)s\niface %(if)s inet dhcp\n" % ({'if': interface})
     if config != '':
         write_data_to_protected_file(if_path, config)
 
@@ -157,7 +157,7 @@ def has_space_left_for_swap(root_disk, swap_size_in_mega_bytes):
     """Is there enough space for a swap file in the given root disk?"""
     statvfs = os.statvfs(root_disk)
     free_space = statvfs.f_bavail * statvfs.f_bsize
-    swap_size_in_bytes = int(swap_size_in_mega_bytes) * 1024**2
+    swap_size_in_bytes = int(swap_size_in_mega_bytes) * 1024 ** 2
     if free_space >= swap_size_in_bytes:
         return True
     return False

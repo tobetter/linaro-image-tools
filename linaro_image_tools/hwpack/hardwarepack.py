@@ -195,7 +195,7 @@ class Metadata(object):
 
         if not self.format.has_v2_fields:
             return metadata
-            
+
         if self.u_boot is not None:
             metadata += "U_BOOT=%s\n" % self.u_boot
         if self.spl is not None:

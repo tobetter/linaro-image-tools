@@ -132,6 +132,7 @@ class MatchesRegex(object):
     def __init__(self, pattern, flags=0):
         self.pattern = pattern
         self.flags = flags
+
     def match(self, value):
         if not re.match(self.pattern, value, self.flags):
             return Mismatch("%r did not match %r" % (self.pattern, value))

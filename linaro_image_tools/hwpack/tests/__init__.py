@@ -21,6 +21,7 @@
 
 import unittest
 
+
 def test_suite():
     module_names = [
         'linaro_image_tools.hwpack.tests.test_better_tarfile',

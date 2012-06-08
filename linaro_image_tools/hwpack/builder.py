@@ -40,7 +40,7 @@ from linaro_image_tools.hwpack.packages import (
 logger = logging.getLogger(__name__)
 
 
-LOCAL_ARCHIVE_LABEL='hwpack-local'
+LOCAL_ARCHIVE_LABEL = 'hwpack-local'
 
 
 class ConfigFileMissing(Exception):

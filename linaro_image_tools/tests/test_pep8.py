@@ -1,4 +1,4 @@
-# Copyright (C) 2011 Linaro
+# Copyright (C) 2012 Linaro Ltd.
 #
 # Author: Loic Minier <loic.minier@linaro.org>
 #
@@ -21,10 +21,21 @@ import subprocess
 from testtools import TestCase
 
 
-class TestPyflakes(TestCase):
-    def test_pyflakes(self):
+class TestPep8(TestCase):
+    def test_pep8(self):
+        # too many of these, should preferably be fixed while updating
+        # surrounding code:
+        #    E202 whitespace before ')' or ']'
+        #    E501 line too long
+        #    W291 trailing whitespace
+        # NB: E202 is actually only reported with the natty version of pep8 and
+        #     can be re-enabled once we drop support for natty
+        ignore = ['E202', 'E501', 'W291']
         # ignore return code
-        proc = subprocess.Popen(['pyflakes', '.'],
+        proc = subprocess.Popen(['pep8',
+            '--repeat',
+            '--ignore=%s' % ','.join(ignore),
+            '.'],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         (stdout, stderr) = proc.communicate()

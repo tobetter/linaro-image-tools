@@ -27,6 +27,7 @@ def unpack_android_binary_tarball(tarball, unpack_dir, as_root=True):
     proc.wait()
     return proc.returncode
 
+
 def unpack_binary_tarball(tarball, unpack_dir, as_root=True):
     proc = cmd_runner.run(
         ['tar', '--numeric-owner', '-C', unpack_dir, '-xf', tarball],
