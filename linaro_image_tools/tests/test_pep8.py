@@ -25,9 +25,12 @@ class TestPep8(TestCase):
     def test_pep8(self):
         # too many of these, should preferably be fixed while updating
         # surrounding code:
+        #    E202 whitespace before ')' or ']'
         #    E501 line too long
         #    W291 trailing whitespace
-        ignore = ['E501', 'W291']
+        # NB: E202 is actually only reported with the natty version of pep8 and
+        #     can be re-enabled once we drop support for natty
+        ignore = ['E202', 'E501', 'W291']
         # ignore return code
         proc = subprocess.Popen(['pep8',
             '--repeat',
