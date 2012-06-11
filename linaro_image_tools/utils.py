@@ -199,9 +199,9 @@ def install_package_providing(command):
             "Unable to find any package to be installed.")
 
     try:
-        resp = raw_input(
-            "You are missing the following packages: %s.  Install (Y/n)? " %
-            " ".join(to_install))
+        print ("In order to use the '%s' command, the following packages have "
+               "to be installed: %s" % (command, " ".join(to_install)))
+        resp = raw_input("Install them? (Y/n) ")
         if resp.lower() != 'y':
             raise PackageInstallationRefused(
                 "Package installation refused by the user.")
