@@ -26,7 +26,7 @@ from linaro_image_tools.media_create import partitions
 
 def _get_system_bus_and_udisks_iface():
     """Return the system bus and the UDisks interface.
-    
+
     :return: System bus and UDisks inteface tuple.
     """
     bus = dbus.SystemBus()
@@ -73,21 +73,21 @@ def _print_devices():
     devices.sort()
     for path in devices:
         device = bus.get_object("org.freedesktop.UDisks", path)
-        device_file =  _get_dbus_property('DeviceFile', device, path)
-        
+        device_file = _get_dbus_property('DeviceFile', device, path)
+
         mount_paths = _get_dbus_property('device-mount-paths', device, path)
         mount_point = ''.join(b for b in mount_paths)
         if mount_point == '':
             mount_point = 'none'
-        
+
         if _get_dbus_property('DeviceIsPartition', device, path):
             part_size = _get_dbus_property('partition-size', device, path)
             print '%-16s %-16s %dMB' % (
-                device_file, mount_point, part_size / 1024**2)
+                device_file, mount_point, part_size / 1024 ** 2)
         else:
             device_size = _get_dbus_property('device-size', device, path)
             print '%-16s %-16s %dMB' % (
-                device_file, mount_point, device_size / 1024**2)
+                device_file, mount_point, device_size / 1024 ** 2)
 
 
 def _select_device(device):
@@ -112,7 +112,7 @@ def _ensure_device_partitions_not_mounted(device):
 
 def confirm_device_selection_and_ensure_it_is_ready(
                                                 device,
-                                                yes_to_mmc_selection = False):
+                                                yes_to_mmc_selection=False):
     """Confirm this is the device to use and ensure it's ready.
 
     If the device exists, the user is asked to confirm that this is the

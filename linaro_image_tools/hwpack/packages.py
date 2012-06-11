@@ -511,9 +511,9 @@ class IsolatedAptCache(object):
                                                    url_parsed.query,
                                                    url_parsed.fragment]
 
-                    auth_name=os.path.join(
+                    auth_name = os.path.join(
                         self.tempdir, "etc", "apt", "auth.conf")
-                    with open(auth_name,'w') as auth:
+                    with open(auth_name, 'w') as auth:
                         auth.write(
                             "machine " + url_parsed.hostname + "\n" +
                             "login " + url_parsed.username + "\n" +

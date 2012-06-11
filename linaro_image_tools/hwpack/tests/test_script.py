@@ -103,10 +103,10 @@ class ScriptTests(TestCaseWithFixtures):
             '\n[ubuntu]\nsources-entry=%s\n' % (
                 package_name, source.sources_entry)))
         stdout, stderr = self.run_script([config.filename, "1.0"])
-        
+
         # XXX Adding in the format deprecation message below is just a hack
         # until the test can be fixed up to test a new format hwpack.
-        
+
         self.assertThat(
             stderr,
             DocTestMatches(
