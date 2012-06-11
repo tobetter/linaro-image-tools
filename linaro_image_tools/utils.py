@@ -172,8 +172,7 @@ def install_package_providing(command):
     If we can't find any package which provides it, raise
     UnableToFindPackageProvidingCommand.
 
-    If the user denies installing the package, raise
-    PackageInstallationRefused.
+    If the user denies installing the package, the program exits.
     """
 
     if CommandNotFound is None:
@@ -203,8 +202,8 @@ def install_package_providing(command):
                "to be installed: %s" % (command, " ".join(to_install)))
         resp = raw_input("Install them? (Y/n) ")
         if resp.lower() != 'y':
-            raise PackageInstallationRefused(
-                "Package installation refused by the user.")
+            print "Package installation is necessary to continue.  Exiting."
+            sys.exit(1)
         print ("Installing required command '%s' from package '%s'..."
                 % (command, package))
         cmd_runner.run(['apt-get', '--yes', 'install', package],
