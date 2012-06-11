@@ -208,8 +208,6 @@ def install_package_providing(command):
         print ("Installing required command '%s' from package '%s'..."
                 % (command, package))
         cmd_runner.run(['apt-get', '--yes', 'install', package],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
                         as_root=True).wait()
     except EOFError:
         raise PackageInstallationRefused(
