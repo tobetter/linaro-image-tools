@@ -485,9 +485,9 @@ def _get_udisks_device_file(path, part):
 def get_partition_size_in_bytes(size):
     """Convert a size string in Kbytes, Mbytes or Gbytes to bytes.
 
-    The conversion rounds up the size to the nearest and smallest MiB,
-    considering a minimum size of MIN_IMAGE_SIZE bytes. The conversion always
-    assures to have a big enough partition.
+    The conversion rounds-up the size to the nearest MiB, considering a minimum
+    size of MIN_IMAGE_SIZE bytes. The conversion always assures to have a big
+    enough size for the partition.
     """
     unit = size[-1].upper()
     real_size = float(size[:-1])
@@ -504,10 +504,10 @@ def get_partition_size_in_bytes(size):
     else:
         raise ValueError("Unknown size format: %s.  Use K[bytes], M[bytes] "
                          "or G[bytes]" % size)
-    # Guarantee that is a multiple of ROUND_IMAGE_TO plus ROUND_IMAGE_TO / 2
-    real_size = _check_min_size(round(ceil((real_size + ROUND_IMAGE_TO / 2) /
-                                           ROUND_IMAGE_TO) * ROUND_IMAGE_TO))
-    return int(round(real_size))
+    # Guarantee that is a multiple of ROUND_IMAGE_TO
+    real_size = _check_min_size(int(round(ceil(real_size / ROUND_IMAGE_TO) *
+                                          ROUND_IMAGE_TO)))
+    return real_size
 
 
 def _check_min_size(size):

@@ -38,11 +38,11 @@ from testtools import TestCase
 from linaro_image_tools import cmd_runner
 import linaro_image_tools.media_create
 from linaro_image_tools.media_create import (
-    check_device,
+    android_boards,
     boards,
+    check_device,
     partitions,
     rootfs,
-    android_boards,
     )
 from linaro_image_tools.media_create.boards import (
     SECTOR_SIZE,
@@ -64,8 +64,8 @@ from linaro_image_tools.media_create.boards import (
     BoardConfig,
     )
 from linaro_image_tools.media_create.android_boards import (
-    android_board_configs,
     AndroidSnowballEmmcConfig,
+    android_board_configs,
     )
 from linaro_image_tools.media_create.chroot_utils import (
     copy_file,
@@ -80,24 +80,24 @@ from linaro_image_tools.media_create.chroot_utils import (
 from linaro_image_tools.media_create.partitions import (
     HEADS,
     MIN_IMAGE_SIZE,
+    Media,
     SECTORS,
-    calculate_partition_size_and_offset,
-    calculate_android_partition_size_and_offset,
     _check_min_size,
-    get_partition_size_in_bytes,
+    _get_device_file_for_partition_number,
+    _parse_blkid_output,
+    calculate_android_partition_size_and_offset,
+    calculate_partition_size_and_offset,
     create_partitions,
     ensure_partition_is_not_mounted,
-    get_boot_and_root_loopback_devices,
     get_android_loopback_devices,
+    get_boot_and_root_loopback_devices,
     get_boot_and_root_partitions_for_media,
-    Media,
+    get_partition_size_in_bytes,
+    get_uuid,
     partition_mounted,
     run_sfdisk_commands,
     setup_partitions,
-    get_uuid,
-    _parse_blkid_output,
     wait_partition_to_settle,
-    _get_device_file_for_partition_number,
     )
 from linaro_image_tools.media_create.rootfs import (
     append_to_fstab,
@@ -106,8 +106,8 @@ from linaro_image_tools.media_create.rootfs import (
     move_contents,
     populate_rootfs,
     rootfs_mount_options,
-    write_data_to_protected_file,
     update_network_interfaces,
+    write_data_to_protected_file,
     )
 from linaro_image_tools.media_create.tests.fixtures import (
     CreateTarballFixture,
@@ -2449,22 +2449,25 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.assertEqual(2 ** 20, get_partition_size_in_bytes('123456'))
 
     def test_convert_size_one_mbyte(self):
-        self.assertEqual(2 * (2 ** 20), get_partition_size_in_bytes('1M'))
+        self.assertEqual(2 ** 20, get_partition_size_in_bytes('1M'))
 
     def test_convert_size_in_kbytes_to_bytes(self):
-        self.assertEqual(3 * (2 ** 20), get_partition_size_in_bytes('2048K'))
+        self.assertEqual(2 * 2 ** 20, get_partition_size_in_bytes('2048K'))
 
     def test_convert_size_in_mbytes_to_bytes(self):
-        self.assertEqual(101 * 2 ** 20, get_partition_size_in_bytes('100M'))
+        self.assertEqual(100 * 2 ** 20, get_partition_size_in_bytes('100M'))
 
     def test_convert_size_in_gbytes_to_bytes(self):
-        self.assertEqual(12289 * 2 ** 20, get_partition_size_in_bytes('12G'))
+        self.assertEqual(12 * 2 ** 30, get_partition_size_in_bytes('12G'))
 
     def test_convert_size_float_no_suffix(self):
         self.assertEqual(3 * 2 ** 20, get_partition_size_in_bytes('2348576.91'))
 
     def test_convert_size_float_in_kbytes_to_bytes(self):
         self.assertEqual(3 * 2 ** 20, get_partition_size_in_bytes('2345.8K'))
+
+    def test_convert_size_float_in_mbytes_to_bytes_double(self):
+        self.assertEqual(2 * 2 ** 20, get_partition_size_in_bytes('1.0000001M'))
 
     def test_convert_size_float_in_mbytes_to_bytes(self):
         self.assertEqual(877 * 2 ** 20, get_partition_size_in_bytes('876.123M'))
@@ -2648,7 +2651,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             'root', 'ext3', True, True, True)
         self.assertEqual(
              # This is the call that would create a 2 GiB image file.
-            ['dd of=%s bs=1 seek=2148532224 count=0' % tmpfile,
+            ['dd of=%s bs=1 seek=2147483648 count=0' % tmpfile,
              '%s sfdisk -l %s' % (sudo_args, tmpfile),
              # This call would partition the image file.
              '%s sfdisk --force -D -uS -H %s -S %s -C 1024 %s' % (
