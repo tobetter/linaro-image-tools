@@ -2383,13 +2383,13 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # Stub time.sleep() as create_partitions() use that.
         self.orig_sleep = time.sleep
         time.sleep = lambda s: None
-        self.linux_image_size = 30 * (1024 ** 2)
+        self.linux_image_size = 30 * 1024 ** 2
         self.linux_offsets_and_sizes = [
             (16384 * SECTOR_SIZE, 15746 * SECTOR_SIZE),
             (32768 * SECTOR_SIZE, (self.linux_image_size -
                                         32768 * SECTOR_SIZE))
             ]
-        self.android_image_size = 256 * (1024 ** 2)
+        self.android_image_size = 256 * 1024 ** 2
         # Extended partition info takes 32 sectors from the first ext partition
         ext_part_size = 32
         self.android_offsets_and_sizes = [
@@ -2455,22 +2455,22 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.assertEqual(3 * (2 ** 20), get_partition_size_in_bytes('2048K'))
 
     def test_convert_size_in_mbytes_to_bytes(self):
-        self.assertEqual(101 * (2 ** 20), get_partition_size_in_bytes('100M'))
+        self.assertEqual(101 * 2 ** 20, get_partition_size_in_bytes('100M'))
 
     def test_convert_size_in_gbytes_to_bytes(self):
-        self.assertEqual(12289 * (2 ** 20), get_partition_size_in_bytes('12G'))
+        self.assertEqual(12289 * 2 ** 20, get_partition_size_in_bytes('12G'))
 
     def test_convert_size_float_no_suffix(self):
-        self.assertEqual(3 * (2 ** 20), get_partition_size_in_bytes('2348576.91'))
+        self.assertEqual(3 * 2 ** 20, get_partition_size_in_bytes('2348576.91'))
 
     def test_convert_size_float_in_kbytes_to_bytes(self):
-        self.assertEqual(3 * (2 ** 20), get_partition_size_in_bytes('2345.8K'))
+        self.assertEqual(3 * 2 ** 20, get_partition_size_in_bytes('2345.8K'))
 
     def test_convert_size_float_in_mbytes_to_bytes(self):
-        self.assertEqual(877 * (2 ** 20), get_partition_size_in_bytes('876.123M'))
+        self.assertEqual(877 * 2 ** 20, get_partition_size_in_bytes('876.123M'))
 
     def test_convert_size_float_in_gbytes_to_bytes(self):
-        self.assertEqual(1946 * (2 ** 20), get_partition_size_in_bytes('1.9G'))
+        self.assertEqual(1946 * 2 ** 20, get_partition_size_in_bytes('1.9G'))
 
     def test_calculate_partition_size_and_offset(self):
         tmpfile = self._create_tmpfile()
@@ -3418,6 +3418,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
 
     def setUp(self):
         super(TestInstallHWPack, self).setUp()
+
         # Ensure the list of cleanup functions gets cleared to make sure tests
         # don't interfere with one another.
 

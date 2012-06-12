@@ -28,6 +28,7 @@ from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV2,
     )
 
+
 class HwpackConfigError(Exception):
     pass
 
@@ -84,13 +85,11 @@ class Config(object):
     SAMSUNG_ENV_LEN_KEY = 'samsung_env_len'
     SAMSUNG_BL2_LEN_KEY = 'samsung_bl2_len'
 
-
     DEFINED_PARTITION_LAYOUTS = [
         'bootfs16_rootfs',
         'bootfs_rootfs',
         'reserved_bootfs_rootfs',
         ]
-
 
     def __init__(self, fp):
         """Create a Config.
@@ -167,7 +166,7 @@ class Config(object):
             # When this code no longer supports 1.0, it effectively makes
             # explicitly specifying format in hwpack files mandatory.
             format_string = "1.0"
-        
+
         if format_string == '1.0':
             return HardwarePackFormatV1()
         elif format_string == '2.0':
@@ -594,7 +593,7 @@ class Config(object):
         if dtb_file is not None:
             self._assert_matches_pattern(
                 self.GLOB_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
-        
+
     def _validate_extra_boot_options(self):
         # Optional and tricky to determine a valid pattern.
         pass
@@ -610,7 +609,6 @@ class Config(object):
         else:
             self._assert_matches_pattern(
                 self.PATH_REGEX, boot_script, "Invalid path: %s" % boot_script)
-
 
     def _validate_snowball_startup_files_config(self):
         snowball_startup_files_config = self.snowball_startup_files_config

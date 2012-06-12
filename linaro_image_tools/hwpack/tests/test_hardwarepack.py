@@ -334,7 +334,8 @@ class HardwarePackTests(TestCase):
         tf = self.get_tarfile(hwpack)
         self.assertThat(
             tf,
-            HardwarePackHasFile("FORMAT", content=hwpack.format.__str__()+"\n"))
+            HardwarePackHasFile("FORMAT",
+                content=hwpack.format.__str__() + "\n"))
 
     def test_creates_metadata_file(self):
         metadata = Metadata(

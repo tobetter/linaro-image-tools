@@ -49,6 +49,7 @@ class CreateTarballFixture(object):
     def get_tarball(self):
         return self.tarball
 
+
 class MockCallableWithPositionalArgs(object):
     """A callable mock which just stores the positional args given to it.
 
@@ -57,6 +58,7 @@ class MockCallableWithPositionalArgs(object):
     """
     calls = None
     return_value = None
+
     def __call__(self, *args):
         if self.calls is None:
             self.calls = []

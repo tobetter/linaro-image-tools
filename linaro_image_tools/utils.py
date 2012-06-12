@@ -3,7 +3,7 @@
 # Author: Guilherme Salgado <guilherme.salgado@linaro.org>
 #
 # This file is part of Linaro Image Tools.
-# 
+#
 # Linaro Image Tools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -43,8 +43,8 @@ def try_import(name, alternative=None, error_callback=None):
         ``os.path.join``.
     :param alternative: The value to return if no module can be imported.
         Defaults to None.
-    :param error_callback: If non-None, a callable that is passed the ImportError
-        when the module cannot be loaded.
+    :param error_callback: If non-None, a callable that is passed the
+        ImportError when the module cannot be loaded.
     """
     module_segments = name.split('.')
     last_error = None
@@ -84,6 +84,7 @@ def path_in_tarfile_exists(path, tar_file):
         return False
     tarinfo.close()
 
+
 def verify_file_integrity(sig_file_list):
     """Verify a list of signature files.
 
@@ -104,8 +105,8 @@ def verify_file_integrity(sig_file_list):
         tmp = tempfile.NamedTemporaryFile()
 
         try:
-             cmd_runner.run(['gpg', '--status-file={0}'.format(tmp.name),
-                             '--verify', sig_file]).wait()
+            cmd_runner.run(['gpg', '--status-file={0}'.format(tmp.name),
+                            '--verify', sig_file]).wait()
         except cmd_runner.SubcommandNonZeroReturnValue:
             gpg_sig_ok = False
             gpg_out = gpg_out + tmp.read()
@@ -134,6 +135,7 @@ def verify_file_integrity(sig_file_list):
 
     return verified_files, gpg_sig_ok, gpg_out
 
+
 def check_file_integrity_and_log_errors(sig_file_list, binary, hwpacks):
     """
     Wrapper around verify_file_integrity that prints error messages to stderr
@@ -147,21 +149,22 @@ def check_file_integrity_and_log_errors(sig_file_list, binary, hwpacks):
         if not gpg_sig_pass:
             logging.error("GPG signature verification failed.")
             return False, []
-    
+
         if not os.path.basename(binary) in verified_files:
             logging.error("OS Binary verification failed")
             return False, []
-        
+
         for hwpack in hwpacks:
             if not os.path.basename(hwpack) in verified_files:
                 logging.error("Hwpack {0} verification failed".format(hwpack))
                 return False, []
-    
+
         for verified_file in verified_files:
             logging.info('Hash verification of file {0} OK.'.format(
                                                                 verified_file))
-    
+
     return True, verified_files
+
 
 def install_package_providing(command):
     """Install a package which provides the given command.
@@ -196,6 +199,7 @@ def has_command(command):
     except cmd_runner.SubcommandNonZeroReturnValue:
         return False
 
+
 def ensure_command(command):
     """Ensure the given command is available.
 
@@ -203,6 +207,7 @@ def ensure_command(command):
     """
     if not has_command(command):
         install_package_providing(command)
+
 
 def find_command(name, prefer_dir=None):
     """Finds a linaro-image-tools command.
@@ -218,7 +223,7 @@ def find_command(name, prefer_dir=None):
 
     # default to searching in current directory when running from a bzr
     # checkout
-    dirs = [os.getcwd(),]
+    dirs = [os.getcwd(), ]
     if os.path.isabs(__file__):
         dirs = os.environ["PATH"].split(os.pathsep)
         # empty dir in PATH means current directory
@@ -253,7 +258,8 @@ def prep_media_path(args):
         try:
             os.makedirs(loc)
         except OSError:
-            pass # Directory exists.
+            # Directory exists.
+            pass
 
         path = os.path.join(loc, args.device)
     else:
@@ -266,6 +272,10 @@ class UnableToFindPackageProvidingCommand(Exception):
     """We can't find a package which provides the given command."""
 
 
+class InvalidHwpackFile(Exception):
+    """The hwpack parameter is not a regular file."""
+
+
 class IncompatibleOptions(Exception):
     def __init__(self, value):
         self.value = value
@@ -273,15 +283,21 @@ class IncompatibleOptions(Exception):
     def __str__(self):
         return repr(self.value)
 
+
 def additional_option_checks(args):
     if args.directory is not None:
     # If args.device is a path to a device (/dev/) then this is an error
         if "--mmc" in sys.argv:
-            raise IncompatibleOptions("--directory option incompatable with "
+            raise IncompatibleOptions("--directory option incompatible with "
                                       "option --mmc")
 
         # If directory is used as well as having a full path (rather than just
         # a file name or relative path) in args.device, this is an error.
         if re.search(r"^/", args.device):
-            raise IncompatibleOptions("--directory option incompatable with "
+            raise IncompatibleOptions("--directory option incompatible with "
                                       "a full path in --image-file")
+
+    for hwpack in args.hwpacks:
+        if not os.path.isfile(hwpack):
+            raise InvalidHwpackFile(
+                "--hwpack argument (%s) is not a regular file" % hwpack)

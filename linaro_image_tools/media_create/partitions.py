@@ -513,7 +513,7 @@ def get_partition_size_in_bytes(size):
 def _check_min_size(size):
     """Check that the image size is at least MIN_IMAGE_SIZE bytes.
 
-    @param size: The size of the image to check, as a number.
+    :param size: The size of the image to check, as a number.
     """
     if (size < MIN_IMAGE_SIZE):
         size = MIN_IMAGE_SIZE

@@ -33,18 +33,20 @@ from linaro_image_tools.tests.fixtures import (
     MockSomethingFixture,
     )
 from linaro_image_tools.utils import (
+    IncompatibleOptions,
+    InvalidHwpackFile,
+    UnableToFindPackageProvidingCommand,
+    additional_option_checks,
+    check_file_integrity_and_log_errors,
     ensure_command,
     find_command,
     install_package_providing,
-    preferred_tools_dir,
-    UnableToFindPackageProvidingCommand,
-    verify_file_integrity,
-    check_file_integrity_and_log_errors,
     path_in_tarfile_exists,
-    IncompatibleOptions,
+    preferred_tools_dir,
     prep_media_path,
-    additional_option_checks,
+    verify_file_integrity,
     )
+
 
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
 
@@ -85,7 +87,6 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
         def wait(self):
             return self.returncode
 
-
     class MockCmdRunnerPopen_sha1sum_fail(object):
         def __call__(self, cmd, *args, **kwargs):
             self.returncode = 0
@@ -98,7 +99,6 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
 
         def wait(self):
             return self.returncode
-
 
     class MockCmdRunnerPopen_wait_fails(object):
         def __call__(self, cmd, *args, **kwargs):
@@ -136,7 +136,7 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
                                                    signature_filename),
              'sha1sum -c %s' % hash_filename],
             fixture.mock.commands_executed)
-        
+
     def test_verify_files_returns_files(self):
         self.useFixture(MockSomethingFixture(cmd_runner, 'Popen',
                                              self.MockCmdRunnerPopen()))
@@ -193,6 +193,7 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
         # it should look like GPG failed
         self.assertFalse(result)
         logging.getLogger().setLevel(logging.WARNING)
+
 
 class TestEnsureCommand(TestCaseWithFixtures):
 
@@ -286,6 +287,7 @@ class TestPrepMediaPath(TestCaseWithFixtures):
                                               device="testdevice",
                                               board="testboard")))
 
+
 class TestPrepMediaPath(TestCaseWithFixtures):
 
     def test_additional_option_checks(self):
@@ -303,3 +305,44 @@ class TestPrepMediaPath(TestCaseWithFixtures):
                                device="testdevice",
                                board="testboard"))
         sys.argv.remove("--mmc")
+
+
+class TestHwpackIsFile(TestCaseWithFixtures):
+
+    """Testing '--hwpack' option only allows regular files."""
+
+    def test_hwpack_is_file(self):
+        class HwPackArgs:
+            def __init__(self, hwpack):
+                self.hwpacks = [hwpack]
+                self.directory = None
+
+        try:
+            tmpdir = tempfile.mkdtemp()
+            self.assertRaises(InvalidHwpackFile, additional_option_checks,
+                              HwPackArgs(hwpack=tmpdir))
+        finally:
+            os.rmdir(tmpdir)
+
+    def test_hwpacks_are_files(self):
+
+        """
+        Tests that multiple hwpacks are regular files.
+
+        Tests against a file and a directory, to avoid circumstances in which
+        'additional_option_checks' is tweaked.
+        """
+
+        class HwPacksArgs:
+            def __init__(self, hwpacks):
+                self.hwpacks = hwpacks
+                self.directory = None
+
+        try:
+            tmpdir = tempfile.mkdtemp()
+            _, tmpfile = tempfile.mkstemp()
+            self.assertRaises(InvalidHwpackFile, additional_option_checks,
+                              HwPacksArgs([tmpfile, tmpdir]))
+        finally:
+            os.rmdir(tmpdir)
+            os.remove(tmpfile)

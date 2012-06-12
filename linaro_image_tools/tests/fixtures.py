@@ -105,6 +105,7 @@ class MockCmdRunnerPopen(object):
     def stdin(self):
         return StringIO()
 
+
 class MockCmdRunnerPopenFixture(MockSomethingFixture):
     """A test fixture which mocks cmd_runner.do_run with the given mock.
 
@@ -121,4 +122,3 @@ class MockCmdRunnerPopenFixture(MockSomethingFixture):
             raise AssertionError(
                 "You should call wait() or communicate() to ensure "
                 "the subprocess is finished before proceeding.")
-

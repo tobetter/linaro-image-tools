@@ -56,4 +56,3 @@ class TestCaseWithFixtures(TestCase):
         _, filename = tempfile.mkstemp(prefix=prefix, dir=dir)
         self.addCleanup(os.unlink, filename)
         return filename
-

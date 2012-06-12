@@ -94,11 +94,11 @@ def copy_drop(src, dest_dir):
     """Copy a file from src to destdir, dropping root ownership on the
     way.
     """
-    cmd = [ "cp", "-v",  src, dest_dir ]
+    cmd = ["cp", "-v", src, dest_dir]
     cmd_runner.run(cmd, as_root=True).wait()
 
     final = os.path.join(dest_dir, os.path.basename(src))
-    cmd = [ "chown", "%s:%s" % (os.getuid(), os.getgid()), final ]
+    cmd = ["chown", "%s:%s" % (os.getuid(), os.getgid()), final]
     cmd_runner.run(cmd, as_root=True).wait()
 
 
@@ -1353,7 +1353,7 @@ class VexpressA9Config(VexpressConfig):
 
 class FastModelConfig(BoardConfig):
     supports_writing_to_mmc = False
-      
+
     @classmethod
     def _get_bootcmd(cls, d_img_data):
         """Get the bootcmd for FastModel.
@@ -1366,13 +1366,14 @@ class FastModelConfig(BoardConfig):
     def _make_boot_files_v2(cls, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
-        output_dir=os.path.dirname(boot_device_or_file)
+        output_dir = os.path.dirname(boot_device_or_file)
 
-        bootwrapper=_get_file_matching("%s/boot/img.axf" % chroot_dir)
+        bootwrapper = _get_file_matching("%s/boot/img.axf" % chroot_dir)
 
         for filename in (bootwrapper, k_img_data, i_img_data, d_img_data):
             if filename != None:
                 copy_drop(filename, output_dir)
+
 
 class SamsungConfig(BoardConfig):
     @classproperty
@@ -1511,6 +1512,7 @@ class OrigenConfig(SamsungConfig):
     mmc_part_offset = 1
     mmc_option = '0:2'
 
+
 class I386Config(BoardConfig):
     # define serial
     serial_tty = 'ttyS0'
@@ -1551,7 +1553,7 @@ class I386Config(BoardConfig):
         device = Device(boot_device_or_file)
         img_size = device.getLength() * SECTOR_SIZE
         img_loop = register_loopback(boot_device_or_file, 0, img_size)
-        
+
         # install bootloader
         cmd_runner.run([cls.BOOTLOADER_CMD, '--boot-directory=%s' % boot_dir,
             '--modules', 'part_msdos', img_loop],
