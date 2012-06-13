@@ -492,7 +492,8 @@ class TestSetMetadata(TestCaseWithFixtures):
 
         class config(BoardConfig):
             pass
-        self.assertRaises(AssertionError, config.set_metadata, 'ahwpack.tar.gz')
+        self.assertRaises(
+            AssertionError, config.set_metadata, 'ahwpack.tar.gz')
 
 
 class TestGetMLOFile(TestCaseWithFixtures):
@@ -767,8 +768,8 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
         uboot_file = os.path.join(uboot_dir, 'u-boot.bin')
         uboot_relative_file = uboot_file.replace(self.tempdir, '')
         with open(cfg_file, 'w') as f:
-                f.write('%s %s %i %#x %s\n' % ('NORMAL', uboot_relative_file, 0,
-                                               0xBA0000, '9'))
+                f.write('%s %s %i %#x %s\n' % (
+                        'NORMAL', uboot_relative_file, 0, 0xBA0000, '9'))
         with open(uboot_file, 'w') as f:
             file_info = boards.SnowballEmmcConfig.get_file_info(
                 self.tempdir, self.temp_bootdir_path)
@@ -781,8 +782,9 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
         with open(cfg_file, 'w') as f:
                 f.write('%s %s %i %#x %s\n' % ('NORMAL', 'u-boot.bin', 0,
                                                0xBA0000, '9'))
-        self.assertRaises(AssertionError, boards.SnowballEmmcConfig.get_file_info,
-                          self.tempdir, self.temp_bootdir_path)
+        self.assertRaises(
+            AssertionError, boards.SnowballEmmcConfig.get_file_info,
+            self.tempdir, self.temp_bootdir_path)
 
     def test_file_name_size(self):
         ''' Test using a to large toc file '''
@@ -961,7 +963,8 @@ class TestBootSteps(TestCaseWithFixtures):
         super(TestBootSteps, self).setUp()
         self.funcs_calls = []
         self.mock_all_boards_funcs()
-        linaro_image_tools.media_create.boards.BoardConfig.hwpack_format = '1.0'
+        boards = linaro_image_tools.media_create.boards
+        boards.BoardConfig.hwpack_format = '1.0'
 
     def mock_all_boards_funcs(self):
         """Mock functions of boards module with a call tracer."""
@@ -1037,8 +1040,8 @@ class TestBootSteps(TestCaseWithFixtures):
             lambda: '1.0')
         self.make_boot_files(boards.SMDKV310Config)
         expected = [
-            'install_samsung_boot_loader', 'make_flashable_env', '_dd', 'make_uImage',
-            'make_uInitrd', 'make_boot_script']
+            'install_samsung_boot_loader', 'make_flashable_env', '_dd',
+            'make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_origen_steps(self):
@@ -1058,8 +1061,8 @@ class TestBootSteps(TestCaseWithFixtures):
             lambda: '1.0')
         self.make_boot_files(boards.OrigenConfig)
         expected = [
-            'install_samsung_boot_loader', 'make_flashable_env', '_dd', 'make_uImage',
-            'make_uInitrd', 'make_boot_script']
+            'install_samsung_boot_loader', 'make_flashable_env', '_dd',
+            'make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_ux500_steps(self):
@@ -1239,19 +1242,19 @@ class TestPopulateRawPartitionAndroid(TestCaseWithFixtures):
         expected_commands = ['sudo -E cp boot/u-boot.bin ./startupfiles']
 
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.android_boards.AndroidSnowballEmmcConfig,
+                android_boards.AndroidSnowballEmmcConfig,
                 'get_file_info',
                 mock_func_creator('get_file_info')))
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.android_boards.AndroidSnowballEmmcConfig,
+                android_boards.AndroidSnowballEmmcConfig,
                 'create_toc',
                 mock_func_creator('create_toc')))
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.android_boards.AndroidSnowballEmmcConfig,
+                android_boards.AndroidSnowballEmmcConfig,
                 'install_snowball_boot_loader',
                 mock_func_creator('install_snowball_boot_loader')))
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.android_boards.AndroidSnowballEmmcConfig,
+                android_boards.AndroidSnowballEmmcConfig,
                 'delete_file',
                 mock_func_creator('delete_file')))
         self.populate_raw_partition(android_boards.AndroidSnowballEmmcConfig)
@@ -1268,7 +1271,8 @@ class TestPopulateRawPartitionAndroid(TestCaseWithFixtures):
         self.useFixture(fixture)
         expected_commands = [
             'sudo -E dd if=/dev/zero of= bs=512 conv=notrunc count=32 seek=33',
-            'sudo -E dd if=boot/u-boot-mmc-spl.bin of= bs=512 conv=notrunc seek=1',
+            ('sudo -E dd if=boot/u-boot-mmc-spl.bin of= '
+             'bs=512 conv=notrunc seek=1'),
             'sudo -E dd if=boot/u-boot.bin of= bs=512 conv=notrunc seek=65']
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
                                              lambda file: 1))
@@ -1289,7 +1293,8 @@ class TestPopulateRawPartitionAndroid(TestCaseWithFixtures):
         self.useFixture(fixture)
         expected_commands = [
             'sudo -E dd if=/dev/zero of= bs=512 conv=notrunc count=32 seek=33',
-            'sudo -E dd if=boot/u-boot-mmc-spl.bin of= bs=512 conv=notrunc seek=1',
+            ('sudo -E dd if=boot/u-boot-mmc-spl.bin of= bs=512 '
+             'conv=notrunc seek=1'),
             'sudo -E dd if=boot/u-boot.bin of= bs=512 conv=notrunc seek=65']
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
                                              lambda file: 1))
@@ -2004,9 +2009,11 @@ class TestBoards(TestCaseWithFixtures):
             "%s/%s/uboot" % ("chroot_dir", uboot_flavor), "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor, boards.SMDKV310Config.SAMSUNG_V310_BL1_START),
+            'seek=%d' % (sudo_args, uboot_flavor,
+                         boards.SMDKV310Config.SAMSUNG_V310_BL1_START),
             '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor, boards.SMDKV310Config.SAMSUNG_V310_BL2_START)]
+            'seek=%d' % (sudo_args, uboot_flavor,
+                         boards.SMDKV310Config.SAMSUNG_V310_BL2_START)]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_install_origen_u_boot(self):
@@ -2031,9 +2038,11 @@ class TestBoards(TestCaseWithFixtures):
             boards.OrigenConfig._get_samsung_uboot("chroot_dir"), "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor, boards.OrigenConfig.SAMSUNG_V310_BL1_START),
+            'seek=%d' % (sudo_args, uboot_flavor,
+                         boards.OrigenConfig.SAMSUNG_V310_BL1_START),
             '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor, boards.OrigenConfig.SAMSUNG_V310_BL2_START)]
+            'seek=%d' % (sudo_args, uboot_flavor,
+                         boards.OrigenConfig.SAMSUNG_V310_BL2_START)]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_get_plain_boot_script_contents(self):
@@ -2161,7 +2170,8 @@ class TestBoards(TestCaseWithFixtures):
         self.assertRaises(ValueError, config._get_kflavor_files, tempdir)
 
     def test_get_file_matching_no_files_found(self):
-        self.assertEqual(None, _get_file_matching('/foo/bar/baz/*non-existent'))
+        self.assertEqual(
+            None, _get_file_matching('/foo/bar/baz/*non-existent'))
 
     def test_run_mkimage(self):
         # Create a fake boot script.
@@ -2190,7 +2200,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # Stub time.sleep() as create_partitions() use that.
         self.orig_sleep = time.sleep
         time.sleep = lambda s: None
-        linaro_image_tools.media_create.boards.BoardConfig.hwpack_format = '1.0'
+        boards = linaro_image_tools.media_create.boards
+        boards.BoardConfig.hwpack_format = '1.0'
 
     def tearDown(self):
         super(TestCreatePartitions, self).tearDown()
@@ -2348,7 +2359,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
         self.assertEqual(0, wait_partition_to_settle(media))
 
-    def test_wait_partitions_to_settle_raises_SubcommandNonZeroReturnValue(self):
+    def test_wait_partitions_to_settle_raises_SubcommandNonZeroReturnValue(
+        self):
         def mock_run(args, as_root=False, chroot=None, stdin=None, stdout=None,
             stderr=None, cwd=None):
             raise cmd_runner.SubcommandNonZeroReturnValue(args, 1)
