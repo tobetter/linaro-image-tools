@@ -115,7 +115,8 @@ class MockCmdRunnerPopenFixture(MockSomethingFixture):
 
     def __init__(self, output_string='', assert_child_finished=True):
         super(MockCmdRunnerPopenFixture, self).__init__(
-            cmd_runner, 'Popen', MockCmdRunnerPopen(output_string, assert_child_finished))
+            cmd_runner, 'Popen',
+            MockCmdRunnerPopen(output_string, assert_child_finished))
 
     def tearDown(self):
         super(MockCmdRunnerPopenFixture, self).tearDown()
