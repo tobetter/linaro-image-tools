@@ -78,13 +78,13 @@ class Metadata(object):
         self.architecture = architecture
 
     @classmethod
-    def add_v2_config(self, serial_tty=None, kernel_addr=None, initrd_addr=None,
-                      load_addr=None, dtb_file=None, wired_interfaces=[],
-                      wireless_interfaces=[], partition_layout=None,
-                      mmc_id=None, boot_min_size=None, root_min_size=None,
-                      loader_min_size=None, vmlinuz=None, initrd=None,
-                      dtb_addr=None, extra_boot_options=None, env_dd=None,
-                      boot_script=None, uboot_in_boot_part=None,
+    def add_v2_config(self, serial_tty=None, kernel_addr=None,
+                      initrd_addr=None, load_addr=None, dtb_file=None,
+                      wired_interfaces=[], wireless_interfaces=[],
+                      partition_layout=None, mmc_id=None, boot_min_size=None,
+                      root_min_size=None, loader_min_size=None, vmlinuz=None,
+                      initrd=None, dtb_addr=None, extra_boot_options=None,
+                      env_dd=None, boot_script=None, uboot_in_boot_part=None,
                       uboot_dd=None, spl_in_boot_part=None, spl_dd=None,
                       extra_serial_opts=None, loader_start=None,
                       snowball_startup_files_config=None,
@@ -150,35 +150,38 @@ class Metadata(object):
             format=config.format)
 
         if config.format.has_v2_fields:
-            metadata.add_v2_config(serial_tty=config.serial_tty,
-                                   kernel_addr=config.kernel_addr,
-                                   initrd_addr=config.initrd_addr,
-                                   load_addr=config.load_addr,
-                                   wired_interfaces=config.wired_interfaces,
-                                   wireless_interfaces=config.wireless_interfaces,
-                                   partition_layout=config.partition_layout,
-                                   mmc_id=config.mmc_id,
-                                   boot_min_size=config.boot_min_size,
-                                   root_min_size=config.root_min_size,
-                                   loader_min_size=config.loader_min_size,
-                                   loader_start=config.loader_start,
-                                   vmlinuz=config.vmlinuz,
-                                   initrd=config.initrd,
-                                   dtb_file=config.dtb_file,
-                                   dtb_addr=config.dtb_addr,
-                                   extra_boot_options=config.extra_boot_options,
-                                   boot_script=config.boot_script,
-                                   uboot_in_boot_part=config.uboot_in_boot_part,
-                                   uboot_dd=config.uboot_dd,
-                                   spl_in_boot_part=config.spl_in_boot_part,
-                                   spl_dd=config.spl_dd,
-                                   env_dd=config.env_dd,
-                                   extra_serial_opts=config.extra_serial_opts,
-                                   snowball_startup_files_config=config.snowball_startup_files_config,
-                                   samsung_bl1_start=config.samsung_bl1_start,
-                                   samsung_bl1_len=config.samsung_bl1_len,
-                                   samsung_env_len=config.samsung_env_len,
-                                   samsung_bl2_len=config.samsung_bl2_len)
+            # Helper variable to adhere to the line length limit.
+            snowball_startup_config = config.snowball_startup_files_config
+            metadata.add_v2_config(
+                serial_tty=config.serial_tty,
+                kernel_addr=config.kernel_addr,
+                initrd_addr=config.initrd_addr,
+                load_addr=config.load_addr,
+                wired_interfaces=config.wired_interfaces,
+                wireless_interfaces=config.wireless_interfaces,
+                partition_layout=config.partition_layout,
+                mmc_id=config.mmc_id,
+                boot_min_size=config.boot_min_size,
+                root_min_size=config.root_min_size,
+                loader_min_size=config.loader_min_size,
+                loader_start=config.loader_start,
+                vmlinuz=config.vmlinuz,
+                initrd=config.initrd,
+                dtb_file=config.dtb_file,
+                dtb_addr=config.dtb_addr,
+                extra_boot_options=config.extra_boot_options,
+                boot_script=config.boot_script,
+                uboot_in_boot_part=config.uboot_in_boot_part,
+                uboot_dd=config.uboot_dd,
+                spl_in_boot_part=config.spl_in_boot_part,
+                spl_dd=config.spl_dd,
+                env_dd=config.env_dd,
+                extra_serial_opts=config.extra_serial_opts,
+                snowball_startup_files_config=snowball_startup_config,
+                samsung_bl1_start=config.samsung_bl1_start,
+                samsung_bl1_len=config.samsung_bl1_len,
+                samsung_env_len=config.samsung_env_len,
+                samsung_bl2_len=config.samsung_bl2_len)
         return metadata
 
     def __str__(self):
@@ -211,7 +214,8 @@ class Metadata(object):
         if self.dtb_addr is not None:
             metadata += "DTB_ADDR=%s\n" % self.dtb_addr
         if self.wired_interfaces != []:
-            metadata += "WIRED_INTERFACES=%s\n" % " ".join(self.wired_interfaces)
+            metadata += "WIRED_INTERFACES=%s\n" % " ".join(
+                self.wired_interfaces)
         if self.wireless_interfaces != []:
             metadata += "WIRELESS_INTERFACES=%s\n" % " ".join(
                 self.wireless_interfaces)
@@ -250,7 +254,8 @@ class Metadata(object):
         if self.extra_serial_opts is not None:
             metadata += "EXTRA_SERIAL_OPTIONS=%s\n" % self.extra_serial_opts
         if self.snowball_startup_files_config is not None:
-            metadata += "SNOWBALL_STARTUP_FILES_CONFIG=%s\n" % self.snowball_startup_files_config
+            metadata += "SNOWBALL_STARTUP_FILES_CONFIG=%s\n" % (
+                self.snowball_startup_files_config)
         if self.samsung_bl1_start is not None:
             metadata += "SAMSUNG_BL1_START=%s\n" % self.samsung_bl1_start
         if self.samsung_bl1_len is not None:
@@ -413,7 +418,8 @@ class HardwarePack(object):
                 # Don't output sources with passwords in them
                 if not url_parsed.password:
                     tf.create_file_from_string(
-                        self.SOURCES_LIST_DIRNAME + "/" + source_name + ".list",
+                        (self.SOURCES_LIST_DIRNAME + "/" +
+                         source_name + ".list"),
                         "deb " + source_info + "\n")
             # TODO: include sources keys etc.
             tf.create_dir(self.SOURCES_LIST_GPG_DIRNAME)
