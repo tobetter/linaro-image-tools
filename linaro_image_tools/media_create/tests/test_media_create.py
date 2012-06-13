@@ -2504,8 +2504,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
         device_info = calculate_android_partition_size_and_offset(tmpfile)
         # We use map(None, ...) since it would catch if the lists are not of
         # equal length and zip() would not in all cases.
-        for device_pair, expected_pair in map(None, device_info,
-                                              self.android_snowball_offsets_and_sizes):
+        snowball_info = map(None, device_info,
+                            self.android_snowball_offsets_and_sizes)
+        for device_pair, expected_pair in snowball_info:
             self.assertEqual(device_pair, expected_pair)
 
     def test_partition_numbering(self):
@@ -2545,7 +2546,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def _create_qemu_img_with_partitions(self, sfdisk_commands, tempfile_size):
         tmpfile = self.createTempFileAsFixture()
         proc = cmd_runner.run(
-            ['dd', 'of=%s' % tmpfile, 'bs=1', 'seek=%s' % tempfile_size, 'count=0'],
+            ['dd', 'of=%s' % tmpfile, 'bs=1', 'seek=%s' % tempfile_size,
+             'count=0'],
             stderr=open('/dev/null', 'w'))
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
