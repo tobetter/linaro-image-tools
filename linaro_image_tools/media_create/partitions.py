@@ -17,15 +17,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
-import atexit
 from contextlib import contextmanager
+from math import ceil
+import atexit
+import dbus
 import glob
 import logging
 import re
 import subprocess
 import time
 
-import dbus
 from parted import (
     Device,
     Disk,
@@ -34,7 +35,6 @@ from parted import (
     )
 
 from linaro_image_tools import cmd_runner
-
 
 HEADS = 128
 SECTORS = 32
@@ -45,13 +45,17 @@ UDISKS = "org.freedesktop.UDisks"
 # Max number of attempts to sleep (total sleep time in seconds =
 # 1+2+...+MAX_TTS)
 MAX_TTS = 10
+# Image size should be a multiple of 1MiB, expressed in bytes. This is also
+# the minimum image size possible.
+ROUND_IMAGE_TO = 2 ** 20
+MIN_IMAGE_SIZE = ROUND_IMAGE_TO
 
 
 def setup_android_partitions(board_config, media, image_size, bootfs_label,
                      should_create_partitions, should_align_boot_part=False):
     cylinders = None
     if not media.is_block_device:
-        image_size_in_bytes = convert_size_to_bytes(image_size)
+        image_size_in_bytes = get_partition_size_in_bytes(image_size)
         cylinders = image_size_in_bytes / CYLINDER_SIZE
         proc = cmd_runner.run(
             ['dd', 'of=%s' % media.path,
@@ -131,7 +135,7 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
     """
     cylinders = None
     if not media.is_block_device:
-        image_size_in_bytes = convert_size_to_bytes(image_size)
+        image_size_in_bytes = get_partition_size_in_bytes(image_size)
         cylinders = image_size_in_bytes / CYLINDER_SIZE
         proc = cmd_runner.run(
             ['dd', 'of=%s' % media.path,
@@ -478,14 +482,20 @@ def _get_udisks_device_file(path, part):
             path, 'DeviceFile', dbus_interface=DBUS_PROPERTIES))
 
 
-def convert_size_to_bytes(size):
-    """Convert a size string in Kbytes, Mbytes or Gbytes to bytes."""
+def get_partition_size_in_bytes(size):
+    """Convert a size string in Kbytes, Mbytes or Gbytes to bytes.
+
+    The conversion rounds-up the size to the nearest MiB, considering a minimum
+    size of MIN_IMAGE_SIZE bytes. The conversion always assures to have a big
+    enough size for the partition.
+    """
     unit = size[-1].upper()
+    real_size = float(size[:-1])
+
     # no unit? (ends with a digit)
     if unit in '0123456789':
-        return int(round(float(size)))
-    real_size = float(size[:-1])
-    if unit == 'K':
+        real_size = float(size)
+    elif unit == 'K':
         real_size = real_size * 1024
     elif unit == 'M':
         real_size = real_size * 1024 * 1024
@@ -494,8 +504,20 @@ def convert_size_to_bytes(size):
     else:
         raise ValueError("Unknown size format: %s.  Use K[bytes], M[bytes] "
                          "or G[bytes]" % size)
+    # Guarantee that is a multiple of ROUND_IMAGE_TO
+    real_size = _check_min_size(int(ceil(real_size / ROUND_IMAGE_TO) *
+                                    ROUND_IMAGE_TO))
+    return real_size
 
-    return int(round(real_size))
+
+def _check_min_size(size):
+    """Check that the image size is at least MIN_IMAGE_SIZE bytes.
+
+    :param size: The size of the image to check, as a number.
+    """
+    if (size < MIN_IMAGE_SIZE):
+        size = MIN_IMAGE_SIZE
+    return size
 
 
 def run_sfdisk_commands(commands, heads, sectors, cylinders, device,

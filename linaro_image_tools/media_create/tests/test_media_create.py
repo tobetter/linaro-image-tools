@@ -38,11 +38,11 @@ from testtools import TestCase
 from linaro_image_tools import cmd_runner
 import linaro_image_tools.media_create
 from linaro_image_tools.media_create import (
-    check_device,
+    android_boards,
     boards,
+    check_device,
     partitions,
     rootfs,
-    android_boards,
     )
 from linaro_image_tools.media_create.boards import (
     SECTOR_SIZE,
@@ -64,8 +64,8 @@ from linaro_image_tools.media_create.boards import (
     BoardConfig,
     )
 from linaro_image_tools.media_create.android_boards import (
-    android_board_configs,
     AndroidSnowballEmmcConfig,
+    android_board_configs,
     )
 from linaro_image_tools.media_create.chroot_utils import (
     copy_file,
@@ -79,23 +79,25 @@ from linaro_image_tools.media_create.chroot_utils import (
     )
 from linaro_image_tools.media_create.partitions import (
     HEADS,
+    MIN_IMAGE_SIZE,
+    Media,
     SECTORS,
-    calculate_partition_size_and_offset,
+    _check_min_size,
+    _get_device_file_for_partition_number,
+    _parse_blkid_output,
     calculate_android_partition_size_and_offset,
-    convert_size_to_bytes,
+    calculate_partition_size_and_offset,
     create_partitions,
     ensure_partition_is_not_mounted,
-    get_boot_and_root_loopback_devices,
     get_android_loopback_devices,
+    get_boot_and_root_loopback_devices,
     get_boot_and_root_partitions_for_media,
-    Media,
+    get_partition_size_in_bytes,
+    get_uuid,
     partition_mounted,
     run_sfdisk_commands,
     setup_partitions,
-    get_uuid,
-    _parse_blkid_output,
     wait_partition_to_settle,
-    _get_device_file_for_partition_number,
     )
 from linaro_image_tools.media_create.rootfs import (
     append_to_fstab,
@@ -104,8 +106,8 @@ from linaro_image_tools.media_create.rootfs import (
     move_contents,
     populate_rootfs,
     rootfs_mount_options,
-    write_data_to_protected_file,
     update_network_interfaces,
+    write_data_to_protected_file,
     )
 from linaro_image_tools.media_create.tests.fixtures import (
     CreateTarballFixture,
@@ -492,7 +494,9 @@ class TestSetMetadata(TestCaseWithFixtures):
 
         class config(BoardConfig):
             pass
-        self.assertRaises(AssertionError, config.set_metadata, 'ahwpack.tar.gz')
+        self.assertRaises(AssertionError,
+                          config.set_metadata,
+                          'ahwpack.tar.gz')
 
 
 class TestGetMLOFile(TestCaseWithFixtures):
@@ -767,8 +771,11 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
         uboot_file = os.path.join(uboot_dir, 'u-boot.bin')
         uboot_relative_file = uboot_file.replace(self.tempdir, '')
         with open(cfg_file, 'w') as f:
-                f.write('%s %s %i %#x %s\n' % ('NORMAL', uboot_relative_file, 0,
-                                               0xBA0000, '9'))
+                f.write('%s %s %i %#x %s\n' % ('NORMAL',
+                                               uboot_relative_file,
+                                               0,
+                                               0xBA0000,
+                                               '9'))
         with open(uboot_file, 'w') as f:
             file_info = boards.SnowballEmmcConfig.get_file_info(
                 self.tempdir, self.temp_bootdir_path)
@@ -781,8 +788,10 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
         with open(cfg_file, 'w') as f:
                 f.write('%s %s %i %#x %s\n' % ('NORMAL', 'u-boot.bin', 0,
                                                0xBA0000, '9'))
-        self.assertRaises(AssertionError, boards.SnowballEmmcConfig.get_file_info,
-                          self.tempdir, self.temp_bootdir_path)
+        self.assertRaises(AssertionError,
+                          boards.SnowballEmmcConfig.get_file_info,
+                          self.tempdir,
+                          self.temp_bootdir_path)
 
     def test_file_name_size(self):
         ''' Test using a to large toc file '''
@@ -961,7 +970,8 @@ class TestBootSteps(TestCaseWithFixtures):
         super(TestBootSteps, self).setUp()
         self.funcs_calls = []
         self.mock_all_boards_funcs()
-        linaro_image_tools.media_create.boards.BoardConfig.hwpack_format = '1.0'
+        linaro_image_tools.media_create.boards.BoardConfig.hwpack_format = \
+        '1.0'
 
     def mock_all_boards_funcs(self):
         """Mock functions of boards module with a call tracer."""
@@ -1037,8 +1047,8 @@ class TestBootSteps(TestCaseWithFixtures):
             lambda: '1.0')
         self.make_boot_files(boards.SMDKV310Config)
         expected = [
-            'install_samsung_boot_loader', 'make_flashable_env', '_dd', 'make_uImage',
-            'make_uInitrd', 'make_boot_script']
+            'install_samsung_boot_loader', 'make_flashable_env', '_dd',
+            'make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_origen_steps(self):
@@ -1058,8 +1068,8 @@ class TestBootSteps(TestCaseWithFixtures):
             lambda: '1.0')
         self.make_boot_files(boards.OrigenConfig)
         expected = [
-            'install_samsung_boot_loader', 'make_flashable_env', '_dd', 'make_uImage',
-            'make_uInitrd', 'make_boot_script']
+            'install_samsung_boot_loader', 'make_flashable_env', '_dd',
+            'make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_ux500_steps(self):
@@ -2424,32 +2434,46 @@ class TestPartitionSetup(TestCaseWithFixtures):
             '98367,-,E\n98367,65536,L\n294975,131072,L\n' \
             '426047,,,-', '%s' % self.android_image_size)
 
+    def test_check_min_size_small(self):
+        """Check that we get back the minimum size as expeceted."""
+        self.assertEqual(MIN_IMAGE_SIZE, _check_min_size(12345))
+
+    def test_check_min_size_big(self):
+        """Check that we get back the same value we pass."""
+        self.assertEqual(MIN_IMAGE_SIZE * 3, _check_min_size(3145728))
+
+    def test_convert_size_wrong_suffix(self):
+        self.assertRaises(ValueError, get_partition_size_in_bytes, "123456H")
+
     def test_convert_size_no_suffix(self):
-        self.assertEqual(524288, convert_size_to_bytes('524288'))
+        self.assertEqual(2 ** 20, get_partition_size_in_bytes('123456'))
+
+    def test_convert_size_one_mbyte(self):
+        self.assertEqual(2 ** 20, get_partition_size_in_bytes('1M'))
 
     def test_convert_size_in_kbytes_to_bytes(self):
-        self.assertEqual(512 * 1024, convert_size_to_bytes('512K'))
+        self.assertEqual(2 * 2 ** 20, get_partition_size_in_bytes('2048K'))
 
     def test_convert_size_in_mbytes_to_bytes(self):
-        self.assertEqual(100 * 1024 ** 2, convert_size_to_bytes('100M'))
+        self.assertEqual(100 * 2 ** 20, get_partition_size_in_bytes('100M'))
 
     def test_convert_size_in_gbytes_to_bytes(self):
-        self.assertEqual(12 * 1024 ** 3, convert_size_to_bytes('12G'))
+        self.assertEqual(12 * 2 ** 30, get_partition_size_in_bytes('12G'))
 
     def test_convert_size_float_no_suffix(self):
-        self.assertEqual(1539, convert_size_to_bytes('1539.49'))
-
-    def test_convert_size_float_round_up(self):
-        self.assertEqual(1540, convert_size_to_bytes('1539.50'))
+        self.assertEqual(3 * 2 ** 20, get_partition_size_in_bytes('2348576.91'))
 
     def test_convert_size_float_in_kbytes_to_bytes(self):
-        self.assertEqual(int(round(234.8 * 1024)), convert_size_to_bytes('234.8K'))
+        self.assertEqual(3 * 2 ** 20, get_partition_size_in_bytes('2345.8K'))
+
+    def test_convert_size_float_in_mbytes_to_bytes_double(self):
+        self.assertEqual(2 * 2 ** 20, get_partition_size_in_bytes('1.0000001M'))
 
     def test_convert_size_float_in_mbytes_to_bytes(self):
-        self.assertEqual(int(round(876.123 * 1024 ** 2)), convert_size_to_bytes('876.123M'))
+        self.assertEqual(877 * 2 ** 20, get_partition_size_in_bytes('876.123M'))
 
     def test_convert_size_float_in_gbytes_to_bytes(self):
-        self.assertEqual(int(round(1.9 * 1024 ** 3)), convert_size_to_bytes('1.9G'))
+        self.assertEqual(1946 * 2 ** 20, get_partition_size_in_bytes('1.9G'))
 
     def test_calculate_partition_size_and_offset(self):
         tmpfile = self._create_tmpfile()
@@ -3400,6 +3424,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
 
         # Ensure the list of cleanup functions gets cleared to make sure tests
         # don't interfere with one another.
+
         def clear_atexits():
             linaro_image_tools.media_create.chroot_utils.local_atexit = []
         self.addCleanup(clear_atexits)
