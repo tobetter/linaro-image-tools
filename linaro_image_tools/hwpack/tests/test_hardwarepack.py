@@ -240,7 +240,8 @@ class MetadataTests(TestCase):
     def test_str_with_dtb_file(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
-        metadata.add_v2_config(dtb_file='boot/dt-3.0.0-1002-linaro-omap/omap4-panda.dtb')
+        metadata.add_v2_config(
+            dtb_file='boot/dt-3.0.0-1002-linaro-omap/omap4-panda.dtb')
         self.assertEqual(
             "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
             "DTB_FILE=boot/dt-3.0.0-1002-linaro-omap/omap4-panda.dtb\n",
@@ -258,16 +259,21 @@ class MetadataTests(TestCase):
     def test_str_with_extra_boot_options(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
-        metadata.add_v2_config(extra_boot_options='earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000')
+        metadata.add_v2_config(
+            extra_boot_options=(
+                'earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M '
+                'mem=456M@0x80000000 mem=512M@0xA0000000'))
         self.assertEqual(
             "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "EXTRA_BOOT_OPTIONS=earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000\n",
+            "EXTRA_BOOT_OPTIONS=earlyprintk fixrtc nocompcache vram=48M "
+            "omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000\n",
             str(metadata))
 
     def test_str_with_extra_serial_options(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
-        metadata.add_v2_config(extra_serial_opts='console=tty0 console=ttyO2,115200n8')
+        metadata.add_v2_config(
+            extra_serial_opts='console=tty0 console=ttyO2,115200n8')
         self.assertEqual(
             "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
             "EXTRA_SERIAL_OPTIONS=console=tty0 console=ttyO2,115200n8\n",

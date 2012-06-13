@@ -104,7 +104,8 @@ class HardwarePackBuilder(object):
                                 wanted_package_name)
         return wanted_package
 
-    def add_file_to_hwpack(self, package, wanted_file, package_unpacker, hwpack, target_path):
+    def add_file_to_hwpack(self, package, wanted_file, package_unpacker,
+                           hwpack, target_path):
         tempfile_name = package_unpacker.get_file(
             package.filepath, wanted_file)
         return hwpack.add_file(target_path, tempfile_name)

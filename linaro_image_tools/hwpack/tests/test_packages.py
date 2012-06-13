@@ -779,7 +779,8 @@ class FetchedPackageTests(TestCaseWithFixtures):
         for relationship, value in relationships.items():
             dummy_relationships[relationship.lower().replace('-', '_')] = value
         target_package = DummyFetchedPackage(
-            "foo", "1.0", content=open(deb_file_path).read(), **dummy_relationships)
+            "foo", "1.0", content=open(deb_file_path).read(),
+            **dummy_relationships)
         created_package = FetchedPackage.from_deb(deb_file_path)
         self.assertThat(created_package, MatchesPackage(target_package))
 

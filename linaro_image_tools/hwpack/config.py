@@ -795,8 +795,9 @@ class Config(object):
         if u_boot_package is not None:
             self._assert_matches_pattern(
                 self.PACKAGE_REGEX, u_boot_package, "Invalid value in %s in " \
-                    "the [%s] section: %s" % (self.U_BOOT_PACKAGE_KEY,
-                                              self.MAIN_SECTION, u_boot_package))
+                    "the [%s] section: %s" % (
+                        self.U_BOOT_PACKAGE_KEY, self.MAIN_SECTION,
+                        u_boot_package))
 
     def _validate_spl_package(self):
         spl_package = self.spl_package
