@@ -117,11 +117,16 @@ class AndroidBoardConfig(object):
         else:
             partition_type = '0x0E'
 
-        BOOT_MIN_SIZE_S = align_up(128 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        SYSTEM_MIN_SIZE_S = align_up(512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        CACHE_MIN_SIZE_S = align_up(256 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        USERDATA_MIN_SIZE_S = align_up(512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        SDCARD_MIN_SIZE_S = align_up(512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+        BOOT_MIN_SIZE_S = align_up(
+            128 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+        SYSTEM_MIN_SIZE_S = align_up(
+            512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+        CACHE_MIN_SIZE_S = align_up(
+            256 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+        USERDATA_MIN_SIZE_S = align_up(
+            512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+        SDCARD_MIN_SIZE_S = align_up(
+            512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
 
         # align on sector 63 for compatibility with broken versions of x-loader
         # unless align_boot_part is set
@@ -196,7 +201,8 @@ class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
     boot_script = 'boot.scr'
     initrd_addr = '0x05000000'
     extra_boot_args_options = (
-        'earlyprintk mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M mem=22M@360M mem_issw=1M@383M mem=640M@384M vmalloc=300M')
+        'earlyprintk mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
+        'mem=22M@360M mem_issw=1M@383M mem=640M@384M vmalloc=300M')
     _extra_serial_opts = 'console=ttyAMA2,115200n8'
     android_specific_args = 'init=/init androidboot.console=ttyAMA2'
     dtb_name = None
@@ -206,7 +212,8 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
     boot_script = 'boot.scr'
     initrd_addr = '0x05000000'
     extra_boot_args_options = (
-        'earlyprintk mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M mem=22M@360M mem_issw=1M@383M mem=640M@384M vmalloc=300M')
+        'earlyprintk mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
+        'mem=22M@360M mem_issw=1M@383M mem=640M@384M vmalloc=300M')
     _extra_serial_opts = 'console=ttyAMA2,115200n8'
     android_specific_args = 'init=/init androidboot.console=ttyAMA2'
     mmc_option = '0:2'
@@ -283,7 +290,9 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
 
     @classmethod
     def install_boot_loader(cls, boot_partition, boot_device_or_file):
-        install_mx5_boot_loader(os.path.join(boot_device_or_file, "u-boot.imx"), boot_partition, cls.LOADER_MIN_SIZE_S)
+        install_mx5_boot_loader(
+            os.path.join(boot_device_or_file, "u-boot.imx"),
+            boot_partition, cls.LOADER_MIN_SIZE_S)
 
 
 class AndroidMx6QSabreliteConfig(AndroidMx53LoCoConfig):
