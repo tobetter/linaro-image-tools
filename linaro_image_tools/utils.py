@@ -171,7 +171,10 @@ def install_package_providing(command):
 
     If we can't find any package which provides it, raise
     UnableToFindPackageProvidingCommand.
+
+    If the user denies installing the package, the program exits.
     """
+
     if CommandNotFound is None:
         raise UnableToFindPackageProvidingCommand(
             "Cannot lookup a package which provides %s" % command)
@@ -182,12 +185,35 @@ def install_package_providing(command):
             "Unable to find any package providing %s" % command)
 
     # TODO: Ask the user to pick a package when there's more than one that
-    # provide the given command.
+    # provides the given command.
     package, _ = packages[0]
-    print ("Installing required command %s from package %s"
-           % (command, package))
-    cmd_runner.run(
-        ['apt-get', '--yes', 'install', package], as_root=True).wait()
+    output, _ = cmd_runner.run(['apt-get', '-s', 'install', package],
+                               stdout=subprocess.PIPE).communicate()
+    to_install = []
+    for line in output.splitlines():
+        if line.startswith("Inst"):
+            to_install.append(line.split()[1])
+    if not to_install:
+        raise UnableToFindPackageProvidingCommand(
+            "Unable to find any package to be installed.")
+
+    try:
+        print ("In order to use the '%s' command, the following package/s have "
+               "to be installed: %s" % (command, " ".join(to_install)))
+        resp = raw_input("Install? (Y/n) ")
+        if resp.lower() != 'y':
+            print "Package installation is necessary to continue. Exiting."
+            sys.exit(1)
+        print ("Installing required command '%s' from package '%s'..."
+                % (command, package))
+        cmd_runner.run(['apt-get', '--yes', 'install', package],
+                        as_root=True).wait()
+    except EOFError:
+        raise PackageInstallationRefused(
+                            "Package installation interrupted: input error.")
+    except KeyboardInterrupt:
+        raise PackageInstallationRefused(
+                            "Package installation interrupted by the user.")
 
 
 def has_command(command):
@@ -270,6 +296,10 @@ def prep_media_path(args):
 
 class UnableToFindPackageProvidingCommand(Exception):
     """We can't find a package which provides the given command."""
+
+
+class PackageInstallationRefused(Exception):
+    """User has chosen not to install a package."""
 
 
 class InvalidHwpackFile(Exception):
