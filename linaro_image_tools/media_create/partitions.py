@@ -505,8 +505,8 @@ def get_partition_size_in_bytes(size):
         raise ValueError("Unknown size format: %s.  Use K[bytes], M[bytes] "
                          "or G[bytes]" % size)
     # Guarantee that is a multiple of ROUND_IMAGE_TO
-    real_size = _check_min_size(int(round(ceil(real_size / ROUND_IMAGE_TO) *
-                                          ROUND_IMAGE_TO)))
+    real_size = _check_min_size(int(ceil(real_size / ROUND_IMAGE_TO) *
+                                    ROUND_IMAGE_TO))
     return real_size
 
 
