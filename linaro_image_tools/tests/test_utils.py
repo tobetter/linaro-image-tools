@@ -24,6 +24,7 @@ import sys
 import logging
 import tempfile
 import tarfile
+from StringIO import StringIO
 
 from linaro_image_tools import cmd_runner, utils
 from linaro_image_tools.testing import TestCaseWithFixtures
@@ -249,19 +250,45 @@ class TestFindCommand(TestCaseWithFixtures):
 
 class TestInstallPackageProviding(TestCaseWithFixtures):
 
-    def test_found_package(self):
-        self.useFixture(MockSomethingFixture(
-            sys, 'stdout', open('/dev/null', 'w')))
-        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+    # This is the package we need to fake the installation of, it is a
+    # slightly changed version of 'apt-get -s install' output.
+    # It is used as an argument to MockCmdRunnerPopenFixture in order to
+    # pass a string that should be expected as output from the command that
+    # is being executed.
+    output_string = 'Inst dosfstools (3.0.12-1ubuntu1 Ubuntu:12.04)'
+
+    def test_package_installation_accepted(self):
+        self.useFixture(MockSomethingFixture(sys,
+                                             'stdout',
+                                             open('/dev/null', 'w')))
+        # We need this since we are getting user input via raw_input
+        # and we need a 'Y' to proceed with the operations.
+        self.useFixture(MockSomethingFixture(sys,
+                                             'stdin',
+                                             StringIO('Y')))
+        fixture = self.useFixture(MockCmdRunnerPopenFixture(self.output_string))
         install_package_providing('mkfs.vfat')
         self.assertEqual(
-            ['%s apt-get --yes install dosfstools' % sudo_args],
-            fixture.mock.commands_executed)
+                         ['apt-get -s install dosfstools',
+                          '%s apt-get --yes install dosfstools' %
+                          sudo_args],
+                         fixture.mock.commands_executed)
+
+    def test_package_installation_refused(self):
+        self.useFixture(MockSomethingFixture(sys,
+                                             'stdout',
+                                             open('/dev/null', 'w')))
+        # We need this since we are getting user input via raw_input
+        # and we need a 'n' to mimic a refused package installation.
+        self.useFixture(MockSomethingFixture(sys,
+                                             'stdin',
+                                             StringIO('n')))
+        self.useFixture(MockCmdRunnerPopenFixture(self.output_string))
+        self.assertRaises(SystemExit, install_package_providing, 'mkfs.vfat')
 
     def test_not_found_package(self):
-        self.assertRaises(
-            UnableToFindPackageProvidingCommand,
-            install_package_providing, 'mkfs.lean')
+        self.assertRaises(UnableToFindPackageProvidingCommand,
+                          install_package_providing, 'mkfs.lean')
 
 
 class Args():
@@ -288,7 +315,7 @@ class TestPrepMediaPath(TestCaseWithFixtures):
                                               board="testboard")))
 
 
-class TestPrepMediaPath(TestCaseWithFixtures):
+class TestAdditionalOptionChecks(TestCaseWithFixtures):
 
     def test_additional_option_checks(self):
         self.useFixture(MockSomethingFixture(os.path, 'abspath', lambda x: x))
