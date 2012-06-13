@@ -8,12 +8,12 @@
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
-# 
+#
 # Linaro Image Tools is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with Linaro Image Tools; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
@@ -238,7 +238,7 @@ class Config(object):
 
     @property
     def serial_tty(self):
-        """/dev device name of the serial console for this kernel 
+        """/dev device name of the serial console for this kernel
 
         A str.
         """
@@ -279,7 +279,7 @@ class Config(object):
 
     @property
     def kernel_addr(self):
-        """address where u-boot should load the kernel 
+        """address where u-boot should load the kernel
 
         An int.
         """
@@ -287,7 +287,7 @@ class Config(object):
 
     @property
     def initrd_addr(self):
-        """address where u-boot should load the kernel 
+        """address where u-boot should load the kernel
 
         An int.
         """
@@ -327,9 +327,9 @@ class Config(object):
 
     @property
     def partition_layout(self):
-        """bootfs16_rootfs, bootfs_rootfs and reserved_bootfs_rootfs; 
-        controls what kind of SD card partition layout we should use when 
-        writing images 
+        """bootfs16_rootfs, bootfs_rootfs and reserved_bootfs_rootfs;
+        controls what kind of SD card partition layout we should use when
+        writing images
 
         A str.
         """
@@ -337,7 +337,7 @@ class Config(object):
 
     @property
     def mmc_id(self):
-        """which MMC drive contains the boot filesystem 
+        """which MMC drive contains the boot filesystem
 
         An int.
         """

@@ -248,7 +248,7 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
             media, boot_dir)
 
     @classmethod
-    def snowball_config(cls, chroot_dir):        
+    def snowball_config(cls, chroot_dir):
         # The user is expected to have unpacked the startupfiles to this subdir
         # of their working dir.
         return os.path.join('.', 'startupfiles')

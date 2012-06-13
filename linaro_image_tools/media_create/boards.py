@@ -1113,7 +1113,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
                                          cls.snowball_startup_files_config))
 
     @classmethod
-    def snowball_config(cls, chroot_dir):        
+    def snowball_config(cls, chroot_dir):
         # We will find the startupfiles in the target boot partition.
         return os.path.join(chroot_dir, 'boot')
 
