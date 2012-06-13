@@ -254,27 +254,28 @@ class BoardConfig(object):
     # Samsung v310 implementation notes and terminology
     #
     # * BL0, BL1 etc. are the various bootloaders in order of execution
-    # * BL0 is the first stage bootloader, located in ROM; it loads a 32s long BL1
-    #   from MMC offset +1s and runs it
-    # * BL1 is the secondary program loader (SPL), a small (< 14k) version of
-    #   U-Boot with a checksum; it inits DRAM and loads a 1024s long BL2 to DRAM
-    #   from MMC offset +65s
-    # * BL2 is U-Boot; it loads its 32s (16 KiB) long environment from MMC offset
-    #   +33s which tells it to load a boot.scr from the first FAT partition of the
-    #   MMC
+    # * BL0 is the first stage bootloader, located in ROM; it loads a 32s
+    #   long BL1 from MMC offset +1s and runs it
+    # * BL1 is the secondary program loader (SPL), a small (< 14k) version
+    #   of U-Boot with a checksum; it inits DRAM and loads a 1024s long BL2
+    #   to DRAM from MMC offset +65s
+    # * BL2 is U-Boot; it loads its 32s (16 KiB) long environment from MMC
+    #   offset +33s which tells it to load a boot.scr from the first FAT
+    #   partition of the MMC
     #
     # Layout:
     # +0s: part table / MBR, 1s long
     # +1s: BL1/SPL, 32s long
     # +33s: U-Boot environment, 32s long
     # +65s: U-Boot, 1024s long
-    # >= +1089s: FAT partition with boot script (boot.scr), kernel (uImage) and
-    #            initrd (uInitrd)
+    # >= +1089s: FAT partition with boot script (boot.scr), kernel (uImage)
+    #            and initrd (uInitrd)
     SAMSUNG_V310_BL1_START = 1
     SAMSUNG_V310_BL1_LEN = 32
     SAMSUNG_V310_ENV_START = SAMSUNG_V310_BL1_START + SAMSUNG_V310_BL1_LEN
     SAMSUNG_V310_ENV_LEN = 32
-    assert SAMSUNG_V310_ENV_START == 33, "BL1 expects u-boot environment at +33s"
+    assert SAMSUNG_V310_ENV_START == 33, (
+        "BL1 expects u-boot environment at +33s")
     assert SAMSUNG_V310_ENV_LEN * SECTOR_SIZE == 16 * 1024, (
         "BL1 expects u-boot environment to be 16 KiB")
     SAMSUNG_V310_BL2_START = SAMSUNG_V310_ENV_START + SAMSUNG_V310_ENV_LEN
@@ -344,13 +345,14 @@ class BoardConfig(object):
             cls.extra_boot_args_options = cls.get_metadata_field(
                 'extra_boot_options')
             cls.boot_script = cls.get_metadata_field('boot_script')
-            cls.extra_serial_opts = cls.get_metadata_field('extra_serial_options')
+            cls.extra_serial_opts = cls.get_metadata_field(
+                'extra_serial_options')
             cls.snowball_startup_files_config = cls.get_metadata_field(
                 'snowball_startup_files_config')
 
             cls.partition_layout = cls.get_metadata_field('partition_layout')
-            if cls.partition_layout in ['bootfs_rootfs', 'reserved_bootfs_rootfs',
-                                    None]:
+            if cls.partition_layout in [
+                'bootfs_rootfs', 'reserved_bootfs_rootfs', None]:
                 cls.fat_size = 32
             elif cls.partition_layout == 'bootfs16_rootfs':
                 cls.fat_size = 16
@@ -373,8 +375,9 @@ class BoardConfig(object):
                                                SECTOR_SIZE) / SECTOR_SIZE
             loader_min_size = cls.get_metadata_field('loader_min_size')
             if loader_min_size is not None:
-                cls.LOADER_MIN_SIZE_S = align_up(int(loader_min_size) * 1024 ** 2,
-                                               SECTOR_SIZE) / SECTOR_SIZE
+                cls.LOADER_MIN_SIZE_S = (
+                    align_up(int(loader_min_size) * 1024 ** 2,
+                             SECTOR_SIZE) / SECTOR_SIZE)
 
             uboot_in_boot_part = cls.get_metadata_field('u_boot_in_boot_part')
             if uboot_in_boot_part is None:
@@ -455,8 +458,8 @@ class BoardConfig(object):
 
         :param should_align_boot_part: Whether to align the boot partition too.
 
-        This default implementation returns a boot vfat partition of type FAT16
-        or FAT32, followed by a root partition.
+        This default implementation returns a boot vfat partition of type
+        FAT16 or FAT32, followed by a root partition.
 
         XXX: This default implementation and all overrides are left for V1
         compatibility only. They should be removed as part of the work to
@@ -561,7 +564,8 @@ class BoardConfig(object):
             return cls.get_reserved_sfdisk_cmd(should_align_boot_part)
         else:
             assert (cls.hwpack_format == HardwarepackHandler.FORMAT_1), (
-                "Hwpack format is not 1.0 but partition_layout is unspecified.")
+                "Hwpack format is not 1.0 but "
+                "partition_layout is unspecified.")
             return cls.get_v1_sfdisk_cmd(should_align_boot_part)
 
     @classmethod
@@ -575,16 +579,18 @@ class BoardConfig(object):
             mmc_option=cls.mmc_option, kernel_addr=cls.kernel_addr,
             initrd_addr=cls.initrd_addr, dtb_addr=cls.dtb_addr)
         boot_script = (
-            "%(fatload_command)s mmc %(mmc_option)s %(kernel_addr)s %(uimage_path)suImage; "
-            "%(fatload_command)s mmc %(mmc_option)s %(initrd_addr)s %(uimage_path)suInitrd; "
-            % replacements)
+            ("%(fatload_command)s mmc %(mmc_option)s %(kernel_addr)s " +
+             "%(uimage_path)suImage; ") +
+            ("%(fatload_command)s mmc %(mmc_option)s %(initrd_addr)s " +
+             "%(uimage_path)suInitrd; ")) % replacements
         if d_img_data is not None:
             assert cls.dtb_addr is not None, (
                 "Need a dtb_addr when passing d_img_data")
             boot_script += (
-                "%(fatload_command)s mmc %(mmc_option)s %(dtb_addr)s board.dtb; "
+                ("%(fatload_command)s mmc %(mmc_option)s %(dtb_addr)s " +
+                 "board.dtb; ") +
                 "bootm %(kernel_addr)s %(initrd_addr)s %(dtb_addr)s"
-                % replacements)
+                ) % replacements
         else:
             boot_script += (
                 "bootm %(kernel_addr)s %(initrd_addr)s" % replacements)
@@ -649,7 +655,8 @@ class BoardConfig(object):
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
+                        chroot_dir, rootfs_uuid, boot_dir,
+                        boot_device_or_file):
         if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
             parts_dir = uboot_parts_dir
         else:
@@ -731,11 +738,13 @@ class BoardConfig(object):
 
         if cls.env_dd:
             # Do we need to zero out the env before flashing it?
-            _dd("/dev/zero", boot_device_or_file, count=cls.SAMSUNG_V310_ENV_LEN,
+            _dd("/dev/zero", boot_device_or_file,
+                count=cls.SAMSUNG_V310_ENV_LEN,
                 seek=cls.SAMSUNG_V310_ENV_START)
             env_size = cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
             env_file = make_flashable_env(boot_env, env_size)
-            cls._dd_file(env_file, boot_device_or_file, cls.SAMSUNG_V310_ENV_START)
+            cls._dd_file(env_file, boot_device_or_file,
+                         cls.SAMSUNG_V310_ENV_START)
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
@@ -763,12 +772,12 @@ class BoardConfig(object):
                     # <legacy v1 support>
                     if cls.uboot_flavor is not None:
                         default = os.path.join(
-                            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
-                            'u-boot.img')
+                            chroot_dir, 'usr', 'lib', 'u-boot',
+                            cls.uboot_flavor, 'u-boot.img')
                         if not os.path.exists(default):
                             default = os.path.join(
-                                chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
-                                'u-boot.bin')
+                                chroot_dir, 'usr', 'lib', 'u-boot',
+                                cls.uboot_flavor, 'u-boot.bin')
                     else:
                         default = None
                     # </legacy v1 support>
@@ -840,8 +849,8 @@ class BoardConfig(object):
     def snowball_config(cls, chroot_dir):
         # Override in subclasses where applicable
         raise NotImplementedError(
-            "snowball_config() must only be called on BoardConfigs that use the "
-            "Snowball startupfiles.")
+            "snowball_config() must only be called on BoardConfigs that "
+            "use the Snowball startupfiles.")
 
 
 class OmapConfig(BoardConfig):
@@ -895,7 +904,8 @@ class OmapConfig(BoardConfig):
 
     @classmethod
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        chroot_dir, rootfs_uuid, boot_dir, boot_device_or_file):
+                        chroot_dir, rootfs_uuid, boot_dir,
+                        boot_device_or_file):
         # XXX: This is also part of our temporary hack to fix bug 697824; we
         # need to call set_appropriate_serial_tty() before doing anything that
         # may use cls.serial_tty.
@@ -1061,10 +1071,11 @@ class SnowballEmmcConfig(SnowballSdConfig):
         The Snowball partitioning scheme depends on whether the target is
         a raw image or an SD card. Both targets have the normal
         FAT 32 boot partition and EXT? root partition.
-        The raw image prepends these two partitions with a raw loader partition,
-        containing HW-dependent boot stages up to and including u-boot.
-        This is done since the boot rom always boots off the internal memory;
-        there simply is no point to having a loader partition on SD card.
+        The raw image prepends these two partitions with a raw loader
+        partition, containing HW-dependent boot stages up to and including
+        u-boot. This is done since the boot rom always boots off the internal
+        memory; there simply is no point to having a loader partition
+        on SD card.
         """
         # boot ROM expects bootloader at 0x20000, which is sector 0x100
         # with the usual SECTOR_SIZE of 0x200.
@@ -1158,20 +1169,21 @@ class SnowballEmmcConfig(SnowballSdConfig):
     def create_toc(cls, f, files):
         ''' Writes a table of contents of the boot binaries.
         Boot rom searches this table to find the binaries.'''
+        # Format string means: < little endian,
+        # I; unsigned int; offset,
+        # I; unsigned int; size,
+        # I; unsigned int; flags,
+        # i; int; align,
+        # i; int; load_address,
+        # 12s; string of char; name
+        # http://igloocommunity.org/support/index.php/ConfigPartitionOverview
+        toc_format = '<IIIii12s'
         for file in files:
-            # Format string means: < little endian,
-            # I; unsigned int; offset,
-            # I; unsigned int; size,
-            # I; unsigned int; flags,
-            # i; int; align,
-            # i; int; load_address,
-            # 12s; string of char; name
-            # http://igloocommunity.org/support/index.php/ConfigPartitionOverview
             assert len(file['section_name']) < 12, (
                 "Section name %s too large" % file['section_name'])
             flags = 0
             load_adress = file['align']
-            data = struct.pack('<IIIii12s', file['offset'], file['size'],
+            data = struct.pack(toc_format, file['offset'], file['size'],
                                flags, file['align'], load_adress,
                                file['section_name'])
             f.write(data)
@@ -1467,11 +1479,13 @@ class SamsungConfig(BoardConfig):
             seek=cls.SAMSUNG_V310_ENV_START)
         # Populate created raw partition with BL1 and u-boot
         spl_file = os.path.join(chroot_dir, 'boot', 'u-boot-mmc-spl.bin')
-        assert os.path.getsize(spl_file) <= (cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
+        assert os.path.getsize(spl_file) <= (
+            cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE), (
             "%s is larger than SAMSUNG_V310_BL1_LEN" % spl_file)
         _dd(spl_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL1_START)
         uboot_file = os.path.join(chroot_dir, 'boot', 'u-boot.bin')
-        assert os.path.getsize(uboot_file) <= (cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
+        assert os.path.getsize(uboot_file) <= (
+            cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE), (
             "%s is larger than SAMSUNG_V310_BL2_LEN" % uboot_file)
         _dd(uboot_file, boot_device_or_file, seek=cls.SAMSUNG_V310_BL2_START)
 
