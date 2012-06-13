@@ -198,11 +198,11 @@ def install_package_providing(command):
             "Unable to find any package to be installed.")
 
     try:
-        print ("In order to use the '%s' command, the following packages have "
+        print ("In order to use the '%s' command, the following package/s have "
                "to be installed: %s" % (command, " ".join(to_install)))
-        resp = raw_input("Install them? (Y/n) ")
+        resp = raw_input("Install? (Y/n) ")
         if resp.lower() != 'y':
-            print "Package installation is necessary to continue.  Exiting."
+            print "Package installation is necessary to continue. Exiting."
             sys.exit(1)
         print ("Installing required command '%s' from package '%s'..."
                 % (command, package))
