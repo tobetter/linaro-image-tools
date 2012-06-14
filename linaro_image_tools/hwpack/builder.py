@@ -8,12 +8,12 @@
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
-# 
+#
 # Linaro Image Tools is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with Linaro Image Tools; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
@@ -104,7 +104,8 @@ class HardwarePackBuilder(object):
                                 wanted_package_name)
         return wanted_package
 
-    def add_file_to_hwpack(self, package, wanted_file, package_unpacker, hwpack, target_path):
+    def add_file_to_hwpack(self, package, wanted_file, package_unpacker,
+                           hwpack, target_path):
         tempfile_name = package_unpacker.get_file(
             package.filepath, wanted_file)
         return hwpack.add_file(target_path, tempfile_name)

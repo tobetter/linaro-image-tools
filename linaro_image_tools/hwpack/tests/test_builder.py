@@ -8,12 +8,12 @@
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
-# 
+#
 # Linaro Image Tools is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with Linaro Image Tools; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
@@ -115,17 +115,18 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
     def setUp(self):
         super(HardwarePackBuilderTests, self).setUp()
         self.useFixture(ChdirToTempdirFixture())
-        self.extra_config = {'format': '2.0',
-                          'u-boot-package': 'wanted-package',
-                          'u-boot-file': 'wanted-file', 
-                          'partition_layout': 'bootfs_rootfs',
-                          'x_loader_package': 'x-loader-omap4-panda',
-                          'x_loader_file': 'usr/lib/x-loader/omap4430panda/MLO',
-                          'kernel_file': 'boot/vmlinuz-3.0.0-1002-linaro-omap',
-                          'initrd_file': 'boot/initrd.img-3.0.0-1002-linaro-omap',
-                          'boot_script': 'boot.scr',
-                          'mmc_id': '0:1',
-                          'u_boot_in_boot_part': 'no'}
+        self.extra_config = {
+            'format': '2.0',
+            'u-boot-package': 'wanted-package',
+            'u-boot-file': 'wanted-file',
+            'partition_layout': 'bootfs_rootfs',
+            'x_loader_package': 'x-loader-omap4-panda',
+            'x_loader_file': 'usr/lib/x-loader/omap4430panda/MLO',
+            'kernel_file': 'boot/vmlinuz-3.0.0-1002-linaro-omap',
+            'initrd_file': 'boot/initrd.img-3.0.0-1002-linaro-omap',
+            'boot_script': 'boot.scr',
+            'mmc_id': '0:1',
+            'u_boot_in_boot_part': 'no'}
 
     def test_raises_on_missing_configuration(self):
         e = self.assertRaises(

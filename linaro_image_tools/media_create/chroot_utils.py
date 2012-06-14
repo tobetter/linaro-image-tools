@@ -3,7 +3,7 @@
 # Author: Guilherme Salgado <guilherme.salgado@linaro.org>
 #
 # This file is part of Linaro Image Tools.
-# 
+#
 # Linaro Image Tools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -45,7 +45,8 @@ def prepare_chroot(chroot_dir, tmp_dir):
 
 
 def install_hwpacks(
-    chroot_dir, tmp_dir, tools_dir, hwpack_force_yes, verified_files, *hwpack_files):
+    chroot_dir, tmp_dir, tools_dir, hwpack_force_yes, verified_files,
+    *hwpack_files):
     """Install the given hwpacks onto the given chroot."""
     prepare_chroot(chroot_dir, tmp_dir)
 
@@ -78,7 +79,8 @@ def install_hwpacks(
             hwpack_verified = False
             if os.path.basename(hwpack_file) in verified_files:
                 hwpack_verified = True
-            install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes or hwpack_verified)
+            install_hwpack(chroot_dir, hwpack_file,
+                           hwpack_force_yes or hwpack_verified)
     finally:
         run_local_atexit_funcs()
 

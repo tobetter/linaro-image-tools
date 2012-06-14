@@ -266,7 +266,8 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(sys,
                                              'stdin',
                                              StringIO('Y')))
-        fixture = self.useFixture(MockCmdRunnerPopenFixture(self.output_string))
+        fixture = self.useFixture(
+            MockCmdRunnerPopenFixture(self.output_string))
         install_package_providing('mkfs.vfat')
         self.assertEqual(
                          ['apt-get -s install dosfstools',

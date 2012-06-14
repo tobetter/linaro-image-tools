@@ -3,7 +3,7 @@
 # Author: Guilherme Salgado <guilherme.salgado@linaro.org>
 #
 # This file is part of Linaro Image Tools.
-# 
+#
 # Linaro Image Tools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -23,7 +23,8 @@ import os
 
 from linaro_image_tools import cmd_runner
 from linaro_image_tools.media_create.boards import board_configs
-from linaro_image_tools.media_create.android_boards import android_board_configs
+from linaro_image_tools.media_create.android_boards import (
+    android_board_configs)
 from linaro_image_tools.__version__ import __version__
 
 
@@ -158,7 +159,8 @@ def get_args_parser():
     parser.add_argument(
         '--nocheck-mmc', dest='nocheck_mmc',
         action='store_true',
-        help='Assume yes to the question "Are you 100%% sure, on selecting [mmc]"')
+        help=('Assume yes to the question "Are you 100%% sure, '
+              'on selecting [mmc]"'))
 
     add_common_options(parser)
     return parser
