@@ -23,7 +23,7 @@ installed:
 Before running any tests you need to install the following packages:
 
   - testrepository
-  - python-testtools >= 0.9.8
+  - python-testtools >= 0.9.12
      (available at https://launchpad.net/~linaro-maintainers/+archive/tools)
   - python-debian >= 0.1.16ubuntu1
   - python-argparse
