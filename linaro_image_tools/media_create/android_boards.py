@@ -189,12 +189,14 @@ class AndroidBeagleConfig(AndroidOmapConfig, BeagleConfig):
 
 
 class AndroidPandaConfig(AndroidOmapConfig, PandaConfig):
+    uboot_flavor = 'omap4_panda'
+    dtb_addr = '0x815f0000'
+    dtb_name = 'board.dtb'
     _extra_serial_opts = 'console=ttyO2,115200n8'
     extra_boot_args_options = (
         'earlyprintk fixrtc nocompcache vram=48M '
         'omapfb.vram=0:24M,1:24M mem=456M@0x80000000 mem=512M@0xA0000000')
     android_specific_args = 'init=/init androidboot.console=ttyO2'
-    dtb_name = None
 
 
 class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):

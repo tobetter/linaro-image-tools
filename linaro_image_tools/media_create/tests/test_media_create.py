@@ -1796,7 +1796,8 @@ class TestGetBootCmdAndroid(TestCase):
                         'init=/init androidboot.console=ttyO2',
             'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
-                       'bootm 0x80200000 0x81600000'}
+                       'fatload mmc 0:1 0x815f0000 board.dtb; '
+                       'bootm 0x80200000 0x81600000 0x815f0000'}
         self.assertBootEnv(config, expected)
 
     def test_android_snowball_sd(self):
