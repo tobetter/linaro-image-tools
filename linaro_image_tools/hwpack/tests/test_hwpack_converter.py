@@ -73,3 +73,14 @@ class HwpackConverterTests(TestCaseWithFixtures):
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
         self.assertEqual(output_format, str(converter))
+
+    def test_yes_no_values_conversion(self):
+        """Tests that Yes and No values are converted into True and False."""
+        ini_format = '[hwpack]\nformat=2.0\nno_value=No\nyes_value=Yes'
+        out_format = 'no_value: False\nyes_value: True\nformat: 2.0\n'
+        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
+                                                                get_file_name()
+        output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
+        converter = HwpackConverter(input_file, output_file)
+        converter._parse()
+        self.assertEqual(out_format, str(converter))
