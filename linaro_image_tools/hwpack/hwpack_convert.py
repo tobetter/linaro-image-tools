@@ -40,7 +40,7 @@ class HwpackConverter(object):
         # In this case we have one board per hwpack config file.
         self.hwpack = {}
 
-    def parse(self):
+    def _parse(self):
         """Parses the config file and stores its values."""
         with open(self.input_file, 'r') as fp:
             self.parser.readfp(fp)

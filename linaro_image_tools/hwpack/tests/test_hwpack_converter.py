@@ -58,5 +58,18 @@ class HwpackConverterTests(TestCaseWithFixtures):
                                                                 get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
-        converter.parse()
+        converter._parse()
+        self.assertEqual(output_format, str(converter))
+
+    def test_architectures_section_creation(self):
+        """Tests that we create the correct architectures array in the
+        converted file.
+        """
+        ini_format = '[hwpack]\nformat=2.0\narchitectures=armhf armel'
+        output_format = 'format: 2.0\narchitectures:\n armhf\n armel\n'
+        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
+                                                                get_file_name()
+        output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
+        converter = HwpackConverter(input_file, output_file)
+        converter._parse()
         self.assertEqual(output_format, str(converter))
