@@ -39,6 +39,8 @@ class HwpackConverter(object):
         # Where we store all the information of the hwpack config file
         # In this case we have one board per hwpack config file.
         self.hwpack = {}
+        # List of supported architectures.
+        self.architectures = []
 
     def _parse(self):
         """Parses the config file and stores its values."""
@@ -50,13 +52,20 @@ class HwpackConverter(object):
             if section == MAIN_SECTION:
                 for key, value in self.parser.items(section):
                     if value is not None:
-                        if value == ARCHITECTURES_KEY:
-                            pass
+                        if key == ARCHITECTURES_KEY:
+                            self.parse_architectures_string(value)
+                            continue
                         self.hwpack[key] = value
             else:
                 for _, value in self.parser.items(section):
                     if value is not None:
                         self.sources[section] = value
+
+    def parse_architectures_string(self, string):
+        """Parse the string containing the architectures and store them in
+        the list.
+        """
+        self.architectures.extend(string.split(" "))
 
     def _to_file(self):
         """Writes the converted hwpack to file."""
@@ -80,6 +89,10 @@ class HwpackConverter(object):
                 elif value == 'No':
                     value = False
                 converted += "%s: %s\n" % (key, value)
+        if self.architectures:
+            converted += 'architectures:\n'
+            for arch in self.architectures:
+                converted += ' - %s\n' % arch
         if self.sources:
             converted += "sources:\n"
             for key, value in self.sources.iteritems():
