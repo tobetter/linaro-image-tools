@@ -22,6 +22,7 @@
 import ConfigParser
 import re
 import string
+import yaml
 
 from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
@@ -96,11 +97,23 @@ class Config(object):
 
         :param fp: a file-like object containing the configuration.
         """
+        obfuscated_e = None
         try:
             self.parser = ConfigParser.RawConfigParser()
             self.parser.readfp(fp)
         except ConfigParser.Error, e:
             obfuscated_e = re.sub(r"([^ ]https://).+?(@)", r"\1***\2", str(e))
+
+        if obfuscated_e:
+            try:
+                self.parser = yaml.load(fp)
+            except yaml.YAMLError, e:
+                obfuscated_e = re.sub(r"([^ ]https://).+?(@)",
+                                      r"\1***\2", str(e))
+            else:
+                obfuscated_e = None
+
+        if obfuscated_e:
             raise ConfigParser.Error(obfuscated_e)
 
     def validate(self):
