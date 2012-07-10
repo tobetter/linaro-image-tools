@@ -14,9 +14,6 @@ from linaro_image_tools.hwpack.builder import ConfigFileMissing
 from linaro_image_tools.__version__ import __version__
 
 
-NEW_FILE_SUFFIX = '.yaml'
-
-
 def get_logger(debug=False):
     ch = logging.StreamHandler()
     logger = logging.getLogger("linaro_hwpack_converter")
@@ -44,7 +41,7 @@ if __name__ == '__main__':
                             "used with the '.yaml' suffix.")
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
-    logger = get_logger(args.debug)
+    logger = get_logger(debug=args.debug)
     try:
         input_file, output_file = check_and_validate_args(args)
         print "Converting '%s' into new YAML format..." % (input_file)
