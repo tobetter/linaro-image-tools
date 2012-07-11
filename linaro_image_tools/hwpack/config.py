@@ -123,7 +123,7 @@ class Config(object):
 
         :raises HwpackConfigError: if it does not.
         """
-        if self.format.format_as_string != "3.0":
+        if isinstance(self.parser, ConfigParser.RawConfigParser):
             if not self.parser.has_section(self.MAIN_SECTION):
                 raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
         self._validate_format()
@@ -206,7 +206,7 @@ class Config(object):
     def include_debs(self):
         """Whether the hardware pack should contain .debs. A bool."""
         try:
-            if not self._get_option_bool(self.INCLUDE_DEBS_KEY):
+            if self._get_option(self.INCLUDE_DEBS_KEY) == None:
                 return True
             return self._get_option_bool(self.INCLUDE_DEBS_KEY)
         except ConfigParser.NoOptionError:
@@ -246,7 +246,7 @@ class Config(object):
         else:
             try:
                 return self.parser.getboolean(self.MAIN_SECTION, key)
-            except ConfigParser.NoOptionError, ConfigParser.ValueError:
+            except ConfigParser.NoOptionError:
                 return None
 
     def _get_option(self, key):
