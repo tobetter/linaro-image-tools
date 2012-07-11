@@ -2,7 +2,9 @@ import yaml
 import ConfigParser
 import re
 
-YAML_SUFFIX = 'yaml'
+# This is the entry line for all hwpack versions < 3.
+HWPACK_MAIN_SECTION = '[hwpack]'
+MAIN_SECTION = "hwpack"
 
 
 class AbstractHwpackParserError(Exception):
@@ -14,15 +16,17 @@ class AbstractHwpackParser(object):
     def parse(self):
         raise NotImplementedError("This must be implemented.")
 
-    def get(self, option, section):
+    def get(self, key):
         raise NotImplementedError("This must be implemented.")
 
 
 class HwpackParser(object):
     def __init__(self, fp):
-        """"""
+        """Initialize the abstraction for the parser.
+
+        :param fp: The file pointer of the file to process.
+        """
         self.fp = fp
-        self.file_name = fp.name
 
     def _get_parser(self):
         """Retrieves the correct parser based on the config file in the
@@ -32,10 +36,14 @@ class HwpackParser(object):
         configuration file.
         """
         parser = None
-        if self.file_name.endswith(YAML_SUFFIX):
-            parser = YamlParser(self.fp)
-        else:
+        # Remove spaces and newlines.
+        first_line = self.fp.readline().strip()
+        # Rewind the file.
+        self.fp.seek(0)
+        if first_line == HWPACK_MAIN_SECTION:
             parser = CfgParser(self.fp)
+        else:
+            parser = YamlParser(self.fp)
         return parser
 
     @property
@@ -48,7 +56,7 @@ class YamlParser(AbstractHwpackParser):
     def __init__(self, fp):
         """Initialize the class.
 
-        :param fp: the file pointer of the file to parse"""
+        :param fp: The file pointer of the file to parse."""
         self.fp = fp
         self.parsed = None
 
@@ -64,8 +72,8 @@ class YamlParser(AbstractHwpackParser):
 
         return self.parsed
 
-    def get(self, option, section=None):
-        return self.parsed.get(option)
+    def get(self, key):
+        return self.parsed.get(key)
 
 
 class CfgParser(AbstractHwpackParser):
@@ -76,17 +84,20 @@ class CfgParser(AbstractHwpackParser):
         :param fp: the file pointer of the file to parse"""
         self.fp = fp
         self.parser = ConfigParser.RawConfigParser()
-
-    def parse(self):
-        """Read and parse the configuration data from the file.
-
-        :return
-        """
         try:
-            return self.parser.readfp(self.fp)
+            self.parser.readfp(self.fp)
         except ConfigParser.Error, e:
             obfuscated_e = re.sub(r"([^ ]https://).+?(@)", r"\1***\2", str(e))
             raise AbstractHwpackParserError(obfuscated_e)
 
-    def get(self, option, section):
-        return self.parser.get(section, option)
+    def parse(self):
+        """Read the configuration data from the file.
+        """
+        try:
+            self.parser.readfp(self.fp)
+        except ConfigParser.Error, e:
+            obfuscated_e = re.sub(r"([^ ]https://).+?(@)", r"\1***\2", str(e))
+            raise AbstractHwpackParserError(obfuscated_e)
+
+    def get(self, key):
+        return self.parser.get(MAIN_SECTION, key)
