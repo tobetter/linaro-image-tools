@@ -200,24 +200,22 @@ class Config(object):
     @property
     def name(self):
         """The name of the hardware pack. A str."""
-        return self.parser.get(self.MAIN_SECTION, self.NAME_KEY)
+        return self._get_option(self.NAME_KEY)
 
     @property
     def include_debs(self):
         """Whether the hardware pack should contain .debs. A bool."""
         try:
-            if not self.parser.get(
-                self.MAIN_SECTION, self.INCLUDE_DEBS_KEY):
+            if not self._get_option(self.INCLUDE_DEBS_KEY):
                 return True
-            return self.parser.getboolean(
-                self.MAIN_SECTION, self.INCLUDE_DEBS_KEY)
+            return self._get_option(self.INCLUDE_DEBS_KEY)
         except ConfigParser.NoOptionError:
             return True
 
     @property
     def uboot_in_boot_part(self):
         """Whether uboot binary should be put in the boot partition. A str."""
-        return self.parser.get(self.MAIN_SECTION, self.UBOOT_IN_BOOT_PART_KEY)
+        return self._get_option(self.UBOOT_IN_BOOT_PART_KEY)
 
     @property
     def uboot_dd(self):
