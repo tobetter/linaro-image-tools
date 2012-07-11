@@ -123,8 +123,9 @@ class Config(object):
 
         :raises HwpackConfigError: if it does not.
         """
-        if not self.parser.has_section(self.MAIN_SECTION):
-            raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
+        if self.format.format_as_string != "3.0":
+            if not self.parser.has_section(self.MAIN_SECTION):
+                raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
         self._validate_format()
         self._validate_name()
         self._validate_include_debs()
@@ -249,7 +250,7 @@ class Config(object):
             or the value is empty.
         :rtype: str or None.
         """
-        if isinstance(self.format, HardwarePackFormatV3):
+        if self.format.format_as_string == "3.0":
             try:
                 result = self.parser.get(key)
                 if not result:
@@ -434,7 +435,7 @@ class Config(object):
         if values is None:
             return []
 
-        if not isinstance(self.format, HardwarePackFormatV3):
+        if self.format.format_as_string != "3.0":
             values = re.split("\s+", values)
 
         filtered_values = []
