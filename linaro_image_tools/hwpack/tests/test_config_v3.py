@@ -660,6 +660,8 @@ class ConfigTests(TestCase):
 
     def test_architectures(self):
         config = self.get_config(
+            "format: 3.0\n"
+            "hello: there\n"
             "name: ahwpack\n"
             "packages: foo\n"
             "architectures:\n"
