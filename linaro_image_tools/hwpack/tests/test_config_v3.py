@@ -168,18 +168,7 @@ class ConfigTests(TestCase):
             "The sources-entry, ubuntu, shouldn't start with 'deb'", config)
 
     def test_validate_valid_config(self):
-        config = self.get_config(
-            self.valid_start + "sources:\n - ubuntu: foo bar\n")
-        self.assertEqual(None, config.validate())
-
-    def test_validate_valid_config_with_dash_in_package_name(self):
-        config = self.get_config(
-                "name: ahwpack\n"
-                "packages: u-boot\n"
-                "architectures:\n"
-                " - armel\n"
-                "sources\n"
-                " - ubuntu: foo bar\n")
+        config = self.get_config(self.valid_complete_v3)
         self.assertEqual(None, config.validate())
 
     def test_validate_supported_format(self):

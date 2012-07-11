@@ -169,7 +169,8 @@ class Config(object):
             self._validate_samsung_env_len()
             self._validate_samsung_bl2_len()
 
-        self._validate_sections()
+        if not self._is_v3:
+            self._validate_sections()
 
     @property
     def format(self):
@@ -797,9 +798,8 @@ class Config(object):
 
     def _validate_bool(self, value):
         """Checks if a value is boolean or not, both in old and new syntax."""
-        return (self._is_v3 and not isinstance(value, bool) or
-            not self._is_v3 and string.lower(value) not in
-            ['yes', 'no'])
+        return (self._is_v3 and isinstance(value, bool) or not
+                self._is_v3 and string.lower(value) in ['yes', 'no'])
 
     def _validate_uboot_in_boot_part(self):
         if not self._validate_bool(self.uboot_in_boot_part):
