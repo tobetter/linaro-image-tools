@@ -73,6 +73,7 @@ class YamlParser(AbstractHwpackParser):
         return self.parsed
 
     def get(self, key):
+
         return self.parsed.get(key)
 
 

@@ -214,25 +214,25 @@ class Config(object):
     def uboot_dd(self):
         """If the uboot binary should be dd:d to the boot partition
         this field specifies the offset. An int."""
-        return self._get_option_from_main_section(self.UBOOT_DD_KEY)
+        return self._get_option(self.UBOOT_DD_KEY)
 
     @property
     def spl_in_boot_part(self):
         """Whether spl binary should be put in the boot partition. A str."""
-        return self._get_option_from_main_section(self.SPL_IN_BOOT_PART_KEY)
+        return self._get_option(self.SPL_IN_BOOT_PART_KEY)
 
     @property
     def spl_dd(self):
         """If the spl binary should be dd:d to the boot partition
         this field specifies the offset. An int."""
-        return self._get_option_from_main_section(self.SPL_DD_KEY)
+        return self._get_option(self.SPL_DD_KEY)
 
     @property
     def env_dd(self):
         """If the env should be dd:d to the boot partition. 'Yes' or 'No'."""
-        return self._get_option_from_main_section(self.ENV_DD_KEY)
+        return self._get_option(self.ENV_DD_KEY)
 
-    def _get_option_from_main_section(self, key):
+    def _get_option(self, key):
         """Get the value from the main section for the given key.
 
         :param key: the key to return the value for.
@@ -255,7 +255,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.SERIAL_TTY_KEY)
+        return self._get_option(self.SERIAL_TTY_KEY)
 
     @property
     def extra_boot_options(self):
@@ -263,7 +263,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.EXTRA_BOOT_OPTIONS_KEY)
+        return self._get_option(self.EXTRA_BOOT_OPTIONS_KEY)
 
     @property
     def extra_serial_opts(self):
@@ -271,7 +271,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.EXTRA_SERIAL_OPTS_KEY)
+        return self._get_option(self.EXTRA_SERIAL_OPTS_KEY)
 
     @property
     def boot_script(self):
@@ -279,7 +279,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.BOOT_SCRIPT_KEY)
+        return self._get_option(self.BOOT_SCRIPT_KEY)
 
     @property
     def snowball_startup_files_config(self):
@@ -287,7 +287,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(
+        return self._get_option(
             self.SNOWBALL_STARTUP_FILES_CONFIG_KEY)
 
     @property
@@ -296,7 +296,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option_from_main_section(self.KERNEL_ADDR_KEY)
+        return self._get_option(self.KERNEL_ADDR_KEY)
 
     @property
     def initrd_addr(self):
@@ -304,7 +304,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option_from_main_section(self.INITRD_ADDR_KEY)
+        return self._get_option(self.INITRD_ADDR_KEY)
 
     @property
     def load_addr(self):
@@ -312,7 +312,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option_from_main_section(self.LOAD_ADDR_KEY)
+        return self._get_option(self.LOAD_ADDR_KEY)
 
     @property
     def dtb_addr(self):
@@ -320,7 +320,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option_from_main_section(self.DTB_ADDR_KEY)
+        return self._get_option(self.DTB_ADDR_KEY)
 
     @property
     def wired_interfaces(self):
@@ -328,7 +328,7 @@ class Config(object):
 
         A list of str.
         """
-        return self._get_list_from_main_section(self.WIRED_INTERFACES_KEY)
+        return self._get_list(self.WIRED_INTERFACES_KEY)
 
     @property
     def wireless_interfaces(self):
@@ -336,7 +336,7 @@ class Config(object):
 
         A list of str.
         """
-        return self._get_list_from_main_section(self.WIRELESS_INTERFACES_KEY)
+        return self._get_list(self.WIRELESS_INTERFACES_KEY)
 
     @property
     def partition_layout(self):
@@ -346,7 +346,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.PARTITION_LAYOUT_KEY)
+        return self._get_option(self.PARTITION_LAYOUT_KEY)
 
     @property
     def mmc_id(self):
@@ -354,7 +354,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option_from_main_section(self.MMC_ID_KEY)
+        return self._get_option(self.MMC_ID_KEY)
 
     @property
     def root_min_size(self):
@@ -362,7 +362,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option_from_main_section(self.ROOT_MIN_SIZE_KEY)
+        return self._get_option(self.ROOT_MIN_SIZE_KEY)
 
     @property
     def boot_min_size(self):
@@ -370,7 +370,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option_from_main_section(self.BOOT_MIN_SIZE_KEY)
+        return self._get_option(self.BOOT_MIN_SIZE_KEY)
 
     @property
     def loader_min_size(self):
@@ -378,7 +378,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option_from_main_section(self.LOADER_MIN_SIZE_KEY)
+        return self._get_option(self.LOADER_MIN_SIZE_KEY)
 
     @property
     def loader_start(self):
@@ -386,7 +386,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option_from_main_section(self.LOADER_START_KEY)
+        return self._get_option(self.LOADER_START_KEY)
 
     @property
     def origin(self):
@@ -394,7 +394,7 @@ class Config(object):
 
         A str or None if no origin should be recorded.
         """
-        return self._get_option_from_main_section(self.ORIGIN_KEY)
+        return self._get_option(self.ORIGIN_KEY)
 
     @property
     def maintainer(self):
@@ -402,7 +402,7 @@ class Config(object):
 
         A str or None if not maintainer should be recorded.
         """
-        return self._get_option_from_main_section(self.MAINTAINER_KEY)
+        return self._get_option(self.MAINTAINER_KEY)
 
     @property
     def support(self):
@@ -410,10 +410,10 @@ class Config(object):
 
         A str or None if no support level should be recorded.
         """
-        return self._get_option_from_main_section(self.SUPPORT_KEY)
+        return self._get_option(self.SUPPORT_KEY)
 
-    def _get_list_from_main_section(self, key):
-        raw_values = self._get_option_from_main_section(key)
+    def _get_list(self, key):
+        raw_values = self._get_option(key)
         if raw_values is None:
             return []
         values = re.split("\s+", raw_values)
@@ -429,7 +429,7 @@ class Config(object):
 
         A list of str.
         """
-        return self._get_list_from_main_section(self.PACKAGES_KEY)
+        return self._get_list(self.PACKAGES_KEY)
 
     @property
     def u_boot_package(self):
@@ -437,7 +437,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.U_BOOT_PACKAGE_KEY)
+        return self._get_option(self.U_BOOT_PACKAGE_KEY)
 
     @property
     def u_boot_file(self):
@@ -445,7 +445,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.U_BOOT_FILE_KEY)
+        return self._get_option(self.U_BOOT_FILE_KEY)
 
     @property
     def spl_file(self):
@@ -453,7 +453,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.SPL_FILE_KEY)
+        return self._get_option(self.SPL_FILE_KEY)
 
     @property
     def spl_package(self):
@@ -461,7 +461,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.SPL_PACKAGE_KEY)
+        return self._get_option(self.SPL_PACKAGE_KEY)
 
     @property
     def vmlinuz(self):
@@ -469,7 +469,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.VMLINUZ_KEY)
+        return self._get_option(self.VMLINUZ_KEY)
 
     @property
     def initrd(self):
@@ -477,7 +477,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.INITRD_KEY)
+        return self._get_option(self.INITRD_KEY)
 
     @property
     def dtb_file(self):
@@ -485,7 +485,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.DTB_FILE_KEY)
+        return self._get_option(self.DTB_FILE_KEY)
 
     @property
     def samsung_bl1_start(self):
@@ -493,7 +493,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.SAMSUNG_BL1_START_KEY)
+        return self._get_option(self.SAMSUNG_BL1_START_KEY)
 
     @property
     def samsung_bl1_len(self):
@@ -501,7 +501,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.SAMSUNG_BL1_LEN_KEY)
+        return self._get_option(self.SAMSUNG_BL1_LEN_KEY)
 
     @property
     def samsung_env_len(self):
@@ -509,7 +509,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.SAMSUNG_ENV_LEN_KEY)
+        return self._get_option(self.SAMSUNG_ENV_LEN_KEY)
 
     @property
     def samsung_bl2_len(self):
@@ -517,7 +517,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option_from_main_section(self.SAMSUNG_BL2_LEN_KEY)
+        return self._get_option(self.SAMSUNG_BL2_LEN_KEY)
 
     @property
     def architectures(self):
@@ -525,7 +525,7 @@ class Config(object):
 
         A list of str.
         """
-        return self._get_list_from_main_section(self.ARCHITECTURES_KEY)
+        return self._get_list(self.ARCHITECTURES_KEY)
 
     @property
     def assume_installed(self):
@@ -533,7 +533,7 @@ class Config(object):
 
         A list of str.
         """
-        return self._get_list_from_main_section(self.ASSUME_INSTALLED_KEY)
+        return self._get_list(self.ASSUME_INSTALLED_KEY)
 
     @property
     def sources(self):
