@@ -108,7 +108,7 @@ class Config(object):
         if obfuscated_e:
             try:
                 fp.seek(0)
-                self.parser = yaml.load(fp)
+                self.parser = yaml.safe_load(fp)
             except yaml.YAMLError, e:
                 obfuscated_e = re.sub(r"([^ ]https://).+?(@)",
                                       r"\1***\2", str(e))
@@ -250,14 +250,14 @@ class Config(object):
     def _get_option_bool(self, key):
         """Gets a boolean value from the key."""
         if self.format.format_as_string == '3.0':
-            return self.parser(key)
+            return self.parser.get(key)
         else:
             try:
                 return self.parser.getboolean(self.MAIN_SECTION, key)
             except ConfigParser.NoOptionError:
                 return None
 
-    def _get_option(self, key):
+    def _get_option(self, key, join_list_with=False, convert_to=None):
         """Get the value from the main section for the given key.
 
         :param key: the key to return the value for.
@@ -276,10 +276,33 @@ class Config(object):
             for key in keys:
                 try:
                     result = result.get(key)
-                    if not result:
+                    if result == None:  # False is a valid boolean value...
                         return None
                 except ConfigParser.NoOptionError:
                     return None
+
+            # <v3 compatibility: Lists of items are comma separated strings
+            if join_list_with and isinstance(result, list):
+                result = join_list_with.join(result)
+
+            # <v3 compatibility:
+            # To aid code that is trying to keep the format of results the
+            # same as before, we have some type conversions. By default
+            # booleans stay as they are, but integers are converted to
+            # strings.
+            if(not convert_to and
+               isinstance(result, int) and not isinstance(result, bool)):
+                convert_to = str
+
+            if convert_to:
+                if isinstance(result, list):
+                    new_list = []
+                    for item in result:
+                        new_list = convert_to(item)
+                    result = new_list
+                else:
+                    result = convert_to(result)
+
             return result
         else:
             try:
@@ -304,7 +327,8 @@ class Config(object):
 
         A str.
         """
-        return self._get_option(self.EXTRA_BOOT_OPTIONS_KEY)
+        return self._get_option(self.EXTRA_BOOT_OPTIONS_KEY,
+                                join_list_with=" ")
 
     @property
     def extra_serial_opts(self):
@@ -312,7 +336,8 @@ class Config(object):
 
         A str.
         """
-        return self._get_option(self.EXTRA_SERIAL_OPTS_KEY)
+        return self._get_option(self.EXTRA_SERIAL_OPTS_KEY,
+                                join_list_with=" ")
 
     @property
     def boot_script(self):
@@ -337,7 +362,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option(self.KERNEL_ADDR_KEY)
+        return self._get_option(self.KERNEL_ADDR_KEY, convert_to=hex)
 
     @property
     def initrd_addr(self):
@@ -345,7 +370,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option(self.INITRD_ADDR_KEY)
+        return self._get_option(self.INITRD_ADDR_KEY, convert_to=hex)
 
     @property
     def load_addr(self):
@@ -353,7 +378,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option(self.LOAD_ADDR_KEY)
+        return self._get_option(self.LOAD_ADDR_KEY, convert_to=hex)
 
     @property
     def dtb_addr(self):
@@ -361,7 +386,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option(self.DTB_ADDR_KEY)
+        return self._get_option(self.DTB_ADDR_KEY, convert_to=hex)
 
     @property
     def wired_interfaces(self):
@@ -369,7 +394,7 @@ class Config(object):
 
         A list of str.
         """
-        return self._get_list(self.WIRED_INTERFACES_KEY)
+        return self._get_list(self.WIRED_INTERFACES_KEY, convert_to=hex)
 
     @property
     def wireless_interfaces(self):
@@ -387,10 +412,7 @@ class Config(object):
 
         A str.
         """
-        layout = self._get_option(self.PARTITION_LAYOUT_KEY)
-        if isinstance(layout, list):
-            layout = ", ".join(layout)
-        return layout
+        return self._get_option(self.PARTITION_LAYOUT_KEY, join_list_with=" ")
 
     @property
     def mmc_id(self):
