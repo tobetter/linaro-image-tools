@@ -206,9 +206,9 @@ class Config(object):
     def include_debs(self):
         """Whether the hardware pack should contain .debs. A bool."""
         try:
-            if not self._get_option(self.INCLUDE_DEBS_KEY):
+            if not self._get_option_bool(self.INCLUDE_DEBS_KEY):
                 return True
-            return self._get_option(self.INCLUDE_DEBS_KEY)
+            return self._get_option_bool(self.INCLUDE_DEBS_KEY)
         except ConfigParser.NoOptionError:
             return True
 
@@ -238,6 +238,16 @@ class Config(object):
     def env_dd(self):
         """If the env should be dd:d to the boot partition. 'Yes' or 'No'."""
         return self._get_option(self.ENV_DD_KEY)
+
+    def _get_option_bool(self, key):
+        """Gets a boolean value from the key."""
+        if self.format.format_as_string == '3.0':
+            return self.parser(key)
+        else:
+            try:
+                return self.parser.getboolean(self.MAIN_SECTION, key)
+            except ConfigParser.NoOptionError, ConfigParser.ValueError:
+                return None
 
     def _get_option(self, key):
         """Get the value from the main section for the given key.
