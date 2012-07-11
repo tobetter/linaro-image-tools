@@ -123,7 +123,7 @@ class Config(object):
 
         :raises HwpackConfigError: if it does not.
         """
-        if self.format.format_as_string != "3.0":
+        if isinstance(self.parser, ConfigParser.RawConfigParser):
             if not self.parser.has_section(self.MAIN_SECTION):
                 raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
         self._validate_format()
@@ -169,7 +169,8 @@ class Config(object):
             self._validate_samsung_env_len()
             self._validate_samsung_bl2_len()
 
-        self._validate_sections()
+        if not self._is_v3:
+            self._validate_sections()
 
     @property
     def format(self):
@@ -206,16 +207,23 @@ class Config(object):
     def include_debs(self):
         """Whether the hardware pack should contain .debs. A bool."""
         try:
-            if not self._get_option(self.INCLUDE_DEBS_KEY):
+            if self._get_option(self.INCLUDE_DEBS_KEY) == None:
                 return True
-            return self._get_option(self.INCLUDE_DEBS_KEY)
+            return self._get_option_bool(self.INCLUDE_DEBS_KEY)
         except ConfigParser.NoOptionError:
             return True
 
     @property
+    def bootloaders(self):
+        return self._get_option('bootloaders')
+
+    @property
     def uboot_in_boot_part(self):
         """Whether uboot binary should be put in the boot partition. A str."""
-        return self._get_option(self.UBOOT_IN_BOOT_PART_KEY)
+        if self.format.format_as_string == '3.0':
+            return self._get_option(['bootloaders', 'u_boot', 'in_boot_part'])
+        else:
+            return self._get_option(self.UBOOT_IN_BOOT_PART_KEY)
 
     @property
     def uboot_dd(self):
@@ -239,6 +247,16 @@ class Config(object):
         """If the env should be dd:d to the boot partition. 'Yes' or 'No'."""
         return self._get_option(self.ENV_DD_KEY)
 
+    def _get_option_bool(self, key):
+        """Gets a boolean value from the key."""
+        if self.format.format_as_string == '3.0':
+            return self.parser(key)
+        else:
+            try:
+                return self.parser.getboolean(self.MAIN_SECTION, key)
+            except ConfigParser.NoOptionError:
+                return None
+
     def _get_option(self, key):
         """Get the value from the main section for the given key.
 
@@ -249,13 +267,20 @@ class Config(object):
         :rtype: str or None.
         """
         if self.format.format_as_string == "3.0":
-            try:
-                result = self.parser.get(key)
-                if not result:
+            if not isinstance(key, list):
+                keys = [key]
+            else:
+                keys = key
+
+            result = self.parser
+            for key in keys:
+                try:
+                    result = result.get(key)
+                    if not result:
+                        return None
+                except ConfigParser.NoOptionError:
                     return None
-                return result
-            except ConfigParser.NoOptionError:
-                return None
+            return result
         else:
             try:
                 result = self.parser.get(self.MAIN_SECTION, key)
@@ -362,7 +387,10 @@ class Config(object):
 
         A str.
         """
-        return self._get_option(self.PARTITION_LAYOUT_KEY)
+        layout = self._get_option(self.PARTITION_LAYOUT_KEY)
+        if isinstance(layout, list):
+            layout = ", ".join(layout)
+        return layout
 
     @property
     def mmc_id(self):
@@ -436,10 +464,14 @@ class Config(object):
         if self.format.format_as_string != "3.0":
             values = re.split("\s+", values)
 
+        if not isinstance(values, list):
+            values = [values]
+
         filtered_values = []
         for value in values:
             if value not in filtered_values:
                 filtered_values.append(value)
+
         return filtered_values
 
     @property
@@ -757,14 +789,23 @@ class Config(object):
         except ValueError:
             raise HwpackConfigError(
                 "Invalid value for include-debs: %s"
-                % self.parser.get("hwpack", "include-debs"))
+                % self.include_debs)
+
+    @property
+    def _is_v3(self):
+        """Checks if format is 3.0."""
+        return self.format.format_as_string == '3.0'
+
+    def _validate_bool(self, value):
+        """Checks if a value is boolean or not, both in old and new syntax."""
+        return (self._is_v3 and isinstance(value, bool) or not
+                self._is_v3 and string.lower(value) in ['yes', 'no'])
 
     def _validate_uboot_in_boot_part(self):
-        uboot_in_boot_part = self.uboot_in_boot_part
-        if string.lower(uboot_in_boot_part) not in ['yes', 'no']:
+        if not self._validate_bool(self.uboot_in_boot_part):
             raise HwpackConfigError(
                 "Invalid value for u_boot_in_boot_part: %s"
-                % self.parser.get("hwpack", "u_boot_in_boot_part"))
+                % self.uboot_in_boot_part)
 
     def _validate_spl_in_boot_part(self):
         spl_in_boot_part = self.spl_in_boot_part
@@ -773,7 +814,7 @@ class Config(object):
         if string.lower(spl_in_boot_part) not in ['yes', 'no']:
             raise HwpackConfigError(
                 "Invalid value for spl_in_boot_part: %s"
-                % self.parser.get("hwpack", "spl_in_boot_part"))
+                % self.spl_in_boot_part)
 
     def _validate_env_dd(self):
         env_dd = self.env_dd
@@ -782,7 +823,7 @@ class Config(object):
         if string.lower(env_dd) not in ['yes', 'no']:
             raise HwpackConfigError(
                 "Invalid value for env_dd: %s"
-                % self.parser.get("hwpack", "env_dd"))
+                % self.env_dd)
 
     def _validate_uboot_dd(self):
         uboot_dd = self.uboot_dd

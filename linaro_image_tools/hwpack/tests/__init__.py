@@ -27,6 +27,7 @@ def test_suite():
         'linaro_image_tools.hwpack.tests.test_better_tarfile',
         'linaro_image_tools.hwpack.tests.test_builder',
         'linaro_image_tools.hwpack.tests.test_config',
+        'linaro_image_tools.hwpack.tests.test_config_v3',
         'linaro_image_tools.hwpack.tests.test_hardwarepack',
         'linaro_image_tools.hwpack.tests.test_hwpack_converter',
         'linaro_image_tools.hwpack.tests.test_packages',

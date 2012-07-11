@@ -40,26 +40,24 @@ class ConfigTests(TestCase):
         "  - console=tty0\n"
         "  - console=ttyO2,115200n8\n"
         "mmc_id: 0:1\n"
-        "boards:\n"
-        " panda:\n"
-        "  kernel_file: boot/vmlinuz-*-linaro-omap\n"
-        "  initrd_file: boot/initrd.img-*-linaro-omap\n"
-        "  dtb_file: boot/dt-*-linaro-omap/omap4-panda.dtb\n"
-        "  bootloaders:\n"
-        "   u_boot:\n"
-        "    package: u-boot-linaro-s5pv310\n"
-        "    file: usr/lib/u-boot/smdkv310/u-boot.bin\n"
-        "    spl_package: x-loader-omap4-panda\n"
-        "    spl_file: usr/lib/x-loader/omap4430panda/MLO\n"
-        "    in_boot_part: True\n"
-        "  extra_boot_options:\n"
-        "   - earlyprintk\n"
-        "   - fixrtc\n"
-        "   - nocompcache\n"
-        "   - vram=48M\n"
-        "   - omapfb.vram=0:24M\n"
-        "   - mem=456M@0x80000000\n"
-        "   - mem=512M@0xA0000000\n")
+        "kernel_file: boot/vmlinuz-*-linaro-omap\n"
+        "initrd_file: boot/initrd.img-*-linaro-omap\n"
+        "dtb_file: boot/dt-*-linaro-omap/omap4-panda.dtb\n"
+        "bootloaders:\n"
+        " u_boot:\n"
+        "  package: u-boot-linaro-s5pv310\n"
+        "  file: usr/lib/u-boot/smdkv310/u-boot.bin\n"
+        "  spl_package: x-loader-omap4-panda\n"
+        "  spl_file: usr/lib/x-loader/omap4430panda/MLO\n"
+        "  in_boot_part: True\n"
+        "extra_boot_options:\n"
+        " - earlyprintk\n"
+        " - fixrtc\n"
+        " - nocompcache\n"
+        " - vram=48M\n"
+        " - omapfb.vram=0:24M\n"
+        " - mem=456M@0x80000000\n"
+        " - mem=512M@0xA0000000\n")
     valid_end = "sources:\n    sources-entry: foo bar\n"
 
     def test_create(self):
@@ -170,18 +168,7 @@ class ConfigTests(TestCase):
             "The sources-entry, ubuntu, shouldn't start with 'deb'", config)
 
     def test_validate_valid_config(self):
-        config = self.get_config(
-            self.valid_start + "sources:\n - ubuntu: foo bar\n")
-        self.assertEqual(None, config.validate())
-
-    def test_validate_valid_config_with_dash_in_package_name(self):
-        config = self.get_config(
-                "name: ahwpack\n"
-                "packages: u-boot\n"
-                "architectures:\n"
-                " - armel\n"
-                "sources\n"
-                " - ubuntu: foo bar\n")
+        config = self.get_config(self.valid_complete_v3)
         self.assertEqual(None, config.validate())
 
     def test_validate_supported_format(self):

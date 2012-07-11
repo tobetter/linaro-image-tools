@@ -72,7 +72,7 @@ class ConfigTests(TestCase):
 
     def test_validate_no_name(self):
         config = self.get_config("[hwpack]\n")
-        self.assertValidationError("No name in the [hwpack] section", config)
+        self.assertValidationError("Empty value for name", config)
 
     def test_validate_empty_name(self):
         config = self.get_config("[hwpack]\nname =  \n")
