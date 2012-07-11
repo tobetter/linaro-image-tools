@@ -27,6 +27,7 @@ import yaml
 from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
     HardwarePackFormatV2,
+    HardwarePackFormatV3,
     )
 
 
@@ -106,6 +107,7 @@ class Config(object):
 
         if obfuscated_e:
             try:
+                fp.seek(0)
                 self.parser = yaml.load(fp)
             except yaml.YAMLError, e:
                 obfuscated_e = re.sub(r"([^ ]https://).+?(@)",
@@ -121,8 +123,9 @@ class Config(object):
 
         :raises HwpackConfigError: if it does not.
         """
-        if not self.parser.has_section(self.MAIN_SECTION):
-            raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
+        if self.format.format_as_string != "3.0":
+            if not self.parser.has_section(self.MAIN_SECTION):
+                raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
         self._validate_format()
         self._validate_name()
         self._validate_include_debs()
@@ -172,18 +175,24 @@ class Config(object):
     def format(self):
         """The format of the hardware pack. A subclass of HardwarePackFormat.
         """
-        try:
-            format_string = self.parser.get(self.MAIN_SECTION, self.FORMAT_KEY)
-        except ConfigParser.NoOptionError:
-            # Default to 1.0 to aviod breaking existing hwpack files.
-            # When this code no longer supports 1.0, it effectively makes
-            # explicitly specifying format in hwpack files mandatory.
-            format_string = "1.0"
+        if isinstance(self.parser, ConfigParser.RawConfigParser):
+            try:
+                format_string = self.parser.get(self.MAIN_SECTION,
+                                                self.FORMAT_KEY)
+            except ConfigParser.NoOptionError:
+                # Default to 1.0 to aviod breaking existing hwpack files.
+                # When this code no longer supports 1.0, it effectively makes
+                # explicitly specifying format in hwpack files mandatory.
+                format_string = "1.0"
+        else:
+            format_string = self.parser.get(self.FORMAT_KEY)
 
         if format_string == '1.0':
             return HardwarePackFormatV1()
         elif format_string == '2.0':
             return HardwarePackFormatV2()
+        elif format_string == 3.0:
+            return HardwarePackFormatV3()
         else:
             raise HwpackConfigError("Format version '%s' is not supported." % \
                                      format_string)
@@ -191,24 +200,22 @@ class Config(object):
     @property
     def name(self):
         """The name of the hardware pack. A str."""
-        return self.parser.get(self.MAIN_SECTION, self.NAME_KEY)
+        return self._get_option(self.NAME_KEY)
 
     @property
     def include_debs(self):
         """Whether the hardware pack should contain .debs. A bool."""
         try:
-            if not self.parser.get(
-                self.MAIN_SECTION, self.INCLUDE_DEBS_KEY):
+            if not self._get_option(self.INCLUDE_DEBS_KEY):
                 return True
-            return self.parser.getboolean(
-                self.MAIN_SECTION, self.INCLUDE_DEBS_KEY)
+            return self._get_option(self.INCLUDE_DEBS_KEY)
         except ConfigParser.NoOptionError:
             return True
 
     @property
     def uboot_in_boot_part(self):
         """Whether uboot binary should be put in the boot partition. A str."""
-        return self.parser.get(self.MAIN_SECTION, self.UBOOT_IN_BOOT_PART_KEY)
+        return self._get_option(self.UBOOT_IN_BOOT_PART_KEY)
 
     @property
     def uboot_dd(self):
@@ -241,13 +248,22 @@ class Config(object):
             or the value is empty.
         :rtype: str or None.
         """
-        try:
-            result = self.parser.get(self.MAIN_SECTION, key)
-            if not result:
+        if self.format.format_as_string == "3.0":
+            try:
+                result = self.parser.get(key)
+                if not result:
+                    return None
+                return result
+            except ConfigParser.NoOptionError:
                 return None
-            return result
-        except ConfigParser.NoOptionError:
-            return None
+        else:
+            try:
+                result = self.parser.get(self.MAIN_SECTION, key)
+                if not result:
+                    return None
+                return result
+            except ConfigParser.NoOptionError:
+                return None
 
     @property
     def serial_tty(self):
@@ -413,10 +429,13 @@ class Config(object):
         return self._get_option(self.SUPPORT_KEY)
 
     def _get_list(self, key):
-        raw_values = self._get_option(key)
-        if raw_values is None:
+        values = self._get_option(key)
+        if values is None:
             return []
-        values = re.split("\s+", raw_values)
+
+        if self.format.format_as_string != "3.0":
+            values = re.split("\s+", values)
+
         filtered_values = []
         for value in values:
             if value not in filtered_values:

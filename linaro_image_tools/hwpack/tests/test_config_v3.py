@@ -19,8 +19,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
 # USA.
 
+import re
 from StringIO import StringIO
-
 from testtools import TestCase
 
 from linaro_image_tools.hwpack.config import Config, HwpackConfigError
@@ -67,6 +67,8 @@ class ConfigTests(TestCase):
         self.assertTrue(config is not None)
 
     def get_config(self, contents):
+        if not re.search("\s*format\s*:", contents):
+            contents = "format: 3.0\n" + contents
         return Config(StringIO(contents))
 
     def assertConfigError(self, contents, f, *args, **kwargs):
@@ -660,6 +662,7 @@ class ConfigTests(TestCase):
 
     def test_architectures(self):
         config = self.get_config(
+            "hello: there\n"
             "name: ahwpack\n"
             "packages: foo\n"
             "architectures:\n"
