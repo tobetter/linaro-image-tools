@@ -105,13 +105,13 @@ class ConfigTests(TestCase):
         config = self.get_config(
                 "name: ahwpack\n\n")
         self.assertValidationError(
-            "No packages defined", config._validate_packages())
+            "No packages found in the metadata", config._validate_packages)
 
     def test_validate_empty_packages(self):
         config = self.get_config(
                 "name: ahwpack\npackages:  \n")
         self.assertValidationError(
-            "No packages defined", config._validate_packages())
+            "No packages found in the metadata", config._validate_packages)
 
     def test_validate_invalid_package_name(self):
         config = self.get_config(
@@ -132,7 +132,7 @@ class ConfigTests(TestCase):
                 "name: ahwpack\npackages: foo\n"
                 "architectures: \n")
         self.assertValidationError(
-            "No architectures in the metadata",
+            "No architectures found in the metadata",
             config._validate_architectures)
 
     def test_validate_invalid_package_name_in_assume_installed(self):
@@ -215,8 +215,8 @@ class ConfigTests(TestCase):
                                  "boards:\n"
                                  " panda:\n"
                                  "  kernel_file:  \n")
-        self.assertValidationError("No kernel_file in the metadata",
-                                   config)
+        self.assertValidationError("No kernel_file found in the metadata",
+                                   config._validate_vmlinuz)
 
     def test_validate_invalid_initrd_file(self):
         config = self.get_config(self.valid_start_v3 +
@@ -230,8 +230,8 @@ class ConfigTests(TestCase):
                                  "boards:\n"
                                  " panda:\n"
                                  "  kernel_file:  \n")
-        self.assertValidationError("No initrd_file in the metadata",
-                                   config)
+        self.assertValidationError("No initrd_file found in the metadata",
+                                   config._validate_initrd)
 
     def test_validate_invalid_boot_script(self):
         config = self.get_config(self.valid_start_v3 + "boot_script: ~~")

@@ -20,6 +20,7 @@
 # USA.
 
 import ConfigParser
+from operator import attrgetter
 import re
 import string
 import yaml
@@ -786,42 +787,40 @@ class Config(object):
         if len(serial_tty) < 4 or serial_tty[:3] != 'tty':
             raise HwpackConfigError("Invalid serial tty: %s" % serial_tty)
 
-    def _validate_addr(self, addr):
-        return re.match(r"^0x[a-fA-F0-9]{8}$", addr)
+    def _validate_addr(self, key):
+        """Validate the address for the given key.
+        Assumptions:
+            1. key name is of the form name_addr
+            2. property name matches key name
+
+        Currently these assumptions are met and it seems reasonable to place
+        these restrictions on future code.
+        """
+        name = re.sub("_addr", "", key)
+
+        try:
+            addr = attrgetter(key)(self)
+        except TypeError:
+            raise HwpackConfigError("Invalid %s address: %s" %
+                                    (name, self._get_option(key)))
+
+        if addr == None:
+            return
+
+        if not re.match(r"^0x[a-fA-F0-9]{8}$", addr):
+            raise HwpackConfigError("Invalid %s address: %s" % (name, addr))
 
     def _validate_kernel_addr(self):
-        addr = self.kernel_addr
-        if addr is None:
-            return
-        if not self._validate_addr(addr):
-            raise HwpackConfigError("Invalid kernel address: %s" % addr)
+        self._validate_addr(self.KERNEL_ADDR_KEY)
 
     def _validate_initrd_addr(self):
-        addr = self.initrd_addr
-        if addr is None:
-            return
-        if not self._validate_addr(addr):
-            raise HwpackConfigError("Invalid initrd address: %s" % addr)
+        self._validate_addr(self.INITRD_ADDR_KEY)
 
     def _validate_load_addr(self):
-        addr = self.load_addr
-        if addr is None:
-            return
-        if not self._validate_addr(addr):
-            raise HwpackConfigError("Invalid load address: %s" % addr)
+        self._validate_addr(self.LOAD_ADDR_KEY)
 
     def _validate_dtb_addr(self):
-        try:
-            addr = self.dtb_addr
-        except TypeError:
-            raise HwpackConfigError("Invalid dtb address: %s" %
-                                    self._get_option(self.DTB_ADDR_KEY))
-        if addr is None:
-            return
-        if not self._validate_addr(addr):
-            if not addr.startswith("0x"):
-                addr = self._get_option(self.DTB_ADDR_KEY)
-            raise HwpackConfigError("Invalid dtb address: %s" % addr)
+        self._validate_addr(self.DTB_ADDR_KEY)
 
     def _validate_wired_interfaces(self):
         pass
@@ -957,9 +956,7 @@ class Config(object):
     def _validate_packages(self):
         packages = self.packages
         if not packages:
-            raise HwpackConfigError(
-                "No %s in the [%s] section"
-                % (self.PACKAGES_KEY, self.MAIN_SECTION))
+            raise HwpackConfigError(self._not_found_message(self.PACKAGES_KEY))
         for package in packages:
             self._assert_matches_pattern(
                 self.PACKAGE_REGEX, package, "Invalid value in %s in the " \
@@ -1028,8 +1025,7 @@ class Config(object):
         architectures = self.architectures
         if not architectures:
             raise HwpackConfigError(
-                "No %s in the [%s] section"
-                % (self.ARCHITECTURES_KEY, self.MAIN_SECTION))
+                self._not_found_message(self.ARCHITECTURES_KEY))
 
     def _validate_assume_installed(self):
         assume_installed = self.assume_installed
