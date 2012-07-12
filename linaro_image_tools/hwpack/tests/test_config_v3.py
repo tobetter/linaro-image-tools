@@ -296,21 +296,30 @@ class ConfigTests(TestCase):
             "  bootloaders:\n"
             "   u_boot:\n"
             "    in_boot_part: Yes\n")
-        self.assertValidationError(
-            "Invalid value for u_boot_in_boot_part: Yes",
-            config._validate_uboot_in_boot_part)
+
+        config.set_bootloader("u_boot")
+        config.set_board("panda")
+
+        config._validate_uboot_in_boot_part()
+        self.assertEqual(config.uboot_in_boot_part, "yes")
 
     def test_board_specific_overwrites_global(self):
         config = self.get_config(
             self.valid_start_v3 +
+            "bootloaders:\n"
+            " u_boot:\n"
+            "  in_boot_part: No\n"
             "boards:\n"
             " panda:\n"
             "  bootloaders:\n"
             "   u_boot:\n"
             "    in_boot_part: Yes\n")
-        self.assertValidationError(
-            "Invalid value for u_boot_in_boot_part: Yes",
-            config._validate_uboot_in_boot_part)
+
+        config.set_bootloader("u_boot")
+        config.set_board("panda")
+
+        config._validate_uboot_in_boot_part()
+        self.assertEqual(config.uboot_in_boot_part, "yes")
 
     def test_validate_serial_tty(self):
         config = self.get_config(self.valid_start_v3 + "serial_tty: tty\n")
@@ -675,15 +684,15 @@ class ConfigTests(TestCase):
         config = self.get_config(
             self.valid_start
             + "sources:\n"
-              " - ubuntu: http://example.org foo\n")
+              " ubuntu: http://example.org foo\n")
         self.assertEqual({"ubuntu": "http://example.org foo"}, config.sources)
 
     def test_sources_multiple(self):
         config = self.get_config(
             self.valid_start
             + "sources:\n"
-              " - ubuntu: http://example.org foo\n"
-              " - linaro: http://example.org bar\n")
+              " ubuntu: http://example.org foo\n"
+              " linaro: http://example.org bar\n")
         self.assertEqual(
             {"ubuntu": "http://example.org foo",
              "linaro": "http://example.org bar"},

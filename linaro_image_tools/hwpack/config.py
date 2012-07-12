@@ -98,7 +98,7 @@ class Config(object):
         'reserved_bootfs_rootfs',
         ]
 
-    def __init__(self, fp, bootloader=None):
+    def __init__(self, fp, bootloader=None, board=None):
         """Create a Config.
 
         :param fp: a file-like object containing the configuration.
@@ -124,9 +124,13 @@ class Config(object):
             raise ConfigParser.Error(obfuscated_e)
 
         self.set_bootloader(bootloader)
+        self.set_board(board)
 
     def set_bootloader(self, bootloader):
         self.bootloader = bootloader
+
+    def set_board(self, board):
+        self.board = board
 
     def validate(self):
         """Check that this configuration follows the schema.
@@ -281,24 +285,44 @@ class Config(object):
         return self._get_option(keys, join_list_with, convert_to)
 
     def _yes_no(self, value):
+        """Convert value, treated as boolean, to string "yes" or "no"."""
         if value:
             return "yes"
         else:
             return "no"
 
     def _addr(self, value):
+        """Convert value to 8 character hex string"""
         return "0x%08x" % value
 
     def _v2_key_to_v3(self, key):
+        """Convert V2 key to a V3 key"""
         if key in self.translate_v2_to_v3:
             key = self.translate_v2_to_v3[key]
         return key
 
+    def _get_v3_option(self, keys):
+        """Find value in config dictionary based on supplied list (keys)."""
+        result = self.parser
+        for key in keys:
+            key = self._v2_key_to_v3(key)
+            try:
+                result = result.get(key)
+                if result == None:  # False is a valid boolean value...
+                    return None
+            except ConfigParser.NoOptionError:
+                return None
+        return result
+
     def _get_option(self, key, join_list_with=False, convert_to=None):
-        """Get the value from the main section for the given key.
+        """Return value for the given key. Precedence to board specific values.
 
         :param key: the key to return the value for.
         :type key: str.
+        :param join_list_with: Used to convert lists to strings.
+        :type join_list_with: str
+        :param convert_to: Used to convert stored value to another type.
+        :type convert_to: type or function.
         :return: the value for that key, or None if the key is not present
             or the value is empty.
         :rtype: str or None.
@@ -309,17 +333,21 @@ class Config(object):
             else:
                 keys = key
 
-            result = self.parser
-            for key in keys:
-                key = self._v2_key_to_v3(key)
-                try:
-                    result = result.get(key)
-                    if result == None:  # False is a valid boolean value...
-                        return None
-                except ConfigParser.NoOptionError:
-                    return None
+            result = None  # Just mark result as not set yet...
 
-            # <v3 compatibility: Lists of items are comma separated strings
+            # If board is set, search board specific keys first
+            if self.board:
+                result = self._get_v3_option(["boards", self.board] + keys)
+
+            # If a board specific value isn't found, look for a global one
+            if result == None:
+                result = self._get_v3_option(keys)
+
+            # If no value is found, bail early (return None)
+            if result == None:
+                return None
+
+            # <v3 compatibility: Lists of items can be converted to strings
             if join_list_with and isinstance(result, list):
                 result = join_list_with.join(result)
 
@@ -653,13 +681,16 @@ class Config(object):
 
         A dict mapping source identifiers to sources entries.
         """
-        sources = {}
-        sections = self.parser.sections()
-        for section_name in sections:
-            if section_name == self.MAIN_SECTION:
-                continue
-            sources[section_name] = self.parser.get(
-                section_name, self.SOURCES_ENTRY_KEY)
+        if self._is_v3:
+            sources = self.parser.get("sources")
+        else:
+            sources = {}
+            sections = self.parser.sections()
+            for section_name in sections:
+                if section_name == self.MAIN_SECTION:
+                    continue
+                sources[section_name] = self.parser.get(
+                    section_name, self.SOURCES_ENTRY_KEY)
         return sources
 
     def _validate_format(self):
