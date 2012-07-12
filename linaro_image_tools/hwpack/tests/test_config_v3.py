@@ -82,7 +82,7 @@ class ConfigTests(TestCase):
                                    config._validate_name)
 
     def test_validate_invalid_name(self):
-        config = self.get_config("name = ~~\n")
+        config = self.get_config("name: ~~\n")
         self.assertValidationError("Invalid name: ~~",
                                    config._validate_name)
 
@@ -124,7 +124,7 @@ class ConfigTests(TestCase):
         config = self.get_config(
                 "name: ahwpack\npackages: foo\n")
         self.assertValidationError(
-            "No architectures in the metadata",
+            "No architectures found in the metadata",
             config._validate_architectures)
 
     def test_validate_empty_architectures(self):
@@ -151,28 +151,28 @@ class ConfigTests(TestCase):
 
     def test_validate_other_section_empty_sources_entry(self):
         config = self.get_config(
-                self.valid_start + "sources:\n - ubuntu:  \n")
+                self.valid_start + "sources:\n ubuntu:  \n")
         self.assertValidationError(
-            "The sources-entry, ubuntu missing the URI",
-            config._validate_include_debs)
+            "The sources-entry, ubuntu is missing the URI",
+            config._validate_sources)
 
     def test_validate_other_section_only_uri_in_sources_entry(self):
         config = self.get_config(
-            self.valid_start + "sources:\n - ubuntu: foo\n")
+            self.valid_start + "sources:\n ubuntu: foo\n")
         self.assertValidationError(
             "The sources-entry, ubuntu is missing the distribution",
             config._validate_include_debs)
 
     def test_validate_other_section_sources_entry_starting_with_deb(self):
         config = self.get_config(self.valid_start +
-                  "sources:\n - ubuntu: deb http://example.org/ foo main\n")
+                  "sources:\n ubuntu: deb http://example.org/ foo main\n")
         self.assertValidationError(
             "The sources-entry, ubuntu, shouldn't start with 'deb'",
             config._validate_include_debs)
 
     def test_validate_other_section_sources_entry_starting_with_deb_src(self):
         config = self.get_config(self.valid_start +
-            "sources:\n - ubuntu: deb-src http://example.org/ foo main\n")
+            "sources:\n ubuntu: deb-src http://example.org/ foo main\n")
         self.assertValidationError(
             "The sources-entry, ubuntu, shouldn't start with 'deb'",
             config._validate_include_debs)
@@ -187,8 +187,10 @@ class ConfigTests(TestCase):
             "Format version '0.9' is not supported.", config._validate_format)
 
     def test_validate_invalid_u_boot_package_name(self):
-        config = self.get_config(
-                self.valid_start_v3 + "u_boot_package: ~~\n")
+        config = self.get_config(self.valid_start_v3 +
+                                 "bootloaders:\n"
+                                 " u_boot:\n"
+                                 "  package: ~~\n")
         self.assertValidationError(
             "Invalid value in u_boot_package in the metadata: ~~",
             config._validate_u_boot_package)
@@ -238,7 +240,8 @@ class ConfigTests(TestCase):
     def test_validate_invalid_spl_package_name(self):
         config = self.get_config(self.valid_start_v3 +
                                  "bootloaders:\n"
-                                 " spl_package: ~~\n")
+                                 " u_boot:\n"
+                                 "  spl_package: ~~\n")
         config.set_board("panda")
         self.assertValidationError(
             "Invalid value in spl_package in the metadata: ~~",
@@ -249,7 +252,8 @@ class ConfigTests(TestCase):
                                  "boards:\n"
                                  " panda:\n"
                                  "  bootloaders:\n"
-                                 "   spl_file: ~~\n")
+                                 "   u_boot:\n"
+                                 "    spl_file: ~~\n")
         config.set_board("panda")
         self.assertValidationError("Invalid path: ~~",
                                    config._validate_spl_file)

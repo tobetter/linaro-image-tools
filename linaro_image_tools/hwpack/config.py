@@ -184,8 +184,7 @@ class Config(object):
             self._validate_samsung_env_len()
             self._validate_samsung_bl2_len()
 
-        if not self._is_v3:
-            self._validate_sections()
+        self._validate_sources()
 
     @property
     def format(self):
@@ -555,11 +554,8 @@ class Config(object):
         if values is None:
             return []
 
-        if self.format.format_as_string != "3.0":
-            values = re.split("\s+", values)
-
         if not isinstance(values, list):
-            values = [values]
+            values = re.split("\s+", values)
 
         filtered_values = []
         for value in values:
@@ -957,31 +953,40 @@ class Config(object):
             raise HwpackConfigError(
                 "Invalid value for support: %s" % support)
 
+    def _invalid_package_message(self, package_name, section_name, value):
+        if self._is_v3:
+            message = ("Invalid value in %s in the metadata: %s" %
+                       (package_name, value))
+        else:
+            message = ("Invalid value in %s in the [%s] section: %s" %
+                       (package_name, section_name,value))
+        return message
+
     def _validate_packages(self):
         packages = self.packages
         if not packages:
             raise HwpackConfigError(self._not_found_message(self.PACKAGES_KEY))
         for package in packages:
             self._assert_matches_pattern(
-                self.PACKAGE_REGEX, package, "Invalid value in %s in the " \
-                    "[%s] section: %s" % (self.PACKAGES_KEY, self.MAIN_SECTION,
-                                          package))
+                self.PACKAGE_REGEX, package,
+                self._invalid_package_message(
+                    self.PACKAGES_KEY, self.MAIN_SECTION, package))
 
     def _validate_u_boot_package(self):
         u_boot_package = self.u_boot_package
         if u_boot_package is not None:
             self._assert_matches_pattern(
-                self.PACKAGE_REGEX, u_boot_package, "Invalid value in %s in " \
-                    "the [%s] section: %s" % (
-                        self.U_BOOT_PACKAGE_KEY, self.MAIN_SECTION,
-                        u_boot_package))
+                self.PACKAGE_REGEX, u_boot_package,
+                self._invalid_package_message(
+                    self.U_BOOT_PACKAGE_KEY, self.MAIN_SECTION,
+                    u_boot_package))
 
     def _validate_spl_package(self):
         spl_package = self.spl_package
         if spl_package is not None:
             self._assert_matches_pattern(
-                self.PACKAGE_REGEX, spl_package, "Invalid value in %s in " \
-                    "the [%s] section: %s" % (self.SPL_PACKAGE_KEY,
+                self.PACKAGE_REGEX, spl_package,
+                self._invalid_package_message(self.SPL_PACKAGE_KEY,
                                               self.MAIN_SECTION,
                                               spl_package))
 
@@ -1035,41 +1040,60 @@ class Config(object):
         assume_installed = self.assume_installed
         for package in assume_installed:
             self._assert_matches_pattern(
-                self.PACKAGE_REGEX, package, "Invalid value in %s in the " \
-                    "[%s] section: %s" % (self.ASSUME_INSTALLED_KEY,
-                                          self.MAIN_SECTION, package))
+                self.PACKAGE_REGEX, package,
+                self._invalid_package_message(self.ASSUME_INSTALLED_KEY,
+                                              self.MAIN_SECTION, package))
 
-    def _validate_section_sources_entry(self, section_name):
-        try:
-            sources_entry = self.parser.get(
-                section_name, self.SOURCES_ENTRY_KEY)
-            if not sources_entry:
+    def _message_start(self, key, section_name):
+        if self._is_v3:
+            message = "The %s, %s " % (key, section_name)
+        else:
+            message = "The %s in the [%s] section " % (key, section_name)
+        return message
+
+    def _validate_source(self, section_name):
+        if self._is_v3:
+            sources_entry = self._get_option(["sources"] + [section_name])
+        else:
+            try:
+                sources_entry = self.parser.get(
+                    section_name, self.SOURCES_ENTRY_KEY)
+            except ConfigParser.NoOptionError:
+                raise HwpackConfigError(
+                    "No %s in the [%s] section"
+                    % (self.SOURCES_ENTRY_KEY, section_name))
+
+        if not sources_entry:
+            raise HwpackConfigError(
+                self._message_start(self.SOURCES_ENTRY_KEY, section_name) +
+                "is missing the URI")
+        if len(sources_entry.split(" ", 1)) < 2:
+            raise HwpackConfigError(
+                self._message_start(self.SOURCES_ENTRY_KEY, section_name) +
+                "is missing the distribution")
+        if sources_entry.startswith("deb"):
+            raise HwpackConfigError(
+                self._message_start(self.SOURCES_ENTRY_KEY, section_name) +
+                "shouldn't start with 'deb'")
+
+    def _validate_sources(self):
+        if self._is_v3:
+            source_dict = self.parser.get("sources")
+            if not source_dict:
+                return
+            if isinstance(source_dict, dict):
+                sources = source_dict.keys()
+            else:
                 raise HwpackConfigError(
                     "The %s in the [%s] section is missing the URI"
-                    % (self.SOURCES_ENTRY_KEY, section_name))
-            if len(sources_entry.split(" ", 1)) < 2:
-                raise HwpackConfigError(
-                    "The %s in the [%s] section is missing the distribution"
-                    % (self.SOURCES_ENTRY_KEY, section_name))
-            if sources_entry.startswith("deb"):
-                raise HwpackConfigError(
-                    "The %s in the [%s] section shouldn't start with 'deb'"
-                    % (self.SOURCES_ENTRY_KEY, section_name))
-        except ConfigParser.NoOptionError:
-            raise HwpackConfigError(
-                "No %s in the [%s] section"
-                % (self.SOURCES_ENTRY_KEY, section_name))
-
-    def _validate_section(self, section_name):
-        self._validate_section_sources_entry(section_name)
-
-    def _validate_sections(self):
-        sections = self.parser.sections()
+                    % (self.SOURCES_ENTRY_KEY, source_dict))
+        else:
+            sources = self.parser.sections()
         found = False
-        for section_name in sections:
-            if section_name == self.MAIN_SECTION:
+        for source_name in sources:
+            if source_name == self.MAIN_SECTION:
                 continue
-            self._validate_section(section_name)
+            self._validate_source(source_name)
             found = True
         if not found:
             raise HwpackConfigError(
