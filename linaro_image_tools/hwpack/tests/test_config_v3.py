@@ -143,12 +143,6 @@ class ConfigTests(TestCase):
             "Invalid value in assume-installed in the metadata: ~~",
             config._validate_assume_installed)
 
-    def test_validate_other_section_no_sources_entry(self):
-        config = self.get_config(self.valid_start + "sources:\n")
-        self.assertValidationError(
-            "No sources in the sources section",
-            config._validate_include_debs)
-
     def test_validate_other_section_empty_sources_entry(self):
         config = self.get_config(
                 self.valid_start + "sources:\n ubuntu:  \n")
@@ -161,21 +155,21 @@ class ConfigTests(TestCase):
             self.valid_start + "sources:\n ubuntu: foo\n")
         self.assertValidationError(
             "The sources-entry, ubuntu is missing the distribution",
-            config._validate_include_debs)
+            config._validate_sources)
 
     def test_validate_other_section_sources_entry_starting_with_deb(self):
         config = self.get_config(self.valid_start +
                   "sources:\n ubuntu: deb http://example.org/ foo main\n")
         self.assertValidationError(
-            "The sources-entry, ubuntu, shouldn't start with 'deb'",
-            config._validate_include_debs)
+            "The sources-entry, ubuntu shouldn't start with 'deb'",
+            config._validate_sources)
 
     def test_validate_other_section_sources_entry_starting_with_deb_src(self):
         config = self.get_config(self.valid_start +
             "sources:\n ubuntu: deb-src http://example.org/ foo main\n")
         self.assertValidationError(
-            "The sources-entry, ubuntu, shouldn't start with 'deb'",
-            config._validate_include_debs)
+            "The sources-entry, ubuntu shouldn't start with 'deb'",
+            config._validate_sources)
 
     def test_validate_valid_config(self):
         config = self.get_config(self.valid_complete_v3)

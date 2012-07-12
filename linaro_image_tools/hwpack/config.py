@@ -830,11 +830,18 @@ class Config(object):
 
     def _validate_partition_layout(self):
         if self.partition_layout not in self.DEFINED_PARTITION_LAYOUTS:
-            raise HwpackConfigError(
-                "Undefined partition layout %s in the [%s] section. "
-                "Valid partition layouts are %s."
-                % (self.partition_layout, self.MAIN_SECTION,
-                   ", ".join(self.DEFINED_PARTITION_LAYOUTS)))
+            if self._is_v3:
+                message = ("Undefined partition layout %s. "
+                           "Valid partition layouts are %s." %
+                           (self.partition_layout,
+                            ", ".join(self.DEFINED_PARTITION_LAYOUTS)))
+            else:
+                message = ("Undefined partition layout %s in the [%s] section."
+                           " Valid partition layouts are %s." %
+                           (self.partition_layout, self.MAIN_SECTION,
+                            ", ".join(self.DEFINED_PARTITION_LAYOUTS)))
+
+            raise HwpackConfigError(message)
 
     def _validate_mmc_id(self):
         mmc_id = self.mmc_id
@@ -959,7 +966,7 @@ class Config(object):
                        (package_name, value))
         else:
             message = ("Invalid value in %s in the [%s] section: %s" %
-                       (package_name, section_name,value))
+                       (package_name, section_name, value))
         return message
 
     def _validate_packages(self):
