@@ -50,14 +50,14 @@ class ConfigTests(TestCase):
         "  spl_package: x-loader-omap4-panda\n"
         "  spl_file: usr/lib/x-loader/omap4430panda/MLO\n"
         "  in_boot_part: True\n"
-        "extra_boot_options:\n"
-        " - earlyprintk\n"
-        " - fixrtc\n"
-        " - nocompcache\n"
-        " - vram=48M\n"
-        " - omapfb.vram=0:24M\n"
-        " - mem=456M@0x80000000\n"
-        " - mem=512M@0xA0000000\n")
+        "  extra_boot_options:\n"
+        "   - earlyprintk\n"
+        "   - fixrtc\n"
+        "   - nocompcache\n"
+        "   - vram=48M\n"
+        "   - omapfb.vram=0:24M\n"
+        "   - mem=456M@0x80000000\n"
+        "   - mem=512M@0xA0000000\n")
     valid_end = "sources:\n    sources-entry: foo bar\n"
 
     def test_create(self):
@@ -67,7 +67,7 @@ class ConfigTests(TestCase):
     def get_config(self, contents):
         if not re.search("\s*format\s*:", contents):
             contents = "format: 3.0\n" + contents
-        return Config(StringIO(contents))
+        return Config(StringIO(contents), bootloader="u_boot")
 
     def assertConfigError(self, contents, f, *args, **kwargs):
         e = self.assertRaises(HwpackConfigError, f, *args, **kwargs)
@@ -345,60 +345,64 @@ class ConfigTests(TestCase):
                                    config._validate_loader_min_size)
 
     def test_validate_kernel_addr(self):
+        # V3 change: All numerical inputs are good addresses (since YAML
+        # converts them to ingegers and we convert them back to the correct
+        # format). We don't need 8 digit hex values for addresses.
         config = self.get_config(self.valid_complete_v3 +
                                  "kernel_addr: 0x8000000\n")
-        self.assertValidationError("Invalid kernel address: 0x8000000",
-                                   config._validate_kernel_addr)
+        config._validate_kernel_addr()
         config = self.get_config(self.valid_complete_v3 +
                                  "kernel_addr: 0x8000000x\n")
         self.assertValidationError(
             "Invalid kernel address: 0x8000000x", config._validate_kernel_addr)
         config = self.get_config(self.valid_complete_v3 +
                                  "kernel_addr: 80000000\n")
-        self.assertValidationError("Invalid kernel address: 80000000",
-                                   config._validate_kernel_addr)
+        config._validate_kernel_addr()
 
     def test_validate_initrd_addr(self):
+        # V3 change: All numerical inputs are good addresses (since YAML
+        # converts them to ingegers and we convert them back to the correct
+        # format). We don't need 8 digit hex values for addresses.
         config = self.get_config(self.valid_complete_v3 +
                                  "initrd_addr: 0x8000000\n")
-        self.assertValidationError("Invalid initrd address: 0x8000000",
-                                   config._validate_initrd_addr)
+        config._validate_initrd_addr()
         config = self.get_config(self.valid_complete_v3 +
                                  "initrd_addr: 0x8000000x\n")
         self.assertValidationError(
             "Invalid initrd address: 0x8000000x", config._validate_initrd_addr)
         config = self.get_config(self.valid_complete_v3 +
                                  "initrd_addr: 80000000\n")
-        self.assertValidationError("Invalid initrd address: 80000000",
-                                   config._validate_initrd_addr)
+        config._validate_initrd_addr()
 
     def test_validate_load_addr(self):
+        # V3 change: All numerical inputs are good addresses (since YAML
+        # converts them to ingegers and we convert them back to the correct
+        # format). We don't need 8 digit hex values for addresses.
         config = self.get_config(self.valid_complete_v3 +
                                  "load_addr: 0x8000000\n")
-        self.assertValidationError("Invalid load address: 0x8000000",
-                                   config._validate_load_addr)
+        config._validate_load_addr()
         config = self.get_config(self.valid_complete_v3 +
                                  "load_addr: 0x8000000x\n")
         self.assertValidationError("Invalid load address: 0x8000000x",
                                    config._validate_load_addr)
         config = self.get_config(self.valid_complete_v3 +
                                  "load_addr: 80000000\n")
-        self.assertValidationError("Invalid load address: 80000000",
-                                   config._validate_load_addr())
+        config._validate_load_addr()
 
     def test_validate_dtb_addr(self):
+        # V3 change: All numerical inputs are good addresses (since YAML
+        # converts them to ingegers and we convert them back to the correct
+        # format). We don't need 8 digit hex values for addresses.
         config = self.get_config(self.valid_complete_v3 +
                                  "dtb_addr: 0x8000000\n")
-        self.assertValidationError("Invalid dtb address: 0x8000000",
-                                   config._validate_dtb_addr)
+        config._validate_dtb_addr()
         config = self.get_config(self.valid_complete_v3 +
                                  "dtb_addr: 0x8000000x\n")
         self.assertValidationError("Invalid dtb address: 0x8000000x",
                                    config._validate_dtb_addr)
         config = self.get_config(self.valid_complete_v3 +
                                  "dtb_addr: 80000000\n")
-        self.assertValidationError("Invalid dtb address: 80000000",
-                                   config._validate_dtb_addr)
+        config._validate_dtb_addr()
 
     def test_wired_interfaces(self):
         config = self.get_config(self.valid_complete_v3 +
@@ -496,7 +500,7 @@ class ConfigTests(TestCase):
     def test_u_boot_in_boot_part(self):
         config = self.get_config(self.valid_complete_v3 + self.valid_end)
         config.validate()
-        self.assertEqual("Yes",
+        self.assertEqual("yes",
                          config.uboot_in_boot_part)
 
     def test_spl_package(self):

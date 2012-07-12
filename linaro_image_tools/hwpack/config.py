@@ -37,6 +37,7 @@ class HwpackConfigError(Exception):
 
 class Config(object):
     """Encapsulation of a hwpack-create configuration."""
+    translate_v2_to_v3 = {}
 
     MAIN_SECTION = "hwpack"
     NAME_KEY = "name"
@@ -53,7 +54,9 @@ class Config(object):
     ARCHITECTURES_KEY = "architectures"
     ASSUME_INSTALLED_KEY = "assume-installed"
     U_BOOT_PACKAGE_KEY = "u_boot_package"
+    translate_v2_to_v3[U_BOOT_PACKAGE_KEY] = "package"
     U_BOOT_FILE_KEY = "u_boot_file"
+    translate_v2_to_v3[U_BOOT_FILE_KEY] = "file"
     SPL_FILE_KEY = "spl_file"
     SERIAL_TTY_KEY = "serial_tty"
     KERNEL_ADDR_KEY = "kernel_addr"
@@ -76,7 +79,9 @@ class Config(object):
     EXTRA_BOOT_OPTIONS_KEY = 'extra_boot_options'
     BOOT_SCRIPT_KEY = 'boot_script'
     UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
+    translate_v2_to_v3[UBOOT_IN_BOOT_PART_KEY] = "in_boot_part"
     UBOOT_DD_KEY = 'u_boot_dd'
+    translate_v2_to_v3[UBOOT_DD_KEY] = "dd"
     SPL_IN_BOOT_PART_KEY = 'spl_in_boot_part'
     SPL_DD_KEY = 'spl_dd'
     ENV_DD_KEY = 'env_dd'
@@ -93,7 +98,7 @@ class Config(object):
         'reserved_bootfs_rootfs',
         ]
 
-    def __init__(self, fp):
+    def __init__(self, fp, bootloader=None):
         """Create a Config.
 
         :param fp: a file-like object containing the configuration.
@@ -117,6 +122,11 @@ class Config(object):
 
         if obfuscated_e:
             raise ConfigParser.Error(obfuscated_e)
+
+        self.set_bootloader(bootloader)
+
+    def set_bootloader(self, bootloader):
+        self.bootloader = bootloader
 
     def validate(self):
         """Check that this configuration follows the schema.
@@ -209,7 +219,11 @@ class Config(object):
         try:
             if self._get_option(self.INCLUDE_DEBS_KEY) == None:
                 return True
-            return self._get_option_bool(self.INCLUDE_DEBS_KEY)
+            try:
+                return self._get_option_bool(self.INCLUDE_DEBS_KEY)
+            except ValueError as e:
+                raise HwpackConfigError("Invalid value for include-debs: %s" %
+                                        e)
         except ConfigParser.NoOptionError:
             return True
 
@@ -220,32 +234,29 @@ class Config(object):
     @property
     def uboot_in_boot_part(self):
         """Whether uboot binary should be put in the boot partition. A str."""
-        if self.format.format_as_string == '3.0':
-            return self._get_option(['bootloaders', 'u_boot', 'in_boot_part'])
-        else:
-            return self._get_option(self.UBOOT_IN_BOOT_PART_KEY)
+        return self._get_bootloader_option(self.UBOOT_IN_BOOT_PART_KEY)
 
     @property
     def uboot_dd(self):
         """If the uboot binary should be dd:d to the boot partition
         this field specifies the offset. An int."""
-        return self._get_option(self.UBOOT_DD_KEY)
+        return self._get_bootloader_option(self.UBOOT_DD_KEY)
 
     @property
     def spl_in_boot_part(self):
         """Whether spl binary should be put in the boot partition. A str."""
-        return self._get_option(self.SPL_IN_BOOT_PART_KEY)
+        return self._get_bootloader_option(self.SPL_IN_BOOT_PART_KEY)
 
     @property
     def spl_dd(self):
         """If the spl binary should be dd:d to the boot partition
         this field specifies the offset. An int."""
-        return self._get_option(self.SPL_DD_KEY)
+        return self._get_bootloader_option(self.SPL_DD_KEY)
 
     @property
     def env_dd(self):
         """If the env should be dd:d to the boot partition. 'Yes' or 'No'."""
-        return self._get_option(self.ENV_DD_KEY)
+        return self._get_bootloader_option(self.ENV_DD_KEY)
 
     def _get_option_bool(self, key):
         """Gets a boolean value from the key."""
@@ -256,6 +267,32 @@ class Config(object):
                 return self.parser.getboolean(self.MAIN_SECTION, key)
             except ConfigParser.NoOptionError:
                 return None
+
+    def _get_bootloader_option(self, key, join_list_with=False,
+                               convert_to=None):
+        """Get an option inside the current bootloader section/"""
+        if self.format.format_as_string == "3.0":
+            if not isinstance(key, list):
+                keys = [key]
+            keys = ['bootloaders', self.bootloader] + keys
+        else:
+            keys = key
+
+        return self._get_option(keys, join_list_with, convert_to)
+
+    def _yes_no(self, value):
+        if value:
+            return "yes"
+        else:
+            return "no"
+
+    def _addr(self, value):
+        return "0x%08x" % value
+
+    def _v2_key_to_v3(self, key):
+        if key in self.translate_v2_to_v3:
+            key = self.translate_v2_to_v3[key]
+        return key
 
     def _get_option(self, key, join_list_with=False, convert_to=None):
         """Get the value from the main section for the given key.
@@ -274,6 +311,7 @@ class Config(object):
 
             result = self.parser
             for key in keys:
+                key = self._v2_key_to_v3(key)
                 try:
                     result = result.get(key)
                     if result == None:  # False is a valid boolean value...
@@ -288,11 +326,14 @@ class Config(object):
             # <v3 compatibility:
             # To aid code that is trying to keep the format of results the
             # same as before, we have some type conversions. By default
-            # booleans stay as they are, but integers are converted to
+            # booleans are "yes" or "no", integers are converted to
             # strings.
-            if(not convert_to and
-               isinstance(result, int) and not isinstance(result, bool)):
-                convert_to = str
+            if not convert_to:
+                if isinstance(result, int):
+                    if isinstance(result, bool):
+                        convert_to = self._yes_no
+                    else:
+                        convert_to = str
 
             if convert_to:
                 if isinstance(result, list):
@@ -327,8 +368,8 @@ class Config(object):
 
         A str.
         """
-        return self._get_option(self.EXTRA_BOOT_OPTIONS_KEY,
-                                join_list_with=" ")
+        return self._get_bootloader_option(self.EXTRA_BOOT_OPTIONS_KEY,
+                                           join_list_with=" ")
 
     @property
     def extra_serial_opts(self):
@@ -336,8 +377,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option(self.EXTRA_SERIAL_OPTS_KEY,
-                                join_list_with=" ")
+        return self._get_option(self.EXTRA_SERIAL_OPTS_KEY, join_list_with=" ")
 
     @property
     def boot_script(self):
@@ -353,8 +393,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option(
-            self.SNOWBALL_STARTUP_FILES_CONFIG_KEY)
+        return self._get_option(self.SNOWBALL_STARTUP_FILES_CONFIG_KEY)
 
     @property
     def kernel_addr(self):
@@ -362,7 +401,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option(self.KERNEL_ADDR_KEY, convert_to=hex)
+        return self._get_option(self.KERNEL_ADDR_KEY, convert_to=self._addr)
 
     @property
     def initrd_addr(self):
@@ -370,7 +409,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option(self.INITRD_ADDR_KEY, convert_to=hex)
+        return self._get_option(self.INITRD_ADDR_KEY, convert_to=self._addr)
 
     @property
     def load_addr(self):
@@ -378,7 +417,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option(self.LOAD_ADDR_KEY, convert_to=hex)
+        return self._get_option(self.LOAD_ADDR_KEY, convert_to=self._addr)
 
     @property
     def dtb_addr(self):
@@ -386,7 +425,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option(self.DTB_ADDR_KEY, convert_to=hex)
+        return self._get_option(self.DTB_ADDR_KEY, convert_to=self._addr)
 
     @property
     def wired_interfaces(self):
@@ -394,7 +433,7 @@ class Config(object):
 
         A list of str.
         """
-        return self._get_list(self.WIRED_INTERFACES_KEY, convert_to=hex)
+        return self._get_list(self.WIRED_INTERFACES_KEY)
 
     @property
     def wireless_interfaces(self):
@@ -510,7 +549,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option(self.U_BOOT_PACKAGE_KEY)
+        return self._get_bootloader_option(self.U_BOOT_PACKAGE_KEY)
 
     @property
     def u_boot_file(self):
@@ -518,7 +557,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option(self.U_BOOT_FILE_KEY)
+        return self._get_bootloader_option(self.U_BOOT_FILE_KEY)
 
     @property
     def spl_file(self):
@@ -526,7 +565,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option(self.SPL_FILE_KEY)
+        return self._get_bootloader_option(self.SPL_FILE_KEY)
 
     @property
     def spl_package(self):
@@ -534,7 +573,7 @@ class Config(object):
 
         A str.
         """
-        return self._get_option(self.SPL_PACKAGE_KEY)
+        return self._get_bootloader_option(self.SPL_PACKAGE_KEY)
 
     @property
     def vmlinuz(self):
@@ -661,18 +700,24 @@ class Config(object):
     def _validate_vmlinuz(self):
         vmlinuz = self.vmlinuz
         if not vmlinuz:
-            raise HwpackConfigError("No kernel_file in the [%s] section" % \
-                                        self.MAIN_SECTION)
+            raise HwpackConfigError(self._not_found_message("kernel_file"))
         self._assert_matches_pattern(
             self.GLOB_REGEX, vmlinuz, "Invalid path: %s" % vmlinuz)
 
     def _validate_initrd(self):
         initrd = self.initrd
         if not initrd:
-            raise HwpackConfigError("No initrd_file in the [%s] section" % \
-                                        self.MAIN_SECTION)
+            raise HwpackConfigError(self._not_found_message("initrd_file"))
         self._assert_matches_pattern(
             self.GLOB_REGEX, initrd, "Invalid path: %s" % initrd)
+
+    def _not_found_message(self, thing, v2_section=None):
+        if self._is_v3:
+            return "No " + thing + " found in the metadata"
+        else:
+            if not v2_section:
+                v2_section = self.MAIN_SECTION
+            return "No " + thing + " in the [" + v2_section + "] section"
 
     def _validate_dtb_file(self):
         dtb_file = self.dtb_file
@@ -735,10 +780,16 @@ class Config(object):
             raise HwpackConfigError("Invalid load address: %s" % addr)
 
     def _validate_dtb_addr(self):
-        addr = self.dtb_addr
+        try:
+            addr = self.dtb_addr
+        except TypeError:
+            raise HwpackConfigError("Invalid dtb address: %s" %
+                                    self._get_option(self.DTB_ADDR_KEY))
         if addr is None:
             return
         if not self._validate_addr(addr):
+            if not addr.startswith("0x"):
+                addr = self._get_option(self.DTB_ADDR_KEY)
             raise HwpackConfigError("Invalid dtb address: %s" % addr)
 
     def _validate_wired_interfaces(self):
@@ -820,8 +871,7 @@ class Config(object):
 
     def _validate_bool(self, value):
         """Checks if a value is boolean or not, both in old and new syntax."""
-        return (self._is_v3 and isinstance(value, bool) or not
-                self._is_v3 and string.lower(value) in ['yes', 'no'])
+        return string.lower(value) in ['yes', 'no']
 
     def _validate_uboot_in_boot_part(self):
         if not self._validate_bool(self.uboot_in_boot_part):
