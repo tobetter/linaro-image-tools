@@ -191,67 +191,58 @@ class ConfigTests(TestCase):
                 self.valid_start_v3 + "u_boot_package: ~~\n")
         self.assertValidationError(
             "Invalid value in u_boot_package in the metadata: ~~",
-            config)
+            config._validate_u_boot_package)
 
     def test_validate_invalid_u_boot_file(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  bootloaders:\n"
-                                 "   u_boot:\n"
-                                 "    package: u-boot-linaro-s5pv310\n"
-                                 "    file: ~~\n")
-        self.assertValidationError("Invalid path: ~~", config)
+                                 "bootloaders:\n"
+                                 " u_boot:\n"
+                                 "  file: ~~\n")
+        self.assertValidationError("Invalid path: ~~",
+                                   config._validate_u_boot_file)
 
     def test_validate_invalid_kernel_file(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  kernel_file: ~~\n")
-        self.assertValidationError("Invalid path: ~~", config)
+                                 "kernel_file: ~~\n")
+        self.assertValidationError("Invalid path: ~~",
+                                   config._validate_vmlinuz)
 
     def test_validate_empty_kernel_file(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  kernel_file:  \n")
+                                 "kernel_file:  \n")
         self.assertValidationError("No kernel_file found in the metadata",
                                    config._validate_vmlinuz)
 
     def test_validate_invalid_initrd_file(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  initrd_file: ~~\n")
-        self.assertValidationError("Invalid path: ~~", config)
+                                 "initrd_file: ~~\n")
+        self.assertValidationError("Invalid path: ~~", config._validate_initrd)
 
     def test_validate_empty_initrd_file(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  kernel_file:  \n")
+                                 "kernel_file:  \n")
         self.assertValidationError("No initrd_file found in the metadata",
                                    config._validate_initrd)
 
     def test_validate_invalid_boot_script(self):
         config = self.get_config(self.valid_start_v3 + "boot_script: ~~")
-        self.assertValidationError("Invalid path: ~~", config)
+        self.assertValidationError("Invalid path: ~~",
+                                   config._validate_boot_script)
 
     def test_validate_invalid_dtb_file(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  dtb_file: ~~\n")
-        self.assertValidationError("Invalid path: ~~", config)
+                                 "dtb_file: ~~\n")
+        self.assertValidationError("Invalid path: ~~",
+                                   config._validate_dtb_file)
 
     def test_validate_invalid_spl_package_name(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  bootloaders:\n"
-                                 "   spl_package: ~~\n")
+                                 "bootloaders:\n"
+                                 " spl_package: ~~\n")
+        config.set_board("panda")
         self.assertValidationError(
-            "Invalid value in spl_package in the metadata: ~~", config)
+            "Invalid value in spl_package in the metadata: ~~",
+            config._validate_spl_package)
 
     def test_validate_invalid_spl_file(self):
         config = self.get_config(self.valid_start_v3 +
@@ -259,7 +250,9 @@ class ConfigTests(TestCase):
                                  " panda:\n"
                                  "  bootloaders:\n"
                                  "   spl_file: ~~\n")
-        self.assertValidationError("Invalid path: ~~", config)
+        config.set_board("panda")
+        self.assertValidationError("Invalid path: ~~",
+                                   config._validate_spl_file)
 
     def test_validate_partition_layout(self):
         partition_layout = 'apafs_bananfs'

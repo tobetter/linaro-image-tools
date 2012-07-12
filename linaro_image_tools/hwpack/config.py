@@ -266,7 +266,11 @@ class Config(object):
     def _get_option_bool(self, key):
         """Gets a boolean value from the key."""
         if self.format.format_as_string == '3.0':
-            return self.parser.get(key)
+            value = self._get_option(key, convert_to="disable")
+            if isinstance(value, bool):
+                return value
+            else:
+                raise ValueError(value)
         else:
             try:
                 return self.parser.getboolean(self.MAIN_SECTION, key)
@@ -364,7 +368,7 @@ class Config(object):
                     else:
                         convert_to = str
 
-            if convert_to:
+            if convert_to and convert_to != "disable":
                 if isinstance(result, list):
                     new_list = []
                     for item in result:
