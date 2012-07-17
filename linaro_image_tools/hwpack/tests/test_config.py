@@ -87,7 +87,8 @@ class ConfigTests(TestCase):
                 "[hwpack]\nname = ahwpack\n"
                 "include-debs = if you don't mind\n")
         self.assertValidationError(
-            "Invalid value for include-debs: if you don't mind", config)
+            "Invalid value for include-debs: Not a boolean: if you don't mind",
+            config)
 
     def test_validate_invalid_supported(self):
         config = self.get_config(

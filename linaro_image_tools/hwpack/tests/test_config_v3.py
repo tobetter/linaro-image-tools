@@ -50,14 +50,14 @@ class ConfigTests(TestCase):
         "  spl_package: x-loader-omap4-panda\n"
         "  spl_file: usr/lib/x-loader/omap4430panda/MLO\n"
         "  in_boot_part: True\n"
-        "extra_boot_options:\n"
-        " - earlyprintk\n"
-        " - fixrtc\n"
-        " - nocompcache\n"
-        " - vram=48M\n"
-        " - omapfb.vram=0:24M\n"
-        " - mem=456M@0x80000000\n"
-        " - mem=512M@0xA0000000\n")
+        "  extra_boot_options:\n"
+        "   - earlyprintk\n"
+        "   - fixrtc\n"
+        "   - nocompcache\n"
+        "   - vram=48M\n"
+        "   - omapfb.vram=0:24M\n"
+        "   - mem=456M@0x80000000\n"
+        "   - mem=512M@0xA0000000\n")
     valid_end = "sources:\n    sources-entry: foo bar\n"
 
     def test_create(self):
@@ -67,67 +67,73 @@ class ConfigTests(TestCase):
     def get_config(self, contents):
         if not re.search("\s*format\s*:", contents):
             contents = "format: 3.0\n" + contents
-        return Config(StringIO(contents))
+        return Config(StringIO(contents), bootloader="u_boot")
 
     def assertConfigError(self, contents, f, *args, **kwargs):
         e = self.assertRaises(HwpackConfigError, f, *args, **kwargs)
         self.assertEqual(contents, str(e))
 
-    def assertValidationError(self, contents, config):
-        self.assertConfigError(contents, config.validate)
+    def assertValidationError(self, contents, validate_function):
+        self.assertConfigError(contents, validate_function)
 
     def test_validate_empty_name(self):
         config = self.get_config("name:  ")
-        self.assertValidationError("Empty value for name", config)
+        self.assertValidationError("Empty value for name",
+                                   config._validate_name)
 
     def test_validate_invalid_name(self):
-        config = self.get_config("name = ~~\n")
-        self.assertValidationError("Invalid name: ~~", config)
+        config = self.get_config("name: ~~\n")
+        self.assertValidationError("Invalid name: ~~",
+                                   config._validate_name)
 
     def test_validate_invalid_include_debs(self):
         config = self.get_config(
                 "name: ahwpack\n"
                 "include-debs: if you don't mind\n")
         self.assertValidationError(
-            "Invalid value for include-debs: if you don't mind", config)
+            "Invalid value for include-debs: if you don't mind",
+            config._validate_include_debs)
 
     def test_validate_invalid_supported(self):
         config = self.get_config(
                 "name: ahwpack\nsupport: if you pay us\n")
         self.assertValidationError(
-            "Invalid value for support: if you pay us", config)
+            "Invalid value for support: if you pay us",
+            config._validate_support)
 
     def test_validate_no_packages(self):
         config = self.get_config(
                 "name: ahwpack\n\n")
         self.assertValidationError(
-            "No packages defined", config)
+            "No packages found in the metadata", config._validate_packages)
 
     def test_validate_empty_packages(self):
         config = self.get_config(
                 "name: ahwpack\npackages:  \n")
         self.assertValidationError(
-            "No packages defined", config)
+            "No packages found in the metadata", config._validate_packages)
 
     def test_validate_invalid_package_name(self):
         config = self.get_config(
                 "name: ahwpack\npackages: foo  ~~ bar\n")
         self.assertValidationError(
             "Invalid value in packages in the metadata: ~~",
-            config)
+            config._validate_packages)
 
     def test_validate_no_architectures(self):
         config = self.get_config(
                 "name: ahwpack\npackages: foo\n")
         self.assertValidationError(
-            "No architectures in the metadata", config)
+            "No architectures found in the metadata",
+            config._validate_architectures)
 
     def test_validate_empty_architectures(self):
         config = self.get_config(
                 "name: ahwpack\npackages: foo\n"
                 "architectures: \n")
         self.assertValidationError(
-            "No architectures in the metadata", config)
+            "No architectures found in the metadata",
+            config._validate_architectures)
 
     def test_validate_invalid_package_name_in_assume_installed(self):
         config = self.get_config(
@@ -135,37 +141,35 @@ class ConfigTests(TestCase):
                 "architectures: armel\nassume-installed: bar ~~\n")
         self.assertValidationError(
             "Invalid value in assume-installed in the metadata: ~~",
-            config)
-
-    def test_validate_other_section_no_sources_entry(self):
-        config = self.get_config(self.valid_start + "sources:\n")
-        self.assertValidationError(
-            "No sources in the sources section", config)
+            config._validate_assume_installed)
 
     def test_validate_other_section_empty_sources_entry(self):
         config = self.get_config(
-                self.valid_start + "sources:\n - ubuntu:  \n")
+                self.valid_start + "sources:\n ubuntu:  \n")
         self.assertValidationError(
-            "The sources-entry, ubuntu missing the URI",
-            config)
+            "The sources-entry, ubuntu is missing the URI",
+            config._validate_sources)
 
     def test_validate_other_section_only_uri_in_sources_entry(self):
         config = self.get_config(
-            self.valid_start + "sources:\n - ubuntu: foo\n")
+            self.valid_start + "sources:\n ubuntu: foo\n")
         self.assertValidationError(
-            "The sources-entry, ubuntu is missing the distribution", config)
+            "The sources-entry, ubuntu is missing the distribution",
+            config._validate_sources)
 
     def test_validate_other_section_sources_entry_starting_with_deb(self):
         config = self.get_config(self.valid_start +
-                  "sources:\n - ubuntu: deb http://example.org/ foo main\n")
+                  "sources:\n ubuntu: deb http://example.org/ foo main\n")
         self.assertValidationError(
-            "The sources-entry, ubuntu, shouldn't start with 'deb'", config)
+            "The sources-entry, ubuntu shouldn't start with 'deb'",
+            config._validate_sources)
 
     def test_validate_other_section_sources_entry_starting_with_deb_src(self):
         config = self.get_config(self.valid_start +
-            "sources:\n - ubuntu: deb-src http://example.org/ foo main\n")
+            "sources:\n ubuntu: deb-src http://example.org/ foo main\n")
         self.assertValidationError(
-            "The sources-entry, ubuntu, shouldn't start with 'deb'", config)
+            "The sources-entry, ubuntu shouldn't start with 'deb'",
+            config._validate_sources)
 
     def test_validate_valid_config(self):
         config = self.get_config(self.valid_complete_v3)
@@ -174,82 +178,79 @@ class ConfigTests(TestCase):
     def test_validate_supported_format(self):
         config = self.get_config(self.valid_start + "format: 0.9\n")
         self.assertValidationError(
-            "Format version '0.9' is not supported.", config)
+            "Format version '0.9' is not supported.", config._validate_format)
 
     def test_validate_invalid_u_boot_package_name(self):
-        config = self.get_config(
-                self.valid_start_v3 + "u_boot_package: ~~\n")
+        config = self.get_config(self.valid_start_v3 +
+                                 "bootloaders:\n"
+                                 " u_boot:\n"
+                                 "  package: ~~\n")
         self.assertValidationError(
             "Invalid value in u_boot_package in the metadata: ~~",
-            config)
+            config._validate_u_boot_package)
 
     def test_validate_invalid_u_boot_file(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  bootloaders:\n"
-                                 "   u_boot:\n"
-                                 "    package: u-boot-linaro-s5pv310\n"
-                                 "    file: ~~\n")
-        self.assertValidationError("Invalid path: ~~", config)
+                                 "bootloaders:\n"
+                                 " u_boot:\n"
+                                 "  file: ~~\n")
+        self.assertValidationError("Invalid path: ~~",
+                                   config._validate_u_boot_file)
 
     def test_validate_invalid_kernel_file(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  kernel_file: ~~\n")
-        self.assertValidationError("Invalid path: ~~", config)
+                                 "kernel_file: ~~\n")
+        self.assertValidationError("Invalid path: ~~",
+                                   config._validate_vmlinuz)
 
     def test_validate_empty_kernel_file(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  kernel_file:  \n")
-        self.assertValidationError("No kernel_file in the metadata",
-                                   config)
+                                 "kernel_file:  \n")
+        self.assertValidationError("No kernel_file found in the metadata",
+                                   config._validate_vmlinuz)
 
     def test_validate_invalid_initrd_file(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  initrd_file: ~~\n")
-        self.assertValidationError("Invalid path: ~~", config)
+                                 "initrd_file: ~~\n")
+        self.assertValidationError("Invalid path: ~~", config._validate_initrd)
 
     def test_validate_empty_initrd_file(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  kernel_file:  \n")
-        self.assertValidationError("No initrd_file in the metadata",
-                                   config)
+                                 "kernel_file:  \n")
+        self.assertValidationError("No initrd_file found in the metadata",
+                                   config._validate_initrd)
 
     def test_validate_invalid_boot_script(self):
         config = self.get_config(self.valid_start_v3 + "boot_script: ~~")
-        self.assertValidationError("Invalid path: ~~", config)
+        self.assertValidationError("Invalid path: ~~",
+                                   config._validate_boot_script)
 
     def test_validate_invalid_dtb_file(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  dtb_file: ~~\n")
-        self.assertValidationError("Invalid path: ~~", config)
+                                 "dtb_file: ~~\n")
+        self.assertValidationError("Invalid path: ~~",
+                                   config._validate_dtb_file)
 
     def test_validate_invalid_spl_package_name(self):
         config = self.get_config(self.valid_start_v3 +
-                                 "boards:\n"
-                                 " panda:\n"
-                                 "  bootloaders:\n"
-                                 "   spl_package: ~~\n")
+                                 "bootloaders:\n"
+                                 " u_boot:\n"
+                                 "  spl_package: ~~\n")
+        config.set_board("panda")
         self.assertValidationError(
-            "Invalid value in spl_package in the metadata: ~~", config)
+            "Invalid value in spl_package in the metadata: ~~",
+            config._validate_spl_package)
 
     def test_validate_invalid_spl_file(self):
         config = self.get_config(self.valid_start_v3 +
                                  "boards:\n"
                                  " panda:\n"
                                  "  bootloaders:\n"
-                                 "   spl_file: ~~\n")
-        self.assertValidationError("Invalid path: ~~", config)
+                                 "   u_boot:\n"
+                                 "    spl_file: ~~\n")
+        config.set_board("panda")
+        self.assertValidationError("Invalid path: ~~",
+                                   config._validate_spl_file)
 
     def test_validate_partition_layout(self):
         partition_layout = 'apafs_bananfs'
@@ -259,7 +260,8 @@ class ConfigTests(TestCase):
             "Undefined partition layout %s. "
             "Valid partition layouts are %s."
             % (partition_layout,
-               ", ".join(config.DEFINED_PARTITION_LAYOUTS)), config)
+               ", ".join(config.DEFINED_PARTITION_LAYOUTS)),
+            config._validate_partition_layout)
 
     def test_validate_wired_interfaces(self):
         self.assertTrue("XXX What is an invalid interface name?")
@@ -267,18 +269,17 @@ class ConfigTests(TestCase):
     def test_validate_wireless_interfaces(self):
         self.assertTrue("XXX What is an invalid interface name?")
 
-    def test_validate_u_boot_in_boot_part(self):
+    def test_validate_u_boot_in_boot_part_bool(self):
         config = self.get_config(
             self.valid_start_v3 +
-            "boards:\n"
-            " panda:\n"
-            "  bootloaders:\n"
+            "bootloaders:\n"
             "   u_boot:\n"
             "    in_boot_part: Nope\n")
         self.assertValidationError(
-            "Invalid value for u_boot_in_boot_part: Nope", config)
+            "Invalid value for u_boot_in_boot_part: Nope",
+            config._validate_uboot_in_boot_part)
 
-    def test_validate_u_boot_in_boot_part_bool(self):
+    def test_find_board_specific_variable(self):
         config = self.get_config(
             self.valid_start_v3 +
             "boards:\n"
@@ -286,81 +287,122 @@ class ConfigTests(TestCase):
             "  bootloaders:\n"
             "   u_boot:\n"
             "    in_boot_part: Yes\n")
-        self.assertValidationError(
-            "Invalid value for u_boot_in_boot_part: Yes", config)
+
+        config.set_bootloader("u_boot")
+        config.set_board("panda")
+
+        config._validate_uboot_in_boot_part()
+        self.assertEqual(config.uboot_in_boot_part, "yes")
+
+    def test_board_specific_overwrites_global(self):
+        config = self.get_config(
+            self.valid_start_v3 +
+            "bootloaders:\n"
+            " u_boot:\n"
+            "  in_boot_part: No\n"
+            "boards:\n"
+            " panda:\n"
+            "  bootloaders:\n"
+            "   u_boot:\n"
+            "    in_boot_part: Yes\n")
+
+        config.set_bootloader("u_boot")
+        config.set_board("panda")
+
+        config._validate_uboot_in_boot_part()
+        self.assertEqual(config.uboot_in_boot_part, "yes")
 
     def test_validate_serial_tty(self):
         config = self.get_config(self.valid_start_v3 + "serial_tty: tty\n")
-        self.assertValidationError("Invalid serial tty: tty", config)
+        self.assertValidationError("Invalid serial tty: tty",
+                                   config._validate_serial_tty)
 
         config = self.get_config(self.valid_start_v3 + "serial_tty: ttxSAC1\n")
-        self.assertValidationError("Invalid serial tty: ttxSAC1", config)
+        self.assertValidationError("Invalid serial tty: ttxSAC1",
+                                   config._validate_serial_tty)
 
     def test_validate_mmc_id(self):
         config = self.get_config(self.valid_complete_v3 +
                                  "mmc_id: x\n")
-        self.assertValidationError("Invalid mmc_id x", config)
+        self.assertValidationError("Invalid mmc_id x", config._validate_mmc_id)
 
     def test_validate_boot_min_size(self):
         config = self.get_config(self.valid_complete_v3 +
                                  "boot_min_size: x\n")
-        self.assertValidationError("Invalid boot min size x", config)
+        self.assertValidationError("Invalid boot min size x",
+                                   config._validate_boot_min_size)
 
     def test_validate_root_min_size(self):
         config = self.get_config(self.valid_complete_v3 +
                                  "root_min_size: x\n")
-        self.assertValidationError("Invalid root min size x", config)
+        self.assertValidationError("Invalid root min size x",
+                                   config._validate_root_min_size)
 
     def test_validate_loader_min_size(self):
         config = self.get_config(self.valid_complete_v3 +
                                  "loader_min_size: x\n")
-        self.assertValidationError("Invalid loader min size x", config)
+        self.assertValidationError("Invalid loader min size x",
+                                   config._validate_loader_min_size)
 
     def test_validate_kernel_addr(self):
+        # V3 change: All numerical inputs are good addresses (since YAML
+        # converts them to ingegers and we convert them back to the correct
+        # format). We don't need 8 digit hex values for addresses.
         config = self.get_config(self.valid_complete_v3 +
                                  "kernel_addr: 0x8000000\n")
-        self.assertValidationError("Invalid kernel address: 0x8000000", config)
+        config._validate_kernel_addr()
         config = self.get_config(self.valid_complete_v3 +
                                  "kernel_addr: 0x8000000x\n")
         self.assertValidationError(
-            "Invalid kernel address: 0x8000000x", config)
+            "Invalid kernel address: 0x8000000x", config._validate_kernel_addr)
         config = self.get_config(self.valid_complete_v3 +
                                  "kernel_addr: 80000000\n")
-        self.assertValidationError("Invalid kernel address: 80000000", config)
+        config._validate_kernel_addr()
 
     def test_validate_initrd_addr(self):
+        # V3 change: All numerical inputs are good addresses (since YAML
+        # converts them to ingegers and we convert them back to the correct
+        # format). We don't need 8 digit hex values for addresses.
         config = self.get_config(self.valid_complete_v3 +
                                  "initrd_addr: 0x8000000\n")
-        self.assertValidationError("Invalid initrd address: 0x8000000", config)
+        config._validate_initrd_addr()
         config = self.get_config(self.valid_complete_v3 +
                                  "initrd_addr: 0x8000000x\n")
         self.assertValidationError(
-            "Invalid initrd address: 0x8000000x", config)
+            "Invalid initrd address: 0x8000000x", config._validate_initrd_addr)
         config = self.get_config(self.valid_complete_v3 +
                                  "initrd_addr: 80000000\n")
-        self.assertValidationError("Invalid initrd address: 80000000", config)
+        config._validate_initrd_addr()
 
     def test_validate_load_addr(self):
+        # V3 change: All numerical inputs are good addresses (since YAML
+        # converts them to ingegers and we convert them back to the correct
+        # format). We don't need 8 digit hex values for addresses.
         config = self.get_config(self.valid_complete_v3 +
                                  "load_addr: 0x8000000\n")
-        self.assertValidationError("Invalid load address: 0x8000000", config)
+        config._validate_load_addr()
         config = self.get_config(self.valid_complete_v3 +
                                  "load_addr: 0x8000000x\n")
-        self.assertValidationError("Invalid load address: 0x8000000x", config)
+        self.assertValidationError("Invalid load address: 0x8000000x",
+                                   config._validate_load_addr)
         config = self.get_config(self.valid_complete_v3 +
                                  "load_addr: 80000000\n")
-        self.assertValidationError("Invalid load address: 80000000", config)
+        config._validate_load_addr()
 
     def test_validate_dtb_addr(self):
+        # V3 change: All numerical inputs are good addresses (since YAML
+        # converts them to ingegers and we convert them back to the correct
+        # format). We don't need 8 digit hex values for addresses.
         config = self.get_config(self.valid_complete_v3 +
                                  "dtb_addr: 0x8000000\n")
-        self.assertValidationError("Invalid dtb address: 0x8000000", config)
+        config._validate_dtb_addr()
         config = self.get_config(self.valid_complete_v3 +
                                  "dtb_addr: 0x8000000x\n")
-        self.assertValidationError("Invalid dtb address: 0x8000000x", config)
+        self.assertValidationError("Invalid dtb address: 0x8000000x",
+                                   config._validate_dtb_addr)
         config = self.get_config(self.valid_complete_v3 +
                                  "dtb_addr: 80000000\n")
-        self.assertValidationError("Invalid dtb address: 80000000", config)
+        config._validate_dtb_addr()
 
     def test_wired_interfaces(self):
         config = self.get_config(self.valid_complete_v3 +
@@ -458,7 +500,7 @@ class ConfigTests(TestCase):
     def test_u_boot_in_boot_part(self):
         config = self.get_config(self.valid_complete_v3 + self.valid_end)
         config.validate()
-        self.assertEqual("Yes",
+        self.assertEqual("yes",
                          config.uboot_in_boot_part)
 
     def test_spl_package(self):
@@ -510,7 +552,7 @@ class ConfigTests(TestCase):
                                  "kernel_addr: 0x8aBcdEFf\n" +
                                  self.valid_end)
         config.validate()
-        self.assertEqual("0x8aBcdEFf", config.kernel_addr)
+        self.assertEqual("0x8abcdeff", config.kernel_addr)
 
     def test_initrd_addr(self):
         config = self.get_config(self.valid_complete_v3 +
@@ -522,7 +564,7 @@ class ConfigTests(TestCase):
                                  "initrd_addr: 0x8aBcdEFf\n" +
                                  self.valid_end)
         config.validate()
-        self.assertEqual("0x8aBcdEFf", config.initrd_addr)
+        self.assertEqual("0x8abcdeff", config.initrd_addr)
 
     def test_load_addr(self):
         config = self.get_config(self.valid_complete_v3 +
@@ -534,7 +576,7 @@ class ConfigTests(TestCase):
                                  "load_addr: 0x8aBcdEFf\n" +
                                  self.valid_end)
         config.validate()
-        self.assertEqual("0x8aBcdEFf", config.load_addr)
+        self.assertEqual("0x8abcdeff", config.load_addr)
 
     def test_dtb_addr(self):
         config = self.get_config(self.valid_complete_v3 +
@@ -546,7 +588,7 @@ class ConfigTests(TestCase):
                                  "dtb_addr: 0x8aBcdEFf\n" +
                                  self.valid_end)
         config.validate()
-        self.assertEqual("0x8aBcdEFf", config.dtb_addr)
+        self.assertEqual("0x8abcdeff", config.dtb_addr)
 
     def test_name(self):
         config = self.get_config(
@@ -633,15 +675,15 @@ class ConfigTests(TestCase):
         config = self.get_config(
             self.valid_start
             + "sources:\n"
-              " - ubuntu: http://example.org foo\n")
+              " ubuntu: http://example.org foo\n")
         self.assertEqual({"ubuntu": "http://example.org foo"}, config.sources)
 
     def test_sources_multiple(self):
         config = self.get_config(
             self.valid_start
             + "sources:\n"
-              " - ubuntu: http://example.org foo\n"
-              " - linaro: http://example.org bar\n")
+              " ubuntu: http://example.org foo\n"
+              " linaro: http://example.org bar\n")
         self.assertEqual(
             {"ubuntu": "http://example.org foo",
              "linaro": "http://example.org bar"},
