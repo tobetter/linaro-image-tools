@@ -1,20 +1,17 @@
-#from StringIO import StringIO
 import tempfile
-#import os
-#import os.path
-#from testtools.matchers import Equals, MismatchError
 from linaro_image_tools.testing import TestCaseWithFixtures
 from linaro_image_tools.tests.fixtures import (
     CreateTempDirFixture,
     CreateTempFileFixture,
-#    MockCmdRunnerPopenFixture,
-#    MockSomethingFixture,
     )
 
 from linaro_image_tools.hwpack.hwpack_convert import (
     HwpackConverter,
     HwpackConverterException,
     check_and_validate_args,
+    create_yaml_dictionary,
+    create_yaml_sequence,
+    create_yaml_string,
     )
 
 
@@ -53,7 +50,7 @@ class HwpackConverterTests(TestCaseWithFixtures):
 
     def test_basic_parse(self):
         ini_format = '[hwpack]\nformat=2.0\nsupport=supported'
-        output_format = 'support: supported\nformat: 2.0\n'
+        output_format = 'support: supported\nformat: 3.0\n'
         input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
                                                                 get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
@@ -66,7 +63,7 @@ class HwpackConverterTests(TestCaseWithFixtures):
         converted file.
         """
         ini_format = '[hwpack]\nformat=2.0\narchitectures=armhf armel'
-        output_format = 'format: 2.0\narchitectures:\n - armhf\n - armel\n'
+        output_format = 'format: 3.0\narchitectures:\n - armhf\n - armel\n'
         input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
                                                                 get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
@@ -77,7 +74,87 @@ class HwpackConverterTests(TestCaseWithFixtures):
     def test_yes_no_values_conversion(self):
         """Tests that Yes and No values are converted into True and False."""
         ini_format = '[hwpack]\nformat=2.0\nno_value=No\nyes_value=Yes'
-        out_format = 'no_value: False\nyes_value: True\nformat: 2.0\n'
+        out_format = 'no_value: False\nyes_value: True\nformat: 3.0\n'
+        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
+                                                                get_file_name()
+        output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
+        converter = HwpackConverter(input_file, output_file)
+        converter._parse()
+        self.assertEqual(out_format, str(converter))
+
+    def test_create_yaml_dictionary_from_list(self):
+        false_dictionary = []
+        self.assertRaises(HwpackConverterException, create_yaml_dictionary,
+                            false_dictionary)
+
+    def test_create_yaml_dictionary_from_tuple(self):
+        false_dictionary = ()
+        self.assertRaises(HwpackConverterException, create_yaml_dictionary,
+                            false_dictionary)
+
+    def test_create_yaml_dictionary(self):
+        dictionary = {'key1': 'value1', 'key2': 'value2'}
+        expected_out = "key2: value2\nkey1: value1\n"
+        received_out = create_yaml_dictionary(dictionary)
+        self.assertEqual(expected_out, received_out)
+
+    def test_create_yaml_dictionary_with_name(self):
+        name = 'dictionary'
+        dictionary = {'key1': 'value1', 'key2': 'value2'}
+        expected_out = "dictionary:\n key2: value2\n key1: value1\n"
+        received_out = create_yaml_dictionary(dictionary, name)
+        self.assertEqual(expected_out, received_out)
+
+    def test_create_yaml_sequence_from_dict(self):
+        false_list = {}
+        name = 'list'
+        self.assertRaises(HwpackConverterException, create_yaml_sequence,
+                            false_list, name)
+
+    def test_create_yaml_sequence_from_tuple(self):
+        false_list = ()
+        name = 'list'
+        self.assertRaises(HwpackConverterException, create_yaml_sequence,
+                            false_list, name)
+
+    def test_create_yaml_sequence(self):
+        """Tests creation of a valid sequence in YAML."""
+        real_list = ['key1', 'key2']
+        name = 'list'
+        expected_out = "list:\n - key1\n - key2\n"
+        received_out = create_yaml_sequence(real_list, name)
+        self.assertEqual(expected_out, received_out)
+
+    def test_create_yaml_string(self):
+        """Creates a normal YAML key:value string."""
+        key = "key"
+        value = "value"
+        expected_out = "key: value\n"
+        received_out = create_yaml_string(key, value)
+        self.assertEqual(expected_out, received_out)
+
+    def test_create_yaml_string_negative(self):
+        """Pass a negative value for the indentation."""
+        key = "key"
+        value = "value"
+        indent = -1
+        self.assertRaises(HwpackConverterException, create_yaml_string, key,
+                            value, indent)
+
+    def test_create_yaml_string_no_value(self):
+        """Pass a None value."""
+        key = "key"
+        value = None
+        indent = 0
+        self.assertRaises(HwpackConverterException, create_yaml_string, key,
+                            value, indent)
+
+    def test_bootloaders(self):
+        ini_format = "[hwpack]\nformat=2.0\nu_boot_package=a_package\n"
+                        "u_boot_file=a_file\nu_boot_in_boot_part=Yes\n"
+                        "u_boot_dd=33"
+        out_format = "format: 3.0\nbootloaders:\n in_boot_part: True\n dd: 33"
+                        "\n file: a_file\n package: a_package\n"
         input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
                                                                 get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
