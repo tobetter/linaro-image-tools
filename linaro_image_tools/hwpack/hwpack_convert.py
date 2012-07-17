@@ -8,7 +8,8 @@ import re
 MAIN_SECTION = 'hwpack'
 # This, if has multiple values, should be converted into the proper structure.
 ARCHITECTURES_KEY = 'architectures'
-BOOTLOADERS_KEY = ['', '', '', '']
+# The format key.
+FORMAT_KEY = 'format'
 # The suffix for the new file
 NEW_FILE_SUFFIX = '.yaml'
 # How many spaces should be used for indentation.
@@ -16,6 +17,20 @@ INDENT_STEP = 1
 # Regular expression to convert for Yes/No values into Boolean.
 YES_REGEX = '[Yy]es'
 NO_REGEX = '[Nn]o'
+
+U_BOOT_PACKAGE_KEY = "u_boot_package"
+PACKAGE_KEY = "package"
+U_BOOT_FILE_KEY = "u_boot_file"
+FILE_KEY = "file"
+UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
+IN_BOOT_PART_KEY = "in_boot_part"
+UBOOT_DD_KEY = 'u_boot_dd'
+DD_KEY = "dd"
+UBOOT_KEYS = [U_BOOT_PACKAGE_KEY, U_BOOT_FILE_KEY, UBOOT_IN_BOOT_PART_KEY,
+                UBOOT_DD_KEY]
+
+BOOTLOADERS_KEY = 'bootloaders'
+UBOOT_KEY = 'u_boot'
 
 logger = logging.getLogger("linaro_hwpack_converter")
 
@@ -47,6 +62,8 @@ class HwpackConverter(object):
         self.hwpack = {}
         # List of supported architectures.
         self.architectures = []
+        # Where we hold bootloaders info
+        self.bootloaders = {}
 
     def _parse(self):
         """Parses the config file and stores its values."""
@@ -63,12 +80,27 @@ class HwpackConverter(object):
                             if key == ARCHITECTURES_KEY:
                                 self.parse_architectures_string(value)
                                 continue
+                            elif key == FORMAT_KEY:
+                                value = '3.0'
+                            elif key in UBOOT_KEYS:
+                                self._set_bootloaders(key, value)
+                                continue
                             self.hwpack[key] = value
                 else:
                     # Here we have only sources sections.
                     for _, value in parser.items(section):
                         if value is not None:
                             self.sources[section] = value
+
+    def _set_bootloaders(self, key, value):
+        if key == U_BOOT_PACKAGE_KEY:
+            self.bootloaders[PACKAGE_KEY] = value
+        elif key == U_BOOT_FILE_KEY:
+            self.bootloaders[FILE_KEY] = value
+        elif key == UBOOT_IN_BOOT_PART_KEY:
+            self.bootloaders[IN_BOOT_PART_KEY] = value
+        elif key == UBOOT_DD_KEY:
+            self.bootloaders[DD_KEY] = value
 
     def parse_architectures_string(self, string):
         """Parse the string containing the architectures and store them in
@@ -97,6 +129,11 @@ class HwpackConverter(object):
                                                     'architectures')
         if self.sources:
             converted += create_yaml_dictionary(self.sources, 'sources')
+        if self.bootloaders:
+            converted += "bootloaders:\n"
+            # We default to u_boot as the bootloader.
+            converted += create_yaml_dictionary(self.bootloaders, 'u_boot',
+                                                indent=1)
         return converted
 
 
