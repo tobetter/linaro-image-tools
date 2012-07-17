@@ -114,6 +114,7 @@ class classproperty(object):
 class HardwarepackHandler(object):
     FORMAT_1 = '1.0'
     FORMAT_2 = '2.0'
+    FORMAT_3 = '3.0'
     FORMAT_MIXED = '1.0and2.0'
     metadata_filename = 'metadata'
     format_filename = 'FORMAT'
@@ -182,7 +183,7 @@ class HardwarepackHandler(object):
 
     def get_format(self):
         format = None
-        supported_formats = [self.FORMAT_1, self.FORMAT_2]
+        supported_formats = [self.FORMAT_1, self.FORMAT_2, self.FORMAT_3]
         for hwpack_tarfile in self.hwpack_tarfiles:
             format_file = hwpack_tarfile.extractfile(self.format_filename)
             format_string = format_file.read().strip()
@@ -305,7 +306,7 @@ class BoardConfig(object):
             if (cls.hwpack_format == cls.hardwarepack_handler.FORMAT_1):
                 return
 
-            if (cls.hwpack_format == cls.hardwarepack_handler.FORMAT_2):
+            if (cls.hwpack_format != cls.hardwarepack_handler.FORMAT_1):
                 # Clear V1 defaults.
                 cls.kernel_addr = None
                 cls.initrd_addr = None
