@@ -41,7 +41,7 @@ INSTALL_LATEST="no"
 FORCE_YES="no"
 SOURCES_LIST_FILE="${TEMP_DIR}/sources.list"
 APT_GET_OPTIONS="Dir::Etc::SourceList=${SOURCES_LIST_FILE}"
-SUPPORTED_FORMATS="1.0 2.0"  # A space-separated list of hwpack formats.
+SUPPORTED_FORMATS="1.0 2.0 3.0"  # A space-separated list of hwpack formats.
 
 sudo="sudo"
 if [ $(id -u) -eq 0 ]; then

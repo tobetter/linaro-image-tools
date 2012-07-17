@@ -124,10 +124,20 @@ class Config(object):
         if obfuscated_e:
             raise ConfigParser.Error(obfuscated_e)
 
-        self.set_bootloader(bootloader)
         self.set_board(board)
+        self.set_bootloader(bootloader)
 
     def set_bootloader(self, bootloader):
+        if not bootloader:
+            # Auto-detect bootloader. If there a a single bootloader specified
+            # then use it, else, error.
+            bootloaders = self.bootloaders
+            if isinstance(bootloaders, dict):
+                # We have a list of bootloaders in the expected format
+                bootloaders = bootloaders.keys()
+                if len(bootloaders) == 1:
+                    bootloader = bootloaders[0]
+
         self.bootloader = bootloader
 
     def set_board(self, board):
@@ -206,7 +216,7 @@ class Config(object):
             return HardwarePackFormatV1()
         elif format_string == '2.0':
             return HardwarePackFormatV2()
-        elif format_string == 3.0:
+        elif format_string == 3.0 or format_string == '3.0':
             return HardwarePackFormatV3()
         else:
             raise HwpackConfigError("Format version '%s' is not supported." % \
@@ -279,7 +289,9 @@ class Config(object):
     def _get_bootloader_option(self, key, join_list_with=False,
                                convert_to=None):
         """Get an option inside the current bootloader section/"""
-        if self.format.format_as_string == "3.0":
+        if self._is_v3:
+            if not self.bootloader:
+                raise ValueError("bootloader not set.")
             if not isinstance(key, list):
                 keys = [key]
             keys = ['bootloaders', self.bootloader] + keys
@@ -907,7 +919,9 @@ class Config(object):
         return self.format.format_as_string == '3.0'
 
     def _validate_bool(self, value):
-        """Checks if a value is boolean or not, both in old and new syntax."""
+        """Checks if a value is boolean or not, represented by "yes" or "no"."""
+        if not isinstance(value, str):
+            return False
         return string.lower(value) in ['yes', 'no']
 
     def _validate_uboot_in_boot_part(self):
