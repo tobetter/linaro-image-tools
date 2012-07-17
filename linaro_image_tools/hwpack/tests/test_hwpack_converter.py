@@ -15,6 +15,9 @@ from linaro_image_tools.hwpack.hwpack_convert import (
     HwpackConverter,
     HwpackConverterException,
     check_and_validate_args,
+    create_yaml_dictionary,
+    create_yaml_sequence,
+    create_yaml_string,
     )
 
 
@@ -84,3 +87,66 @@ class HwpackConverterTests(TestCaseWithFixtures):
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
         self.assertEqual(out_format, str(converter))
+
+    def test_create_yaml_dictionary_fron_list(self):
+        false_dictionary = []
+        self.assertRaises(HwpackConverterException, create_yaml_dictionary,
+                            false_dictionary)
+
+    def test_create_yaml_dictionary_fron_tuple(self):
+        false_dictionary = ()
+        self.assertRaises(HwpackConverterException, create_yaml_dictionary,
+                            false_dictionary)
+
+    def test_create_yaml_dictionary(self):
+        dictionary = {'key1': 'value1', 'key2': 'value2'}
+        expected_out = "key2: value2\nkey1: value1\n"
+        received_out = create_yaml_dictionary(dictionary)
+        self.assertEqual(expected_out, received_out)
+
+    def test_create_yaml_dictionary_with_name(self):
+        name = 'dictionary'
+        dictionary = {'key1': 'value1', 'key2': 'value2'}
+        expected_out = "dictionary:\n key2: value2\n key1: value1\n"
+        received_out = create_yaml_dictionary(dictionary, name)
+        self.assertEqual(expected_out, received_out)
+
+    def test_create_yaml_sequence_from_dict(self):
+        false_list = {}
+        name = 'list'
+        self.assertRaises(HwpackConverterException, create_yaml_sequence,
+                            false_list, name)
+
+    def test_create_yaml_sequence_from_tuple(self):
+        false_list = ()
+        name = 'list'
+        self.assertRaises(HwpackConverterException, create_yaml_sequence,
+                            false_list, name)
+
+    def test_create_yaml_sequence(self):
+        real_list = ['key1', 'key2']
+        name = 'list'
+        expected_out = "list:\n - key1\n - key2\n"
+        received_out = create_yaml_sequence(real_list, name)
+        self.assertEqual(expected_out, received_out)
+
+    def test_create_yaml_string(self):
+        key = "key"
+        value = "value"
+        expected_out = "key: value\n"
+        received_out = create_yaml_string(key, value)
+        self.assertEqual(expected_out, received_out)
+
+    def test_create_yaml_string_negative(self):
+        key = "key"
+        value = "value"
+        indent = -1
+        self.assertRaises(HwpackConverterException, create_yaml_string, key,
+                            value, indent)
+
+    def test_create_yaml_string_no_value(self):
+        key = "key"
+        value = None
+        indent = 0
+        self.assertRaises(HwpackConverterException, create_yaml_string, key,
+                            value, indent)
