@@ -272,10 +272,7 @@ class Metadata(object):
         if self.dtb_file is not None:
             # XXX In V3 this one should be a list, called dtb_files.
             metadata += create_yaml_string('dtb_file', self.dtb_file)
-        if self.extra_boot_options is not None:
-            # XXX This should go into bootloaders.
-            metadata += create_yaml_sequence(self.extra_boot_options,
-                                                'extra_boot_options')
+
         if self.boot_script is not None:
             metadata += create_yaml_string('boot_script', self.boot_script)
         if self.spl_in_boot_part is not None:
@@ -311,7 +308,14 @@ class Metadata(object):
         if self.format.format_as_string == '3.0':
             if self.bootloaders is not None:
                 metadata += self._create_bootloaders_section()
+            if self.extra_boot_options is not None:
+                # XXX This should go into bootloaders.
+                metadata += create_yaml_sequence(self.extra_boot_options,
+                                                    'extra_boot_options')
         else:
+            if self.extra_boot_options is not None:
+                metadata += create_yaml_string('extra_boot_options',
+                                                self.extra_boot_options)
             if self.uboot_dd is not None:
                 metadata += create_yaml_string("u_boot_dd", self.uboot_dd)
             if self.uboot_in_boot_part is not None:
