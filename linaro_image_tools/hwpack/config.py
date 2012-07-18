@@ -129,7 +129,7 @@ class Config(object):
 
     def set_bootloader(self, bootloader):
         if not bootloader:
-            # Auto-detect bootloader. If there a a single bootloader specified
+            # Auto-detect bootloader. If there is a single bootloader specified
             # then use it, else, error.
             bootloaders = self.bootloaders
             if isinstance(bootloaders, dict):
@@ -204,7 +204,7 @@ class Config(object):
             try:
                 format_string = self.parser.get(self.MAIN_SECTION,
                                                 self.FORMAT_KEY)
-            except ConfigParser.NoOptionError:
+            except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
                 # Default to 1.0 to aviod breaking existing hwpack files.
                 # When this code no longer supports 1.0, it effectively makes
                 # explicitly specifying format in hwpack files mandatory.
@@ -219,8 +219,8 @@ class Config(object):
         elif format_string == 3.0 or format_string == '3.0':
             return HardwarePackFormatV3()
         else:
-            raise HwpackConfigError("Format version '%s' is not supported." % \
-                                     format_string)
+            raise HwpackConfigError("Format version '%s' is not supported." %
+                                        format_string)
 
     @property
     def name(self):
@@ -395,7 +395,7 @@ class Config(object):
                 if not result:
                     return None
                 return result
-            except ConfigParser.NoOptionError:
+            except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
                 return None
 
     @property

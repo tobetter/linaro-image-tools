@@ -193,11 +193,8 @@ class ConfigTests(TestCase):
         self.assertEqual(None, config.validate())
 
     def test_validate_supported_format(self):
-        config = self.get_config(
-                self.valid_start
-                + "\nformat = 0.9\n")
-        self.assertValidationError(
-            "Format version '0.9' is not supported.", config)
+        contents = self.valid_start + "format = 0.9\n"
+        self.assertRaises(HwpackConfigError, Config, StringIO(contents))
 
     def test_validate_invalid_u_boot_package_name(self):
         config = self.get_config(
