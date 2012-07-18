@@ -421,7 +421,11 @@ class Config(object):
 
         A str.
         """
-        return self._get_option(self.EXTRA_SERIAL_OPTS_KEY, join_list_with=" ")
+        if self._is_v3:
+            return self._get_option(self.EXTRA_SERIAL_OPTS_KEY)
+        else:
+            return self._get_option(self.EXTRA_SERIAL_OPTS_KEY,
+                                    join_list_with=" ")
 
     @property
     def boot_script(self):

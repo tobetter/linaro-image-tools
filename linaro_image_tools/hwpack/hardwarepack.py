@@ -197,6 +197,12 @@ class Metadata(object):
 
         return metadata
 
+    def __str__(self):
+        if self.format.format_as_string == '3.0':
+            return self.create_metadata_new()
+        else:
+            return self.create_metadata_old()
+
     def _create_bootloaders_section(self):
         """Creates the correct bootloaders section for this YAML file.
 
@@ -207,7 +213,7 @@ class Metadata(object):
             metadata += create_yaml_dictionary(value, key, indent=1)
         return metadata
 
-    def __str__(self):
+    def create_metadata_new(self):
         """Get the contents of the metadata file.
 
         The metadata file is almost an identical copy of the hwpack
@@ -228,8 +234,12 @@ class Metadata(object):
         if self.support is not None:
             metadata += create_yaml_string('support', self.support)
 
-        if not self.format.has_v2_fields:
-            return metadata
+        if self.bootloaders is not None:
+            metadata += self._create_bootloaders_section()
+        if self.extra_boot_options is not None:
+            # XXX This should go into bootloaders.
+            metadata += create_yaml_sequence(self.extra_boot_options,
+                                            'extra_boot_options')
 
         if self.spl is not None:
             # XXX This one was only 'spl'
@@ -287,8 +297,8 @@ class Metadata(object):
             metadata += create_yaml_string('env_dd', self.env_dd)
         if self.extra_serial_opts is not None:
             # XXX This should be a sequence, but we get back a string.
-            metadata += create_yaml_string('extra_serial_options',
-                                            self.extra_serial_opts)
+            metadata += create_yaml_sequence(self.extra_serial_opts,
+                                                'extra_serial_options')
         if self.snowball_startup_files_config is not None:
             metadata += create_yaml_string('snowball_startup_files_config',
                                             self.snowball_startup_files_config)
@@ -305,24 +315,91 @@ class Metadata(object):
             metadata += create_yaml_string('samsung_bl2_len',
                                             self.samsung_bl2_len)
 
-        if self.format.format_as_string == '3.0':
-            if self.bootloaders is not None:
-                metadata += self._create_bootloaders_section()
-            if self.extra_boot_options is not None:
-                # XXX This should go into bootloaders.
-                metadata += create_yaml_sequence(self.extra_boot_options,
-                                                    'extra_boot_options')
-        else:
-            if self.extra_boot_options is not None:
-                metadata += create_yaml_string('extra_boot_options',
-                                                self.extra_boot_options)
-            if self.uboot_dd is not None:
-                metadata += create_yaml_string("u_boot_dd", self.uboot_dd)
-            if self.uboot_in_boot_part is not None:
-                metadata += create_yaml_string("u_boot_in_boot_par",
-                                                self.uboot_in_boot_part)
-            if self.u_boot is not None:
-                metadata += create_yaml_string("u_boot", self.u_boot)
+        return metadata
+
+    def create_metadata_old(self):
+        """Get the contents of the metadata file.
+
+        Creates a metadata file for v1 and v2 of the hwpack config file.
+        """
+        metadata = "NAME=%s\n" % self.name
+        metadata += "VERSION=%s\n" % self.version
+        metadata += "ARCHITECTURE=%s\n" % self.architecture
+        if self.origin is not None:
+            metadata += "ORIGIN=%s\n" % self.origin
+        if self.maintainer is not None:
+            metadata += "MAINTAINER=%s\n" % self.maintainer
+        if self.support is not None:
+            metadata += "SUPPORT=%s\n" % self.support
+
+        if not self.format.has_v2_fields:
+            return metadata
+
+        if self.u_boot is not None:
+            metadata += "U_BOOT=%s\n" % self.u_boot
+        if self.spl is not None:
+            metadata += "SPL=%s\n" % self.spl
+        if self.serial_tty is not None:
+            metadata += "SERIAL_TTY=%s\n" % self.serial_tty
+        if self.kernel_addr is not None:
+            metadata += "KERNEL_ADDR=%s\n" % self.kernel_addr
+        if self.initrd_addr is not None:
+            metadata += "INITRD_ADDR=%s\n" % self.initrd_addr
+        if self.load_addr is not None:
+            metadata += "LOAD_ADDR=%s\n" % self.load_addr
+        if self.dtb_addr is not None:
+            metadata += "DTB_ADDR=%s\n" % self.dtb_addr
+        if self.wired_interfaces != []:
+            metadata += "WIRED_INTERFACES=%s\n" % " ".join(
+                self.wired_interfaces)
+        if self.wireless_interfaces != []:
+            metadata += "WIRELESS_INTERFACES=%s\n" % " ".join(
+                self.wireless_interfaces)
+        if self.partition_layout is not None:
+            metadata += "PARTITION_LAYOUT=%s\n" % self.partition_layout
+        if self.mmc_id is not None:
+            metadata += "MMC_ID=%s\n" % self.mmc_id
+        if self.boot_min_size is not None:
+            metadata += "BOOT_MIN_SIZE=%s\n" % self.boot_min_size
+        if self.root_min_size is not None:
+            metadata += "ROOT_MIN_SIZE=%s\n" % self.root_min_size
+        if self.loader_min_size is not None:
+            metadata += "LOADER_MIN_SIZE=%s\n" % self.loader_min_size
+        if self.loader_start is not None:
+            metadata += "LOADER_START=%s\n" % self.loader_start
+        if self.vmlinuz is not None:
+            metadata += "KERNEL_FILE=%s\n" % self.vmlinuz
+        if self.initrd is not None:
+            metadata += "INITRD_FILE=%s\n" % self.initrd
+        if self.dtb_file is not None:
+            metadata += "DTB_FILE=%s\n" % self.dtb_file
+        if self.extra_boot_options is not None:
+            metadata += "EXTRA_BOOT_OPTIONS=%s\n" % self.extra_boot_options
+        if self.boot_script is not None:
+            metadata += "BOOT_SCRIPT=%s\n" % self.boot_script
+        if self.uboot_in_boot_part is not None:
+            metadata += "U_BOOT_IN_BOOT_PART=%s\n" % self.uboot_in_boot_part
+        if self.spl_in_boot_part is not None:
+            metadata += "SPL_IN_BOOT_PART=%s\n" % self.spl_in_boot_part
+        if self.uboot_dd is not None:
+            metadata += "U_BOOT_DD=%s\n" % self.uboot_dd
+        if self.spl_dd is not None:
+            metadata += "SPL_DD=%s\n" % self.spl_dd
+        if self.env_dd is not None:
+            metadata += "ENV_DD=%s\n" % self.env_dd
+        if self.extra_serial_opts is not None:
+            metadata += "EXTRA_SERIAL_OPTIONS=%s\n" % self.extra_serial_opts
+        if self.snowball_startup_files_config is not None:
+            metadata += "SNOWBALL_STARTUP_FILES_CONFIG=%s\n" % (
+                self.snowball_startup_files_config)
+        if self.samsung_bl1_start is not None:
+            metadata += "SAMSUNG_BL1_START=%s\n" % self.samsung_bl1_start
+        if self.samsung_bl1_len is not None:
+            metadata += "SAMSUNG_BL1_LEN=%s\n" % self.samsung_bl1_len
+        if self.samsung_env_len is not None:
+            metadata += "SAMSUNG_ENV_LEN=%s\n" % self.samsung_env_len
+        if self.samsung_bl2_len is not None:
+            metadata += "SAMSUNG_BL2_LEN=%s\n" % self.samsung_bl2_len
 
         return metadata
 
