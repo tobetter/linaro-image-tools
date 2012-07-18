@@ -32,6 +32,11 @@ from linaro_image_tools.hwpack.packages import (
 from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
 )
+from linaro_image_tools.hwpack.hwpack_convert import (
+    create_yaml_dictionary,
+    create_yaml_sequence,
+    create_yaml_string,
+)
 
 
 class Metadata(object):
@@ -127,6 +132,10 @@ class Metadata(object):
         self.samsung_bl2_len = samsung_bl2_len
 
     @classmethod
+    def add_v3_config(self, bootloaders):
+        self.bootloaders = bootloaders
+
+    @classmethod
     def from_config(cls, config, version, architecture):
         """Create a Metadata from a Config object.
 
@@ -153,39 +162,165 @@ class Metadata(object):
             # Helper variable to adhere to the line length limit.
             snowball_startup_config = config.snowball_startup_files_config
             metadata.add_v2_config(
-                serial_tty=config.serial_tty,
-                kernel_addr=config.kernel_addr,
-                initrd_addr=config.initrd_addr,
-                load_addr=config.load_addr,
-                wired_interfaces=config.wired_interfaces,
-                wireless_interfaces=config.wireless_interfaces,
-                partition_layout=config.partition_layout,
-                mmc_id=config.mmc_id,
                 boot_min_size=config.boot_min_size,
-                root_min_size=config.root_min_size,
+                boot_script=config.boot_script,
+                dtb_addr=config.dtb_addr,
+                dtb_file=config.dtb_file,
+                env_dd=config.env_dd,
+                extra_boot_options=config.extra_boot_options,
+                extra_serial_opts=config.extra_serial_opts,
+                initrd_addr=config.initrd_addr,
+                initrd=config.initrd,
+                kernel_addr=config.kernel_addr,
+                load_addr=config.load_addr,
                 loader_min_size=config.loader_min_size,
                 loader_start=config.loader_start,
-                vmlinuz=config.vmlinuz,
-                initrd=config.initrd,
-                dtb_file=config.dtb_file,
-                dtb_addr=config.dtb_addr,
-                extra_boot_options=config.extra_boot_options,
-                boot_script=config.boot_script,
-                uboot_in_boot_part=config.uboot_in_boot_part,
-                uboot_dd=config.uboot_dd,
-                spl_in_boot_part=config.spl_in_boot_part,
-                spl_dd=config.spl_dd,
-                env_dd=config.env_dd,
-                extra_serial_opts=config.extra_serial_opts,
-                snowball_startup_files_config=snowball_startup_config,
-                samsung_bl1_start=config.samsung_bl1_start,
+                mmc_id=config.mmc_id,
+                partition_layout=config.partition_layout,
+                root_min_size=config.root_min_size,
                 samsung_bl1_len=config.samsung_bl1_len,
+                samsung_bl1_start=config.samsung_bl1_start,
+                samsung_bl2_len=config.samsung_bl2_len,
                 samsung_env_len=config.samsung_env_len,
-                samsung_bl2_len=config.samsung_bl2_len)
+                serial_tty=config.serial_tty,
+                snowball_startup_files_config=snowball_startup_config,
+                spl_dd=config.spl_dd,
+                spl_in_boot_part=config.spl_in_boot_part,
+                uboot_dd=config.uboot_dd,
+                uboot_in_boot_part=config.uboot_in_boot_part,
+                vmlinuz=config.vmlinuz,
+                wired_interfaces=config.wired_interfaces,
+                wireless_interfaces=config.wireless_interfaces,
+                )
+        if config.format.format_as_string == '3.0':
+            metadata.add_v3_config(config.bootloaders)
+
         return metadata
 
     def __str__(self):
-        """Get the contents of the metadata file."""
+        if self.format.format_as_string == '3.0':
+            return self.create_metadata_new()
+        else:
+            return self.create_metadata_old()
+
+    def _create_bootloaders_section(self):
+        """Creates the correct bootloaders section for this YAML file.
+
+        The bootloaders property we get starting with V3 is a dictionary.
+        """
+        metadata = "bootloaders:\n"
+        for key, value in self.bootloaders.iteritems():
+            metadata += create_yaml_dictionary(value, key, indent=1)
+        return metadata
+
+    def create_metadata_new(self):
+        """Get the contents of the metadata file.
+
+        The metadata file is almost an identical copy of the hwpack
+        configuration file. Only a couple of fields are different, and some
+        are missing.
+        """
+        metadata = ""
+        metadata += create_yaml_string('format', self.format.format_as_string)
+        metadata += create_yaml_string('name', self.name)
+        metadata += create_yaml_string('version', self.version)
+        # This is a single 'architecture' hwpack, each arch will get its own,
+        # it is not retrieved from the Config.
+        metadata += create_yaml_string('architecture', self.architecture)
+        if self.origin is not None:
+            metadata += create_yaml_string('origin', self.origin)
+        if self.maintainer is not None:
+            metadata += create_yaml_string('maintainer', self.maintainer)
+        if self.support is not None:
+            metadata += create_yaml_string('support', self.support)
+
+        if self.bootloaders is not None:
+            metadata += self._create_bootloaders_section()
+        if self.extra_boot_options is not None:
+            # XXX This should go into bootloaders.
+            metadata += create_yaml_sequence(self.extra_boot_options,
+                                            'extra_boot_options')
+
+        if self.spl is not None:
+            # XXX This one was only 'spl'
+            metadata += create_yaml_string('spl_package', self.spl)
+        if self.serial_tty is not None:
+            metadata += create_yaml_string('serial_tty', self.serial_tty)
+        if self.kernel_addr is not None:
+            metadata += create_yaml_string('kernel_addr', self.kernel_addr)
+        if self.initrd_addr is not None:
+            metadata += create_yaml_string('initrd_addr', self.initrd_addr)
+        if self.load_addr is not None:
+            metadata += create_yaml_string('load_addr', self.load_addr)
+        if self.dtb_addr is not None:
+            metadata += create_yaml_string('dtb_addr', self.dtb_addr)
+        if self.wired_interfaces != []:
+            metadata += create_yaml_sequence(self.wired_interfaces,
+                                                'wired_interfaces')
+        if self.wireless_interfaces != []:
+            metadata += create_yaml_sequence(self.wireless_interfaces,
+                                                'wireless_interfaces')
+        if self.partition_layout is not None:
+            # XXX check out if we need a sequence.
+            metadata += create_yaml_string('partition_layout',
+                                            self.partition_layout)
+        if self.mmc_id is not None:
+            metadata += create_yaml_string('mmc_id', self.mmc_id)
+        if self.boot_min_size is not None:
+            metadata += create_yaml_string('boot_min_size', self.boot_min_size)
+        if self.root_min_size is not None:
+            metadata += create_yaml_string('root_min_size', self.root_min_size)
+        if self.loader_min_size is not None:
+            metadata += create_yaml_string('loader_min_size',
+                                            self.loader_min_size)
+        if self.loader_start is not None:
+            metadata += create_yaml_string('loader_start', self.loader_start)
+        if self.vmlinuz is not None:
+            metadata += create_yaml_string('kernel_file', self.vmlinuz)
+        if self.initrd is not None:
+            metadata += create_yaml_string('initrd_file', self.initrd)
+        if self.dtb_file is not None:
+            # XXX In V3 this one should be a list, called dtb_files.
+            metadata += create_yaml_string('dtb_file', self.dtb_file)
+
+        if self.boot_script is not None:
+            metadata += create_yaml_string('boot_script', self.boot_script)
+        if self.spl_in_boot_part is not None:
+            # XXX This should go into bootloaders.
+            metadata += create_yaml_string('spl_in_boot_part',
+                                            self.spl_in_boot_part)
+        if self.spl_dd is not None:
+            # XXX This should go into bootloaders.
+            metadata += create_yaml_string('spl_dd', self.spl_dd)
+        if self.env_dd is not None:
+            # XXX This should go into bootloaders.
+            metadata += create_yaml_string('env_dd', self.env_dd)
+        if self.extra_serial_opts is not None:
+            metadata += create_yaml_sequence(self.extra_serial_opts,
+                                                'extra_serial_options')
+        if self.snowball_startup_files_config is not None:
+            metadata += create_yaml_string('snowball_startup_files_config',
+                                            self.snowball_startup_files_config)
+        if self.samsung_bl1_start is not None:
+            metadata += create_yaml_string('samsung_bl1_start',
+                                            self.samsung_bl1_start)
+        if self.samsung_bl1_len is not None:
+            metadata += create_yaml_string('samsung_bl1_len',
+                                            self.samsung_bl1_len)
+        if self.samsung_env_len is not None:
+            metadata += create_yaml_string('samsung_env_len',
+                                            self.samsung_env_len)
+        if self.samsung_bl2_len is not None:
+            metadata += create_yaml_string('samsung_bl2_len',
+                                            self.samsung_bl2_len)
+
+        return metadata
+
+    def create_metadata_old(self):
+        """Get the contents of the metadata file.
+
+        Creates a metadata file for v1 and v2 of the hwpack config file.
+        """
         metadata = "NAME=%s\n" % self.name
         metadata += "VERSION=%s\n" % self.version
         metadata += "ARCHITECTURE=%s\n" % self.architecture

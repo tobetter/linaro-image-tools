@@ -40,6 +40,7 @@ from linaro_image_tools.hwpack.testing import (
 from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
     HardwarePackFormatV2,
+    HardwarePackFormatV3,
     )
 
 
@@ -87,174 +88,157 @@ class MetadataTests(TestCase):
 
     def test_str(self):
         metadata = Metadata("ahwpack", "4", "armel")
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n", str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_origin(self):
         metadata = Metadata("ahwpack", "4", "armel", origin="linaro")
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\nORIGIN=linaro\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "ORIGIN=linaro\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_maintainer(self):
         metadata = Metadata(
             "ahwpack", "4", "armel", maintainer="Some Maintainer")
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "MAINTAINER=Some Maintainer\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "MAINTAINER=Some Maintainer\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_support(self):
         metadata = Metadata("ahwpack", "4", "armel", support="unsupported")
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "SUPPORT=unsupported\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "SUPPORT=unsupported\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_serial_tty(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(serial_tty='ttyO2')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "SERIAL_TTY=ttyO2\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "SERIAL_TTY=ttyO2\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_kernel_addr(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(kernel_addr='0x80000000')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "KERNEL_ADDR=0x80000000\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "KERNEL_ADDR=0x80000000\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_initrd_addr(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(initrd_addr='0x80000000')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "INITRD_ADDR=0x80000000\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "INITRD_ADDR=0x80000000\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_load_addr(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(load_addr='0x80000000')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "LOAD_ADDR=0x80000000\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "LOAD_ADDR=0x80000000\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_dtb_addr(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(dtb_addr='0x80000000')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "DTB_ADDR=0x80000000\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "DTB_ADDR=0x80000000\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_wired_interfaces(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(wired_interfaces=['eth0', 'usb0'])
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "WIRED_INTERFACES=eth0 usb0\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "WIRED_INTERFACES=eth0 usb0\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_wireless_interfaces(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(wireless_interfaces=['wlan0', 'wl0'])
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "WIRELESS_INTERFACES=wlan0 wl0\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "WIRELESS_INTERFACES=wlan0 wl0\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_partition_layout(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(partition_layout='bootfs_rootfs')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "PARTITION_LAYOUT=bootfs_rootfs\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "PARTITION_LAYOUT=bootfs_rootfs\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_mmc_id(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(mmc_id='1')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "MMC_ID=1\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "MMC_ID=1\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_boot_min_size(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(boot_min_size='50')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "BOOT_MIN_SIZE=50\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "BOOT_MIN_SIZE=50\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_root_min_size(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(root_min_size='100')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "ROOT_MIN_SIZE=100\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "ROOT_MIN_SIZE=100\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_loader_min_size(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(loader_min_size='1')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "LOADER_MIN_SIZE=1\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "LOADER_MIN_SIZE=1\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_kernel_file(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(vmlinuz='boot/vmlinuz-3.0.0-1002-linaro-omap')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "KERNEL_FILE=boot/vmlinuz-3.0.0-1002-linaro-omap\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "KERNEL_FILE=boot/vmlinuz-3.0.0-1002-linaro-omap\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_initrd_file(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(initrd='boot/initrd.img-3.0.0-1002-linaro-omap')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "INITRD_FILE=boot/initrd.img-3.0.0-1002-linaro-omap\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "INITRD_FILE=boot/initrd.img-3.0.0-1002-linaro-omap\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_dtb_file(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(
             dtb_file='boot/dt-3.0.0-1002-linaro-omap/omap4-panda.dtb')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "DTB_FILE=boot/dt-3.0.0-1002-linaro-omap/omap4-panda.dtb\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\n"
+                        "ARCHITECTURE=armel\nDTB_FILE="
+                        "boot/dt-3.0.0-1002-linaro-omap/omap4-panda.dtb\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_boot_script(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(boot_script='boot.scr')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "BOOT_SCRIPT=boot.scr\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "BOOT_SCRIPT=boot.scr\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_extra_boot_options(self):
         metadata = Metadata("ahwpack", "4", "armel",
@@ -263,21 +247,21 @@ class MetadataTests(TestCase):
             extra_boot_options=(
                 'earlyprintk fixrtc nocompcache vram=48M omapfb.vram=0:24M '
                 'mem=456M@0x80000000 mem=512M@0xA0000000'))
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "EXTRA_BOOT_OPTIONS=earlyprintk fixrtc nocompcache vram=48M "
-            "omapfb.vram=0:24M mem=456M@0x80000000 mem=512M@0xA0000000\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
+                        "EXTRA_BOOT_OPTIONS=earlyprintk fixrtc nocompcache "
+                        "vram=48M omapfb.vram=0:24M "
+                        "mem=456M@0x80000000 mem=512M@0xA0000000\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_str_with_extra_serial_options(self):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(
             extra_serial_opts='console=tty0 console=ttyO2,115200n8')
-        self.assertEqual(
-            "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\n"
-            "EXTRA_SERIAL_OPTIONS=console=tty0 console=ttyO2,115200n8\n",
-            str(metadata))
+        expected_out = ("NAME=ahwpack\nVERSION=4\n"
+                        "ARCHITECTURE=armel\nEXTRA_SERIAL_OPTIONS="
+                        "console=tty0 console=ttyO2,115200n8\n")
+        self.assertEqual(expected_out, str(metadata))
 
     def test_from_config(self):
         class Config:
@@ -294,6 +278,70 @@ class MetadataTests(TestCase):
         self.assertEqual(config.support, metadata.support)
         self.assertEqual("2.0", metadata.version)
         self.assertEqual("i386", metadata.architecture)
+
+
+class NewMetadataTests(TestCase):
+
+    def setUp(self):
+        super(NewMetadataTests, self).setUp()
+
+    def test_format(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                                    format=HardwarePackFormatV3())
+        # Need to call also this one!
+        metadata.add_v2_config()
+        metadata.add_v3_config(bootloaders=None)
+        expected_out = ("format: 3.0\nname: ahwpack\nversion: 4\n"
+                        "architecture: armel\n")
+        self.assertEqual(expected_out, str(metadata))
+
+    def test_section_bootloaders(self):
+        bootloaders = {'u_boot': {'file': 'a_file'}}
+        metadata = Metadata("ahwpack", "4", "armel",
+                                    format=HardwarePackFormatV3())
+        # Need to call also this one!
+        metadata.add_v2_config()
+        metadata.add_v3_config(bootloaders=bootloaders)
+        expected_out = ("format: 3.0\nname: ahwpack\nversion: 4\n"
+                        "architecture: armel\nbootloaders:\n u_boot:\n"
+                        "  file: a_file\n")
+        self.assertEqual(expected_out, str(metadata))
+
+    def test_section_wireless(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                                    format=HardwarePackFormatV3())
+        wireless_list = ['wlan0', 'wl0']
+        # Need to call also this one!
+        metadata.add_v2_config(wireless_interfaces=wireless_list)
+        metadata.add_v3_config(bootloaders=None)
+        expected_out = ("format: 3.0\nname: ahwpack\nversion: 4\n"
+                        "architecture: armel\nwireless_interfaces:\n - wlan0\n"
+                        " - wl0\n")
+        self.assertEqual(expected_out, str(metadata))
+
+    def test_section_wired(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                                    format=HardwarePackFormatV3())
+        wired_list = ['eth0', 'usb0']
+        # Need to call also this one!
+        metadata.add_v2_config(wired_interfaces=wired_list)
+        metadata.add_v3_config(bootloaders=None)
+        expected_out = ("format: 3.0\nname: ahwpack\nversion: 4\n"
+                        "architecture: armel\nwired_interfaces:\n - eth0\n"
+                        " - usb0\n")
+        self.assertEqual(expected_out, str(metadata))
+
+    def test_section_extra_serial_options(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                                    format=HardwarePackFormatV3())
+        options = ['option1', 'option2,option3']
+        # Need to call also this one!
+        metadata.add_v2_config(extra_serial_opts=options)
+        metadata.add_v3_config(bootloaders=None)
+        expected_out = ("format: 3.0\nname: ahwpack\nversion: 4\n"
+                        "architecture: armel\nextra_serial_options:\n "
+                        "- option1\n - option2,option3\n")
+        self.assertEqual(expected_out, str(metadata))
 
 
 class HardwarePackTests(TestCase):
