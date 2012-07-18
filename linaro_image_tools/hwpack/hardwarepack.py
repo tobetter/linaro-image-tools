@@ -296,7 +296,6 @@ class Metadata(object):
             # XXX This should go into bootloaders.
             metadata += create_yaml_string('env_dd', self.env_dd)
         if self.extra_serial_opts is not None:
-            # XXX This should be a sequence, but we get back a string.
             metadata += create_yaml_sequence(self.extra_serial_opts,
                                                 'extra_serial_options')
         if self.snowball_startup_files_config is not None:

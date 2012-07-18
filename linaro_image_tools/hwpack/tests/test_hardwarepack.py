@@ -281,19 +281,67 @@ class MetadataTests(TestCase):
 
 
 class NewMetadataTests(TestCase):
+
     def setUp(self):
         super(NewMetadataTests, self).setUp()
-        self.metadata = Metadata("ahwpack", "4", "armel",
-                                    format=HardwarePackFormatV3())
 
-    def test_bootloaders(self):
+    def test_format(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                                    format=HardwarePackFormatV3())
+        # Need to call also this one!
+        metadata.add_v2_config()
+        metadata.add_v3_config(bootloaders=None)
+        expected_out = ("format: 3.0\nname: ahwpack\nversion: 4\n"
+                        "architecture: armel\n")
+        self.assertEqual(expected_out, str(metadata))
+
+    def test_section_bootloaders(self):
         bootloaders = {'u_boot': {'file': 'a_file'}}
-        self.metadata.add_v3_config(bootloaders=bootloaders)
+        metadata = Metadata("ahwpack", "4", "armel",
+                                    format=HardwarePackFormatV3())
+        # Need to call also this one!
+        metadata.add_v2_config()
+        metadata.add_v3_config(bootloaders=bootloaders)
         expected_out = ("format: 3.0\nname: ahwpack\nversion: 4\n"
                         "architecture: armel\nbootloaders:\n u_boot:\n"
-                        "  file: a_file\nwireless_interfaces:\n - wlan0\n "
-                        "- wl0\n")
-        self.assertEqual(expected_out, str(self.metadata))
+                        "  file: a_file\n")
+        self.assertEqual(expected_out, str(metadata))
+
+    def test_section_wireless(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                                    format=HardwarePackFormatV3())
+        wireless_list = ['wlan0', 'wl0']
+        # Need to call also this one!
+        metadata.add_v2_config(wireless_interfaces=wireless_list)
+        metadata.add_v3_config(bootloaders=None)
+        expected_out = ("format: 3.0\nname: ahwpack\nversion: 4\n"
+                        "architecture: armel\nwireless_interfaces:\n - wlan0\n"
+                        " - wl0\n")
+        self.assertEqual(expected_out, str(metadata))
+
+    def test_section_wired(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                                    format=HardwarePackFormatV3())
+        wired_list = ['eth0', 'usb0']
+        # Need to call also this one!
+        metadata.add_v2_config(wired_interfaces=wired_list)
+        metadata.add_v3_config(bootloaders=None)
+        expected_out = ("format: 3.0\nname: ahwpack\nversion: 4\n"
+                        "architecture: armel\nwired_interfaces:\n - eth0\n"
+                        " - usb0\n")
+        self.assertEqual(expected_out, str(metadata))
+
+    def test_section_extra_serial_options(self):
+        metadata = Metadata("ahwpack", "4", "armel",
+                                    format=HardwarePackFormatV3())
+        options = ['option1', 'option2,option3']
+        # Need to call also this one!
+        metadata.add_v2_config(extra_serial_opts=options)
+        metadata.add_v3_config(bootloaders=None)
+        expected_out = ("format: 3.0\nname: ahwpack\nversion: 4\n"
+                        "architecture: armel\nextra_serial_options:\n "
+                        "- option1\n - option2,option3\n")
+        self.assertEqual(expected_out, str(metadata))
 
 
 class HardwarePackTests(TestCase):
