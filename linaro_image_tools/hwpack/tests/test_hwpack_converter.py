@@ -150,11 +150,35 @@ class HwpackConverterTests(TestCaseWithFixtures):
                             value, indent)
 
     def test_bootloaders(self):
-        ini_format = "[hwpack]\nformat=2.0\nu_boot_package=a_package\n"
+        """Tests the correct creation of the bootloaders part."""
+        ini_format = ("[hwpack]\nformat=2.0\nu_boot_package=a_package\n"
                         "u_boot_file=a_file\nu_boot_in_boot_part=Yes\n"
-                        "u_boot_dd=33"
-        out_format = "format: 3.0\nbootloaders:\n in_boot_part: True\n dd: 33"
-                        "\n file: a_file\n package: a_package\n"
+                        "u_boot_dd=33")
+        out_format = ("format: 3.0\nbootloaders:\n u_boot:\n  in_boot_part: "
+                        "True\n  dd: 33\n  file: a_file\n  package: "
+                        "a_package\n")
+        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
+                                                                get_file_name()
+        output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
+        converter = HwpackConverter(input_file, output_file)
+        converter._parse()
+        self.assertEqual(out_format, str(converter))
+
+    def test_extra_boot_options(self):
+        """Tests the correct creation of the extra_boot_options part."""
+        ini_format = ("[hwpack]\nformat=2.0\nextra_boot_options=opt1 opt2")
+        out_format = ("format: 3.0\nextra_boot_options:\n - opt1\n - opt2\n")
+        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
+                                                                get_file_name()
+        output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
+        converter = HwpackConverter(input_file, output_file)
+        converter._parse()
+        self.assertEqual(out_format, str(converter))
+
+    def test_extra_serial_options(self):
+        """Tests the correct creation of the extra_serial_options part."""
+        ini_format = ("[hwpack]\nformat=2.0\nextra_serial_options=opt1 opt2")
+        out_format = ("format: 3.0\nextra_serial_options:\n - opt1\n - opt2\n")
         input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
                                                                 get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()

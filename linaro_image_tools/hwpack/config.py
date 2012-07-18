@@ -919,7 +919,8 @@ class Config(object):
         return self.format.format_as_string == '3.0'
 
     def _validate_bool(self, value):
-        """Checks if a value is boolean or not, represented by "yes" or "no"."""
+        """Checks if a value is boolean or not, represented by "yes" or "no".
+        """
         if not isinstance(value, str):
             return False
         return string.lower(value) in ['yes', 'no']
