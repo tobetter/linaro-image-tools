@@ -273,7 +273,7 @@ class Metadata(object):
         if self.origin is not None:
             metadata += dump({ORIGIN_FIELD: self.origin})
         if self.maintainer is not None:
-            metadata += dump({MAINTAINER_FIELD, self.maintainer})
+            metadata += dump({MAINTAINER_FIELD: self.maintainer})
         if self.support is not None:
             metadata += dump({SUPPORT_FIELD: self.support})
         if self.bootloaders is not None:
