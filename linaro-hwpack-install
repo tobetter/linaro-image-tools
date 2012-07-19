@@ -178,8 +178,8 @@ if [ "$HWPACK_VERSION" = "" ]; then
   HWPACK_VERSION=$(query_v3_metadata 'version')
 fi
 
-if [ "$HWPACK_VERSION" = "3.0" ]; then
-  HWPACK_ARCH=$(query_v3_metadata 'architectures 0')
+if [ "$hwpack_format" = "3.0" ]; then
+  HWPACK_ARCH=$(query_v3_metadata 'architecture')
 else
   HWPACK_ARCH=`grep ARCHITECTURE "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
 fi
@@ -267,7 +267,7 @@ echo -n "Installing packages ..."
 # For "older" hwpacks that don't have a dependency package, we just
 # manually install the contents of the hwpack.
 
-if [ "$HWPACK_VERSION" = "3.0" ]; then
+if [ "hwpack_format" = "3.0" ]; then
   HWPACK_NAME=$(query_v3_metadata 'name')
 else
   HWPACK_NAME=`grep NAME "${HWPACK_DIR}/metadata" | cut -d "=" -f2`

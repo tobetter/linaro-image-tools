@@ -333,6 +333,13 @@ class Config(object):
                 return None
         return result
 
+    def get_option(self, name):
+        """Return the value of an attribute by name.
+
+        Used when you can't use a property.
+        """
+        return attrgetter(name)(self)
+
     def _get_option(self, key, join_list_with=False, convert_to=None):
         """Return value for the given key. Precedence to board specific values.
 
