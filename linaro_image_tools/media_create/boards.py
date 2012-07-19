@@ -179,9 +179,7 @@ class HardwarepackHandler(object):
                     hwpack_with_data = hwpack_tarfile
             except ConfigParser.NoOptionError:
                 continue
-        print "\n\n\n"
-        print "get_field", field, data, hwpack_with_data
-        print "\n\n\n"
+
         return data, hwpack_with_data
 
     def get_format(self):
@@ -659,7 +657,6 @@ class BoardConfig(object):
     def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
                         chroot_dir, rootfs_uuid, boot_dir,
                         boot_device_or_file):
-        print "\n\n\nmake_boot_files\n\n\n"
         if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
             parts_dir = uboot_parts_dir
         else:
@@ -703,10 +700,7 @@ class BoardConfig(object):
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
         with cls.hardwarepack_handler:
-            spl_file = cls.get_file('spl')
-            print "\n\n\n"
-            print "_make_boot_files_v2"
-            print cls.spl_in_boot_part, spl_file
+            spl_file = cls.get_file('spl_file')
             if cls.spl_in_boot_part:
                 assert spl_file is not None, (
                     "SPL binary could not be found")
@@ -721,7 +715,7 @@ class BoardConfig(object):
             if cls.spl_dd:
                 cls._dd_file(spl_file, boot_device_or_file, cls.spl_dd)
 
-            uboot_file = cls.get_file('u_boot')
+            uboot_file = cls.get_file('u_boot_file')
             if cls.uboot_dd:
                 cls._dd_file(uboot_file, boot_device_or_file, cls.uboot_dd)
 
@@ -770,9 +764,6 @@ class BoardConfig(object):
         if is_live:
             parts_dir = 'casper'
         uboot_parts_dir = os.path.join(chroot_dir, parts_dir)
-
-        print "\n\n\npopulate_boot\n\n\n"
-
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
         with partition_mounted(boot_partition, boot_disk):
             if cls.uboot_in_boot_part:
@@ -1285,7 +1276,7 @@ class Mx5Config(BoardConfig):
         # XXX: delete this method when hwpacks V1 can die
         assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         with cls.hardwarepack_handler:
-            uboot_file = cls.get_file('u_boot', default=os.path.join(
+            uboot_file = cls.get_file('u_boot_file', default=os.path.join(
                     chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
                     'u-boot.imx'))
             install_mx5_boot_loader(uboot_file, boot_device_or_file,
@@ -1786,7 +1777,7 @@ def install_omap_boot_loader(chroot_dir, boot_disk, cls):
             default = _get_mlo_file(chroot_dir)
         except AssertionError:
             default = None
-        mlo_file = cls.get_file('spl', default=default)
+        mlo_file = cls.get_file('spl_file', default=default)
         cmd_runner.run(["cp", "-v", mlo_file, boot_disk], as_root=True).wait()
         # XXX: Is this really needed?
         cmd_runner.run(["sync"]).wait()
