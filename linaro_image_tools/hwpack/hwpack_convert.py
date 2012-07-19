@@ -4,49 +4,57 @@ import os
 import os.path
 import re
 
+from hwpack_fields import (
+    ARCHITECTURES_FIELD,
+    ASSUME_INSTALLED_FIELD,
+    BOOTLOADERS_FIELD,
+    EXTRA_BOOT_OPTIONS_FIELD,
+    EXTRA_SERIAL_OPTIONS_FIELD,
+    SOURCES_FIELD,
+    FORMAT_FIELD,
+    PACKAGES_FIELD,
+    PACKAGE_FIELD,
+    FILE_FIELD,
+    IN_BOOT_PART_FIELD,
+    DD_FIELD,
+    ENV_DD_FIELD,
+    SPL_IN_BOOT_PART_FIELD,
+    SPL_DD_FIELD,
+    SPL_PACKAGE_FIELD,
+    SPL_FILE_FIELD,
+    WIRED_INTERFACES_FIELD,
+    WIRELESS_INTERFACES_FIELD,
+)
+
 # This is the main section of an INI-style hwpack config file.
 MAIN_SECTION = 'hwpack'
-# This, if has multiple values, should be converted into the proper structure.
-ARCHITECTURES_KEY = 'architectures'
-# The extra boot options field.
-EXTRA_BOOT_OPTIONS_KEY = 'extra_boot_options'
-# The extra_serial_options key.
-EXTRA_SERIAL_OPTIONS_KEY = 'extra_serial_options'
-# The sources key.
-SOURCES_KEY = 'sources'
-# The packages key.
-PACKAGES_KEY = 'packages'
-# The format key.
-FORMAT_KEY = 'format'
 # The suffix for the new file
 NEW_FILE_SUFFIX = '.yaml'
 # How many spaces should be used for indentation.
 INDENT_STEP = 1
-# Regular expression to convert for Yes/No values into Boolean.
+# Regular expression to convert from Yes/No values into Boolean.
 YES_REGEX = '[Yy]es'
 NO_REGEX = '[Nn]o'
 # The default format number.
 DEFAULT_FORMAT = '3.0'
-# Old INI style u_boot keys name, and new YAML ones.
-U_BOOT_PACKAGE_KEY = "u_boot_package"
-U_BOOT_FILE_KEY = "u_boot_file"
+# Old INI style u_boot keys name.
+UBOOT_PACKAGE_KEY = "u_boot_package"
+UBOOT_FILE_KEY = "u_boot_file"
 UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
 UBOOT_DD_KEY = 'u_boot_dd'
-PACKAGE_KEY = "package"
-FILE_KEY = "file"
-IN_BOOT_PART_KEY = "in_boot_part"
-DD_KEY = "dd"
 # All the u_boot defined keys in a list.
-UBOOT_KEYS = [U_BOOT_PACKAGE_KEY, U_BOOT_FILE_KEY, UBOOT_IN_BOOT_PART_KEY,
+UBOOT_KEYS = [UBOOT_PACKAGE_KEY, UBOOT_FILE_KEY, UBOOT_IN_BOOT_PART_KEY,
                 UBOOT_DD_KEY]
 
-# The name of the bootloaders section.
-BOOTLOADERS_FIELD = 'bootloaders'
+# Old field, the only one with a dash: since the format is new, convert it.
+ASSUME_INSTALLED_OLD = 'assume-installed'
+
 # The default bootloader for the bootloaders section.
 DEFAULT_BOOTLOADER = 'u_boot'
-# Network interfaces.
-WIRED_INTERFACES_KEY = 'wired_interfaces'
-WIRELESS_INTERFACES_KEY = 'wireless_interfaces'
+
+# All the SPL keys
+SPL_KEYS = [SPL_IN_BOOT_PART_FIELD, SPL_DD_FIELD, SPL_PACKAGE_FIELD,
+            SPL_FILE_FIELD, ENV_DD_FIELD]
 
 logger = logging.getLogger("linaro_hwpack_converter")
 
@@ -89,6 +97,8 @@ class HwpackConverter(object):
         # Lists for network interfaces.
         self.wired_interfaces = []
         self.wireless_interfaces = []
+        # SPL entries
+        self.spl = {}
 
     def _parse(self):
         """Parses the config file and stores its values."""
@@ -102,36 +112,42 @@ class HwpackConverter(object):
                 if section == MAIN_SECTION:
                     for key, value in parser.items(section):
                         if value is not None:
-                            if key == ARCHITECTURES_KEY:
+                            if key == ARCHITECTURES_FIELD:
                                 self.parse_list_string(self.architectures,
                                                         value)
                                 continue
-                            elif key == EXTRA_BOOT_OPTIONS_KEY:
+                            elif key == EXTRA_BOOT_OPTIONS_FIELD:
                                 self.parse_list_string(self.extra_boot_options,
                                                         value)
                                 continue
-                            elif key == EXTRA_SERIAL_OPTIONS_KEY:
+                            elif key == EXTRA_SERIAL_OPTIONS_FIELD:
                                 self.parse_list_string(
                                                     self.extra_serial_options,
                                                     value)
                                 continue
-                            elif key == WIRED_INTERFACES_KEY:
+                            elif key == WIRED_INTERFACES_FIELD:
                                 self.parse_list_string(self.wired_interfaces,
                                                         value)
                                 continue
-                            elif key == WIRELESS_INTERFACES_KEY:
+                            elif key == WIRELESS_INTERFACES_FIELD:
                                 self.parse_list_string(
                                                     self.wireless_interfaces,
                                                     value)
                                 continue
-                            elif key == FORMAT_KEY:
+                            elif key in SPL_KEYS:
+                                self.spl[key] = value
+                                continue
+                            elif key == FORMAT_FIELD:
                                 value = DEFAULT_FORMAT
-                            elif key == PACKAGES_KEY:
+                            elif key == PACKAGES_FIELD:
                                 self.parse_list_string(self.packages, value)
                                 continue
                             elif key in UBOOT_KEYS:
                                 self._set_bootloaders(key, value)
                                 continue
+                            # Convert an old key into the new one.
+                            elif key == ASSUME_INSTALLED_OLD:
+                                key = ASSUME_INSTALLED_FIELD
                             self.hwpack[key] = value
                 else:
                     # Here we have only sources sections.
@@ -145,14 +161,14 @@ class HwpackConverter(object):
 
         :param key: The key of the bootloader.
         :param value: The key value."""
-        if key == U_BOOT_PACKAGE_KEY:
-            self.bootloaders[PACKAGE_KEY] = value
-        elif key == U_BOOT_FILE_KEY:
-            self.bootloaders[FILE_KEY] = value
+        if key == UBOOT_PACKAGE_KEY:
+            self.bootloaders[PACKAGE_FIELD] = value
+        elif key == UBOOT_FILE_KEY:
+            self.bootloaders[FILE_FIELD] = value
         elif key == UBOOT_IN_BOOT_PART_KEY:
-            self.bootloaders[IN_BOOT_PART_KEY] = value
+            self.bootloaders[IN_BOOT_PART_FIELD] = value
         elif key == UBOOT_DD_KEY:
-            self.bootloaders[DD_KEY] = value
+            self.bootloaders[DD_FIELD] = value
 
     def parse_list_string(self, store, string, split=" "):
         """Parses a string of listed values, and stores the single splitted
@@ -188,28 +204,33 @@ class HwpackConverter(object):
             converted += create_yaml_dictionary(self.hwpack)
         if self.architectures:
             converted += create_yaml_sequence(self.architectures,
-                                                ARCHITECTURES_KEY)
-        if self.extra_boot_options:
-            converted += create_yaml_sequence(self.extra_boot_options,
-                                                EXTRA_BOOT_OPTIONS_KEY)
+                                                ARCHITECTURES_FIELD)
         if self.extra_serial_options:
             converted += create_yaml_sequence(self.extra_serial_options,
-                                                EXTRA_SERIAL_OPTIONS_KEY)
+                                                EXTRA_SERIAL_OPTIONS_FIELD)
         if self.packages:
-            converted += create_yaml_sequence(self.packages, PACKAGES_KEY)
+            converted += create_yaml_sequence(self.packages, PACKAGES_FIELD)
         if self.wired_interfaces:
             converted += create_yaml_sequence(self.wired_interfaces,
-                                                WIRED_INTERFACES_KEY)
+                                                WIRED_INTERFACES_FIELD)
         if self.wireless_interfaces:
             converted += create_yaml_sequence(self.wireless_interfaces,
-                                                WIRELESS_INTERFACES_KEY)
+                                                WIRELESS_INTERFACES_FIELD)
         if self.sources:
-            converted += create_yaml_dictionary(self.sources, SOURCES_KEY)
-        if self.bootloaders:
-            converted += BOOTLOADERS_FIELD + ":\n"
+            converted += create_yaml_dictionary(self.sources, SOURCES_FIELD)
+        if self.bootloaders or self.extra_boot_options or self.spl:
+            converted += create_yaml_entry(BOOTLOADERS_FIELD)
             # We default to u_boot as the bootloader.
-            converted += create_yaml_dictionary(self.bootloaders,
-                                                DEFAULT_BOOTLOADER, indent=1)
+            converted += create_yaml_entry(DEFAULT_BOOTLOADER, indent=1)
+            if self.bootloaders:
+                converted += create_yaml_dictionary(self.bootloaders,
+                                                    indent=2)
+            if self.extra_boot_options:
+                converted += create_yaml_sequence(self.extra_boot_options,
+                                                    EXTRA_BOOT_OPTIONS_FIELD,
+                                                    indent=2)
+            if self.spl:
+                converted += create_yaml_dictionary(self.spl, indent=2)
         return converted
 
 
@@ -238,7 +259,8 @@ def create_yaml_sequence(sequence, name, indent=0):
 
 
 def create_yaml_dictionary(dictionary, name=None, indent=0):
-    """Creates a YAML-string that describes a dictionary (mapping of mappings).
+    """Creates a string that describes a dictionary in YAML
+    (mapping of mappings).
 
     :param dictionary: The dictionary to be converted into YAML format.
     :param name: The name to be given to the created dictionary.
@@ -266,12 +288,13 @@ def create_yaml_dictionary(dictionary, name=None, indent=0):
 
 
 def create_yaml_string(key, value, indent=0):
-    """Creates a normal YAML-format string of the type KEY: VALUE.
+    """Creates a normal YAML-format string of the type 'KEY: VALUE'.
 
     :param key: The name of the key.
     :param value: The value to assign to the key.
     :param indent: A positive integer to calculate the indentation level.
-    :return A YAML-string of the key:value type.
+                    Defaults to zero.
+    :return A YAML-string of the 'key: value' type.
     """
     if key is None or value is None:
         raise HwpackConverterException("Name or value cannot be empty.")
@@ -289,6 +312,75 @@ def create_yaml_string(key, value, indent=0):
                     {'indentation': indentation, 'key': key,
                         'value': value})
     return yaml_string
+
+
+def create_yaml_entry(name, indent=0):
+    """Create a simple entry in a YAML format, like 'name:'.
+
+    :param name: The name of the entry.
+    :param indent: A positive integer to calculate the indentation level.
+                    Defaults to zero.
+    :return A string.
+    """
+    if not name:
+        raise HwpackConverterException("Name cannot be None or empty.")
+    if indent < 0:
+        raise HwpackConverterException("Indentation value has to be positive.")
+
+    indentation = _calculate_indent(indent)
+    yaml_string = ("%s%s:\n" % (indentation, name))
+    return yaml_string
+
+
+def create_yaml_string_from_list(name, sequence, indent=0):
+    """Create a YAML key:value entry where value is a space separated strings
+    starting from a list.
+
+    :param name: The name of the entry.
+    :param sequence: The sequence to concatanate.
+    :param indent: A positive integer to calculate the indentation leve.
+                    Defaults to zero.
+    :return A string.
+    """
+    if not isinstance(sequence, list):
+        raise HwpackConverterException("The value passed is not of type "
+                                        "'list''")
+    if not name:
+        raise HwpackConverterException("Name cannot be None or empty.")
+    if indent < 0:
+        raise HwpackConverterException("Indentation value has to be positive.")
+    indentation = _calculate_indent(indent)
+    space_separate_string = " ".join(sequence)
+    yaml_string = ("%s%s: %s\n" % (indentation, name, space_separate_string))
+    return yaml_string
+
+
+def recurse_dictionary(dictionary, indent=0, convert=False):
+    """Recursively create a string that describes a dictionary in YAML starting
+    from a dictionary containing other dictionaries or other entries.
+
+    :param dictionary: The dictionary that will be recursively converted.
+    :param indent: A positive integer to calculate the indentation level.
+                    Defaults to zero.
+    :param convert: If a list contained in the dictionary should be converted
+                    into a space separated strng. Defaults to False.
+    :return A string.
+    """
+    metadata = ''
+    for key, value in dictionary.iteritems():
+        if isinstance(value, dict):
+            metadata += create_yaml_entry(key, indent)
+            metadata += recurse_dictionary(value, indent + INDENT_STEP,
+                                            convert)
+        elif isinstance(value, list):
+            if convert:
+                # We default into creating a space separate list
+                metadata += create_yaml_string_from_list(key, value, indent)
+            else:
+                metadata += create_yaml_sequence(key, value, indent)
+        else:
+            metadata += create_yaml_string(key, value, indent)
+    return metadata
 
 
 def _calculate_indent(indent):

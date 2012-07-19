@@ -330,6 +330,13 @@ class Config(object):
                 return None
         return result
 
+    def get_option(self, name):
+        """Return the value of an attribute by name.
+
+        Used when you can't use a property.
+        """
+        return attrgetter(name)(self)
+
     def _get_option(self, key, join_list_with=False, convert_to=None):
         """Return value for the given key. Precedence to board specific values.
 
@@ -421,11 +428,7 @@ class Config(object):
 
         A str.
         """
-        if self._is_v3:
-            return self._get_option(self.EXTRA_SERIAL_OPTS_KEY)
-        else:
-            return self._get_option(self.EXTRA_SERIAL_OPTS_KEY,
-                                    join_list_with=" ")
+        return self._get_option(self.EXTRA_SERIAL_OPTS_KEY, join_list_with=" ")
 
     @property
     def boot_script(self):
