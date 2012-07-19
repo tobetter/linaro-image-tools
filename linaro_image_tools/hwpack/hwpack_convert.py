@@ -1,7 +1,29 @@
+# Copyright (C) 2010, 2011, 2012 Linaro
+#
+# Author: Milo Casagrande <milo.casagrande@linaro.org>
+#
+# This file is part of Linaro Image Tools.
+#
+# Linaro Image Tools is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# Linaro Image Tools is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Linaro Image Tools; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+# USA.
+
 import ConfigParser
 import logging
 import os
 import os.path
+import re
 import yaml
 
 from hwpack_fields import (
@@ -112,6 +134,10 @@ class HwpackConverter(object):
                 if section == MAIN_SECTION:
                     for key, value in parser.items(section):
                         if value is not None:
+                            if re.match("[Yy]es", value):
+                                value = True
+                            elif re.match("[Nn]o", value):
+                                value = False
                             if key == ARCHITECTURES_FIELD:
                                 self.parse_list_string(self.architectures,
                                                         value)
@@ -210,7 +236,7 @@ class HwpackConverter(object):
                                 self.extra_serial_options}
             converted += dump(serial_options)
         if self.packages:
-            packages = {PACKAGE_FIELD: self.packages}
+            packages = {PACKAGES_FIELD: self.packages}
             converted += dump(packages)
         if self.wired_interfaces:
             wired = {WIRED_INTERFACES_FIELD: self.wired_interfaces}

@@ -1,3 +1,24 @@
+# Copyright (C) 2010, 2011, 2012 Linaro
+#
+# Author: Milo Casagrande <milo.casagrande@linaro.org>
+#
+# This file is part of Linaro Image Tools.
+#
+# Linaro Image Tools is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# Linaro Image Tools is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Linaro Image Tools; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+# USA.
+
 import tempfile
 from linaro_image_tools.testing import TestCaseWithFixtures
 from linaro_image_tools.tests.fixtures import (
@@ -74,7 +95,7 @@ class HwpackConverterTests(TestCaseWithFixtures):
                         "u_boot_file=a_file\nu_boot_in_boot_part=Yes\n"
                         "u_boot_dd=33")
         out_format = ("format: '3.0'\nbootloaders:\n  u_boot:\n    dd: '33'"
-                        "\n    file: a_file\n    in_boot_part: 'Yes'\n"
+                        "\n    file: a_file\n    in_boot_part: true\n"
                         "    package: a_package\n")
         input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
                                                                 get_file_name()
