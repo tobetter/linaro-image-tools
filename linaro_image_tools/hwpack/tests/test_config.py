@@ -194,7 +194,8 @@ class ConfigTests(TestCase):
 
     def test_validate_supported_format(self):
         contents = self.valid_start + "format = 0.9\n"
-        self.assertRaises(HwpackConfigError, Config, StringIO(contents))
+        config = Config(StringIO(contents))
+        self.assertRaises(HwpackConfigError, config.validate)
 
     def test_validate_invalid_u_boot_package_name(self):
         config = self.get_config(

@@ -39,6 +39,9 @@ class HwpackConfigError(Exception):
 class Config(object):
     """Encapsulation of a hwpack-create configuration."""
     translate_v2_to_v3 = {}
+    translate_v2_metadata = {"u_boot_file": "U_BOOT",
+                             "spl_file": "SPL",
+                             "architectures": "ARCHITECTURE"}
 
     MAIN_SECTION = "hwpack"
     NAME_KEY = "name"
@@ -396,16 +399,23 @@ class Config(object):
                     result = new_list
                 else:
                     result = convert_to(result)
-
-            return result
         else:
             try:
                 result = self.parser.get(self.MAIN_SECTION, key)
-                if not result:
-                    return None
-                return result
             except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
-                return None
+                # May be trying to read a metadata file, which has uppercase
+                # keys, some of which need translating to different strings...
+                if key in self.translate_v2_metadata:
+                    key = self.translate_v2_metadata[key]
+                else:
+                    key = key.upper()
+                try:
+                    result = self.parser.get(self.MAIN_SECTION, key)
+                except (ConfigParser.NoOptionError,
+                        ConfigParser.NoSectionError):
+                    result = None
+
+        return result
 
     @property
     def serial_tty(self):

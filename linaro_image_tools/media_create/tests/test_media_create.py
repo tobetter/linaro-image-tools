@@ -216,22 +216,22 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
 
     def test_get_metadata(self):
         data = 'data to test'
-        metadata = self.metadata + "TEST=%s\n" % data
+        metadata = self.metadata + "U_BOOT=%s\n" % data
         tarball = self.add_to_tarball(
             [('metadata', metadata)])
         hp = HardwarepackHandler([tarball])
         with hp:
-            test_data, _ = hp.get_field(hp.main_section, 'test')
+            test_data, _ = hp.get_field('u_boot_file')
             self.assertEqual(test_data, data)
 
     def test_preserves_formatters(self):
         data = '%s%d'
-        metadata = self.metadata + "TEST=%s\n" % data
+        metadata = self.metadata + "U_BOOT=%s\n" % data
         tarball = self.add_to_tarball(
             [('metadata', metadata)])
         hp = HardwarepackHandler([tarball])
         with hp:
-            test_data, _ = hp.get_field(hp.main_section, 'test')
+            test_data, _ = hp.get_field('u_boot_file')
             self.assertEqual(test_data, data)
 
     def test_creates_tempdir(self):
@@ -252,15 +252,14 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
 
     def test_get_file(self):
         data = 'test file contents\n'
-        metadata_file = 'TESTFILE'
         file_in_archive = 'testfile'
-        metadata = self.metadata + "%s=%s\n" % (metadata_file, file_in_archive)
+        metadata = self.metadata + "%s=%s\n" % ('U_BOOT', file_in_archive)
         tarball = self.add_to_tarball(
             [('metadata', metadata),
              (file_in_archive, data)])
         hp = HardwarepackHandler([tarball])
         with hp:
-            test_file = hp.get_file(metadata_file)
+            test_file = hp.get_file('u_boot_file')
             self.assertEquals(data, open(test_file, 'r').read())
 
 
@@ -272,7 +271,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         def __enter__(self):
             return self
 
-        def get_field(self, section, field):
+        def get_field(self, field):
             try:
                 return self.metadata_dict[field], None
             except:
@@ -367,7 +366,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
-        self.assertEquals(data_to_set.split(' '), config.wired_interfaces)
+        self.assertEquals(data_to_set, config.wired_interfaces)
 
     def test_sets_wireless_interfaces(self):
         self.useFixture(MockSomethingFixture(
@@ -382,7 +381,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
-        self.assertEquals(data_to_set.split(' '), config.wireless_interfaces)
+        self.assertEquals(data_to_set, config.wireless_interfaces)
 
     def test_sets_mmc_id(self):
         self.useFixture(MockSomethingFixture(
