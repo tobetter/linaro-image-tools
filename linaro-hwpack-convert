@@ -1,0 +1,73 @@
+#!/usr/bin/python
+# Copyright (C) 2010, 2011, 2012 Linaro
+#
+# Author: Milo Casagrande <milo.casagrande@linaro.org>
+#
+# This file is part of Linaro Image Tools.
+#
+# Linaro Image Tools is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# Linaro Image Tools is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Linaro Image Tools; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+# USA.
+
+
+import argparse
+import logging
+import sys
+import os
+
+from linaro_image_tools.hwpack.hwpack_convert import (
+    HwpackConverter,
+    HwpackConverterException,
+    check_and_validate_args,
+    )
+from linaro_image_tools.__version__ import __version__
+
+
+def get_logger(debug=False):
+    ch = logging.StreamHandler()
+    logger = logging.getLogger("linaro_hwpack_converter")
+
+    if debug:
+        ch.setLevel(logging.DEBUG)
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        ch.setFormatter(formatter)
+        logger.setLevel(logging.DEBUG)
+    else:
+        ch.setLevel(logging.INFO)
+        formatter = logging.Formatter("%(message)s")
+        ch.setFormatter(formatter)
+        logger.setLevel(logging.INFO)
+        logger.addHandler(ch)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(version='%(prog)s ' + __version__)
+    parser.add_argument("CONFIG_FILE",
+                        help="The configuration file to convert.")
+    parser.add_argument("--out",
+                        help="The output file name to write. If none is "
+                            "given, the input file name (and path) will be "
+                            "used with the '.yaml' suffix.")
+    parser.add_argument("--debug", action="store_true")
+    args = parser.parse_args()
+    logger = get_logger(debug=args.debug)
+    try:
+        input_file, output_file = check_and_validate_args(args)
+        print "Converting '%s' into new YAML format..." % (input_file)
+        converter = HwpackConverter(input_file, output_file)
+    except HwpackConverterException, e:
+        sys.stderr.write(str(e) + "\n")
+        sys.exit(1)
+    converter.convert()
+    print "File '%s' converted in '%s'." % (input_file, output_file)
