@@ -44,7 +44,7 @@ from linaro_image_tools import cmd_runner
 
 from linaro_image_tools.media_create.partitions import (
     partition_mounted, SECTOR_SIZE, register_loopback)
-
+from StringIO import StringIO
 
 KERNEL_GLOB = 'vmlinuz-*-%(kernel_flavor)s'
 INITRD_GLOB = 'initrd.img-*-%(kernel_flavor)s'
@@ -165,10 +165,11 @@ class HardwarepackHandler(object):
         hwpack_with_data = None
         for hwpack_tarfile in self.hwpack_tarfiles:
             metadata = hwpack_tarfile.extractfile(self.metadata_filename)
-            # Use RawConfigParser which does not support the magical
-            # interpolation behavior of ConfigParser so we don't mess up
-            # metadata accidentally.
-            parser = Config(metadata)
+            lines = metadata.readlines()
+            if re.search("=", lines[0]) and not re.search(":", lines[0]):
+                # Probably V2 hardware pack without [hwpack] on the first line
+                lines = ["[hwpack]"] + lines
+            parser = Config(StringIO("".join(lines)))
             try:
                 new_data = parser.get_option(field)
                 if new_data is not None:

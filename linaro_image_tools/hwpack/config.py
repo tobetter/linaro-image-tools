@@ -115,6 +115,8 @@ class Config(object):
             try:
                 fp.seek(0)
                 self.parser = yaml.safe_load(fp)
+                self.set_board(board)
+                self.set_bootloader(bootloader)
             except yaml.YAMLError, e:
                 obfuscated_e = re.sub(r"([^ ]https://).+?(@)",
                                       r"\1***\2", str(e))
@@ -123,9 +125,6 @@ class Config(object):
 
         if obfuscated_e:
             raise ConfigParser.Error(obfuscated_e)
-
-        self.set_board(board)
-        self.set_bootloader(bootloader)
 
     def set_bootloader(self, bootloader):
         if not bootloader:
