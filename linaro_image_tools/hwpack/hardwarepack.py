@@ -33,19 +33,17 @@ from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
 )
 from linaro_image_tools.hwpack.hwpack_convert import (
-    create_yaml_entry,
-    create_yaml_sequence,
-    create_yaml_string,
-    create_yaml_string_from_list,
-    recurse_dictionary,
+    dump,
 )
 
 from hwpack_fields import (
+    BOOTLOADERS_FIELD,
     BOOT_MIN_SIZE_FIELD,
     BOOT_SCRIPT_FIELD,
     DTB_ADDR_FIELD,
     DTB_FILE_FIELD,
     EXTRA_SERIAL_OPTIONS_FIELD,
+    FILE_FIELD,
     FORMAT_FIELD,
     INITRD_ADDR_FIELD,
     INITRD_FILE_FIELD,
@@ -68,6 +66,7 @@ from hwpack_fields import (
     SAMSUNG_ENV_LEN_FIELD,
     SERIAL_TTY_FIELD,
     SNOWBALL_STARTUP_FILES_CONFIG_FIELD,
+    SPL_FILE_FIELD,
     SUPPORT_FIELD,
     WIRED_INTERFACES_FIELD,
     WIRELESS_INTERFACES_FIELD,
@@ -229,7 +228,6 @@ class Metadata(object):
                 )
         if config.format.format_as_string == '3.0':
             metadata.add_v3_config(config.bootloaders)
-
         return metadata
 
     def __str__(self):
@@ -238,17 +236,23 @@ class Metadata(object):
         else:
             return self.create_metadata_old()
 
-    def _create_bootloaders_section(self):
-        """Creates the correct bootloaders section for this YAML file.
+    def loop_through_dictionary(self, dictionary, search_key, new_value):
+        """Loop recursively thorugh a dictionary looking for the specified key
+        substituting its value.
 
-        The bootloaders property we get starting with V3 is a dictionary.
-        :return A string.
+        :param dictionary: The dictionary to loop through.
+        :param serach_key: The key to search.
+        :param new_value: The new value for the key.
         """
-        indent = 0
-        if self.bootloaders is not None:
-            metadata = create_yaml_entry('bootloaders', indent)
-            metadata += recurse_dictionary(self.bootloaders, indent + 1, True)
-        return metadata
+        # XXX Probably better check what should happen if the key we are
+        # looking for is not there, but the value is set. Should we set it
+        # anyway? If yes, where?
+        for key, value in dictionary.iteritems():
+            if key == search_key:
+                dictionary[key] = new_value
+                break
+            elif isinstance(value, dict):
+                self.loop_through_dictionary(value, search_key, new_value)
 
     def create_metadata_new(self):
         """Get the contents of the metadata file.
@@ -260,89 +264,87 @@ class Metadata(object):
         :return A string.
         """
         metadata = ""
-        metadata += create_yaml_string(FORMAT_FIELD,
-                                        self.format.format_as_string)
-        metadata += create_yaml_string(NAME_FIELD, self.name)
-        metadata += create_yaml_string(METADATA_VERSION_FIELD, self.version)
+        metadata += dump({FORMAT_FIELD: self.format.format_as_string})
+        metadata += dump({NAME_FIELD: self.name})
+        metadata += dump({METADATA_VERSION_FIELD: self.version})
         # This is a single 'architecture' hwpack, each arch will get its own,
         # it is not retrieved from the Config.
-        metadata += create_yaml_string(METADATA_ARCH_FIELD, self.architecture)
+        metadata += dump({METADATA_ARCH_FIELD: self.architecture})
         if self.origin is not None:
-            metadata += create_yaml_string(ORIGIN_FIELD, self.origin)
+            metadata += dump({ORIGIN_FIELD: self.origin})
         if self.maintainer is not None:
-            metadata += create_yaml_string(MAINTAINER_FIELD, self.maintainer)
+            metadata += dump({MAINTAINER_FIELD, self.maintainer})
         if self.support is not None:
-            metadata += create_yaml_string(SUPPORT_FIELD, self.support)
-
+            metadata += dump({SUPPORT_FIELD: self.support})
         if self.bootloaders is not None:
-            metadata += self._create_bootloaders_section()
+            # XXX We need to do this, since some necessary values are set
+            # when the hwpack archive is built, and are not in the hwpack
+            # config. Since we know which are the keys we have to look for,
+            # we just loop through all of them.
+            if self.spl is not None:
+                self.loop_through_dictionary(self.bootloaders, SPL_FILE_FIELD,
+                                               self.spl)
+            if self.u_boot is not None:
+                self.loop_through_dictionary(self.bootloaders, FILE_FIELD,
+                                                self.u_boot)
+            metadata += dump({BOOTLOADERS_FIELD: self.bootloaders})
         if self.serial_tty is not None:
-            metadata += create_yaml_string(SERIAL_TTY_FIELD, self.serial_tty)
+            metadata += dump({SERIAL_TTY_FIELD: self.serial_tty})
         if self.kernel_addr is not None:
-            metadata += create_yaml_string(KERNEL_ADDR_FIELD, self.kernel_addr)
+            metadata += dump({KERNEL_ADDR_FIELD: self.kernel_addr})
         if self.initrd_addr is not None:
-            metadata += create_yaml_string(INITRD_ADDR_FIELD, self.initrd_addr)
+            metadata += dump({INITRD_ADDR_FIELD: self.initrd_addr})
         if self.load_addr is not None:
-            metadata += create_yaml_string(LOAD_ADDR_FIELD, self.load_addr)
+            metadata += dump({LOAD_ADDR_FIELD: self.load_addr})
         if self.dtb_addr is not None:
-            metadata += create_yaml_string(DTB_ADDR_FIELD, self.dtb_addr)
+            metadata += dump({DTB_ADDR_FIELD: self.dtb_addr})
         if self.wired_interfaces != []:
-            metadata += create_yaml_sequence(self.wired_interfaces,
-                                                WIRED_INTERFACES_FIELD)
+            eth_interfaces = " ".join(self.wired_interfaces)
+            metadata += dump({WIRED_INTERFACES_FIELD: eth_interfaces})
         if self.wireless_interfaces != []:
-            metadata += create_yaml_sequence(self.wireless_interfaces,
-                                                WIRELESS_INTERFACES_FIELD)
+            wifi_interfaces = " ".join(self.wireless_interfaces)
+            metadata += dump({WIRELESS_INTERFACES_FIELD: wifi_interfaces})
         if self.partition_layout is not None:
-            metadata += create_yaml_string(PARTITION_LAYOUT_FIELD,
-                                            self.partition_layout)
+            metadata += dump({PARTITION_LAYOUT_FIELD: self.partition_layout})
         if self.mmc_id is not None:
-            metadata += create_yaml_string(MMC_ID_FIELD, self.mmc_id)
+            metadata += dump({MMC_ID_FIELD: self.mmc_id})
         if self.boot_min_size is not None:
-            metadata += create_yaml_string(BOOT_MIN_SIZE_FIELD,
-                                            self.boot_min_size)
+            metadata += dump({BOOT_MIN_SIZE_FIELD: self.boot_min_size})
         if self.root_min_size is not None:
-            metadata += create_yaml_string(ROOT_MIN_SIZE_FIELD,
-                                            self.root_min_size)
+            metadata += dump({ROOT_MIN_SIZE_FIELD: self.root_min_size})
         if self.loader_min_size is not None:
-            metadata += create_yaml_string(LOADER_MIN_SIZE_FIELD,
-                                            self.loader_min_size)
+            metadata += dump({LOADER_MIN_SIZE_FIELD: self.loader_min_size})
         if self.loader_start is not None:
-            metadata += create_yaml_string(LOADER_START_FIELD,
-                                            self.loader_start)
+            metadata += dump({LOADER_START_FIELD: self.loader_start})
         if self.vmlinuz is not None:
-            metadata += create_yaml_string(KERNEL_FILE_FIELD, self.vmlinuz)
+            metadata += dump({KERNEL_FILE_FIELD: self.vmlinuz})
         if self.initrd is not None:
-            metadata += create_yaml_string(INITRD_FILE_FIELD, self.initrd)
+            metadata += dump({INITRD_FILE_FIELD: self.initrd})
         if self.dtb_file is not None:
             # XXX In V3 this one should be a list, called dtb_files.
-            metadata += create_yaml_string(DTB_FILE_FIELD, self.dtb_file)
-
+            metadata += dump({DTB_FILE_FIELD: self.dtb_file})
         if self.boot_script is not None:
-            metadata += create_yaml_string(BOOT_SCRIPT_FIELD, self.boot_script)
+            metadata += dump({BOOT_SCRIPT_FIELD: self.boot_script})
         if self.extra_serial_opts is not None:
             # XXX Check why and where once we get a list once a string.
             if isinstance(self.extra_serial_opts, list):
-                metadata += create_yaml_string_from_list(
-                                                EXTRA_SERIAL_OPTIONS_FIELD,
-                                                self.extra_serial_opts)
+                extra_serial_options = " ".join(self.extra_serial_opts)
             else:
-                metadata += create_yaml_string(EXTRA_SERIAL_OPTIONS_FIELD,
-                                                self.extra_serial_opts)
+                extra_serial_options = self.extra_serial_opts
+            metadata += dump({
+                            EXTRA_SERIAL_OPTIONS_FIELD:
+                            extra_serial_options})
         if self.snowball_startup_files_config is not None:
-            metadata += create_yaml_string(SNOWBALL_STARTUP_FILES_CONFIG_FIELD,
-                                            self.snowball_startup_files_config)
+            metadata += dump({SNOWBALL_STARTUP_FILES_CONFIG_FIELD:
+                                self.snowball_startup_files_config})
         if self.samsung_bl1_start is not None:
-            metadata += create_yaml_string(SAMSUNG_BL1_START_FIELD,
-                                            self.samsung_bl1_start)
+            metadata += dump({SAMSUNG_BL1_START_FIELD: self.samsung_bl1_start})
         if self.samsung_bl1_len is not None:
-            metadata += create_yaml_string(SAMSUNG_BL1_LEN_FIELD,
-                                            self.samsung_bl1_len)
+            metadata += dump({SAMSUNG_BL1_LEN_FIELD: self.samsung_bl1_len})
         if self.samsung_env_len is not None:
-            metadata += create_yaml_string(SAMSUNG_ENV_LEN_FIELD,
-                                            self.samsung_env_len)
+            metadata += dump({SAMSUNG_ENV_LEN_FIELD: self.samsung_env_len})
         if self.samsung_bl2_len is not None:
-            metadata += create_yaml_string(SAMSUNG_BL2_LEN_FIELD,
-                                            self.samsung_bl2_len)
+            metadata += dump({SAMSUNG_BL2_LEN_FIELD: self.samsung_bl2_len})
         return metadata
 
     def create_metadata_old(self):
