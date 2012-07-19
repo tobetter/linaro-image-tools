@@ -41,6 +41,32 @@ class CreateTempDirFixture(object):
         return self.tempdir
 
 
+class CreateTempFileFixture(object):
+    """Class to create a temporary file to be used in a test."""
+    def __init__(self, string=None):
+        """Initialize the fixture.
+
+        :param string: the string to write in the file.
+        """
+        self.temp_file = None
+        self.string = string
+
+    def setUp(self):
+        self.temp_file = tempfile.NamedTemporaryFile()
+        if self.string is not None:
+            self.temp_file.write(self.string)
+            # Go back to the initial position, we just need to write something
+            # and be able to read from the beginning of the file.
+            self.temp_file.seek(0)
+
+    def tearDown(self):
+        # We don't need to do anything, file is automatically deleted.
+        pass
+
+    def get_file_name(self):
+        return self.temp_file.name
+
+
 class MockSomethingFixture(object):
     """A fixture which mocks something on the given object.
 

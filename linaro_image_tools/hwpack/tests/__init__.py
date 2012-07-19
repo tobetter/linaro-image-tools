@@ -28,6 +28,7 @@ def test_suite():
         'linaro_image_tools.hwpack.tests.test_builder',
         'linaro_image_tools.hwpack.tests.test_config',
         'linaro_image_tools.hwpack.tests.test_hardwarepack',
+        'linaro_image_tools.hwpack.tests.test_hwpack_converter',
         'linaro_image_tools.hwpack.tests.test_packages',
         'linaro_image_tools.hwpack.tests.test_script',
         'linaro_image_tools.hwpack.tests.test_tarfile_matchers',
