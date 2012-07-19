@@ -36,6 +36,7 @@ import ConfigParser
 import shutil
 import string
 import logging
+from linaro_image_tools.hwpack.config import Config
 
 from parted import Device
 
@@ -43,7 +44,7 @@ from linaro_image_tools import cmd_runner
 
 from linaro_image_tools.media_create.partitions import (
     partition_mounted, SECTOR_SIZE, register_loopback)
-
+from StringIO import StringIO
 
 KERNEL_GLOB = 'vmlinuz-*-%(kernel_flavor)s'
 INITRD_GLOB = 'initrd.img-*-%(kernel_flavor)s'
@@ -114,6 +115,7 @@ class classproperty(object):
 class HardwarepackHandler(object):
     FORMAT_1 = '1.0'
     FORMAT_2 = '2.0'
+    FORMAT_3 = '3.0'
     FORMAT_MIXED = '1.0and2.0'
     metadata_filename = 'metadata'
     format_filename = 'FORMAT'
@@ -158,18 +160,18 @@ class HardwarepackHandler(object):
         if self.tempdir is not None and os.path.exists(self.tempdir):
             shutil.rmtree(self.tempdir)
 
-    def get_field(self, section, field):
+    def get_field(self, field):
         data = None
         hwpack_with_data = None
         for hwpack_tarfile in self.hwpack_tarfiles:
             metadata = hwpack_tarfile.extractfile(self.metadata_filename)
-            # Use RawConfigParser which does not support the magical
-            # interpolation behavior of ConfigParser so we don't mess up
-            # metadata accidentally.
-            parser = ConfigParser.RawConfigParser()
-            parser.readfp(self.FakeSecHead(metadata))
+            lines = metadata.readlines()
+            if re.search("=", lines[0]) and not re.search(":", lines[0]):
+                # Probably V2 hardware pack without [hwpack] on the first line
+                lines = ["[hwpack]"] + lines
+            parser = Config(StringIO("".join(lines)))
             try:
-                new_data = parser.get(section, field)
+                new_data = parser.get_option(field)
                 if new_data is not None:
                     assert data is None, "The metadata field '%s' is set to " \
                         "'%s' and new value '%s' is found" % (field, data,
@@ -178,11 +180,12 @@ class HardwarepackHandler(object):
                     hwpack_with_data = hwpack_tarfile
             except ConfigParser.NoOptionError:
                 continue
+
         return data, hwpack_with_data
 
     def get_format(self):
         format = None
-        supported_formats = [self.FORMAT_1, self.FORMAT_2]
+        supported_formats = [self.FORMAT_1, self.FORMAT_2, self.FORMAT_3]
         for hwpack_tarfile in self.hwpack_tarfiles:
             format_file = hwpack_tarfile.extractfile(self.format_filename)
             format_string = format_file.read().strip()
@@ -196,8 +199,7 @@ class HardwarepackHandler(object):
         return format
 
     def get_file(self, file_alias):
-        file_name, hwpack_tarfile = self.get_field(self.main_section,
-                                                   file_alias)
+        file_name, hwpack_tarfile = self.get_field(file_alias)
         if file_name is not None:
             hwpack_tarfile.extract(file_name, self.tempdir)
             file_name = os.path.join(self.tempdir, file_name)
@@ -289,8 +291,7 @@ class BoardConfig(object):
     def get_metadata_field(cls, field_name):
         """ Return the metadata value for field_name if it can be found.
         """
-        data, _ = cls.hardwarepack_handler.get_field(
-            cls.hardwarepack_handler.main_section, field_name)
+        data, _ = cls.hardwarepack_handler.get_field(field_name)
         return data
 
     @classmethod
@@ -305,7 +306,7 @@ class BoardConfig(object):
             if (cls.hwpack_format == cls.hardwarepack_handler.FORMAT_1):
                 return
 
-            if (cls.hwpack_format == cls.hardwarepack_handler.FORMAT_2):
+            if (cls.hwpack_format != cls.hardwarepack_handler.FORMAT_1):
                 # Clear V1 defaults.
                 cls.kernel_addr = None
                 cls.initrd_addr = None
@@ -334,19 +335,19 @@ class BoardConfig(object):
             cls.serial_tty = cls.get_metadata_field('serial_tty')
             wired_interfaces = cls.get_metadata_field('wired_interfaces')
             if wired_interfaces is not None:
-                cls.wired_interfaces = wired_interfaces.split(' ')
+                cls.wired_interfaces = wired_interfaces
             wireless_interfaces = cls.get_metadata_field(
                 'wireless_interfaces')
             if wireless_interfaces is not None:
-                cls.wireless_interfaces = wireless_interfaces.split(' ')
-            cls.vmlinuz = cls.get_metadata_field('kernel_file')
-            cls.initrd = cls.get_metadata_field('initrd_file')
+                cls.wireless_interfaces = wireless_interfaces
+            cls.vmlinuz = cls.get_metadata_field('vmlinuz')
+            cls.initrd = cls.get_metadata_field('initrd')
             cls.dtb_file = cls.get_metadata_field('dtb_file')
             cls.extra_boot_args_options = cls.get_metadata_field(
                 'extra_boot_options')
             cls.boot_script = cls.get_metadata_field('boot_script')
             cls.extra_serial_opts = cls.get_metadata_field(
-                'extra_serial_options')
+                'extra_serial_opts')
             cls.snowball_startup_files_config = cls.get_metadata_field(
                 'snowball_startup_files_config')
 
@@ -379,7 +380,7 @@ class BoardConfig(object):
                     align_up(int(loader_min_size) * 1024 ** 2,
                              SECTOR_SIZE) / SECTOR_SIZE)
 
-            uboot_in_boot_part = cls.get_metadata_field('u_boot_in_boot_part')
+            uboot_in_boot_part = cls.get_metadata_field('uboot_in_boot_part')
             if uboot_in_boot_part is None:
                 cls.uboot_in_boot_part = False
             elif string.lower(uboot_in_boot_part) == 'yes':
@@ -401,7 +402,7 @@ class BoardConfig(object):
             elif string.lower(env_dd) == 'no':
                 cls.env_dd = False
 
-            uboot_dd = cls.get_metadata_field('u_boot_dd')
+            uboot_dd = cls.get_metadata_field('uboot_dd')
             # Either uboot_dd is not specified, or it contains the dd offset.
             if uboot_dd is None:
                 cls.uboot_dd = False
@@ -700,7 +701,7 @@ class BoardConfig(object):
                          boot_device_or_file, k_img_data, i_img_data,
                          d_img_data):
         with cls.hardwarepack_handler:
-            spl_file = cls.get_file('spl')
+            spl_file = cls.get_file('spl_file')
             if cls.spl_in_boot_part:
                 assert spl_file is not None, (
                     "SPL binary could not be found")
@@ -715,7 +716,7 @@ class BoardConfig(object):
             if cls.spl_dd:
                 cls._dd_file(spl_file, boot_device_or_file, cls.spl_dd)
 
-            uboot_file = cls.get_file('u_boot')
+            uboot_file = cls.get_file('u_boot_file')
             if cls.uboot_dd:
                 cls._dd_file(uboot_file, boot_device_or_file, cls.uboot_dd)
 
@@ -764,7 +765,6 @@ class BoardConfig(object):
         if is_live:
             parts_dir = 'casper'
         uboot_parts_dir = os.path.join(chroot_dir, parts_dir)
-
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
         with partition_mounted(boot_partition, boot_disk):
             if cls.uboot_in_boot_part:
@@ -781,7 +781,7 @@ class BoardConfig(object):
                     else:
                         default = None
                     # </legacy v1 support>
-                    uboot_bin = cls.get_file('u_boot', default=default)
+                    uboot_bin = cls.get_file('u_boot_file', default=default)
                     assert uboot_bin is not None, (
                         "uboot binary could not be found")
 
@@ -1277,7 +1277,7 @@ class Mx5Config(BoardConfig):
         # XXX: delete this method when hwpacks V1 can die
         assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         with cls.hardwarepack_handler:
-            uboot_file = cls.get_file('u_boot', default=os.path.join(
+            uboot_file = cls.get_file('u_boot_file', default=os.path.join(
                     chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
                     'u-boot.imx'))
             install_mx5_boot_loader(uboot_file, boot_device_or_file,
@@ -1778,7 +1778,7 @@ def install_omap_boot_loader(chroot_dir, boot_disk, cls):
             default = _get_mlo_file(chroot_dir)
         except AssertionError:
             default = None
-        mlo_file = cls.get_file('spl', default=default)
+        mlo_file = cls.get_file('spl_file', default=default)
         cmd_runner.run(["cp", "-v", mlo_file, boot_disk], as_root=True).wait()
         # XXX: Is this really needed?
         cmd_runner.run(["sync"]).wait()

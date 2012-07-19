@@ -216,22 +216,22 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
 
     def test_get_metadata(self):
         data = 'data to test'
-        metadata = self.metadata + "TEST=%s\n" % data
+        metadata = self.metadata + "U_BOOT=%s\n" % data
         tarball = self.add_to_tarball(
             [('metadata', metadata)])
         hp = HardwarepackHandler([tarball])
         with hp:
-            test_data, _ = hp.get_field(hp.main_section, 'test')
+            test_data, _ = hp.get_field('u_boot_file')
             self.assertEqual(test_data, data)
 
     def test_preserves_formatters(self):
         data = '%s%d'
-        metadata = self.metadata + "TEST=%s\n" % data
+        metadata = self.metadata + "U_BOOT=%s\n" % data
         tarball = self.add_to_tarball(
             [('metadata', metadata)])
         hp = HardwarepackHandler([tarball])
         with hp:
-            test_data, _ = hp.get_field(hp.main_section, 'test')
+            test_data, _ = hp.get_field('u_boot_file')
             self.assertEqual(test_data, data)
 
     def test_creates_tempdir(self):
@@ -252,15 +252,14 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
 
     def test_get_file(self):
         data = 'test file contents\n'
-        metadata_file = 'TESTFILE'
         file_in_archive = 'testfile'
-        metadata = self.metadata + "%s=%s\n" % (metadata_file, file_in_archive)
+        metadata = self.metadata + "%s=%s\n" % ('U_BOOT', file_in_archive)
         tarball = self.add_to_tarball(
             [('metadata', metadata),
              (file_in_archive, data)])
         hp = HardwarepackHandler([tarball])
         with hp:
-            test_file = hp.get_file(metadata_file)
+            test_file = hp.get_file('u_boot_file')
             self.assertEquals(data, open(test_file, 'r').read())
 
 
@@ -272,7 +271,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         def __enter__(self):
             return self
 
-        def get_field(self, section, field):
+        def get_field(self, field):
             try:
                 return self.metadata_dict[field], None
             except:
@@ -367,7 +366,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
-        self.assertEquals(data_to_set.split(' '), config.wired_interfaces)
+        self.assertEquals(data_to_set, config.wired_interfaces)
 
     def test_sets_wireless_interfaces(self):
         self.useFixture(MockSomethingFixture(
@@ -382,7 +381,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
-        self.assertEquals(data_to_set.split(' '), config.wireless_interfaces)
+        self.assertEquals(data_to_set, config.wireless_interfaces)
 
     def test_sets_mmc_id(self):
         self.useFixture(MockSomethingFixture(
@@ -1806,7 +1805,7 @@ class TestGetBootCmdAndroid(TestCase):
                         'rootwait ro earlyprintk '
                         'mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
                         'mem=22M@360M mem_issw=1M@383M mem=640M@384M '
-                        'vmalloc=400M init=/init androidboot.console=ttyAMA2',
+                        'vmalloc=500M init=/init androidboot.console=ttyAMA2',
             'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
                        'fatload mmc 1:1 0x05000000 uInitrd; '
                        'bootm 0x00100000 0x05000000'}
@@ -1819,7 +1818,7 @@ class TestGetBootCmdAndroid(TestCase):
                         'rootwait ro earlyprintk '
                         'mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
                         'mem=22M@360M mem_issw=1M@383M mem=640M@384M '
-                        'vmalloc=400M init=/init androidboot.console=ttyAMA2',
+                        'vmalloc=500M init=/init androidboot.console=ttyAMA2',
             'bootcmd': 'fatload mmc 0:2 0x00100000 uImage; '
                        'fatload mmc 0:2 0x05000000 uInitrd; '
                        'bootm 0x00100000 0x05000000'}

@@ -41,7 +41,7 @@ INSTALL_LATEST="no"
 FORCE_YES="no"
 SOURCES_LIST_FILE="${TEMP_DIR}/sources.list"
 APT_GET_OPTIONS="Dir::Etc::SourceList=${SOURCES_LIST_FILE}"
-SUPPORTED_FORMATS="1.0 2.0"  # A space-separated list of hwpack formats.
+SUPPORTED_FORMATS="1.0 2.0 3.0"  # A space-separated list of hwpack formats.
 
 sudo="sudo"
 if [ $(id -u) -eq 0 ]; then
@@ -111,6 +111,54 @@ echo -n "Unpacking hardware pack ..."
 tar zxf "$HWPACK_TARBALL" -C "$HWPACK_DIR"
 echo "Done"
 
+function query_v3_metadata {
+  python -c "import re
+with open('${HWPACK_DIR}/metadata') as configv3:
+    config = {}  # Will store decoded YAML in here
+    root = config   # Current insert point for adding data
+    root_at_indent = {}
+    indent = 0
+    for line in configv3.readlines():
+        key_value = re.search('^(\s*)(\S.+):\s+(.+)\s*$', line)
+        key_match = re.search('^(\s*)(\S.+):\s*$', line)
+        list_item = re.search('^(\s*)-\s*(.+)\s*$', line)
+
+        if key_value:
+            new_indent = len(key_value.group(1))
+        elif key_match:
+            new_indent = len(key_match.group(1))
+        elif list_item:
+            new_indent = len(list_item.group(1))
+
+        if new_indent < indent:  #Indent decreases: go back up config structure
+            root = root_at_indent[new_indent]
+        elif new_indent > indent:  # Indent increases: reset root (insert point)
+            root_at_indent[indent] = root
+            root = root[key]
+        indent = new_indent
+
+        if key_value:  # key: value
+            key = key_value.group(2)
+            root[key] = key_value.group(3)
+        elif key_match:  # key:
+            key = key_match.group(2)
+            root[key] = {}
+        elif list_item:  # - value
+            if root == {}:
+                root[''] = []  # Store lists in dict with '' as key
+            root[''].append(list_item.group(2))
+
+    keys = '$1'.split(' ')
+    for key in keys:
+        if isinstance(config, list):
+            key = int(key)
+        config = config[key]
+        if isinstance(config, dict) and isinstance(config[''], list):
+            config = config['']
+    print config
+  "
+}
+
 # Check the format of the hwpack is supported.
 hwpack_format=$(cat ${HWPACK_DIR}/FORMAT)
 supported="false"
@@ -125,7 +173,17 @@ done
       "Try using a newer version of $(basename $0)."
 
 # Check the architecture of the hwpack matches that of the host system.
-HWPACK_ARCH=`grep ARCHITECTURE "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
+HWPACK_VERSION=`grep VERSION "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
+if [ "$HWPACK_VERSION" = "" ]; then
+  HWPACK_VERSION=$(query_v3_metadata 'version')
+fi
+
+if [ "$hwpack_format" = "3.0" ]; then
+  HWPACK_ARCH=$(query_v3_metadata 'architecture')
+else
+  HWPACK_ARCH=`grep ARCHITECTURE "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
+fi
+
 [ "$HWPACK_ARCH" == `dpkg --print-architecture` ] || \
   die "Hardware pack architecture ($HWPACK_ARCH) does not match the host's architecture"
 
@@ -209,8 +267,12 @@ echo -n "Installing packages ..."
 # For "older" hwpacks that don't have a dependency package, we just
 # manually install the contents of the hwpack.
 
-HWPACK_NAME=`grep NAME "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
-HWPACK_VERSION=`grep VERSION "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
+if [ "hwpack_format" = "3.0" ]; then
+  HWPACK_NAME=$(query_v3_metadata 'name')
+else
+  HWPACK_NAME=`grep NAME "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
+fi
+
 dependency_package="hwpack-${HWPACK_NAME}"
 if grep -q "^${dependency_package}=${HWPACK_VERSION}\$" "${HWPACK_DIR}"/manifest; then
   DEP_PACKAGE_PRESENT="yes"
