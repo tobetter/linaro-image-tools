@@ -49,22 +49,24 @@ class HwpackConverterTests(TestCaseWithFixtures):
     def test_wrong_input_file(self):
         """Pass a non-existing file."""
         input_file = '/tmp/foobaz'
-        self.assertRaises(HwpackConverterException, check_and_validate_args,
-                            Args(input_file=input_file))
+        self.assertRaises(
+            HwpackConverterException, check_and_validate_args,
+            Args(input_file=input_file))
 
     def test_wrong_input_dir(self):
         """Pass a directory instead of file."""
         temp_file = tempfile.NamedTemporaryFile()
         temp_dir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
-        self.assertRaises(HwpackConverterException, check_and_validate_args,
-                            Args(input_file=temp_file.name,
-                                output_file=temp_dir))
+        self.assertRaises(
+            HwpackConverterException, check_and_validate_args,
+            Args(input_file=temp_file.name, output_file=temp_dir))
 
     def test_same_input_output_file(self):
         """Pass the same existing file path to the two arguments."""
         temp_file = self.useFixture(CreateTempFileFixture()).get_file_name()
-        self.assertRaises(HwpackConverterException, check_and_validate_args,
-                            Args(input_file=temp_file, output_file=temp_file))
+        self.assertRaises(
+            HwpackConverterException, check_and_validate_args,
+            Args(input_file=temp_file, output_file=temp_file))
 
     def test_basic_parse(self):
         ini_format = '[hwpack]\nformat=2.0\nsupport=supported'

@@ -31,7 +31,6 @@ from linaro_image_tools.hwpack.hwpack_convert import (
     HwpackConverterException,
     check_and_validate_args,
     )
-from linaro_image_tools.hwpack.builder import ConfigFileMissing
 from linaro_image_tools.__version__ import __version__
 
 
