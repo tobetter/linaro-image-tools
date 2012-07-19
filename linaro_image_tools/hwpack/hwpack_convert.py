@@ -2,7 +2,7 @@ import ConfigParser
 import logging
 import os
 import os.path
-import re
+import yaml
 
 from hwpack_fields import (
     ARCHITECTURES_FIELD,
@@ -66,6 +66,8 @@ class HwpackConverterException(Exception):
 class HwpackConverter(object):
     """Simple and basic class that converts an INI-style format file into the
     new YAML format.
+
+    The old format number is maintained.
 
     :param input_file: the input file to parse, has to be an INI-style file.
     :param output_file: where to write the new file, if not given, the name
@@ -199,197 +201,51 @@ class HwpackConverter(object):
         """
         converted = ''
         if self.hwpack:
-            converted += create_yaml_dictionary(self.hwpack)
+            converted += dump(self.hwpack)
         if self.architectures:
-            converted += create_yaml_sequence(self.architectures,
-                                                ARCHITECTURES_FIELD)
+            archs = {ARCHITECTURES_FIELD: self.architectures}
+            converted += dump(archs)
         if self.extra_serial_options:
-            converted += create_yaml_sequence(self.extra_serial_options,
-                                                EXTRA_SERIAL_OPTIONS_FIELD)
+            serial_options = {EXTRA_SERIAL_OPTIONS_FIELD:
+                                self.extra_serial_options}
+            converted += dump(serial_options)
         if self.packages:
-            converted += create_yaml_sequence(self.packages, PACKAGES_FIELD)
+            packages = {PACKAGE_FIELD: self.packages}
+            converted += dump(packages)
         if self.wired_interfaces:
-            converted += create_yaml_sequence(self.wired_interfaces,
-                                                WIRED_INTERFACES_FIELD)
+            wired = {WIRED_INTERFACES_FIELD: self.wired_interfaces}
+            converted += dump(wired)
         if self.wireless_interfaces:
-            converted += create_yaml_sequence(self.wireless_interfaces,
-                                                WIRELESS_INTERFACES_FIELD)
+            converted += dump(self.wireless_interfaces)
         if self.sources:
-            converted += create_yaml_dictionary(self.sources, SOURCES_FIELD)
+            sources = {SOURCES_FIELD: self.sources}
+            converted += dump(sources)
         if self.bootloaders or self.extra_boot_options or self.spl:
-            converted += create_yaml_entry(BOOTLOADERS_FIELD)
-            # We default to u_boot as the bootloader.
-            converted += create_yaml_entry(DEFAULT_BOOTLOADER, indent=1)
+            # The bootloaders section in the new YAML file is a dictionary
+            # containing a dictionary which can contains also other
+            # dictionaries. In this case we only have list and normal values.
+            nested_value = {}
             if self.bootloaders:
-                converted += create_yaml_dictionary(self.bootloaders,
-                                                    indent=2)
+                for key, value in self.bootloaders.iteritems():
+                    nested_value[key] = value
             if self.extra_boot_options:
-                converted += create_yaml_sequence(self.extra_boot_options,
-                                                    EXTRA_BOOT_OPTIONS_FIELD,
-                                                    indent=2)
+                nested_value[EXTRA_BOOT_OPTIONS_FIELD] = \
+                                                    self.extra_boot_options
             if self.spl:
-                converted += create_yaml_dictionary(self.spl, indent=2)
+                for key, value in self.spl.iteritems():
+                    nested_value[key] = value
+            default_bootloader = {DEFAULT_BOOTLOADER: nested_value}
+            bootloaders = {BOOTLOADERS_FIELD: default_bootloader}
+            converted += dump(bootloaders)
         return converted
 
 
-def create_yaml_sequence(sequence, name, indent=0):
-    """Creates a YAML-string that describes a list (sequence).
+def dump(python_object):
+    """Serialize a Python object in a YAML string format.
 
-    :param sequence: The list to be converted into YAML format.
-    :param name: The name to be given to the created list.
-    :param indent: A positive integer to calculate the indentation level.
-    :return A YAML-string representing a sequence.
+    :param python_object: The object to serialize.
     """
-    if not isinstance(sequence, list):
-        raise HwpackConverterException("The value passed is not of type "
-                                        "'list'.")
-    if name is None or name.strip() == "":
-        raise HwpackConverterException("The name of a sequence cannot be "
-                                        "empty or None.")
-    indentation = _calculate_indent(indent)
-    yaml_sequence = ("%(indentation)s%(name)s:\n" %
-                        {'indentation': indentation, 'name': name})
-    indentation = _calculate_indent(indent + INDENT_STEP)
-    for item in sequence:
-        yaml_sequence += ("%(indentation)s- %(value)s\n" %
-                            {'indentation': indentation, 'value': str(item)})
-    return yaml_sequence
-
-
-def create_yaml_dictionary(dictionary, name=None, indent=0):
-    """Creates a string that describes a dictionary in YAML
-    (mapping of mappings).
-
-    :param dictionary: The dictionary to be converted into YAML format.
-    :param name: The name to be given to the created dictionary.
-    :param indent: A positive integer to calculate the indentation level.
-    :return A YAML-string represeting a dictionary.
-    """
-    if not isinstance(dictionary, dict):
-        raise HwpackConverterException("The value passed is not of type "
-                                        "'dict'.")
-    if name is not None and name.strip() == "":
-        raise HwpackConverterException("The name of a dictionary cannot "
-                                        "be empty.")
-    if indent < 0:
-        raise HwpackConverterException("Indentation value has to be positive.")
-    yaml_dictionary = ""
-    if name is not None:
-        indentation = _calculate_indent(indent)
-        yaml_dictionary += ("%(indentation)s%(name)s:\n" %
-                            {'indentation': indentation, 'name': name})
-        indent += INDENT_STEP
-
-    for key, value in dictionary.iteritems():
-        yaml_dictionary += create_yaml_string(key, value, indent)
-    return yaml_dictionary
-
-
-def create_yaml_string(key, value, indent=0):
-    """Creates a normal YAML-format string of the type 'KEY: VALUE'.
-
-    :param key: The name of the key.
-    :param value: The value to assign to the key.
-    :param indent: A positive integer to calculate the indentation level.
-                    Defaults to zero.
-    :return A YAML-string of the 'key: value' type.
-    """
-    if key is None or value is None:
-        raise HwpackConverterException("Name or value cannot be empty.")
-    if indent < 0:
-        raise HwpackConverterException("Indentation value has to be positive.")
-    value = str(value)
-    # Convert 'Yes' and 'No' values into boolean.
-    if re.match(YES_REGEX, value):
-        value = True
-    elif re.match(NO_REGEX, value):
-        value = False
-    yaml_string = ''
-    indentation = _calculate_indent(indent)
-    yaml_string += ("%(indentation)s%(key)s: %(value)s\n" %
-                    {'indentation': indentation, 'key': key,
-                        'value': value})
-    return yaml_string
-
-
-def create_yaml_entry(name, indent=0):
-    """Create a simple entry in a YAML format, like 'name:'.
-
-    :param name: The name of the entry.
-    :param indent: A positive integer to calculate the indentation level.
-                    Defaults to zero.
-    :return A string.
-    """
-    if not name:
-        raise HwpackConverterException("Name cannot be None or empty.")
-    if indent < 0:
-        raise HwpackConverterException("Indentation value has to be positive.")
-
-    indentation = _calculate_indent(indent)
-    yaml_string = ("%s%s:\n" % (indentation, name))
-    return yaml_string
-
-
-def create_yaml_string_from_list(name, sequence, indent=0):
-    """Create a YAML key:value entry where value is a space separated strings
-    starting from a list.
-
-    :param name: The name of the entry.
-    :param sequence: The sequence to concatanate.
-    :param indent: A positive integer to calculate the indentation leve.
-                    Defaults to zero.
-    :return A string.
-    """
-    if not isinstance(sequence, list):
-        raise HwpackConverterException("The value passed is not of type "
-                                        "'list''")
-    if not name:
-        raise HwpackConverterException("Name cannot be None or empty.")
-    if indent < 0:
-        raise HwpackConverterException("Indentation value has to be positive.")
-    indentation = _calculate_indent(indent)
-    space_separate_string = " ".join(sequence)
-    yaml_string = ("%s%s: %s\n" % (indentation, name, space_separate_string))
-    return yaml_string
-
-
-def recurse_dictionary(dictionary, indent=0, convert=False):
-    """Recursively create a string that describes a dictionary in YAML starting
-    from a dictionary containing other dictionaries or other entries.
-
-    :param dictionary: The dictionary that will be recursively converted.
-    :param indent: A positive integer to calculate the indentation level.
-                    Defaults to zero.
-    :param convert: If a list contained in the dictionary should be converted
-                    into a space separated strng. Defaults to False.
-    :return A string.
-    """
-    metadata = ''
-    for key, value in dictionary.iteritems():
-        if isinstance(value, dict):
-            metadata += create_yaml_entry(key, indent)
-            metadata += recurse_dictionary(value, indent + INDENT_STEP,
-                                            convert)
-        elif isinstance(value, list):
-            if convert:
-                # We default into creating a space separate list
-                metadata += create_yaml_string_from_list(key, value, indent)
-            else:
-                metadata += create_yaml_sequence(key, value, indent)
-        else:
-            metadata += create_yaml_string(key, value, indent)
-    return metadata
-
-
-def _calculate_indent(indent):
-    """Create the string used for indenting the YAML structures.
-
-    :return A string with the correct spaces for indentation.
-    """
-    indented_string = ''
-    for i in range(indent):
-        indented_string += ' '
-    return indented_string
+    return yaml.dump(python_object, default_flow_style=False, indent=True)
 
 
 def check_and_validate_args(args):
