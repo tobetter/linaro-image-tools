@@ -1,24 +1,3 @@
-# Copyright (C) 2010, 2011, 2012 Linaro
-#
-# Author: Milo Casagrande <milo.casagrande@linaro.org>
-#
-# This file is part of Linaro Image Tools.
-#
-# Linaro Image Tools is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
-#
-# Linaro Image Tools is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Linaro Image Tools; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
-# USA.
-
 import tempfile
 from linaro_image_tools.testing import TestCaseWithFixtures
 from linaro_image_tools.tests.fixtures import (
@@ -49,24 +28,22 @@ class HwpackConverterTests(TestCaseWithFixtures):
     def test_wrong_input_file(self):
         """Pass a non-existing file."""
         input_file = '/tmp/foobaz'
-        self.assertRaises(
-            HwpackConverterException, check_and_validate_args,
-            Args(input_file=input_file))
+        self.assertRaises(HwpackConverterException, check_and_validate_args,
+                            Args(input_file=input_file))
 
     def test_wrong_input_dir(self):
         """Pass a directory instead of file."""
         temp_file = tempfile.NamedTemporaryFile()
         temp_dir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
-        self.assertRaises(
-            HwpackConverterException, check_and_validate_args,
-            Args(input_file=temp_file.name, output_file=temp_dir))
+        self.assertRaises(HwpackConverterException, check_and_validate_args,
+                            Args(input_file=temp_file.name,
+                                output_file=temp_dir))
 
     def test_same_input_output_file(self):
         """Pass the same existing file path to the two arguments."""
         temp_file = self.useFixture(CreateTempFileFixture()).get_file_name()
-        self.assertRaises(
-            HwpackConverterException, check_and_validate_args,
-            Args(input_file=temp_file, output_file=temp_file))
+        self.assertRaises(HwpackConverterException, check_and_validate_args,
+                            Args(input_file=temp_file, output_file=temp_file))
 
     def test_basic_parse(self):
         ini_format = '[hwpack]\nformat=2.0\nsupport=supported'

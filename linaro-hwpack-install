@@ -196,7 +196,7 @@ for filename in $(ls "${HWPACK_DIR}"/sources.list.d/); do
   while read line; do
     # Only install files that have at least one line not present in the
     # existing sources lists.
-    grep -qF "$line" /etc/apt/sources.list.d/* /etc/apt/sources.list \
+    grep -qF "$line" $(find /etc/apt/sources.list.d/ -name '*.list') /etc/apt/sources.list \
       || should_install=1
   done < $stripped_file
 
