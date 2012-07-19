@@ -271,7 +271,7 @@ def dump(python_object):
 
     :param python_object: The object to serialize.
     """
-    return yaml.dump(python_object, default_flow_style=False, indent=True)
+    return yaml.dump(python_object, default_flow_style=False)
 
 
 def check_and_validate_args(args):
