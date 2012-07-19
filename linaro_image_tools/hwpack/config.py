@@ -414,6 +414,8 @@ class Config(object):
                 except (ConfigParser.NoOptionError,
                         ConfigParser.NoSectionError):
                     result = None
+            if not result:
+                result = None
 
         return result
 
