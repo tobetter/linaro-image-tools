@@ -309,7 +309,10 @@ class Config(object):
 
     def _addr(self, value):
         """Convert value to 8 character hex string"""
-        return "0x%08x" % value
+        converted_value = value
+        if not isinstance(value, str):
+            converted_value = "0x%08x" % value
+        return converted_value
 
     def _v2_key_to_v3(self, key):
         """Convert V2 key to a V3 key"""
