@@ -12,6 +12,9 @@ from linaro_image_tools.hwpack.hwpack_convert import (
     create_yaml_dictionary,
     create_yaml_sequence,
     create_yaml_string,
+    create_yaml_string_from_list,
+    create_yaml_entry,
+    recurse_dictionary,
     )
 
 
@@ -166,8 +169,11 @@ class HwpackConverterTests(TestCaseWithFixtures):
 
     def test_extra_boot_options(self):
         """Tests the correct creation of the extra_boot_options part."""
-        ini_format = ("[hwpack]\nformat=2.0\nextra_boot_options=opt1 opt2")
-        out_format = ("format: 3.0\nextra_boot_options:\n - opt1\n - opt2\n")
+        ini_format = ("[hwpack]\nformat=2.0\nu_boot_package=a_package\n"
+                        "extra_boot_options=opt1 opt2")
+        out_format = ("format: 3.0\nbootloaders:\n u_boot:\n  package: "
+                        "a_package\n  extra_boot_options:\n   - opt1\n   "
+                        "- opt2\n")
         input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
                                                                 get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
@@ -185,3 +191,32 @@ class HwpackConverterTests(TestCaseWithFixtures):
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
         self.assertEqual(out_format, str(converter))
+
+    def test_create_yaml_string_from_list(self):
+        sequence = ['seq1', 'seq2', 'seq3']
+        name = 'test'
+        indent = 1
+        expected_out = ' test: seq1 seq2 seq3\n'
+        self.assertEqual(expected_out, create_yaml_string_from_list(name,
+                        sequence, indent))
+
+    def test_create_yaml_entry(self):
+        name = 'test'
+        indent = 1
+        expected_out = ' test:\n'
+        self.assertEqual(expected_out, create_yaml_entry(name, indent))
+
+    def test_recurse_dictionary(self):
+        dictionary = {'dictionary': {'file': 'a_file', 'nested_list':
+                        ['a', 'b']}}
+        expected_out = "dictionary:\n file: a_file\n nested_list: a b\n"
+        self.assertEqual(expected_out, recurse_dictionary(dictionary,
+                                                            convert=True))
+
+    def test_recurse_nested_dictionary(self):
+        dictionary = {'dictio': {'key1': 'value1', 'nested': {'key2':
+                        'value2', 'key3': ['a', 'b']}}}
+        expected_out = ("dictio:\n key1: value1\n nested:\n  key3: a b\n"
+                        "  key2: value2\n")
+        self.assertEqual(expected_out, recurse_dictionary(dictionary,
+                                                            convert=True))

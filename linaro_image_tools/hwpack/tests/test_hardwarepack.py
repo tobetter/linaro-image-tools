@@ -339,8 +339,8 @@ class NewMetadataTests(TestCase):
         metadata.add_v2_config(extra_serial_opts=options)
         metadata.add_v3_config(bootloaders=None)
         expected_out = ("format: 3.0\nname: ahwpack\nversion: 4\n"
-                        "architecture: armel\nextra_serial_options:\n "
-                        "- option1\n - option2,option3\n")
+                        "architecture: armel\nextra_serial_options: option1 "
+                        "option2,option3\n")
         self.assertEqual(expected_out, str(metadata))
 
 

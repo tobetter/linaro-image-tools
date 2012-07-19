@@ -488,7 +488,7 @@ class ConfigTests(TestCase):
     def test_extra_serial_opts(self):
         config = self.get_config(self.valid_complete_v3 + self.valid_end)
         config.validate()
-        self.assertEqual(['console=tty0', 'console=ttyO2,115200n8'],
+        self.assertEqual('console=tty0 console=ttyO2,115200n8',
                          config.extra_serial_opts)
 
     def test_boot_script(self):
