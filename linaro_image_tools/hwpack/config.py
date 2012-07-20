@@ -39,9 +39,7 @@ class HwpackConfigError(Exception):
 class Config(object):
     """Encapsulation of a hwpack-create configuration."""
     translate_v2_to_v3 = {}
-    translate_v2_metadata = {"u_boot_file": "U_BOOT",
-                             "spl_file": "SPL",
-                             "architectures": "ARCHITECTURE"}
+    translate_v2_metadata = {}
 
     MAIN_SECTION = "hwpack"
     NAME_KEY = "name"
@@ -56,12 +54,15 @@ class Config(object):
     ORIGIN_KEY = "origin"
     MAINTAINER_KEY = "maintainer"
     ARCHITECTURES_KEY = "architectures"
+    translate_v2_metadata[ARCHITECTURES_KEY] = "ARCHITECTURE"
     ASSUME_INSTALLED_KEY = "assume-installed"
     U_BOOT_PACKAGE_KEY = "u_boot_package"
     translate_v2_to_v3[U_BOOT_PACKAGE_KEY] = "package"
     U_BOOT_FILE_KEY = "u_boot_file"
     translate_v2_to_v3[U_BOOT_FILE_KEY] = "file"
+    translate_v2_metadata[U_BOOT_FILE_KEY] = "U_BOOT"
     SPL_FILE_KEY = "spl_file"
+    translate_v2_metadata[SPL_FILE_KEY] = "SPL"
     SERIAL_TTY_KEY = "serial_tty"
     KERNEL_ADDR_KEY = "kernel_addr"
     INITRD_ADDR_KEY = "initrd_addr"
@@ -108,6 +109,7 @@ class Config(object):
         :param fp: a file-like object containing the configuration.
         """
         obfuscated_e = None
+        obfuscated_yaml_e = ""
         try:
             self.parser = ConfigParser.RawConfigParser()
             self.parser.readfp(fp)
@@ -115,21 +117,37 @@ class Config(object):
             obfuscated_e = re.sub(r"([^ ]https://).+?(@)", r"\1***\2", str(e))
 
         if obfuscated_e:
+            # obfuscated_e being set indicates that something went wrong.
+            # It could be that the input is in fact YAML. Try the YAML
+            # parser.
             try:
                 fp.seek(0)
                 self.parser = yaml.safe_load(fp)
                 self.set_board(board)
                 self.set_bootloader(bootloader)
             except yaml.YAMLError, e:
-                obfuscated_e = re.sub(r"([^ ]https://).+?(@)",
+                obfuscated_yaml_e = re.sub(r"([^ ]https://).+?(@)",
                                       r"\1***\2", str(e))
             else:
+                # If YAML parsed OK, we don't have an error.
                 obfuscated_e = None
 
         if obfuscated_e:
-            raise ConfigParser.Error(obfuscated_e)
+            # If INI parsing from ConfigParser or YAML parsing failed,
+            # print both error messages.
+            msg = ("Failed to parse hardware pack configuration. Tried to "
+                   "parse as both INI and YAML. INI parsing error:\n" +
+                   obfuscated_e + "\n" +
+                   "YAML parser error:\n" +
+                   obfuscated_yaml_e)
+            raise ConfigParser.Error(msg)
 
     def set_bootloader(self, bootloader):
+        """Set bootloader used to look up configuration in bootloader section.
+
+        If bootloader is None / empty and there is only one bootloader
+        available, use that.
+        """
         if not bootloader:
             # Auto-detect bootloader. If there is a single bootloader specified
             # then use it, else, error.
@@ -143,6 +161,7 @@ class Config(object):
         self.bootloader = bootloader
 
     def set_board(self, board):
+        """Set board used to look up per-board configuration"""
         self.board = board
 
     def validate(self):
@@ -245,6 +264,7 @@ class Config(object):
 
     @property
     def bootloaders(self):
+        """Bootloaders available in the hardware pack"""
         return self._get_option('bootloaders')
 
     @property
@@ -290,7 +310,7 @@ class Config(object):
 
     def _get_bootloader_option(self, key, join_list_with=False,
                                convert_to=None):
-        """Get an option inside the current bootloader section/"""
+        """Get an option inside the current bootloader section."""
         if self._is_v3:
             if not self.bootloader:
                 raise ValueError("bootloader not set.")
