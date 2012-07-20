@@ -36,6 +36,13 @@ from linaro_image_tools.hwpack.packages import (
     PackageFetcher,
     )
 
+from linaro_image_tools.hwpack.hwpack_fields import (
+    PACKAGE_FIELD,
+    SPL_PACKAGE_FIELD,
+)
+
+PACKAGE_FIELDS = [PACKAGE_FIELD, SPL_PACKAGE_FIELD]
+
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +117,22 @@ class HardwarePackBuilder(object):
             package.filepath, wanted_file)
         return hwpack.add_file(target_path, tempfile_name)
 
+    def loop_bootloaders(self, dictionary):
+        """Loop through the bootloaders dictionary searching for packages
+        that should be installed, based on known keywords.
+        
+        :param dictionary: The bootloaders dictionary to loop through.
+        :return A list of packages, without duplicates."""
+        boot_packages = []
+        for key, value in dictionary.iteritems():
+            if isinstance(value, dict):
+                boot_packages.extend(self.loop_bootloaders(value))
+            else:
+                if key in PACKAGE_FIELDS:
+                    boot_packages.append(value)
+        # Eliminate duplicates.
+        return list(set(boot_packages))
+
     def build(self):
         for architecture in self.config.architectures:
             logger.info("Building for %s" % architecture)
@@ -121,10 +144,18 @@ class HardwarePackBuilder(object):
                 hwpack.add_apt_sources(sources)
                 sources = sources.values()
                 packages = self.config.packages[:]
-                if self.config.u_boot_package is not None:
-                    packages.append(self.config.u_boot_package)
-                if self.config.spl_package is not None:
-                    packages.append(self.config.spl_package)
+                # Loop through multiple bootloaders.
+                # In V3 of hwpack configuration, all the bootloaders info and
+                # packages are in the bootloaders section.
+                if self.config.format.format_as_string == '3.0':
+                    if self.config.bootloaders:
+                        packages.extend(self.loop_bootloaders(
+                                            self.config.bootloaders))
+                else:
+                    if self.config.u_boot_package is not None:
+                        packages.append(self.config.u_boot_package)
+                    if self.config.spl_package is not None:
+                        packages.append(self.config.spl_package)
                 local_packages = [
                     FetchedPackage.from_deb(deb)
                     for deb in self.local_debs]

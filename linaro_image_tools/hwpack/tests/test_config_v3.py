@@ -141,7 +141,7 @@ class ConfigTests(TestCase):
     def test_validate_invalid_package_name_in_assume_installed(self):
         config = self.get_config(
                 "name: ahwpack\npackages: foo\n"
-                "architectures: armel\nassume_installed: bar ~~\n")
+                "architectures: armel\nassume_installed:\n - bar\n - ~~\n")
         self.assertValidationError(
             "Invalid value in assume-installed in the metadata: ~~",
             config._validate_assume_installed)
