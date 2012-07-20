@@ -24,6 +24,9 @@ from StringIO import StringIO
 from testtools import TestCase
 
 from linaro_image_tools.hwpack.config import Config, HwpackConfigError
+from linaro_image_tools.hwpack.hwpack_fields import (
+    DEFINED_PARTITION_LAYOUTS,
+)
 
 
 class ConfigTests(TestCase):
@@ -306,7 +309,7 @@ class ConfigTests(TestCase):
             "Undefined partition layout %s in the [%s] section. "
             "Valid partition layouts are %s."
             % (partition_layout, 'hwpack',
-               ", ".join(config.DEFINED_PARTITION_LAYOUTS)), config)
+               ", ".join(DEFINED_PARTITION_LAYOUTS)), config)
 
     def test_validate_wired_interfaces(self):
         self.assertTrue("XXX What is an invalid interface name?")

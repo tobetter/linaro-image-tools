@@ -24,6 +24,9 @@ from StringIO import StringIO
 from testtools import TestCase
 
 from linaro_image_tools.hwpack.config import Config, HwpackConfigError
+from linaro_image_tools.hwpack.hwpack_fields import (
+    DEFINED_PARTITION_LAYOUTS,
+)
 
 
 class ConfigTests(TestCase):
@@ -89,7 +92,7 @@ class ConfigTests(TestCase):
     def test_validate_invalid_include_debs(self):
         config = self.get_config(
                 "name: ahwpack\n"
-                "include-debs: if you don't mind\n")
+                "include_debs: if you don't mind\n")
         self.assertValidationError(
             "Invalid value for include-debs: if you don't mind",
             config._validate_include_debs)
@@ -138,7 +141,7 @@ class ConfigTests(TestCase):
     def test_validate_invalid_package_name_in_assume_installed(self):
         config = self.get_config(
                 "name: ahwpack\npackages: foo\n"
-                "architectures: armel\nassume-installed: bar ~~\n")
+                "architectures: armel\nassume_installed: bar ~~\n")
         self.assertValidationError(
             "Invalid value in assume-installed in the metadata: ~~",
             config._validate_assume_installed)
@@ -260,7 +263,7 @@ class ConfigTests(TestCase):
             "Undefined partition layout %s. "
             "Valid partition layouts are %s."
             % (partition_layout,
-               ", ".join(config.DEFINED_PARTITION_LAYOUTS)),
+               ", ".join(DEFINED_PARTITION_LAYOUTS)),
             config._validate_partition_layout)
 
     def test_validate_wired_interfaces(self):
@@ -598,7 +601,7 @@ class ConfigTests(TestCase):
         self.assertEqual("ahwpack", config.name)
 
     def test_include_debs(self):
-        config = self.get_config(self.valid_start + "include-debs: false\n")
+        config = self.get_config(self.valid_start + "include_debs: false\n")
         self.assertEqual(False, config.include_debs)
 
     def test_include_debs_defaults_true(self):
@@ -606,7 +609,7 @@ class ConfigTests(TestCase):
         self.assertEqual(True, config.include_debs)
 
     def test_include_debs_defaults_true_on_empty(self):
-        config = self.get_config(self.valid_start + "include-debs: \n")
+        config = self.get_config(self.valid_start + "include_debs: \n")
         self.assertEqual(True, config.include_debs)
 
     def test_origin(self):
@@ -716,7 +719,7 @@ class ConfigTests(TestCase):
             " - foo\n"
             "architectures:\n"
             " - armel\n"
-            "assume-installed:\n"
+            "assume_installed:\n"
             " - foo\n"
             " - bar\n")
         self.assertEqual(["foo", "bar"], config.assume_installed)
@@ -728,7 +731,7 @@ class ConfigTests(TestCase):
             " - foo\n"
             "architectures:\n"
             " - armel\n"
-            "assume-installed:\n"
+            "assume_installed:\n"
             " - foo\n"
             " - bar\n"
             " - foo\n")
