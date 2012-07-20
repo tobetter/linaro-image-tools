@@ -144,16 +144,30 @@ with open('${HWPACK_DIR}/metadata') as configv3:
             key = key_match.group(2)
             root[key] = {}
         elif list_item:  # - value
+            # If the list has extra indentation then root == {}
+            # If the list doesn't have extra indentation, root = {key: {}}
+            # We need to create a list in that empty dictionary. Work out
+            # where it is, assign it to insert_point.
+            insert_point = None
             if root == {}:
-                root[''] = []  # Store lists in dict with '' as key
-            root[''].append(list_item.group(2))
+                insert_point = root
+            keys = root.keys()
+            if len(keys) == 1:
+                insert_point = root[keys[0]]
+
+            if insert_point == {}:
+                insert_point[''] = []
+
+            insert_point[''].append(list_item.group(2))
 
     keys = '$1'.split(' ')
     for key in keys:
         if isinstance(config, list):
             key = int(key)
         config = config[key]
-        if isinstance(config, dict) and isinstance(config[''], list):
+        if(isinstance(config, dict) and
+           '' in config and
+           isinstance(config[''], list)):
             config = config['']
     print config
   "
