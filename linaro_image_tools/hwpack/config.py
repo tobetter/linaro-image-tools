@@ -284,6 +284,11 @@ class Config(object):
         return self._get_option(BOOTLOADERS_FIELD)
 
     @property
+    def boards(self):
+        """Multiple boards available in the hardware pack."""
+        return self._get_option(BOARDS_FIELD)
+
+    @property
     def uboot_in_boot_part(self):
         """Whether uboot binary should be put in the boot partition. A str."""
         return self._get_bootloader_option(self.UBOOT_IN_BOOT_PART_KEY)

@@ -37,11 +37,18 @@ from linaro_image_tools.hwpack.packages import (
     )
 
 from linaro_image_tools.hwpack.hwpack_fields import (
+    FILE_FIELD,
     PACKAGE_FIELD,
+    SPL_FILE_FIELD,
     SPL_PACKAGE_FIELD,
 )
 
+# The fields that hold packages to be installed.
 PACKAGE_FIELDS = [PACKAGE_FIELD, SPL_PACKAGE_FIELD]
+# The fields that hold values that should be reset to newly calculated ones.
+# The values of the dictionary are the fields whose values should be reset.
+FIELDS_TO_CHANGE = {PACKAGE_FIELD: FILE_FIELD,
+                    SPL_PACKAGE_FIELD: SPL_FILE_FIELD}
 
 
 logger = logging.getLogger(__name__)
@@ -99,6 +106,9 @@ class HardwarePackBuilder(object):
         self.format = self.config.format
         self.version = version
         self.local_debs = local_debs
+        self.package_unpacker = None
+        self.hwpack = None
+        self.packages = None
 
     def find_fetched_package(self, packages, wanted_package_name):
         wanted_package = None
@@ -111,11 +121,10 @@ class HardwarePackBuilder(object):
                                 wanted_package_name)
         return wanted_package
 
-    def add_file_to_hwpack(self, package, wanted_file, package_unpacker,
-                           hwpack, target_path):
-        tempfile_name = package_unpacker.get_file(
+    def add_file_to_hwpack(self, package, wanted_file, target_path):
+        tempfile_name = self.package_unpacker.get_file(
             package.filepath, wanted_file)
-        return hwpack.add_file(target_path, tempfile_name)
+        return self.hwpack.add_file(target_path, tempfile_name)
 
     def find_bootloader_packages(self, bootloaders_config):
         """Loop through the bootloaders dictionary searching for packages
@@ -133,83 +142,140 @@ class HardwarePackBuilder(object):
         # Eliminate duplicates.
         return list(set(boot_packages))
 
+    def _set_new_values(self, config_dictionary):
+        """Loop through the bootloaders sections of a hwpack, also from the
+        boards section, changing the necessary values with the newly calculated
+        ones.
+
+        :param config_dictionary: The dictionary from the Config we need to
+                                    look into.
+        """
+        remove_packages = []
+        for key, value in config_dictionary.iteritems():
+            if isinstance(value, dict):
+                self._set_new_values(value)
+            else:
+                if key in FIELDS_TO_CHANGE.keys():
+                    if key == PACKAGE_FIELD:
+                        # Need to use the correct path for the packages.
+                        path = self.hwpack.U_BOOT_DIR
+                    else:
+                        path = self.hwpack.SPL_DIR
+                    change_field = FIELDS_TO_CHANGE.get(key)
+                    boot_package = value
+                    boot_file = config_dictionary.get(change_field)
+                    if boot_package is not None and boot_file is not None:
+                        package = self.find_fetched_package(
+                                    self.packages,
+                                    boot_package)
+                        file_to_add = self.add_file_to_hwpack(
+                                            package, boot_file, path)
+                        config_dictionary[change_field] = file_to_add
+                        remove_packages.append(package)
+        # Clean up duplicates.
+        for package in remove_packages:
+            if package in self.packages:
+                self.packages.remove(package)
+
     def build(self):
         for architecture in self.config.architectures:
             logger.info("Building for %s" % architecture)
             metadata = Metadata.from_config(
                 self.config, self.version, architecture)
-            hwpack = HardwarePack(metadata)
+            self.hwpack = HardwarePack(metadata)
             sources = self.config.sources
             with LocalArchiveMaker() as local_archive_maker:
-                hwpack.add_apt_sources(sources)
+                self.hwpack.add_apt_sources(sources)
                 sources = sources.values()
-                packages = self.config.packages[:]
+                self.packages = self.config.packages[:]
                 # Loop through multiple bootloaders.
                 # In V3 of hwpack configuration, all the bootloaders info and
                 # packages are in the bootloaders section.
-                if self.config.format.format_as_string == '3.0':
-                    if self.config.bootloaders:
-                        packages.extend(self.find_bootloader_packages(
-                                            self.config.bootloaders))
+                if self.format.format_as_string == '3.0':
+                    if self.config.bootloaders is not None:
+                        self.packages.extend(self.find_bootloader_packages(
+                                                self.config.bootloaders))
+                    if self.config.boards is not None:
+                        self.packages.extend(self.find_bootloader_packages(
+                                                self.config.boards))
                 else:
                     if self.config.u_boot_package is not None:
-                        packages.append(self.config.u_boot_package)
+                        self.packages.append(self.config.u_boot_package)
                     if self.config.spl_package is not None:
-                        packages.append(self.config.spl_package)
+                        self.packages.append(self.config.spl_package)
                 local_packages = [
                     FetchedPackage.from_deb(deb)
                     for deb in self.local_debs]
                 sources.append(
                     local_archive_maker.sources_entry_for_debs(
                         local_packages, LOCAL_ARCHIVE_LABEL))
-                packages.extend([lp.name for lp in local_packages])
+                self.packages.extend([lp.name for lp in local_packages])
                 logger.info("Fetching packages")
                 fetcher = PackageFetcher(
                     sources, architecture=architecture,
                     prefer_label=LOCAL_ARCHIVE_LABEL)
                 with fetcher:
-                    with PackageUnpacker() as package_unpacker:
+                    with PackageUnpacker() as self.package_unpacker:
                         fetcher.ignore_packages(self.config.assume_installed)
-                        packages = fetcher.fetch_packages(
-                            packages,
+                        self.packages = fetcher.fetch_packages(
+                            self.packages,
                             download_content=self.config.include_debs)
 
-                        u_boot_package = None
-                        if self.config.u_boot_file is not None:
-                            assert self.config.u_boot_package is not None
-                            u_boot_package = self.find_fetched_package(
-                                packages, self.config.u_boot_package)
-                            hwpack.metadata.u_boot = self.add_file_to_hwpack(
-                                u_boot_package, self.config.u_boot_file,
-                                package_unpacker, hwpack, hwpack.U_BOOT_DIR)
+                        # On a v3 hwpack, all the values we need to check are
+                        # in the bootloaders and boards section, so we loop
+                        # through both of them changing what is necessary.
+                        if self.config.format.format_as_string == '3.0':
+                            if self.config.bootloaders is not None:
+                                self._set_new_values(self.config.bootloaders)
+                                metadata.bootloaders = self.config.bootloaders
+                            if self.config.boards is not None:
+                                self._set_new_values(self.config.boards)
+                                metadata.boards = self.config.boards
+                        else:
+                            u_boot_package = None
+                            if self.config.u_boot_file is not None:
+                                assert self.config.u_boot_package is not None
+                                u_boot_package = self.find_fetched_package(
+                                    self.packages,
+                                    self.config.u_boot_package)
+                                self.hwpack.metadata.u_boot = \
+                                    self.add_file_to_hwpack(
+                                        u_boot_package,
+                                        self.config.u_boot_file,
+                                        self.hwpack.U_BOOT_DIR)
 
-                        spl_package = None
-                        if self.config.spl_file is not None:
-                            assert self.config.spl_package is not None
-                            spl_package = self.find_fetched_package(
-                                packages, self.config.spl_package)
-                            hwpack.metadata.spl = self.add_file_to_hwpack(
-                                spl_package, self.config.spl_file,
-                                package_unpacker, hwpack, hwpack.SPL_DIR)
+                            spl_package = None
+                            if self.config.spl_file is not None:
+                                assert self.config.spl_package is not None
+                                spl_package = self.find_fetched_package(
+                                    self.packages,
+                                    self.config.spl_package)
+                                self.hwpack.metadata.spl = \
+                                    self.add_file_to_hwpack(
+                                        spl_package,
+                                        self.config.spl_file,
+                                        self.hwpack.SPL_DIR)
 
-                        # u_boot_package and spl_package can be identical
-                        if (u_boot_package is not None and
-                            u_boot_package in packages):
-                            packages.remove(u_boot_package)
-                        if (spl_package is not None and
-                            spl_package in packages):
-                            packages.remove(spl_package)
+                            # u_boot_package and spl_package can be identical
+                            if (u_boot_package is not None and
+                                u_boot_package in self.packages):
+                                self.packages.remove(u_boot_package)
+                            if (spl_package is not None and
+                                spl_package in self.packages):
+                                self.packages.remove(spl_package)
 
                         logger.debug("Adding packages to hwpack")
-                        hwpack.add_packages(packages)
+                        self.hwpack.add_packages(self.packages)
                         for local_package in local_packages:
-                            if local_package not in packages:
+                            if local_package not in self.packages:
                                 logger.warning(
                                     "Local package '%s' not included",
                                     local_package.name)
-                        hwpack.add_dependency_package(self.config.packages)
-                        with open(hwpack.filename(), 'w') as f:
-                            hwpack.to_file(f)
-                            logger.info("Wrote %s" % hwpack.filename())
-                        with open(hwpack.filename('.manifest.txt'), 'w') as f:
-                            f.write(hwpack.manifest_text())
+                        self.hwpack.add_dependency_package(
+                                self.config.packages)
+                        with open(self.hwpack.filename(), 'w') as f:
+                            self.hwpack.to_file(f)
+                            logger.info("Wrote %s" % self.hwpack.filename())
+                        with open(self.hwpack.filename('.manifest.txt'),
+                                    'w') as f:
+                            f.write(self.hwpack.manifest_text())
