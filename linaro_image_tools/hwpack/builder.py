@@ -120,7 +120,7 @@ class HardwarePackBuilder(object):
     def find_bootloader_packages(self, bootloaders_config):
         """Loop through the bootloaders dictionary searching for packages
         that should be installed, based on known keywords.
-        
+
         :param bootloaders_config: The bootloaders dictionary to loop through.
         :return A list of packages, without duplicates."""
         boot_packages = []
