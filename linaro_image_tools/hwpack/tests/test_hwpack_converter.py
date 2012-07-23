@@ -130,3 +130,27 @@ class HwpackConverterTests(TestCaseWithFixtures):
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
         self.assertEqual(out_format, str(converter))
+
+    def test_assume_installed(self):
+        """Tests the correct creation of the extra_serial_options part."""
+        ini_format = ("[hwpack]\nformat=2.0\nassume-installed=install1 "
+                        "install2")
+        out_format = ("format: '3.0'\nassume_installed:\n- install1\n- "
+                        "install2\n")
+        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
+                                                                get_file_name()
+        output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
+        converter = HwpackConverter(input_file, output_file)
+        converter._parse()
+        self.assertEqual(out_format, str(converter))
+
+    def test_include_debs(self):
+        """Tests the correct creation of the extra_serial_options part."""
+        ini_format = ("[hwpack]\nformat=2.0\ninclude-debs=yes")
+        out_format = ("format: '3.0'\ninclude_debs: true\n")
+        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
+                                                                get_file_name()
+        output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
+        converter = HwpackConverter(input_file, output_file)
+        converter._parse()
+        self.assertEqual(out_format, str(converter))

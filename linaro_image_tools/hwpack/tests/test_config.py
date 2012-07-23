@@ -24,6 +24,9 @@ from StringIO import StringIO
 from testtools import TestCase
 
 from linaro_image_tools.hwpack.config import Config, HwpackConfigError
+from linaro_image_tools.hwpack.hwpack_fields import (
+    DEFINED_PARTITION_LAYOUTS,
+)
 
 
 class ConfigTests(TestCase):
@@ -72,7 +75,7 @@ class ConfigTests(TestCase):
 
     def test_validate_no_name(self):
         config = self.get_config("[hwpack]\n")
-        self.assertValidationError("No name in the [hwpack] section", config)
+        self.assertValidationError("Empty value for name", config)
 
     def test_validate_empty_name(self):
         config = self.get_config("[hwpack]\nname =  \n")
@@ -87,7 +90,8 @@ class ConfigTests(TestCase):
                 "[hwpack]\nname = ahwpack\n"
                 "include-debs = if you don't mind\n")
         self.assertValidationError(
-            "Invalid value for include-debs: if you don't mind", config)
+            "Invalid value for include-debs: Not a boolean: if you don't mind",
+            config)
 
     def test_validate_invalid_supported(self):
         config = self.get_config(
@@ -192,11 +196,9 @@ class ConfigTests(TestCase):
         self.assertEqual(None, config.validate())
 
     def test_validate_supported_format(self):
-        config = self.get_config(
-                self.valid_start
-                + "\nformat = 0.9\n")
-        self.assertValidationError(
-            "Format version '0.9' is not supported.", config)
+        contents = self.valid_start + "format = 0.9\n"
+        config = Config(StringIO(contents))
+        self.assertRaises(HwpackConfigError, config.validate)
 
     def test_validate_invalid_u_boot_package_name(self):
         config = self.get_config(
@@ -307,7 +309,7 @@ class ConfigTests(TestCase):
             "Undefined partition layout %s in the [%s] section. "
             "Valid partition layouts are %s."
             % (partition_layout, 'hwpack',
-               ", ".join(config.DEFINED_PARTITION_LAYOUTS)), config)
+               ", ".join(DEFINED_PARTITION_LAYOUTS)), config)
 
     def test_validate_wired_interfaces(self):
         self.assertTrue("XXX What is an invalid interface name?")

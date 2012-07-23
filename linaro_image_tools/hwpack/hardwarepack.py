@@ -32,6 +32,45 @@ from linaro_image_tools.hwpack.packages import (
 from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
 )
+from linaro_image_tools.hwpack.hwpack_convert import (
+    dump,
+)
+
+from hwpack_fields import (
+    BOOTLOADERS_FIELD,
+    BOOT_MIN_SIZE_FIELD,
+    BOOT_SCRIPT_FIELD,
+    DTB_ADDR_FIELD,
+    DTB_FILE_FIELD,
+    EXTRA_SERIAL_OPTIONS_FIELD,
+    FILE_FIELD,
+    FORMAT_FIELD,
+    INITRD_ADDR_FIELD,
+    INITRD_FILE_FIELD,
+    KERNEL_ADDR_FIELD,
+    KERNEL_FILE_FIELD,
+    LOAD_ADDR_FIELD,
+    LOADER_MIN_SIZE_FIELD,
+    LOADER_START_FIELD,
+    MAINTAINER_FIELD,
+    METADATA_ARCH_FIELD,
+    METADATA_VERSION_FIELD,
+    MMC_ID_FIELD,
+    NAME_FIELD,
+    ORIGIN_FIELD,
+    PARTITION_LAYOUT_FIELD,
+    ROOT_MIN_SIZE_FIELD,
+    SAMSUNG_BL1_LEN_FIELD,
+    SAMSUNG_BL1_START_FIELD,
+    SAMSUNG_BL2_LEN_FIELD,
+    SAMSUNG_ENV_LEN_FIELD,
+    SERIAL_TTY_FIELD,
+    SNOWBALL_STARTUP_FILES_CONFIG_FIELD,
+    SPL_FILE_FIELD,
+    SUPPORT_FIELD,
+    WIRED_INTERFACES_FIELD,
+    WIRELESS_INTERFACES_FIELD,
+)
 
 
 class Metadata(object):
@@ -127,6 +166,13 @@ class Metadata(object):
         self.samsung_bl2_len = samsung_bl2_len
 
     @classmethod
+    def add_v3_config(self, bootloaders):
+        """Add fields that are specific to the v3 config format.
+
+        :param bootloaders: The bootloaders section of the hwpack."""
+        self.bootloaders = bootloaders
+
+    @classmethod
     def from_config(cls, config, version, architecture):
         """Create a Metadata from a Config object.
 
@@ -153,39 +199,163 @@ class Metadata(object):
             # Helper variable to adhere to the line length limit.
             snowball_startup_config = config.snowball_startup_files_config
             metadata.add_v2_config(
-                serial_tty=config.serial_tty,
-                kernel_addr=config.kernel_addr,
-                initrd_addr=config.initrd_addr,
-                load_addr=config.load_addr,
-                wired_interfaces=config.wired_interfaces,
-                wireless_interfaces=config.wireless_interfaces,
-                partition_layout=config.partition_layout,
-                mmc_id=config.mmc_id,
                 boot_min_size=config.boot_min_size,
-                root_min_size=config.root_min_size,
+                boot_script=config.boot_script,
+                dtb_addr=config.dtb_addr,
+                dtb_file=config.dtb_file,
+                env_dd=config.env_dd,
+                extra_boot_options=config.extra_boot_options,
+                extra_serial_opts=config.extra_serial_opts,
+                initrd_addr=config.initrd_addr,
+                initrd=config.initrd,
+                kernel_addr=config.kernel_addr,
+                load_addr=config.load_addr,
                 loader_min_size=config.loader_min_size,
                 loader_start=config.loader_start,
-                vmlinuz=config.vmlinuz,
-                initrd=config.initrd,
-                dtb_file=config.dtb_file,
-                dtb_addr=config.dtb_addr,
-                extra_boot_options=config.extra_boot_options,
-                boot_script=config.boot_script,
-                uboot_in_boot_part=config.uboot_in_boot_part,
-                uboot_dd=config.uboot_dd,
-                spl_in_boot_part=config.spl_in_boot_part,
-                spl_dd=config.spl_dd,
-                env_dd=config.env_dd,
-                extra_serial_opts=config.extra_serial_opts,
-                snowball_startup_files_config=snowball_startup_config,
-                samsung_bl1_start=config.samsung_bl1_start,
+                mmc_id=config.mmc_id,
+                partition_layout=config.partition_layout,
+                root_min_size=config.root_min_size,
                 samsung_bl1_len=config.samsung_bl1_len,
+                samsung_bl1_start=config.samsung_bl1_start,
+                samsung_bl2_len=config.samsung_bl2_len,
                 samsung_env_len=config.samsung_env_len,
-                samsung_bl2_len=config.samsung_bl2_len)
+                serial_tty=config.serial_tty,
+                snowball_startup_files_config=snowball_startup_config,
+                spl_dd=config.spl_dd,
+                spl_in_boot_part=config.spl_in_boot_part,
+                uboot_dd=config.uboot_dd,
+                uboot_in_boot_part=config.uboot_in_boot_part,
+                vmlinuz=config.vmlinuz,
+                wired_interfaces=config.wired_interfaces,
+                wireless_interfaces=config.wireless_interfaces,
+                )
+        if config.format.format_as_string == '3.0':
+            metadata.add_v3_config(config.bootloaders)
         return metadata
 
     def __str__(self):
-        """Get the contents of the metadata file."""
+        if self.format.format_as_string == '3.0':
+            return self.create_metadata_new()
+        else:
+            return self.create_metadata_old()
+
+    def set_config_value(self, dictionary, search_key, new_value):
+        """Loop recursively through a dictionary looking for the specified key
+        substituting its value.
+        In a metadata file, at least two fields from the Config class have
+        their value calculated during the build phase of the hardware pack.
+        Here those known fiels will be updated with the newly calculated
+        values.
+
+        :param dictionary: The dictionary to loop through.
+        :param search_key: The key to search.
+        :param new_value: The new value for the key.
+        """
+        for key, value in dictionary.iteritems():
+            if key == search_key:
+                dictionary[key] = new_value
+                break
+            elif isinstance(value, dict):
+                self.set_config_value(value, search_key, new_value)
+
+    def create_metadata_new(self):
+        """Get the contents of the metadata file.
+
+        The metadata file is almost an identical copy of the hwpack
+        configuration file. Only a couple of fields are different, and some
+        are missing.
+
+        :return A string.
+        """
+        metadata = ""
+        metadata += dump({FORMAT_FIELD: self.format.format_as_string})
+        metadata += dump({NAME_FIELD: self.name})
+        metadata += dump({METADATA_VERSION_FIELD: self.version})
+        # This is a single 'architecture' hwpack, each arch will get its own,
+        # it is not retrieved from the Config.
+        metadata += dump({METADATA_ARCH_FIELD: self.architecture})
+        if self.origin is not None:
+            metadata += dump({ORIGIN_FIELD: self.origin})
+        if self.maintainer is not None:
+            metadata += dump({MAINTAINER_FIELD: self.maintainer})
+        if self.support is not None:
+            metadata += dump({SUPPORT_FIELD: self.support})
+        if self.bootloaders is not None:
+            # XXX We need to do this, since some necessary values are set
+            # when the hwpack archive is built, and are not in the hwpack
+            # config. Since we know which are the keys we have to look for,
+            # we just loop through all of them.
+            if self.spl is not None:
+                self.set_config_value(self.bootloaders, SPL_FILE_FIELD,
+                                               self.spl)
+            if self.u_boot is not None:
+                self.set_config_value(self.bootloaders, FILE_FIELD,
+                                                self.u_boot)
+            metadata += dump({BOOTLOADERS_FIELD: self.bootloaders})
+        if self.serial_tty is not None:
+            metadata += dump({SERIAL_TTY_FIELD: self.serial_tty})
+        if self.kernel_addr is not None:
+            metadata += dump({KERNEL_ADDR_FIELD: self.kernel_addr})
+        if self.initrd_addr is not None:
+            metadata += dump({INITRD_ADDR_FIELD: self.initrd_addr})
+        if self.load_addr is not None:
+            metadata += dump({LOAD_ADDR_FIELD: self.load_addr})
+        if self.dtb_addr is not None:
+            metadata += dump({DTB_ADDR_FIELD: self.dtb_addr})
+        if self.wired_interfaces != []:
+            eth_interfaces = " ".join(self.wired_interfaces)
+            metadata += dump({WIRED_INTERFACES_FIELD: eth_interfaces})
+        if self.wireless_interfaces != []:
+            wifi_interfaces = " ".join(self.wireless_interfaces)
+            metadata += dump({WIRELESS_INTERFACES_FIELD: wifi_interfaces})
+        if self.partition_layout is not None:
+            metadata += dump({PARTITION_LAYOUT_FIELD: self.partition_layout})
+        if self.mmc_id is not None:
+            metadata += dump({MMC_ID_FIELD: self.mmc_id})
+        if self.boot_min_size is not None:
+            metadata += dump({BOOT_MIN_SIZE_FIELD: self.boot_min_size})
+        if self.root_min_size is not None:
+            metadata += dump({ROOT_MIN_SIZE_FIELD: self.root_min_size})
+        if self.loader_min_size is not None:
+            metadata += dump({LOADER_MIN_SIZE_FIELD: self.loader_min_size})
+        if self.loader_start is not None:
+            metadata += dump({LOADER_START_FIELD: self.loader_start})
+        if self.vmlinuz is not None:
+            metadata += dump({KERNEL_FILE_FIELD: self.vmlinuz})
+        if self.initrd is not None:
+            metadata += dump({INITRD_FILE_FIELD: self.initrd})
+        if self.dtb_file is not None:
+            # XXX In V3 this one should be a list, called dtb_files.
+            metadata += dump({DTB_FILE_FIELD: self.dtb_file})
+        if self.boot_script is not None:
+            metadata += dump({BOOT_SCRIPT_FIELD: self.boot_script})
+        if self.extra_serial_opts is not None:
+            # XXX Check why and where once we get a list once a string.
+            if isinstance(self.extra_serial_opts, list):
+                extra_serial_options = " ".join(self.extra_serial_opts)
+            else:
+                extra_serial_options = self.extra_serial_opts
+            metadata += dump({
+                            EXTRA_SERIAL_OPTIONS_FIELD:
+                            extra_serial_options})
+        if self.snowball_startup_files_config is not None:
+            metadata += dump({SNOWBALL_STARTUP_FILES_CONFIG_FIELD:
+                                self.snowball_startup_files_config})
+        if self.samsung_bl1_start is not None:
+            metadata += dump({SAMSUNG_BL1_START_FIELD: self.samsung_bl1_start})
+        if self.samsung_bl1_len is not None:
+            metadata += dump({SAMSUNG_BL1_LEN_FIELD: self.samsung_bl1_len})
+        if self.samsung_env_len is not None:
+            metadata += dump({SAMSUNG_ENV_LEN_FIELD: self.samsung_env_len})
+        if self.samsung_bl2_len is not None:
+            metadata += dump({SAMSUNG_BL2_LEN_FIELD: self.samsung_bl2_len})
+        return metadata
+
+    def create_metadata_old(self):
+        """Get the contents of the metadata file.
+
+        Creates a metadata file for v1 and v2 of the hwpack config file.
+        """
         metadata = "NAME=%s\n" % self.name
         metadata += "VERSION=%s\n" % self.version
         metadata += "ARCHITECTURE=%s\n" % self.architecture
@@ -264,7 +434,6 @@ class Metadata(object):
             metadata += "SAMSUNG_ENV_LEN=%s\n" % self.samsung_env_len
         if self.samsung_bl2_len is not None:
             metadata += "SAMSUNG_BL2_LEN=%s\n" % self.samsung_bl2_len
-
         return metadata
 
 

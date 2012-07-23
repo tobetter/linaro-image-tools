@@ -25,6 +25,7 @@
 # Try to keep it alphabetically sorted per section.
 #
 ARCHITECTURES_FIELD = 'architectures'
+ARCHITECTURE_FIELD = 'architecture'
 ASSUME_INSTALLED_FIELD = 'assume_installed'
 BOARDS_FIELD = 'boards'
 BOOTLOADERS_FIELD = 'bootloaders'
@@ -36,6 +37,7 @@ DTB_FILE_FIELD = 'dtb_file'
 DTB_FILES_FIELD = 'dtb_files'
 EXTRA_SERIAL_OPTIONS_FIELD = 'extra_serial_options'
 FORMAT_FIELD = 'format'
+INCLUDE_DEBS_FIELD = 'include_debs'
 INITRD_ADDR_FIELD = 'initrd_addr'
 INITRD_FILE_FIELD = 'initrd_file'
 KERNEL_ADDR_FIELD = 'kernel_addr'
@@ -55,6 +57,7 @@ SOURCES_FIELD = 'sources'
 SUPPORT_FIELD = 'support'
 WIRED_INTERFACES_FIELD = 'wired_interfaces'
 WIRELESS_INTERFACES_FIELD = 'wireless_interfaces'
+VERSION_FIELD = 'version'
 
 # Bootloaders specific fields
 DD_FIELD = 'dd'

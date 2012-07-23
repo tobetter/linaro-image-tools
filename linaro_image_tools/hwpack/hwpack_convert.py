@@ -46,6 +46,7 @@ from hwpack_fields import (
     SPL_FILE_FIELD,
     WIRED_INTERFACES_FIELD,
     WIRELESS_INTERFACES_FIELD,
+    INCLUDE_DEBS_FIELD,
 )
 
 # This is the main section of an INI-style hwpack config file.
@@ -70,6 +71,7 @@ UBOOT_KEYS = [UBOOT_PACKAGE_KEY, UBOOT_FILE_KEY, UBOOT_IN_BOOT_PART_KEY,
 
 # Old field, the only one with a dash: since the format is new, convert it.
 ASSUME_INSTALLED_OLD = 'assume-installed'
+INCLUDE_DEBS_OLD = 'include-debs'
 
 # The default bootloader for the bootloaders section.
 DEFAULT_BOOTLOADER = 'u_boot'
@@ -121,6 +123,8 @@ class HwpackConverter(object):
         self.wireless_interfaces = []
         # SPL entries
         self.spl = {}
+        # The list of packages that should be installed.
+        self.assume_installed = []
 
     def _parse(self):
         """Parses the config file and stores its values."""
@@ -171,9 +175,14 @@ class HwpackConverter(object):
                             elif key in UBOOT_KEYS:
                                 self._set_bootloaders(key, value)
                                 continue
-                            # Convert an old key into the new one.
+                            # Create list.
                             elif key == ASSUME_INSTALLED_OLD:
-                                key = ASSUME_INSTALLED_FIELD
+                                self.parse_list_string(
+                                                    self.assume_installed,
+                                                    value)
+                                continue
+                            elif key == INCLUDE_DEBS_OLD:
+                                key = INCLUDE_DEBS_FIELD
                             self.hwpack[key] = value
                 else:
                     # Here we have only sources sections.
@@ -231,6 +240,9 @@ class HwpackConverter(object):
         if self.architectures:
             archs = {ARCHITECTURES_FIELD: self.architectures}
             converted += dump(archs)
+        if self.assume_installed:
+            installed = {ASSUME_INSTALLED_FIELD: self.assume_installed}
+            converted += dump(installed)
         if self.extra_serial_options:
             serial_options = {EXTRA_SERIAL_OPTIONS_FIELD:
                                 self.extra_serial_options}
@@ -271,7 +283,7 @@ def dump(python_object):
 
     :param python_object: The object to serialize.
     """
-    return yaml.dump(python_object, default_flow_style=False, indent=True)
+    return yaml.dump(python_object, default_flow_style=False)
 
 
 def check_and_validate_args(args):

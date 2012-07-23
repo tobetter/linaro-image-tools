@@ -57,3 +57,12 @@ class HardwarePackFormatV2(HardwarePackFormat):
         self.is_supported = True
         self.is_deprecated = False
         self.has_v2_fields = True
+
+
+class HardwarePackFormatV3(HardwarePackFormat):
+    def __init__(self):
+        super(HardwarePackFormatV3, self).__init__()
+        self.format_as_string = "3.0"
+        self.is_supported = True
+        self.is_deprecated = False
+        self.has_v2_fields = True

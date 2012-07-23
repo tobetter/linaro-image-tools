@@ -41,7 +41,7 @@ INSTALL_LATEST="no"
 FORCE_YES="no"
 SOURCES_LIST_FILE="${TEMP_DIR}/sources.list"
 APT_GET_OPTIONS="Dir::Etc::SourceList=${SOURCES_LIST_FILE}"
-SUPPORTED_FORMATS="1.0 2.0"  # A space-separated list of hwpack formats.
+SUPPORTED_FORMATS="1.0 2.0 3.0"  # A space-separated list of hwpack formats.
 
 sudo="sudo"
 if [ $(id -u) -eq 0 ]; then
@@ -53,12 +53,15 @@ die() {
   exit 1
 }
 
-usage_msg="Usage: $(basename $0) [--install-latest] [--force-yes] HWPACK_TARBALL"
+usage_msg="Usage: $(basename $0) [--install-latest] [--force-yes] --hwpack-version <version> --hwpack-arch <architecture> --hwpack-name <name> HWPACK_TARBALL"
 if [ $# -eq 0 ]; then
   die $usage_msg
 fi
 
 HWPACK_TARBALL_FOUND="no"
+HWPACK_VERSION=""
+HWPACK_ARCH=""
+HWPACK_NAME=""
 
 while [ $# -gt 0 ]; do
   case "$1" in 
@@ -67,6 +70,18 @@ while [ $# -gt 0 ]; do
       shift;;
     --force-yes)
       FORCE_YES="yes"
+      shift;;
+    --hwpack-version)
+      HWPACK_VERSION=$2
+      shift;
+      shift;;
+    --hwpack-arch)
+      HWPACK_ARCH=$2
+      shift;
+      shift;;
+    --hwpack-name)
+      HWPACK_NAME=$2
+      shift;
       shift;;
     --*)
       die $usage_msg "\nUnrecognized option: \"$1\"";;
@@ -79,6 +94,9 @@ while [ $# -gt 0 ]; do
 done
 
 [ "$HWPACK_TARBALL_FOUND" = "no" ] && die $usage_msg
+[ "$HWPACK_VERSION" = "" ] && die $usage_msg
+[ "$HWPACK_ARCH" = "" ] && die $usage_msg
+[ "$HWPACK_NAME" = "" ] && die $usage_msg
 
 # Try to acquire fd #9 (i.e. /var/lock/hwpack) for 2 seconds.
 # Using 9 as the file descriptor because of https://launchpad.net/bugs/249620
@@ -125,7 +143,6 @@ done
       "Try using a newer version of $(basename $0)."
 
 # Check the architecture of the hwpack matches that of the host system.
-HWPACK_ARCH=`grep ARCHITECTURE "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
 [ "$HWPACK_ARCH" == `dpkg --print-architecture` ] || \
   die "Hardware pack architecture ($HWPACK_ARCH) does not match the host's architecture"
 
@@ -209,8 +226,6 @@ echo -n "Installing packages ..."
 # For "older" hwpacks that don't have a dependency package, we just
 # manually install the contents of the hwpack.
 
-HWPACK_NAME=`grep NAME "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
-HWPACK_VERSION=`grep VERSION "${HWPACK_DIR}/metadata" | cut -d "=" -f2`
 dependency_package="hwpack-${HWPACK_NAME}"
 if grep -q "^${dependency_package}=${HWPACK_VERSION}\$" "${HWPACK_DIR}"/manifest; then
   DEP_PACKAGE_PRESENT="yes"
