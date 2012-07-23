@@ -357,12 +357,8 @@ class Config(object):
         result = self.parser
         for key in keys:
             key = self._v2_key_to_v3(key)
-            try:
-                result = result.get(key)
-                if result == None:  # False is a valid boolean value...
-                    return None
-            except ConfigParser.NoOptionError:
-                return None
+            if result is not None:
+                result = result.get(key, None)
         return result
 
     def get_option(self, name):
