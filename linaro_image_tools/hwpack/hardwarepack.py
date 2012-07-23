@@ -167,6 +167,9 @@ class Metadata(object):
 
     @classmethod
     def add_v3_config(self, bootloaders):
+        """Add fields that are specific to the v3 config format.
+
+        :param bootloaders: The bootloaders section of the hwpack."""
         self.bootloaders = bootloaders
 
     @classmethod
@@ -236,23 +239,24 @@ class Metadata(object):
         else:
             return self.create_metadata_old()
 
-    def loop_through_dictionary(self, dictionary, search_key, new_value):
-        """Loop recursively thorugh a dictionary looking for the specified key
+    def set_config_value(self, dictionary, search_key, new_value):
+        """Loop recursively through a dictionary looking for the specified key
         substituting its value.
+        In a metadata file, at least two fields from the Config class have
+        their value calculated during the build phase of the hardware pack.
+        Here those known fiels will be updated with the newly calculated
+        values.
 
         :param dictionary: The dictionary to loop through.
-        :param serach_key: The key to search.
+        :param search_key: The key to search.
         :param new_value: The new value for the key.
         """
-        # XXX Probably better check what should happen if the key we are
-        # looking for is not there, but the value is set. Should we set it
-        # anyway? If yes, where?
         for key, value in dictionary.iteritems():
             if key == search_key:
                 dictionary[key] = new_value
                 break
             elif isinstance(value, dict):
-                self.loop_through_dictionary(value, search_key, new_value)
+                self.set_config_value(value, search_key, new_value)
 
     def create_metadata_new(self):
         """Get the contents of the metadata file.
@@ -282,10 +286,10 @@ class Metadata(object):
             # config. Since we know which are the keys we have to look for,
             # we just loop through all of them.
             if self.spl is not None:
-                self.loop_through_dictionary(self.bootloaders, SPL_FILE_FIELD,
+                self.set_config_value(self.bootloaders, SPL_FILE_FIELD,
                                                self.spl)
             if self.u_boot is not None:
-                self.loop_through_dictionary(self.bootloaders, FILE_FIELD,
+                self.set_config_value(self.bootloaders, FILE_FIELD,
                                                 self.u_boot)
             metadata += dump({BOOTLOADERS_FIELD: self.bootloaders})
         if self.serial_tty is not None:
