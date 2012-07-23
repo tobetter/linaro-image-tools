@@ -25,7 +25,7 @@ from linaro_image_tools.utils import (
     is_arm_host,
     find_command,
     )
-
+from linaro_image_tools.media_create.boards import HardwarepackHandler
 
 # It'd be nice if we could use atexit here, but all the things we need to undo
 # have to happen right after install_hwpacks completes and the atexit
@@ -97,7 +97,17 @@ def install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes):
     print "-" * 60
     print "Installing (linaro-hwpack-install) %s in target rootfs." % (
         hwpack_basename)
-    args = ['linaro-hwpack-install']
+
+    # Get infromation required by linaro-hwpack-install
+    with HardwarepackHandler([hwpack_file]) as hwpack:
+        version, _ = hwpack.get_field("version")
+        architecture, _ = hwpack.get_field("architecture")
+        name, _ = hwpack.get_field("name")
+
+    args = ['linaro-hwpack-install',
+            '--hwpack-version', version,
+            '--hwpack-arch', architecture,
+            '--hwpack-name', name]
     if hwpack_force_yes:
         args.append('--force-yes')
     args.append('/%s' % hwpack_basename)
