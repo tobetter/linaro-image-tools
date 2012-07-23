@@ -332,7 +332,7 @@ class Config(object):
 
         return self._get_option(keys, join_list_with, convert_to)
 
-    def _yes_no(self, value):
+    def _bool_to_string(self, value):
         """Convert value, treated as boolean, to string "yes" or "no"."""
         if value:
             return "yes"
@@ -417,7 +417,7 @@ class Config(object):
             if not convert_to:
                 if isinstance(result, int):
                     if isinstance(result, bool):
-                        convert_to = self._yes_no
+                        convert_to = self._bool_to_string
                     else:
                         convert_to = str
 
