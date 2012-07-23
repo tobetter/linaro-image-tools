@@ -339,7 +339,7 @@ class Config(object):
         else:
             return "no"
 
-    def _addr(self, value):
+    def _hex_addrress(self, value):
         """Convert value to 8 character hex string"""
         converted_value = value
         if not isinstance(value, str):
@@ -496,7 +496,8 @@ class Config(object):
 
         An int.
         """
-        return self._get_option(KERNEL_ADDR_FIELD, convert_to=self._addr)
+        return self._get_option(KERNEL_ADDR_FIELD,
+                                convert_to=self._hex_addrress)
 
     @property
     def initrd_addr(self):
@@ -504,7 +505,8 @@ class Config(object):
 
         An int.
         """
-        return self._get_option(INITRD_ADDR_FIELD, convert_to=self._addr)
+        return self._get_option(INITRD_ADDR_FIELD,
+                                convert_to=self._hex_addrress)
 
     @property
     def load_addr(self):
@@ -512,7 +514,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option(LOAD_ADDR_FIELD, convert_to=self._addr)
+        return self._get_option(LOAD_ADDR_FIELD, convert_to=self._hex_addrress)
 
     @property
     def dtb_addr(self):
@@ -520,7 +522,7 @@ class Config(object):
 
         An int.
         """
-        return self._get_option(DTB_ADDR_FIELD, convert_to=self._addr)
+        return self._get_option(DTB_ADDR_FIELD, convert_to=self._hex_addrress)
 
     @property
     def wired_interfaces(self):
