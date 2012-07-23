@@ -53,12 +53,15 @@ die() {
   exit 1
 }
 
-usage_msg="Usage: $(basename $0) [--install-latest] [--force-yes] HWPACK_TARBALL"
+usage_msg="Usage: $(basename $0) [--install-latest] [--force-yes] --hwpack-version <version> --hwpack-arch <architecture> --hwpack-name <name> HWPACK_TARBALL"
 if [ $# -eq 0 ]; then
   die $usage_msg
 fi
 
 HWPACK_TARBALL_FOUND="no"
+HWPACK_VERSION=""
+HWPACK_ARCH=""
+HWPACK_NAME=""
 
 while [ $# -gt 0 ]; do
   case "$1" in 
@@ -91,6 +94,9 @@ while [ $# -gt 0 ]; do
 done
 
 [ "$HWPACK_TARBALL_FOUND" = "no" ] && die $usage_msg
+[ "$HWPACK_VERSION" = "" ] && die $usage_msg
+[ "$HWPACK_ARCH" = "" ] && die $usage_msg
+[ "$HWPACK_NAME" = "" ] && die $usage_msg
 
 # Try to acquire fd #9 (i.e. /var/lock/hwpack) for 2 seconds.
 # Using 9 as the file descriptor because of https://launchpad.net/bugs/249620

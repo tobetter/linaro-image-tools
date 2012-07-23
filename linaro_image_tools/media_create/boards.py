@@ -169,7 +169,6 @@ class HardwarepackHandler(object):
             if re.search("=", lines[0]) and not re.search(":", lines[0]):
                 # Probably V2 hardware pack without [hwpack] on the first line
                 lines = ["[hwpack]\n"] + lines
-                print "".join(lines)
             parser = Config(StringIO("".join(lines)))
             try:
                 new_data = parser.get_option(field)
