@@ -33,6 +33,7 @@ from linaro_image_tools.hwpack.hardwarepack_format import (
 
 from hwpack_fields import (
     ARCHITECTURES_FIELD,
+    ARCHITECTURE_FIELD,
     ASSUME_INSTALLED_FIELD,
     BOARDS_FIELD,
     BOOTLOADERS_FIELD,
@@ -78,6 +79,7 @@ from hwpack_fields import (
     WIRED_INTERFACES_FIELD,
     WIRELESS_INTERFACES_FIELD,
     DEFINED_PARTITION_LAYOUTS,
+    VERSION_FIELD,
 )
 
 
@@ -133,14 +135,14 @@ class Config(object):
             try:
                 fp.seek(0)
                 self.parser = yaml.safe_load(fp)
-                self.set_board(board)
-                self.set_bootloader(bootloader)
             except yaml.YAMLError, e:
                 obfuscated_yaml_e = re.sub(r"([^ ]https://).+?(@)",
                                       r"\1***\2", str(e))
             else:
                 # If YAML parsed OK, we don't have an error.
                 obfuscated_e = None
+                self.set_board(board)
+                self.set_bootloader(bootloader)
 
         if obfuscated_e:
             # If INI parsing from ConfigParser or YAML parsing failed,
@@ -257,6 +259,10 @@ class Config(object):
     def name(self):
         """The name of the hardware pack. A str."""
         return self._get_option(NAME_FIELD)
+
+    @property
+    def version(self):
+        return self._get_option(VERSION_FIELD)
 
     @property
     def include_debs(self):
@@ -730,6 +736,14 @@ class Config(object):
         A list of str.
         """
         return self._get_list(ARCHITECTURES_FIELD)
+
+    @property
+    def architecture(self):
+        """The architectures to build the hwpack for.
+
+        A list of str.
+        """
+        return self._get_option(ARCHITECTURE_FIELD)
 
     @property
     def assume_installed(self):

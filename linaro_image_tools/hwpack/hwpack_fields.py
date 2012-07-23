@@ -25,6 +25,7 @@
 # Try to keep it alphabetically sorted per section.
 #
 ARCHITECTURES_FIELD = 'architectures'
+ARCHITECTURE_FIELD = 'architecture'
 ASSUME_INSTALLED_FIELD = 'assume_installed'
 BOARDS_FIELD = 'boards'
 BOOTLOADERS_FIELD = 'bootloaders'
@@ -56,6 +57,7 @@ SOURCES_FIELD = 'sources'
 SUPPORT_FIELD = 'support'
 WIRED_INTERFACES_FIELD = 'wired_interfaces'
 WIRELESS_INTERFACES_FIELD = 'wireless_interfaces'
+VERSION_FIELD = 'version'
 
 # Bootloaders specific fields
 DD_FIELD = 'dd'
