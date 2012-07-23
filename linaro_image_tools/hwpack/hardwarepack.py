@@ -37,13 +37,13 @@ from linaro_image_tools.hwpack.hwpack_convert import (
 )
 
 from hwpack_fields import (
+    BOARDS_FIELD,
     BOOTLOADERS_FIELD,
     BOOT_MIN_SIZE_FIELD,
     BOOT_SCRIPT_FIELD,
     DTB_ADDR_FIELD,
     DTB_FILE_FIELD,
     EXTRA_SERIAL_OPTIONS_FIELD,
-    FILE_FIELD,
     FORMAT_FIELD,
     INITRD_ADDR_FIELD,
     INITRD_FILE_FIELD,
@@ -66,7 +66,6 @@ from hwpack_fields import (
     SAMSUNG_ENV_LEN_FIELD,
     SERIAL_TTY_FIELD,
     SNOWBALL_STARTUP_FILES_CONFIG_FIELD,
-    SPL_FILE_FIELD,
     SUPPORT_FIELD,
     WIRED_INTERFACES_FIELD,
     WIRELESS_INTERFACES_FIELD,
@@ -166,10 +165,13 @@ class Metadata(object):
         self.samsung_bl2_len = samsung_bl2_len
 
     @classmethod
-    def add_v3_config(self, bootloaders):
+    def add_v3_config(self, boards=None, bootloaders=None):
         """Add fields that are specific to the v3 config format.
+        These fields are not present in the earlier config files.
 
+        :param boards: The boards section of the hwpack.
         :param bootloaders: The bootloaders section of the hwpack."""
+        self.boards = boards
         self.bootloaders = bootloaders
 
     @classmethod
@@ -230,7 +232,8 @@ class Metadata(object):
                 wireless_interfaces=config.wireless_interfaces,
                 )
         if config.format.format_as_string == '3.0':
-            metadata.add_v3_config(config.bootloaders)
+            metadata.add_v3_config(boards=config.boards,
+                                    bootloaders=config.bootloaders)
         return metadata
 
     def __str__(self):
@@ -238,25 +241,6 @@ class Metadata(object):
             return self.create_metadata_new()
         else:
             return self.create_metadata_old()
-
-    def set_config_value(self, dictionary, search_key, new_value):
-        """Loop recursively through a dictionary looking for the specified key
-        substituting its value.
-        In a metadata file, at least two fields from the Config class have
-        their value calculated during the build phase of the hardware pack.
-        Here those known fiels will be updated with the newly calculated
-        values.
-
-        :param dictionary: The dictionary to loop through.
-        :param search_key: The key to search.
-        :param new_value: The new value for the key.
-        """
-        for key, value in dictionary.iteritems():
-            if key == search_key:
-                dictionary[key] = new_value
-                break
-            elif isinstance(value, dict):
-                self.set_config_value(value, search_key, new_value)
 
     def create_metadata_new(self):
         """Get the contents of the metadata file.
@@ -280,17 +264,9 @@ class Metadata(object):
             metadata += dump({MAINTAINER_FIELD: self.maintainer})
         if self.support is not None:
             metadata += dump({SUPPORT_FIELD: self.support})
+        if self.boards is not None:
+            metadata += dump({BOARDS_FIELD: self.boards})
         if self.bootloaders is not None:
-            # XXX We need to do this, since some necessary values are set
-            # when the hwpack archive is built, and are not in the hwpack
-            # config. Since we know which are the keys we have to look for,
-            # we just loop through all of them.
-            if self.spl is not None:
-                self.set_config_value(self.bootloaders, SPL_FILE_FIELD,
-                                               self.spl)
-            if self.u_boot is not None:
-                self.set_config_value(self.bootloaders, FILE_FIELD,
-                                                self.u_boot)
             metadata += dump({BOOTLOADERS_FIELD: self.bootloaders})
         if self.serial_tty is not None:
             metadata += dump({SERIAL_TTY_FIELD: self.serial_tty})

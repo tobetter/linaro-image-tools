@@ -342,50 +342,6 @@ class NewMetadataTests(TestCase):
                         "option2,option3\n")
         self.assertEqual(expected_out, str(metadata))
 
-    def test_loop_through_for_spl(self):
-        bootloaders = {'u_boot': {'file': 'a_file', 'spl_file': 'some_value'}}
-        spl = 'spl-path'
-        metadata = Metadata("ahwpack", "4", "armel",
-                                    format=HardwarePackFormatV3())
-        # Need to call also this one!
-        metadata.add_v2_config()
-        metadata.add_v3_config(bootloaders=bootloaders)
-        metadata.spl = spl
-        expected_out = ("format: '3.0'\nname: ahwpack\nversion: '4'\n"
-                        "architecture: armel\nbootloaders:\n  u_boot:\n"
-                        "    file: a_file\n    spl_file: spl-path\n")
-        self.assertEqual(expected_out, str(metadata))
-
-    def test_loop_through_for_uboot(self):
-        bootloaders = {'u_boot': {'file': 'a_file', 'spl_file': 'some_value'}}
-        u_boot = 'uboot-path'
-        metadata = Metadata("ahwpack", "4", "armel",
-                                    format=HardwarePackFormatV3())
-        # Need to call also this one!
-        metadata.add_v2_config()
-        metadata.add_v3_config(bootloaders=bootloaders)
-        metadata.u_boot = u_boot
-        expected_out = ("format: '3.0'\nname: ahwpack\nversion: '4'\n"
-                        "architecture: armel\nbootloaders:\n  u_boot:\n"
-                        "    file: uboot-path\n    spl_file: some_value\n")
-        self.assertEqual(expected_out, str(metadata))
-
-    def test_loop_through_multiple_bootloaders(self):
-        bootloaders = {'u_boot': {'file': 'a_file', 'spl_file': 'some_value'},
-                        'uefi': {'spl_file': 'some_other_value'}}
-        spl = 'spl-path'
-        metadata = Metadata("ahwpack", "4", "armel",
-                                    format=HardwarePackFormatV3())
-        # Need to call also this one!
-        metadata.add_v2_config()
-        metadata.add_v3_config(bootloaders=bootloaders)
-        metadata.spl = spl
-        expected_out = ("format: '3.0'\nname: ahwpack\nversion: '4'\n"
-                        "architecture: armel\nbootloaders:\n  u_boot:\n"
-                        "    file: a_file\n    spl_file: spl-path\n  uefi:\n"
-                        "    spl_file: spl-path\n")
-        self.assertEqual(expected_out, str(metadata))
-
 
 class HardwarePackTests(TestCase):
 
