@@ -117,16 +117,16 @@ class HardwarePackBuilder(object):
             package.filepath, wanted_file)
         return hwpack.add_file(target_path, tempfile_name)
 
-    def loop_bootloaders(self, dictionary):
+    def find_bootloader_packages(self, bootloaders_config):
         """Loop through the bootloaders dictionary searching for packages
         that should be installed, based on known keywords.
         
-        :param dictionary: The bootloaders dictionary to loop through.
+        :param bootloaders_config: The bootloaders dictionary to loop through.
         :return A list of packages, without duplicates."""
         boot_packages = []
-        for key, value in dictionary.iteritems():
+        for key, value in bootloaders_config.iteritems():
             if isinstance(value, dict):
-                boot_packages.extend(self.loop_bootloaders(value))
+                boot_packages.extend(self.find_bootloader_packages(value))
             else:
                 if key in PACKAGE_FIELDS:
                     boot_packages.append(value)
@@ -149,7 +149,7 @@ class HardwarePackBuilder(object):
                 # packages are in the bootloaders section.
                 if self.config.format.format_as_string == '3.0':
                     if self.config.bootloaders:
-                        packages.extend(self.loop_bootloaders(
+                        packages.extend(self.find_bootloader_packages(
                                             self.config.bootloaders))
                 else:
                     if self.config.u_boot_package is not None:
