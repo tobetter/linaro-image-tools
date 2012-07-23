@@ -3224,6 +3224,20 @@ class AtExitRegister(object):
 
 
 class TestInstallHWPack(TestCaseWithFixtures):
+    def create_minimal_v3_hwpack(self, location, name, version, architecture):
+        metadata = "\n".join([
+                    "name: " + name,
+                    "version: " + version,
+                    "architecture: " + architecture,
+                    "format: 3.0"
+                    ])
+        print metadata
+        tar_file = tarfile.open(location, mode='w:gz')
+        tarinfo = tarfile.TarInfo("metadata")
+        tarinfo.size = len(metadata)
+        tar_file.addfile(tarinfo, StringIO(metadata))
+        tar_file.close()
+
     def mock_prepare_chroot(self, chroot_dir, tmp_dir):
         def fake_prepare_chroot(chroot_dir, tmp_dir):
             cmd_runner.run(['prepare_chroot %s %s' % (chroot_dir, tmp_dir)],
@@ -3277,12 +3291,23 @@ class TestInstallHWPack(TestCaseWithFixtures):
             sys, 'stdout', open('/dev/null', 'w')))
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         chroot_dir = 'chroot_dir'
+        hwpack_dir = tempfile.mkdtemp()
+        hwpack_file_name = 'hwpack.tgz'
+        hwpack_tgz_location = os.path.join(hwpack_dir, hwpack_file_name)
+        hwpack_name = "foo"
+        hwpack_version = "4"
+        hwpack_architecture = "armel"
+        self.create_minimal_v3_hwpack(hwpack_tgz_location, hwpack_name,
+                                      hwpack_version, hwpack_architecture)
         force_yes = False
-        install_hwpack(chroot_dir, 'hwpack.tgz', force_yes)
+        install_hwpack(chroot_dir, hwpack_tgz_location, force_yes)
         self.assertEquals(
-            ['%s cp hwpack.tgz %s' % (sudo_args, chroot_dir),
-             '%s %s %s linaro-hwpack-install /hwpack.tgz'
-                % (sudo_args, chroot_args, chroot_dir)],
+            ['%s cp %s %s' % (sudo_args, hwpack_tgz_location, chroot_dir),
+             '%s %s %s linaro-hwpack-install --hwpack-version %s '
+             '--hwpack-arch %s --hwpack-name %s /%s'
+                % (sudo_args, chroot_args, chroot_dir,
+                   hwpack_version, hwpack_architecture, hwpack_name,
+                   hwpack_file_name)],
             fixture.mock.commands_executed)
 
         fixture.mock.calls = []
@@ -3302,9 +3327,23 @@ class TestInstallHWPack(TestCaseWithFixtures):
 
         prefer_dir = preferred_tools_dir()
 
+        hwpack_dir = tempfile.mkdtemp()
+        hwpack_file_names = ['hwpack1.tgz', 'hwpack2.tgz']
+        hwpack_tgz_locations = []
+        hwpack_names = []
+        for hwpack_file_name in hwpack_file_names:
+            hwpack_tgz_location = os.path.join(hwpack_dir, hwpack_file_name)
+            hwpack_tgz_locations.append(hwpack_tgz_location)
+            hwpack_names.append(hwpack_file_name)
+            hwpack_version = "4"
+            hwpack_architecture = "armel"
+            self.create_minimal_v3_hwpack(
+                hwpack_tgz_location, hwpack_file_name, hwpack_version,
+                hwpack_architecture)
+
         install_hwpacks(
-            chroot_dir, tmp_dir, prefer_dir, force_yes, [], 'hwpack1.tgz',
-            'hwpack2.tgz')
+            chroot_dir, tmp_dir, prefer_dir, force_yes, [],
+            hwpack_tgz_locations[0], hwpack_tgz_locations[1])
         linaro_hwpack_install = find_command(
             'linaro-hwpack-install', prefer_dir=prefer_dir)
         expected = [
@@ -3312,19 +3351,27 @@ class TestInstallHWPack(TestCaseWithFixtures):
             'cp %(linaro_hwpack_install)s %(chroot_dir)s/usr/bin',
             'mount proc %(chroot_dir)s/proc -t proc',
             'chroot %(chroot_dir)s true',
-            'cp hwpack1.tgz %(chroot_dir)s',
+            'cp %(hwpack1)s %(chroot_dir)s',
             ('%(chroot_args)s %(chroot_dir)s linaro-hwpack-install '
-             '--force-yes /hwpack1.tgz'),
-            'cp hwpack2.tgz %(chroot_dir)s',
+             '--hwpack-version %(hp_version)s '
+             '--hwpack-arch %(hp_arch)s --hwpack-name %(hp_name1)s'
+             ' --force-yes /hwpack1.tgz'),
+            'cp %(hwpack2)s %(chroot_dir)s',
             ('%(chroot_args)s %(chroot_dir)s linaro-hwpack-install '
-             '--force-yes /hwpack2.tgz'),
+             '--hwpack-version %(hp_version)s '
+             '--hwpack-arch %(hp_arch)s --hwpack-name %(hp_name2)s'
+             ' --force-yes /hwpack2.tgz'),
             'rm -f %(chroot_dir)s/hwpack2.tgz',
             'rm -f %(chroot_dir)s/hwpack1.tgz',
             'umount -v %(chroot_dir)s/proc',
             'rm -f %(chroot_dir)s/usr/bin/linaro-hwpack-install']
         keywords = dict(
             chroot_dir=chroot_dir, tmp_dir=tmp_dir, chroot_args=chroot_args,
-            linaro_hwpack_install=linaro_hwpack_install)
+            linaro_hwpack_install=linaro_hwpack_install,
+            hwpack1=hwpack_tgz_locations[0],
+            hwpack2=hwpack_tgz_locations[1],
+            hp_version=hwpack_version, hp_name1=hwpack_names[0],
+            hp_name2=hwpack_names[1], hp_arch=hwpack_architecture)
         expected = [
             "%s %s" % (sudo_args, line % keywords) for line in expected]
         self.assertEquals(expected, fixture.mock.commands_executed)
