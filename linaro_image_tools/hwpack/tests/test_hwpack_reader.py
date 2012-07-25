@@ -43,7 +43,7 @@ class HwpackReaderTests(TestCaseWithFixtures):
         self.metadata = ("format: 3.0\nversion: '1'\nname: test-hwpack\n"
                             "architecture: armel\norigin: Linaro")
         self.hwpack = Hwpack()
-        self.hwpack.name = 'test-hwpack'
+        self.hwpack.setname('test-hwpack')
         self.tar_dir_fixture = CreateTempDirFixture()
         self.useFixture(self.tar_dir_fixture)
         self.tarball_fixture = CreateTarballFixture(
@@ -68,23 +68,23 @@ class HwpackReaderTests(TestCaseWithFixtures):
 
     def test_hwpack_class(self):
         hwpack = Hwpack()
-        hwpack.name = 'test-hwpack'
-        hwpack.hwpack = 'a_hwpack'
-        self.hwpack.hwpack = 'a_hwpack'
+        hwpack.setname('test-hwpack')
+        hwpack.sethwpack('a_hwpack')
+        self.hwpack.sethwpack('a_hwpack')
         self.assertTrue(self.hwpack == hwpack)
 
     def test_hwpack_class_not_equal(self):
         hwpack = Hwpack()
-        hwpack.name = 'test-hwpack'
-        hwpack.hwpack = 'a_hwpack'
-        self.hwpack.hwpack = 'b_hwpack'
+        hwpack.setname('test-hwpack')
+        hwpack.sethwpack('a_hwpack')
+        self.hwpack.sethwpack('b_hwpack')
         self.assertFalse(self.hwpack == hwpack)
 
     def test_hwpack_metadata_read(self):
         tarball = self.add_to_tarball([('metadata', self.metadata)])
         reader = HwpackReader([tarball])
         reader._read_hwpacks_metadata()
-        self.hwpack.hwpack = tarball
+        self.hwpack.sethwpack(tarball)
         self.assertEqual(self.hwpack, reader.supported_elements[0])
 
     def test_raise_exception(self):
@@ -98,8 +98,8 @@ class HwpackReaderTests(TestCaseWithFixtures):
         tarball = self.add_to_tarball([('metadata', self.metadata)])
         reader = HwpackReader([tarball])
         reader._read_hwpacks_metadata()
-        self.hwpack.hwpack = tarball
-        self.hwpack.boards = {'panda': {'support': 'supported'}}
+        self.hwpack.sethwpack(tarball)
+        self.hwpack.setboards({'panda': {'support': 'supported'}})
         self.assertEqual(self.hwpack, reader.supported_elements[0])
 
     def test_hwpack_metadata_read_with_bootloaders(self):
@@ -108,7 +108,7 @@ class HwpackReaderTests(TestCaseWithFixtures):
         tarball = self.add_to_tarball([('metadata', self.metadata)])
         reader = HwpackReader([tarball])
         reader._read_hwpacks_metadata()
-        self.hwpack.hwpack = tarball
-        self.hwpack.boards = {'panda': {'support': 'supported',
-                                'bootloaders': {'u_boot': {'file': 'a_file'}}}}
+        self.hwpack.sethwpack(tarball)
+        self.hwpack.setboards({'panda': {'support': 'supported', 'bootloaders':
+                                {'u_boot': {'file': 'a_file'}}}})
         self.assertEqual(self.hwpack, reader.supported_elements[0])

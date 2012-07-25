@@ -59,8 +59,7 @@ class Hwpack(object):
         """The hardware pack it refers to."""
         return self._hwpack
 
-    @hwpack.setter
-    def hwpack(self, value):
+    def sethwpack(self, value):
         """Sets the hwpack field."""
         self._hwpack = value
 
@@ -69,8 +68,7 @@ class Hwpack(object):
         """The boards field of this hardware pack."""
         return self._boards
 
-    @boards.setter
-    def boards(self, value):
+    def setboards(self, value):
         """Sets the boards field."""
         self._boards = value
 
@@ -79,8 +77,7 @@ class Hwpack(object):
         """The name field of this hardware pack."""
         return self._name
 
-    @name.setter
-    def name(self, value):
+    def setname(self, value):
         """Sets the name field."""
         self._name = value
 
@@ -89,8 +86,7 @@ class Hwpack(object):
         """The bootlaoders field of this hardware pack."""
         return self._bootloaders
 
-    @bootloaders.setter
-    def bootloaders(self, value):
+    def setbootloaders(self, value):
         """Sets the bootlaoders field."""
         self._bootloaders = value
 
@@ -160,12 +156,12 @@ class HwpackReader(object):
                 hwpack_format = handler.get_field(FORMAT_FIELD)[0]
                 if hwpack_format.format_as_string == "3.0":
                     local_hwpack = Hwpack()
-                    local_hwpack.hwpack = tarball
-                    local_hwpack.name = handler.get_field(NAME_FIELD)[0]
-                    local_hwpack.boards = handler.get_field(BOARDS_FIELD)[0]
-                    local_hwpack.bootloaders = \
-                            handler.get_field(BOOTLOADERS_FIELD)[0]
-                    self._supported_elements.append(local_hwpack)
+                    local_hwpack.sethwpack(tarball)
+                    local_hwpack.setname(handler.get_field(NAME_FIELD)[0])
+                    local_hwpack.setboards(handler.get_field(BOARDS_FIELD)[0])
+                    local_hwpack.setbootloaders(
+                            handler.get_field(BOOTLOADERS_FIELD)[0])
+                    self.supported_elements.append(local_hwpack)
                 else:
                     raise HwpackReaderError("Hardwarepack '%s' cannot be "
                                             "read, unsupported format." %
