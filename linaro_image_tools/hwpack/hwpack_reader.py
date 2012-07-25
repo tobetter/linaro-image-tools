@@ -39,6 +39,11 @@ ELEMENT_FORMAT = '{:<39}| {:<39}'
 
 class HwpackReaderError(Exception):
     """General error raised by HwpackReader."""
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
 
 
 class Hwpack(object):

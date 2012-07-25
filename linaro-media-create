@@ -35,7 +35,7 @@ from linaro_image_tools.media_create.chroot_utils import (
     )
 from linaro_image_tools.hwpack.hwpack_reader import (
     HwpackReader,
-    HwpackReaderException,
+    HwpackReaderError,
     )
 from linaro_image_tools.media_create.partitions import (
     Media,
@@ -50,10 +50,11 @@ from linaro_image_tools.media_create import get_args_parser
 from linaro_image_tools.utils import (
     additional_option_checks,
     check_file_integrity_and_log_errors,
+    check_required_args,
     ensure_command,
     IncompatibleOptions,
-    MissingRequiredOption,
     is_arm_host,
+    MissingRequiredOption,
     path_in_tarfile_exists,
     prep_media_path,
     )
@@ -117,8 +118,8 @@ if __name__ == '__main__':
             reader = HwpackReader(args.hwpacks)
             print reader.get_supported_boards()
             sys.exit(0)
-        except HwpackReaderException as e:
-            print sys.stderr, e
+        except HwpackReaderError as e:
+            print >> sys.stderr, "\nError:", e.value
             sys.exit(1)
 
     try:

@@ -50,6 +50,11 @@ class HwpackReaderTests(TestCaseWithFixtures):
                                 self.tar_dir_fixture.get_temp_dir())
         self.useFixture(self.tarball_fixture)
 
+    def tearDown(self):
+        super(HwpackReaderTests, self).tearDown()
+        self.hwpack = None
+        self.metadata = ""
+
     def add_to_tarball(self, files, tarball=None):
         if tarball is None:
             tarball = self.tarball_fixture.get_tarball()
@@ -66,14 +71,14 @@ class HwpackReaderTests(TestCaseWithFixtures):
         hwpack.name = 'test-hwpack'
         hwpack.hwpack = 'a_hwpack'
         self.hwpack.hwpack = 'a_hwpack'
-        self.assertEqual(self.hwpack, hwpack)
+        self.assertTrue(self.hwpack == hwpack)
 
     def test_hwpack_class_not_equal(self):
         hwpack = Hwpack()
         hwpack.name = 'test-hwpack'
         hwpack.hwpack = 'a_hwpack'
         self.hwpack.hwpack = 'b_hwpack'
-        self.assertNotEqual(self.hwpack, hwpack)
+        self.assertFalse(self.hwpack == hwpack)
 
     def test_hwpack_metadata_read(self):
         tarball = self.add_to_tarball([('metadata', self.metadata)])
