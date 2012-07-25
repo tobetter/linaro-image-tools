@@ -165,6 +165,10 @@ def get_args_parser():
         '--bootloader',
         help="Select a bootloader from a hardware pack that contains more than"
              "one.")
+    parser.add_argument(
+        '--board',
+        help="Select a board from a hardware pack that supports more than one."
+    )
 
     add_common_options(parser)
     return parser

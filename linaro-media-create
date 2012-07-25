@@ -108,7 +108,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     board_config = board_configs[args.board]
-    board_config.set_metadata(args.hwpacks)
+    board_config.set_metadata(args.hwpacks, args.bootloader, args.board)
     board_config.set_board(args.board)
     board_config.add_boot_args(args.extra_boot_args)
     board_config.add_boot_args_from_file(args.extra_boot_args_file)
@@ -187,7 +187,7 @@ if __name__ == '__main__':
     if args.should_format_bootfs:
         board_config.populate_boot(
             ROOTFS_DIR, rootfs_uuid, boot_partition, BOOT_DISK, media.path,
-            args.is_live, args.is_lowmem, args.consoles, args.bootloader)
+            args.is_live, args.is_lowmem, args.consoles)
 
     if args.should_format_rootfs:
         create_swap = False

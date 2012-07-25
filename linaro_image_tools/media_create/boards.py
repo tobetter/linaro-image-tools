@@ -123,9 +123,11 @@ class HardwarepackHandler(object):
     hwpack_tarfiles = []
     tempdir = None
 
-    def __init__(self, hwpacks):
+    def __init__(self, hwpacks, bootloader=None, board=None):
         self.hwpacks = hwpacks
         self.hwpack_tarfiles = []
+        self.bootloader = bootloader
+        self.board = board
 
     class FakeSecHead(object):
         """ Add a fake section header to the metadata file.
@@ -169,7 +171,8 @@ class HardwarepackHandler(object):
             if re.search("=", lines[0]) and not re.search(":", lines[0]):
                 # Probably V2 hardware pack without [hwpack] on the first line
                 lines = ["[hwpack]\n"] + lines
-            parser = Config(StringIO("".join(lines)))
+            parser = Config(StringIO("".join(lines)), self.bootloader,
+                            self.board)
             try:
                 new_data = parser.get_option(field)
                 if new_data is not None:
@@ -299,8 +302,9 @@ class BoardConfig(object):
         cls.board = board
 
     @classmethod
-    def set_metadata(cls, hwpacks):
-        cls.hardwarepack_handler = HardwarepackHandler(hwpacks)
+    def set_metadata(cls, hwpacks, bootloader=None, board=None):
+        cls.hardwarepack_handler = HardwarepackHandler(hwpacks, bootloader,
+                                                       board)
         with cls.hardwarepack_handler:
             cls.hwpack_format = cls.hardwarepack_handler.get_format()
             if (cls.hwpack_format == cls.hardwarepack_handler.FORMAT_1):
@@ -761,8 +765,7 @@ class BoardConfig(object):
 
     @classmethod
     def populate_boot(cls, chroot_dir, rootfs_uuid, boot_partition, boot_disk,
-                      boot_device_or_file, is_live, is_lowmem, consoles,
-                      bootloader=None):
+                      boot_device_or_file, is_live, is_lowmem, consoles):
         parts_dir = 'boot'
         if is_live:
             parts_dir = 'casper'
