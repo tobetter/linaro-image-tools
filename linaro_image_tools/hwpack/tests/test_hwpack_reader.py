@@ -72,7 +72,7 @@ class HwpackReaderTests(TestCaseWithFixtures):
         hwpack = Hwpack()
         hwpack.name = 'test-hwpack'
         hwpack.hwpack = 'a_hwpack'
-        self.hwpack.hwpack = 'a_hwpack'
+        self.hwpack.hwpack = 'b_hwpack'
         self.assertNotEqual(self.hwpack, hwpack)
 
     def test_hwpack_metadata_read(self):

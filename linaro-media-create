@@ -33,7 +33,10 @@ from linaro_image_tools.media_create.chroot_utils import (
     install_hwpacks,
     install_packages,
     )
-from linaro_image_tools.hwpack.hwpack_reader import HwpackReader
+from linaro_image_tools.hwpack.hwpack_reader import (
+    HwpackReader,
+    HwpackReaderException,
+    )
 from linaro_image_tools.media_create.partitions import (
     Media,
     setup_partitions,
@@ -49,6 +52,7 @@ from linaro_image_tools.utils import (
     check_file_integrity_and_log_errors,
     ensure_command,
     IncompatibleOptions,
+    MissingRequiredOption,
     is_arm_host,
     path_in_tarfile_exists,
     prep_media_path,
@@ -109,9 +113,20 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if args.readhwpack:
-        reader = HwpackReader(args.hwpacks)
-        print reader.get_supported_boards()
-        sys.exit(0)
+        try:
+            reader = HwpackReader(args.hwpacks)
+            print reader.get_supported_boards()
+            sys.exit(0)
+        except HwpackReaderException as e:
+            print sys.stderr, e
+            sys.exit(1)
+
+    try:
+        check_required_args(args)
+    except MissingRequiredOption as e:
+        parser.print_help()
+        print >> sys.stderr, "\nError:", e.value
+        sys.exit(1)
 
     board_config = board_configs[args.board]
     board_config.set_metadata(args.hwpacks)

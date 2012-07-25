@@ -306,6 +306,15 @@ class InvalidHwpackFile(Exception):
     """The hwpack parameter is not a regular file."""
 
 
+class MissingRequiredOption(Exception):
+    """A required option from the command line is missing."""
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+
 class IncompatibleOptions(Exception):
     def __init__(self, value):
         self.value = value
@@ -331,3 +340,10 @@ def additional_option_checks(args):
         if not os.path.isfile(hwpack):
             raise InvalidHwpackFile(
                 "--hwpack argument (%s) is not a regular file" % hwpack)
+
+def check_required_args(args):
+    """Check that the required args are passed."""
+    if args.board is None:
+        raise MissingRequiredOption("--dev option is required")
+    if args.binary is None:
+        raise MissingRequiredOption("--binary option is required")
