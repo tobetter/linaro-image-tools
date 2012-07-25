@@ -92,8 +92,17 @@ class Hwpack(object):
 
     def __eq__(self, other):
         """Equality method."""
-        return (self.name == other.name and self.boards == other.boards and
-                self.hwpack == other.hwpack)
+        equal = False
+        if isinstance(other, Hwpack):
+            equal = (self.name == other.name and
+                        self.boards == other.boards and
+                        self.hwpack == other.hwpack and
+                        self.bootloaders == other.bootloaders)
+        return equal
+
+    def __hash__(self):
+        return hash(frozenset(self.bootloaders), frozenset(self.boards),
+                    self.name, self.hwpack)
 
     def __str__(self):
         """String representation of this hwapack supported elements."""

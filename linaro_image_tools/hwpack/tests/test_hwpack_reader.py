@@ -71,14 +71,14 @@ class HwpackReaderTests(TestCaseWithFixtures):
         hwpack.setname('test-hwpack')
         hwpack.sethwpack('a_hwpack')
         self.hwpack.sethwpack('a_hwpack')
-        self.assertTrue(self.hwpack == hwpack)
+        self.assertEqual(self.hwpack, hwpack)
 
     def test_hwpack_class_not_equal(self):
         hwpack = Hwpack()
         hwpack.setname('test-hwpack')
         hwpack.sethwpack('a_hwpack')
         self.hwpack.sethwpack('b_hwpack')
-        self.assertFalse(self.hwpack == hwpack)
+        self.assertNotEqual(self.hwpack, hwpack)
 
     def test_hwpack_metadata_read(self):
         tarball = self.add_to_tarball([('metadata', self.metadata)])
