@@ -122,7 +122,8 @@ class Metadata(object):
                       partition_layout=None, mmc_id=None, boot_min_size=None,
                       root_min_size=None, loader_min_size=None, vmlinuz=None,
                       initrd=None, dtb_addr=None, extra_boot_options=None,
-                      env_dd=None, boot_script=None, uboot_in_boot_part=None,
+                      env_dd=None, boot_script=None,
+                      bootloader_file_in_boot_part=None,
                       uboot_dd=None, spl_in_boot_part=None, spl_dd=None,
                       extra_serial_opts=None, loader_start=None,
                       snowball_startup_files_config=None,
@@ -152,7 +153,7 @@ class Metadata(object):
         self.dtb_addr = dtb_addr
         self.extra_boot_options = extra_boot_options
         self.boot_script = boot_script
-        self.uboot_in_boot_part = uboot_in_boot_part
+        self.bootloader_file_in_boot_part = bootloader_file_in_boot_part
         self.uboot_dd = uboot_dd
         self.spl_in_boot_part = spl_in_boot_part
         self.spl_dd = spl_dd
@@ -226,7 +227,8 @@ class Metadata(object):
                 spl_dd=config.spl_dd,
                 spl_in_boot_part=config.spl_in_boot_part,
                 uboot_dd=config.uboot_dd,
-                uboot_in_boot_part=config.uboot_in_boot_part,
+                bootloader_file_in_boot_part=config.
+                    bootloader_file_in_boot_part,
                 vmlinuz=config.vmlinuz,
                 wired_interfaces=config.wired_interfaces,
                 wireless_interfaces=config.wireless_interfaces,
@@ -387,8 +389,9 @@ class Metadata(object):
             metadata += "EXTRA_BOOT_OPTIONS=%s\n" % self.extra_boot_options
         if self.boot_script is not None:
             metadata += "BOOT_SCRIPT=%s\n" % self.boot_script
-        if self.uboot_in_boot_part is not None:
-            metadata += "U_BOOT_IN_BOOT_PART=%s\n" % self.uboot_in_boot_part
+        if self.bootloader_file_in_boot_part is not None:
+            metadata += ("U_BOOT_IN_BOOT_PART=%s\n" %
+                         self.bootloader_file_in_boot_part)
         if self.spl_in_boot_part is not None:
             metadata += "SPL_IN_BOOT_PART=%s\n" % self.spl_in_boot_part
         if self.uboot_dd is not None:

@@ -213,7 +213,7 @@ class BoardConfig(object):
     # These attributes may not need to be redefined on some subclasses.
     uboot_flavor = None
     # whether to copy u-boot to the boot partition
-    uboot_in_boot_part = False
+    bootloader_file_in_boot_part = False
     uboot_dd = False
     spl_in_boot_part = False
     spl_dd = False
@@ -380,13 +380,14 @@ class BoardConfig(object):
                     align_up(int(loader_min_size) * 1024 ** 2,
                              SECTOR_SIZE) / SECTOR_SIZE)
 
-            uboot_in_boot_part = cls.get_metadata_field('uboot_in_boot_part')
-            if uboot_in_boot_part is None:
-                cls.uboot_in_boot_part = False
-            elif string.lower(uboot_in_boot_part) == 'yes':
-                cls.uboot_in_boot_part = True
-            elif string.lower(uboot_in_boot_part) == 'no':
-                cls.uboot_in_boot_part = False
+            bootloader_file_in_boot_part = cls.get_metadata_field(
+                'bootloader_file_in_boot_part')
+            if bootloader_file_in_boot_part is None:
+                cls.bootloader_file_in_boot_part = False
+            elif string.lower(bootloader_file_in_boot_part) == 'yes':
+                cls.bootloader_file_in_boot_part = True
+            elif string.lower(bootloader_file_in_boot_part) == 'no':
+                cls.bootloader_file_in_boot_part = False
             spl_in_boot_part = cls.get_metadata_field('spl_in_boot_part')
             if spl_in_boot_part is None:
                 cls.spl_in_boot_part = False
@@ -760,14 +761,15 @@ class BoardConfig(object):
 
     @classmethod
     def populate_boot(cls, chroot_dir, rootfs_uuid, boot_partition, boot_disk,
-                      boot_device_or_file, is_live, is_lowmem, consoles):
+                      boot_device_or_file, is_live, is_lowmem, consoles,
+                      bootloader=None):
         parts_dir = 'boot'
         if is_live:
             parts_dir = 'casper'
         uboot_parts_dir = os.path.join(chroot_dir, parts_dir)
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
         with partition_mounted(boot_partition, boot_disk):
-            if cls.uboot_in_boot_part:
+            if cls.bootloader_file_in_boot_part:
                 with cls.hardwarepack_handler:
                     # <legacy v1 support>
                     if cls.uboot_flavor is not None:
@@ -855,7 +857,7 @@ class BoardConfig(object):
 
 class OmapConfig(BoardConfig):
     kernel_flavors = ['linaro-omap4', 'linaro-lt-omap', 'linaro-omap', 'omap4']
-    uboot_in_boot_part = True
+    bootloader_file_in_boot_part = True
 
     # XXX: Here we define these things as dynamic properties because our
     # temporary hack to fix bug 697824 relies on changing the board's
@@ -978,7 +980,7 @@ class PandaConfig(OmapConfig):
 
 
 class IgepConfig(BeagleConfig):
-    uboot_in_boot_part = False
+    bootloader_file_in_boot_part = False
     uboot_flavor = None
     dtb_name = 'isee-igep-v2.dtb'
 
@@ -1327,7 +1329,7 @@ class Mx53LoCoConfig(Mx53Config):
 
 class VexpressConfig(BoardConfig):
     uboot_flavor = 'ca9x4_ct_vxp'
-    uboot_in_boot_part = True
+    bootloader_file_in_boot_part = True
     serial_tty = 'ttyAMA0'
     _extra_serial_opts = 'console=tty0 console=%s,38400n8'
     _live_serial_opts = 'serialtty=%s'

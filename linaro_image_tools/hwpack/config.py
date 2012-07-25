@@ -215,7 +215,7 @@ class Config(object):
             self._validate_mmc_id()
             self._validate_extra_boot_options()
             self._validate_boot_script()
-            self._validate_uboot_in_boot_part()
+            self._validate_bootloader_file_in_boot_part()
             self._validate_uboot_dd()
             self._validate_spl_in_boot_part()
             self._validate_spl_dd()
@@ -289,7 +289,7 @@ class Config(object):
         return self._get_option(BOARDS_FIELD)
 
     @property
-    def uboot_in_boot_part(self):
+    def bootloader_file_in_boot_part(self):
         """Whether uboot binary should be put in the boot partition. A str."""
         return self._get_bootloader_option(self.UBOOT_IN_BOOT_PART_KEY)
 
@@ -993,11 +993,11 @@ class Config(object):
             return False
         return string.lower(value) in ['yes', 'no']
 
-    def _validate_uboot_in_boot_part(self):
-        if not self._validate_bool(self.uboot_in_boot_part):
+    def _validate_bootloader_file_in_boot_part(self):
+        if not self._validate_bool(self.bootloader_file_in_boot_part):
             raise HwpackConfigError(
                 "Invalid value for u_boot_in_boot_part: %s"
-                % self.uboot_in_boot_part)
+                % self.bootloader_file_in_boot_part)
 
     def _validate_spl_in_boot_part(self):
         spl_in_boot_part = self.spl_in_boot_part

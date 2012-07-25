@@ -280,7 +280,7 @@ class ConfigTests(TestCase):
             "    in_boot_part: Nope\n")
         self.assertValidationError(
             "Invalid value for u_boot_in_boot_part: Nope",
-            config._validate_uboot_in_boot_part)
+            config._validate_bootloader_file_in_boot_part)
 
     def test_find_board_specific_variable(self):
         config = self.get_config(
@@ -294,8 +294,8 @@ class ConfigTests(TestCase):
         config.set_bootloader("u_boot")
         config.set_board("panda")
 
-        config._validate_uboot_in_boot_part()
-        self.assertEqual(config.uboot_in_boot_part, "yes")
+        config._validate_bootloader_file_in_boot_part()
+        self.assertEqual(config.bootloader_file_in_boot_part, "yes")
 
     def test_board_specific_overwrites_global(self):
         config = self.get_config(
@@ -312,8 +312,8 @@ class ConfigTests(TestCase):
         config.set_bootloader("u_boot")
         config.set_board("panda")
 
-        config._validate_uboot_in_boot_part()
-        self.assertEqual(config.uboot_in_boot_part, "yes")
+        config._validate_bootloader_file_in_boot_part()
+        self.assertEqual(config.bootloader_file_in_boot_part, "yes")
 
     def test_validate_serial_tty(self):
         config = self.get_config(self.valid_start_v3 + "serial_tty: tty\n")
@@ -504,7 +504,7 @@ class ConfigTests(TestCase):
         config = self.get_config(self.valid_complete_v3 + self.valid_end)
         config.validate()
         self.assertEqual("yes",
-                         config.uboot_in_boot_part)
+                         config.bootloader_file_in_boot_part)
 
     def test_spl_package(self):
         config = self.get_config(self.valid_complete_v3 + self.valid_end)
