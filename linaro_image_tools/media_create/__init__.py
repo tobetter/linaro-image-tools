@@ -92,7 +92,11 @@ def get_args_parser():
         '--output-directory', dest='directory',
         help='Directory where image and accessories should be written to.')
     parser.add_argument(
-        '--dev', required=True, dest='board', choices=KNOWN_BOARDS,
+        '--read-hwpack', dest='readhwpack', action='store_true',
+        help=('Read the hardware pack and print information about the '
+                'supported boards and bootloaders.'))
+    parser.add_argument(
+        '--dev', dest='board', choices=KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
     parser.add_argument(
         '--rootfs', default='ext4', choices=['ext2', 'ext3', 'ext4', 'btrfs'],
@@ -137,7 +141,7 @@ def get_args_parser():
         help=('The image size, specified in mega/giga bytes (e.g. 3000M or '
               '3G); use with --image_file only'))
     parser.add_argument(
-        '--binary', default='binary-tar.tar.gz', required=True,
+        '--binary', default='binary-tar.tar.gz', required=False,
         help=('The tarball containing the rootfs used to create the bootable '
               'system.'))
     parser.add_argument(
