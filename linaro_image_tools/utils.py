@@ -341,6 +341,7 @@ def additional_option_checks(args):
             raise InvalidHwpackFile(
                 "--hwpack argument (%s) is not a regular file" % hwpack)
 
+
 def check_required_args(args):
     """Check that the required args are passed."""
     if args.board is None:
