@@ -130,7 +130,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     board_config = board_configs[args.dev]
-    board_config.set_metadata(args.hwpacks, args.bootloader, args.board)
+    board_config.set_metadata(args.hwpacks, args.bootloader, args.dev)
     board_config.set_board(args.dev)
     board_config.add_boot_args(args.extra_boot_args)
     board_config.add_boot_args_from_file(args.extra_boot_args_file)
