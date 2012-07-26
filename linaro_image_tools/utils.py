@@ -344,7 +344,7 @@ def additional_option_checks(args):
 
 def check_required_args(args):
     """Check that the required args are passed."""
-    if args.board is None:
+    if args.dev is None:
         raise MissingRequiredOption("--dev option is required")
     if args.binary is None:
         raise MissingRequiredOption("--binary option is required")
