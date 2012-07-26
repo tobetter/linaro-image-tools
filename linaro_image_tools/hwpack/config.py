@@ -996,9 +996,13 @@ class Config(object):
 
     def _validate_bootloader_file_in_boot_part(self):
         if not self._validate_bool(self.bootloader_file_in_boot_part):
+            if self._is_v3:
+                name = "bootloader"
+            else:
+                name = "u_boot"
             raise HwpackConfigError(
-                "Invalid value for u_boot_in_boot_part: %s"
-                % self.bootloader_file_in_boot_part)
+                "Invalid value for %s_in_boot_part: %s"
+                % (name, self.bootloader_file_in_boot_part))
 
     def _validate_spl_in_boot_part(self):
         spl_in_boot_part = self.spl_in_boot_part
