@@ -408,7 +408,8 @@ class BoardConfig(object):
                 cls.env_dd = False
 
             bootloader_dd = cls.get_metadata_field('bootloader_dd')
-            # Either uboot_dd is not specified, or it contains the dd offset.
+            # Either bootloader_dd is not specified, or it contains the dd
+            # offset.
             if bootloader_dd is None:
                 cls.bootloader_dd = False
             else:
@@ -660,11 +661,11 @@ class BoardConfig(object):
         return boot_env
 
     @classmethod
-    def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        chroot_dir, rootfs_uuid, boot_dir,
+    def make_boot_files(cls, bootloader_parts_dir, is_live, is_lowmem,
+                        consoles, chroot_dir, rootfs_uuid, boot_dir,
                         boot_device_or_file):
         if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
-            parts_dir = uboot_parts_dir
+            parts_dir = bootloader_parts_dir
         else:
             parts_dir = chroot_dir
         (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
@@ -692,12 +693,12 @@ class BoardConfig(object):
         _dd(from_file, to_file, seek=seek)
 
     @classmethod
-    def install_samsung_boot_loader(cls, samsung_spl_file, uboot_file,
+    def install_samsung_boot_loader(cls, samsung_spl_file, bootloader_file,
                                     boot_device_or_file):
                 cls._dd_file(samsung_spl_file, boot_device_or_file,
                              cls.SAMSUNG_V310_BL1_START,
                              cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE)
-                cls._dd_file(uboot_file, boot_device_or_file,
+                cls._dd_file(bootloader_file, boot_device_or_file,
                              cls.SAMSUNG_V310_BL2_START,
                              cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE)
 
@@ -721,9 +722,10 @@ class BoardConfig(object):
             if cls.spl_dd:
                 cls._dd_file(spl_file, boot_device_or_file, cls.spl_dd)
 
-            uboot_file = cls.get_file('bootloader_file')
+            bootloader_file = cls.get_file('bootloader_file')
             if cls.bootloader_dd:
-                cls._dd_file(uboot_file, boot_device_or_file, cls.bootloader_dd)
+                cls._dd_file(bootloader_file, boot_device_or_file,
+                             cls.bootloader_dd)
 
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
@@ -909,8 +911,8 @@ class OmapConfig(BoardConfig):
                 cls.serial_tty = classproperty(lambda cls: 'ttyS2')
 
     @classmethod
-    def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        chroot_dir, rootfs_uuid, boot_dir,
+    def make_boot_files(cls, bootloader_parts_dir, is_live, is_lowmem,
+                        consoles, chroot_dir, rootfs_uuid, boot_dir,
                         boot_device_or_file):
         # XXX: This is also part of our temporary hack to fix bug 697824; we
         # need to call set_appropriate_serial_tty() before doing anything that
@@ -918,7 +920,7 @@ class OmapConfig(BoardConfig):
         if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
             cls.set_appropriate_serial_tty(chroot_dir)
         super(OmapConfig, cls).make_boot_files(
-            uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
+            bootloader_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
             rootfs_uuid, boot_dir, boot_device_or_file)
 
     @classmethod
