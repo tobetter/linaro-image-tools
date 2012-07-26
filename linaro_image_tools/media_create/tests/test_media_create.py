@@ -142,6 +142,53 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         self.metadata = (
             "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\nORIGIN=linaro\n")
 
+    def test_hardwarepack_bootloaders(self):
+        metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
+                    "armel\norigin: linaro\n")
+        metadata += ("bootloaders:\n u_boot:\n  file: a_file\n uefi:\n  file: "
+                        "b_file\n")
+        data = '3.0'
+        format = "%s\n" % data
+        tarball = self.add_to_tarball(
+            [('FORMAT', format), ('metadata', metadata)])
+        hp = HardwarepackHandler([tarball], bootloader='u_boot')
+        with hp:
+            self.assertEquals(hp.get_field('u_boot_file')[0], 'a_file')
+
+    def test_hardwarepack_boards(self):
+        metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
+                    "armel\norigin: linaro\n")
+        metadata += ("bootloaders:\n u_boot:\n  file: a_file\n uefi:\n  file: "
+                        "b_file\n")
+        metadata += ("boards:\n panda:\n  bootloaders:\n   u_boot:\n    "
+                        "file: panda_file")
+        data = '3.0'
+        format = "%s\n" % data
+        tarball = self.add_to_tarball(
+            [('FORMAT', format), ('metadata', metadata)])
+        hp = HardwarepackHandler([tarball], board='panda')
+        with hp:
+            self.assertEquals(hp.get_field('u_boot_file')[0], 'panda_file')
+
+    def test_hardwarepack_boards_and_bootloaders(self):
+        metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
+                    "armel\norigin: linaro\n")
+        metadata += ("bootloaders:\n u_boot:\n  file: a_file\n uefi:\n  file: "
+                        "b_file\n")
+        metadata += ("boards:\n panda:\n  bootloaders:\n   u_boot:\n    "
+                        "file: panda_file\n   uefi:\n    file: "
+                        "uefi_panda_file\n")
+        metadata += (" panda-lt:\n bootloaders:\n   u_boot:\n    "
+                        "file: panda_lt_file")
+        data = '3.0'
+        format = "%s\n" % data
+        tarball = self.add_to_tarball(
+            [('FORMAT', format), ('metadata', metadata)])
+        hp = HardwarepackHandler([tarball], board='panda', bootloader='uefi')
+        with hp:
+            self.assertEquals(hp.get_field('u_boot_file')[0],
+                                           'uefi_panda_file')
+
     def add_to_tarball(self, files, tarball=None):
         if tarball is None:
             tarball = self.tarball_fixture.get_tarball()
