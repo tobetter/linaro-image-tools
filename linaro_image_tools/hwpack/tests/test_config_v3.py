@@ -192,13 +192,13 @@ class ConfigTests(TestCase):
             "Invalid value in u_boot_package in the metadata: ~~",
             config._validate_u_boot_package)
 
-    def test_validate_invalid_u_boot_file(self):
+    def test_validate_invalid_bootloader_file(self):
         config = self.get_config(self.valid_start_v3 +
                                  "bootloaders:\n"
                                  " u_boot:\n"
                                  "  file: ~~\n")
         self.assertValidationError("Invalid path: ~~",
-                                   config._validate_u_boot_file)
+                                   config._validate_bootloader_file)
 
     def test_validate_invalid_kernel_file(self):
         config = self.get_config(self.valid_start_v3 +
@@ -444,11 +444,11 @@ class ConfigTests(TestCase):
         self.assertEqual("bootfs_rootfs",
                          config.partition_layout)
 
-    def test_u_boot_file(self):
+    def test_bootloader_file(self):
         config = self.get_config(self.valid_complete_v3 + self.valid_end)
         config.validate()
         self.assertEqual("usr/lib/u-boot/smdkv310/u-boot.bin",
-                         config.u_boot_file)
+                         config.bootloader_file)
 
     def test_u_boot_package(self):
         config = self.get_config(self.valid_complete_v3 + self.valid_end)

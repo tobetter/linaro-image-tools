@@ -233,7 +233,7 @@ class HardwarePackBuilder(object):
                                 metadata.boards = self.config.boards
                         else:
                             u_boot_package = None
-                            if self.config.u_boot_file is not None:
+                            if self.config.bootloader_file is not None:
                                 assert(self.config.bootloader_package
                                        is not None)
                                 u_boot_package = self.find_fetched_package(
@@ -242,7 +242,7 @@ class HardwarePackBuilder(object):
                                 self.hwpack.metadata.u_boot = \
                                     self.add_file_to_hwpack(
                                         u_boot_package,
-                                        self.config.u_boot_file,
+                                        self.config.bootloader_file,
                                         self.hwpack.U_BOOT_DIR)
 
                             spl_package = None

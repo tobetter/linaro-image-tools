@@ -721,7 +721,7 @@ class BoardConfig(object):
             if cls.spl_dd:
                 cls._dd_file(spl_file, boot_device_or_file, cls.spl_dd)
 
-            uboot_file = cls.get_file('u_boot_file')
+            uboot_file = cls.get_file('bootloader_file')
             if cls.uboot_dd:
                 cls._dd_file(uboot_file, boot_device_or_file, cls.uboot_dd)
 
@@ -786,12 +786,13 @@ class BoardConfig(object):
                     else:
                         default = None
                     # </legacy v1 support>
-                    uboot_bin = cls.get_file('u_boot_file', default=default)
-                    assert uboot_bin is not None, (
+                    bootloader_bin = cls.get_file('bootloader_file',
+                                                   default=default)
+                    assert bootloader_bin is not None, (
                         "uboot binary could not be found")
 
                     proc = cmd_runner.run(
-                        ['cp', '-v', uboot_bin, boot_disk], as_root=True)
+                        ['cp', '-v', bootloader_bin, boot_disk], as_root=True)
                     proc.wait()
 
             cls.make_boot_files(
@@ -1282,7 +1283,7 @@ class Mx5Config(BoardConfig):
         # XXX: delete this method when hwpacks V1 can die
         assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         with cls.hardwarepack_handler:
-            uboot_file = cls.get_file('u_boot_file', default=os.path.join(
+            uboot_file = cls.get_file('bootloader_file', default=os.path.join(
                     chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
                     'u-boot.imx'))
             install_mx5_boot_loader(uboot_file, boot_device_or_file,

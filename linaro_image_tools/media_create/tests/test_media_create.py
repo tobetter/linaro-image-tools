@@ -153,7 +153,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             [('FORMAT', format), ('metadata', metadata)])
         hp = HardwarepackHandler([tarball], bootloader='u_boot')
         with hp:
-            self.assertEquals(hp.get_field('u_boot_file')[0], 'a_file')
+            self.assertEquals(hp.get_field('bootloader_file')[0], 'a_file')
 
     def test_hardwarepack_boards(self):
         metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
@@ -168,7 +168,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             [('FORMAT', format), ('metadata', metadata)])
         hp = HardwarepackHandler([tarball], board='panda')
         with hp:
-            self.assertEquals(hp.get_field('u_boot_file')[0], 'panda_file')
+            self.assertEquals(hp.get_field('bootloader_file')[0], 'panda_file')
 
     def test_hardwarepack_boards_and_bootloaders(self):
         metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
@@ -186,7 +186,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             [('FORMAT', format), ('metadata', metadata)])
         hp = HardwarepackHandler([tarball], board='panda', bootloader='uefi')
         with hp:
-            self.assertEquals(hp.get_field('u_boot_file')[0],
+            self.assertEquals(hp.get_field('bootloader_file')[0],
                                            'uefi_panda_file')
 
     def add_to_tarball(self, files, tarball=None):
@@ -268,7 +268,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             [('metadata', metadata)])
         hp = HardwarepackHandler([tarball])
         with hp:
-            test_data, _ = hp.get_field('u_boot_file')
+            test_data, _ = hp.get_field('bootloader_file')
             self.assertEqual(test_data, data)
 
     def test_preserves_formatters(self):
@@ -278,7 +278,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             [('metadata', metadata)])
         hp = HardwarepackHandler([tarball])
         with hp:
-            test_data, _ = hp.get_field('u_boot_file')
+            test_data, _ = hp.get_field('bootloader_file')
             self.assertEqual(test_data, data)
 
     def test_creates_tempdir(self):
@@ -306,7 +306,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
              (file_in_archive, data)])
         hp = HardwarepackHandler([tarball])
         with hp:
-            test_file = hp.get_file('u_boot_file')
+            test_file = hp.get_file('bootloader_file')
             self.assertEquals(data, open(test_file, 'r').read())
 
 
