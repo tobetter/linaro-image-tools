@@ -193,7 +193,7 @@ class Config(object):
         self._validate_assume_installed()
 
         if self.format.has_v2_fields:
-            self._validate_u_boot_package()
+            self._validate_bootloader_package()
             self._validate_bootloader_file()
             self._validate_serial_tty()
             self._validate_kernel_addr()
@@ -1067,14 +1067,14 @@ class Config(object):
                 self._invalid_package_message(
                     PACKAGES_FIELD, self.MAIN_SECTION, package))
 
-    def _validate_u_boot_package(self):
-        u_boot_package = self.bootloader_package
-        if u_boot_package is not None:
+    def _validate_bootloader_package(self):
+        bootloader_package = self.bootloader_package
+        if bootloader_package is not None:
             self._assert_matches_pattern(
-                self.PACKAGE_REGEX, u_boot_package,
+                self.PACKAGE_REGEX, bootloader_package,
                 self._invalid_package_message(
                     self.BOOTLOADER_PACKAGE_KEY, self.MAIN_SECTION,
-                    u_boot_package))
+                    bootloader_package))
 
     def _validate_spl_package(self):
         spl_package = self.spl_package

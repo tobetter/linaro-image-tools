@@ -190,7 +190,7 @@ class ConfigTests(TestCase):
                                  "  package: ~~\n")
         self.assertValidationError(
             "Invalid value in u_boot_package in the metadata: ~~",
-            config._validate_u_boot_package)
+            config._validate_bootloader_package)
 
     def test_validate_invalid_bootloader_file(self):
         config = self.get_config(self.valid_start_v3 +
@@ -272,14 +272,14 @@ class ConfigTests(TestCase):
     def test_validate_wireless_interfaces(self):
         self.assertTrue("XXX What is an invalid interface name?")
 
-    def test_validate_u_boot_in_boot_part_bool(self):
+    def test_validate_bootloader_in_boot_part_bool(self):
         config = self.get_config(
             self.valid_start_v3 +
             "bootloaders:\n"
             "   u_boot:\n"
             "    in_boot_part: Nope\n")
         self.assertValidationError(
-            "Invalid value for u_boot_in_boot_part: Nope",
+            "Invalid value for bootloader_in_boot_part: Nope",
             config._validate_bootloader_file_in_boot_part)
 
     def test_find_board_specific_variable(self):

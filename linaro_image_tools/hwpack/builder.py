@@ -232,16 +232,16 @@ class HardwarePackBuilder(object):
                                 self._set_new_values(self.config.boards)
                                 metadata.boards = self.config.boards
                         else:
-                            u_boot_package = None
+                            bootloader_package = None
                             if self.config.bootloader_file is not None:
                                 assert(self.config.bootloader_package
                                        is not None)
-                                u_boot_package = self.find_fetched_package(
+                                bootloader_package = self.find_fetched_package(
                                     self.packages,
                                     self.config.bootloader_package)
                                 self.hwpack.metadata.u_boot = \
                                     self.add_file_to_hwpack(
-                                        u_boot_package,
+                                        bootloader_package,
                                         self.config.bootloader_file,
                                         self.hwpack.U_BOOT_DIR)
 
@@ -257,10 +257,11 @@ class HardwarePackBuilder(object):
                                         self.config.spl_file,
                                         self.hwpack.SPL_DIR)
 
-                            # u_boot_package and spl_package can be identical
-                            if (u_boot_package is not None and
-                                u_boot_package in self.packages):
-                                self.packages.remove(u_boot_package)
+                            # bootloader_package and spl_package can be
+                            # identical
+                            if (bootloader_package is not None and
+                                bootloader_package in self.packages):
+                                self.packages.remove(bootloader_package)
                             if (spl_package is not None and
                                 spl_package in self.packages):
                                 self.packages.remove(spl_package)
