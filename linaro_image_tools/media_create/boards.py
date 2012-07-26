@@ -217,7 +217,7 @@ class BoardConfig(object):
     bootloader_flavor = None
     # whether to copy u-boot to the boot partition
     bootloader_file_in_boot_part = False
-    uboot_dd = False
+    bootloader_dd = False
     spl_in_boot_part = False
     spl_dd = False
     env_dd = False
@@ -407,12 +407,12 @@ class BoardConfig(object):
             elif string.lower(env_dd) == 'no':
                 cls.env_dd = False
 
-            uboot_dd = cls.get_metadata_field('uboot_dd')
+            bootloader_dd = cls.get_metadata_field('bootloader_dd')
             # Either uboot_dd is not specified, or it contains the dd offset.
-            if uboot_dd is None:
-                cls.uboot_dd = False
+            if bootloader_dd is None:
+                cls.bootloader_dd = False
             else:
-                cls.uboot_dd = int(uboot_dd)
+                cls.bootloader_dd = int(bootloader_dd)
             spl_dd = cls.get_metadata_field('spl_dd')
             # Either spl_dd is not specified, or it contains the dd offset.
             if spl_dd is None:
@@ -722,8 +722,8 @@ class BoardConfig(object):
                 cls._dd_file(spl_file, boot_device_or_file, cls.spl_dd)
 
             uboot_file = cls.get_file('bootloader_file')
-            if cls.uboot_dd:
-                cls._dd_file(uboot_file, boot_device_or_file, cls.uboot_dd)
+            if cls.bootloader_dd:
+                cls._dd_file(uboot_file, boot_device_or_file, cls.bootloader_dd)
 
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
