@@ -597,21 +597,21 @@ class TestGetSMDKSPL(TestCaseWithFixtures):
 
     def test_old_file_present(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
-        path = _create_uboot_dir(tempdir, self.config.uboot_flavor)
+        path = _create_uboot_dir(tempdir, self.config.bootloader_flavor)
         spl_path = os.path.join(path, 'v310_mmc_spl.bin')
         open(spl_path, 'w').close()
         self.assertEquals(spl_path, self.config._get_samsung_spl(tempdir))
 
     def test_new_file_present(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
-        path = _create_uboot_dir(tempdir, self.config.uboot_flavor)
+        path = _create_uboot_dir(tempdir, self.config.bootloader_flavor)
         spl_path = os.path.join(path, 'u-boot-mmc-spl.bin')
         open(spl_path, 'w').close()
         self.assertEquals(spl_path, self.config._get_samsung_spl(tempdir))
 
     def test_prefers_old_path(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
-        path = _create_uboot_dir(tempdir, self.config.uboot_flavor)
+        path = _create_uboot_dir(tempdir, self.config.bootloader_flavor)
         old_spl_path = os.path.join(path, 'v310_mmc_spl.bin')
         new_spl_path = os.path.join(path, 'u-boot-mmc-spl.bin')
         open(old_spl_path, 'w').close()
@@ -625,7 +625,7 @@ class TestGetSMDKUboot(TestCaseWithFixtures):
     def test_uses_uboot_flavour(self):
         chroot_dir = "chroot"
         uboot_file = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot',
-                                  self.config.uboot_flavor, 'u-boot.bin')
+                                  self.config.bootloader_flavor, 'u-boot.bin')
         self.assertEquals(
             uboot_file, self.config._get_samsung_uboot(chroot_dir))
 
@@ -640,7 +640,7 @@ class TestGetOrigenSPL(TestCaseWithFixtures):
 
     def test_new_file_present(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
-        path = _create_uboot_dir(tempdir, self.config.uboot_flavor)
+        path = _create_uboot_dir(tempdir, self.config.bootloader_flavor)
         spl_path = os.path.join(path, 'u-boot-mmc-spl.bin')
         open(spl_path, 'w').close()
         self.assertEquals(spl_path, self.config._get_samsung_spl(tempdir))
@@ -2050,7 +2050,7 @@ class TestBoards(TestCaseWithFixtures):
 
     def test_install_smdk_u_boot(self):
         fixture = self._mock_Popen()
-        uboot_flavor = boards.SMDKV310Config.uboot_flavor
+        uboot_flavor = boards.SMDKV310Config.bootloader_flavor
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
                                              lambda file: 1))
         boards.SMDKV310Config.install_samsung_boot_loader(
@@ -2067,7 +2067,7 @@ class TestBoards(TestCaseWithFixtures):
 
     def test_install_origen_u_boot(self):
         fixture = self._mock_Popen()
-        uboot_flavor = boards.OrigenConfig.uboot_flavor
+        uboot_flavor = boards.OrigenConfig.bootloader_flavor
         self.useFixture(MockSomethingFixture(
             boards.OrigenConfig, '_get_samsung_spl',
             classmethod(lambda cls, chroot_dir: "%s/%s/SPL" % (

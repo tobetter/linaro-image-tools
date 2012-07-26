@@ -214,10 +214,10 @@ class BoardConfig(object):
     """The configuration used when building an image for a board."""
     hwpack_format = None
     # These attributes may not need to be redefined on some subclasses.
-    uboot_flavor = None
+    bootloader_flavor = None
     # whether to copy u-boot to the boot partition
     bootloader_file_in_boot_part = False
-    uboot_dd = False
+    bootloader_dd = False
     spl_in_boot_part = False
     spl_dd = False
     env_dd = False
@@ -407,12 +407,12 @@ class BoardConfig(object):
             elif string.lower(env_dd) == 'no':
                 cls.env_dd = False
 
-            uboot_dd = cls.get_metadata_field('uboot_dd')
-            # Either uboot_dd is not specified, or it contains the dd offset.
-            if uboot_dd is None:
-                cls.uboot_dd = False
+            bootloader_dd = cls.get_metadata_field('bootloader_dd')
+            # Either bootloader_dd is not specified, or it contains the dd offset.
+            if bootloader_dd is None:
+                cls.bootloader_dd = False
             else:
-                cls.uboot_dd = int(uboot_dd)
+                cls.bootloader_dd = int(bootloader_dd)
             spl_dd = cls.get_metadata_field('spl_dd')
             # Either spl_dd is not specified, or it contains the dd offset.
             if spl_dd is None:
@@ -722,8 +722,8 @@ class BoardConfig(object):
                 cls._dd_file(spl_file, boot_device_or_file, cls.spl_dd)
 
             uboot_file = cls.get_file('bootloader_file')
-            if cls.uboot_dd:
-                cls._dd_file(uboot_file, boot_device_or_file, cls.uboot_dd)
+            if cls.bootloader_dd:
+                cls._dd_file(uboot_file, boot_device_or_file, cls.bootloader_dd)
 
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
@@ -775,14 +775,14 @@ class BoardConfig(object):
             if cls.bootloader_file_in_boot_part:
                 with cls.hardwarepack_handler:
                     # <legacy v1 support>
-                    if cls.uboot_flavor is not None:
+                    if cls.bootloader_flavor is not None:
                         default = os.path.join(
                             chroot_dir, 'usr', 'lib', 'u-boot',
-                            cls.uboot_flavor, 'u-boot.img')
+                            cls.bootloader_flavor, 'u-boot.img')
                         if not os.path.exists(default):
                             default = os.path.join(
                                 chroot_dir, 'usr', 'lib', 'u-boot',
-                                cls.uboot_flavor, 'u-boot.bin')
+                                cls.bootloader_flavor, 'u-boot.bin')
                     else:
                         default = None
                     # </legacy v1 support>
@@ -1284,7 +1284,7 @@ class Mx5Config(BoardConfig):
         assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         with cls.hardwarepack_handler:
             uboot_file = cls.get_file('bootloader_file', default=os.path.join(
-                    chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+                    chroot_dir, 'usr', 'lib', 'u-boot', cls.bootloader_flavor,
                     'u-boot.imx'))
             install_mx5_boot_loader(uboot_file, boot_device_or_file,
                                     cls.LOADER_MIN_SIZE_S)
@@ -1449,7 +1449,7 @@ class SamsungConfig(BoardConfig):
         # XXX: delete this method when hwpacks V1 can die
         assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         spl_dir = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor)
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.bootloader_flavor)
         old_spl_path = os.path.join(spl_dir, 'v310_mmc_spl.bin')
         new_spl_path = os.path.join(spl_dir, 'u-boot-mmc-spl.bin')
         new_new_spl_path = os.path.join(spl_dir, 'origen-spl.bin')
@@ -1474,7 +1474,7 @@ class SamsungConfig(BoardConfig):
         # XXX: delete this method when hwpacks V1 can die
         assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.bootloader_flavor,
             'u-boot.bin')
         return uboot_file
 
