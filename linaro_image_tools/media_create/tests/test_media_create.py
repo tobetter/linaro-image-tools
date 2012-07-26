@@ -2899,9 +2899,6 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.config.bootloader_file_in_boot_part = False
         self.call_populate_boot(self.config)
         expected_calls = self.expected_calls[:]
-        #expected_calls.insert(2,
-        #    '%s cp -v chroot_dir/usr/lib/u-boot/uboot_flavor/u-boot.bin '
-        #    'boot_disk' % sudo_args)
         self.assertEquals(
             expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)
