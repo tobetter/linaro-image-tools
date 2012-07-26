@@ -165,6 +165,10 @@ def get_args_parser():
         action='store_true',
         help=('Assume yes to the question "Are you 100%% sure, '
               'on selecting [mmc]"'))
+    parser.add_argument(
+        '--bootloader',
+        help="Select a bootloader from a hardware pack that contains more than"
+             "one.")
 
     add_common_options(parser)
     return parser

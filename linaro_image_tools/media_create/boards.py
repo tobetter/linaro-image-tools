@@ -123,9 +123,11 @@ class HardwarepackHandler(object):
     hwpack_tarfiles = []
     tempdir = None
 
-    def __init__(self, hwpacks):
+    def __init__(self, hwpacks, bootloader=None, board=None):
         self.hwpacks = hwpacks
         self.hwpack_tarfiles = []
+        self.bootloader = bootloader
+        self.board = board
 
     class FakeSecHead(object):
         """ Add a fake section header to the metadata file.
@@ -169,7 +171,8 @@ class HardwarepackHandler(object):
             if re.search("=", lines[0]) and not re.search(":", lines[0]):
                 # Probably V2 hardware pack without [hwpack] on the first line
                 lines = ["[hwpack]\n"] + lines
-            parser = Config(StringIO("".join(lines)))
+            parser = Config(StringIO("".join(lines)), self.bootloader,
+                            self.board)
             try:
                 new_data = parser.get_option(field)
                 if new_data is not None:
@@ -213,7 +216,7 @@ class BoardConfig(object):
     # These attributes may not need to be redefined on some subclasses.
     uboot_flavor = None
     # whether to copy u-boot to the boot partition
-    uboot_in_boot_part = False
+    bootloader_file_in_boot_part = False
     uboot_dd = False
     spl_in_boot_part = False
     spl_dd = False
@@ -299,8 +302,9 @@ class BoardConfig(object):
         cls.board = board
 
     @classmethod
-    def set_metadata(cls, hwpacks):
-        cls.hardwarepack_handler = HardwarepackHandler(hwpacks)
+    def set_metadata(cls, hwpacks, bootloader=None, board=None):
+        cls.hardwarepack_handler = HardwarepackHandler(hwpacks, bootloader,
+                                                       board)
         with cls.hardwarepack_handler:
             cls.hwpack_format = cls.hardwarepack_handler.get_format()
             if (cls.hwpack_format == cls.hardwarepack_handler.FORMAT_1):
@@ -380,13 +384,14 @@ class BoardConfig(object):
                     align_up(int(loader_min_size) * 1024 ** 2,
                              SECTOR_SIZE) / SECTOR_SIZE)
 
-            uboot_in_boot_part = cls.get_metadata_field('uboot_in_boot_part')
-            if uboot_in_boot_part is None:
-                cls.uboot_in_boot_part = False
-            elif string.lower(uboot_in_boot_part) == 'yes':
-                cls.uboot_in_boot_part = True
-            elif string.lower(uboot_in_boot_part) == 'no':
-                cls.uboot_in_boot_part = False
+            bootloader_file_in_boot_part = cls.get_metadata_field(
+                'bootloader_file_in_boot_part')
+            if bootloader_file_in_boot_part is None:
+                cls.bootloader_file_in_boot_part = False
+            elif string.lower(bootloader_file_in_boot_part) == 'yes':
+                cls.bootloader_file_in_boot_part = True
+            elif string.lower(bootloader_file_in_boot_part) == 'no':
+                cls.bootloader_file_in_boot_part = False
             spl_in_boot_part = cls.get_metadata_field('spl_in_boot_part')
             if spl_in_boot_part is None:
                 cls.spl_in_boot_part = False
@@ -767,7 +772,7 @@ class BoardConfig(object):
         uboot_parts_dir = os.path.join(chroot_dir, parts_dir)
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
         with partition_mounted(boot_partition, boot_disk):
-            if cls.uboot_in_boot_part:
+            if cls.bootloader_file_in_boot_part:
                 with cls.hardwarepack_handler:
                     # <legacy v1 support>
                     if cls.uboot_flavor is not None:
@@ -855,7 +860,7 @@ class BoardConfig(object):
 
 class OmapConfig(BoardConfig):
     kernel_flavors = ['linaro-omap4', 'linaro-lt-omap', 'linaro-omap', 'omap4']
-    uboot_in_boot_part = True
+    bootloader_file_in_boot_part = True
 
     # XXX: Here we define these things as dynamic properties because our
     # temporary hack to fix bug 697824 relies on changing the board's
@@ -978,7 +983,7 @@ class PandaConfig(OmapConfig):
 
 
 class IgepConfig(BeagleConfig):
-    uboot_in_boot_part = False
+    bootloader_file_in_boot_part = False
     uboot_flavor = None
     dtb_name = 'isee-igep-v2.dtb'
 
@@ -1327,7 +1332,7 @@ class Mx53LoCoConfig(Mx53Config):
 
 class VexpressConfig(BoardConfig):
     uboot_flavor = 'ca9x4_ct_vxp'
-    uboot_in_boot_part = True
+    bootloader_file_in_boot_part = True
     serial_tty = 'ttyAMA0'
     _extra_serial_opts = 'console=tty0 console=%s,38400n8'
     _live_serial_opts = 'serialtty=%s'

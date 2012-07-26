@@ -2880,10 +2880,10 @@ class TestPopulateBoot(TestCaseWithFixtures):
             self.expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)
 
-    def test_populate_boot_uboot_in_boot_part(self):
+    def test_populate_boot_bootloader_file_in_boot_part(self):
         self.prepare_config(boards.BoardConfig)
         self.config.uboot_flavor = "uboot_flavor"
-        self.config.uboot_in_boot_part = True
+        self.config.bootloader_file_in_boot_part = True
         self.call_populate_boot(self.config)
         expected_calls = self.expected_calls[:]
         expected_calls.insert(2,
@@ -2893,9 +2893,22 @@ class TestPopulateBoot(TestCaseWithFixtures):
             expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)
 
+    def test_populate_boot_bootloader_file_in_boot_part_false(self):
+        self.prepare_config(boards.BoardConfig)
+        self.config.uboot_flavor = "uboot_flavor"
+        self.config.bootloader_file_in_boot_part = False
+        self.call_populate_boot(self.config)
+        expected_calls = self.expected_calls[:]
+        #expected_calls.insert(2,
+        #    '%s cp -v chroot_dir/usr/lib/u-boot/uboot_flavor/u-boot.bin '
+        #    'boot_disk' % sudo_args)
+        self.assertEquals(
+            expected_calls, self.popen_fixture.mock.commands_executed)
+        self.assertEquals(self.expected_args, self.saved_args)
+
     def test_populate_boot_no_uboot_flavor(self):
         self.prepare_config(boards.BoardConfig)
-        self.config.uboot_in_boot_part = True
+        self.config.bootloader_file_in_boot_part = True
         self.assertRaises(
             AssertionError, self.call_populate_boot, self.config)
 
