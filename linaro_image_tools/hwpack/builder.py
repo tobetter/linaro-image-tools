@@ -199,8 +199,8 @@ class HardwarePackBuilder(object):
                         self.packages.extend(self.find_bootloader_packages(
                                                 self.config.boards))
                 else:
-                    if self.config.u_boot_package is not None:
-                        self.packages.append(self.config.u_boot_package)
+                    if self.config.bootloader_package is not None:
+                        self.packages.append(self.config.bootloader_package)
                     if self.config.spl_package is not None:
                         self.packages.append(self.config.spl_package)
                 local_packages = [
@@ -234,10 +234,11 @@ class HardwarePackBuilder(object):
                         else:
                             u_boot_package = None
                             if self.config.u_boot_file is not None:
-                                assert self.config.u_boot_package is not None
+                                assert(self.config.bootloader_package
+                                       is not None)
                                 u_boot_package = self.find_fetched_package(
                                     self.packages,
-                                    self.config.u_boot_package)
+                                    self.config.bootloader_package)
                                 self.hwpack.metadata.u_boot = \
                                     self.add_file_to_hwpack(
                                         u_boot_package,

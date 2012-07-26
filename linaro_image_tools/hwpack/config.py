@@ -645,7 +645,7 @@ class Config(object):
         return self._get_list(PACKAGES_FIELD)
 
     @property
-    def u_boot_package(self):
+    def bootloader_package(self):
         """The u-boot package that contains the u-boot bin.
 
         A str.
@@ -1063,7 +1063,7 @@ class Config(object):
                     PACKAGES_FIELD, self.MAIN_SECTION, package))
 
     def _validate_u_boot_package(self):
-        u_boot_package = self.u_boot_package
+        u_boot_package = self.bootloader_package
         if u_boot_package is not None:
             self._assert_matches_pattern(
                 self.PACKAGE_REGEX, u_boot_package,
