@@ -226,7 +226,7 @@ class Metadata(object):
                 snowball_startup_files_config=snowball_startup_config,
                 spl_dd=config.spl_dd,
                 spl_in_boot_part=config.spl_in_boot_part,
-                uboot_dd=config.uboot_dd,
+                uboot_dd=config.bootloader_dd,
                 bootloader_file_in_boot_part=config.
                     bootloader_file_in_boot_part,
                 vmlinuz=config.vmlinuz,

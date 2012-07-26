@@ -110,10 +110,10 @@ class Config(object):
     translate_v2_metadata[BOOTLOADER_FILE_KEY] = "U_BOOT"
     SPL_FILE_KEY = "spl_file"
     translate_v2_metadata[SPL_FILE_KEY] = "SPL"
-    UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
-    translate_v2_to_v3[UBOOT_IN_BOOT_PART_KEY] = IN_BOOT_PART_FIELD
-    UBOOT_DD_KEY = 'u_boot_dd'
-    translate_v2_to_v3[UBOOT_DD_KEY] = DD_FIELD
+    BOOTLOADER_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
+    translate_v2_to_v3[BOOTLOADER_IN_BOOT_PART_KEY] = IN_BOOT_PART_FIELD
+    BOOTLOADER_DD_KEY = 'u_boot_dd'
+    translate_v2_to_v3[BOOTLOADER_DD_KEY] = DD_FIELD
 
     def __init__(self, fp, bootloader=None, board=None):
         """Create a Config.
@@ -291,13 +291,13 @@ class Config(object):
     @property
     def bootloader_file_in_boot_part(self):
         """Whether uboot binary should be put in the boot partition. A str."""
-        return self._get_bootloader_option(self.UBOOT_IN_BOOT_PART_KEY)
+        return self._get_bootloader_option(self.BOOTLOADER_IN_BOOT_PART_KEY)
 
     @property
-    def uboot_dd(self):
+    def bootloader_dd(self):
         """If the uboot binary should be dd:d to the boot partition
         this field specifies the offset. An int."""
-        return self._get_bootloader_option(self.UBOOT_DD_KEY)
+        return self._get_bootloader_option(self.BOOTLOADER_DD_KEY)
 
     @property
     def spl_in_boot_part(self):
@@ -1023,7 +1023,7 @@ class Config(object):
                 % self.env_dd)
 
     def _validate_uboot_dd(self):
-        uboot_dd = self.uboot_dd
+        uboot_dd = self.bootloader_dd
         if uboot_dd is None:
             return
         try:
