@@ -216,7 +216,7 @@ class Config(object):
             self._validate_extra_boot_options()
             self._validate_boot_script()
             self._validate_bootloader_file_in_boot_part()
-            self._validate_uboot_dd()
+            self._validate_bootloader_dd()
             self._validate_spl_in_boot_part()
             self._validate_spl_dd()
             self._validate_env_dd()
@@ -1022,15 +1022,20 @@ class Config(object):
                 "Invalid value for env_dd: %s"
                 % self.env_dd)
 
-    def _validate_uboot_dd(self):
-        uboot_dd = self.bootloader_dd
-        if uboot_dd is None:
+    def _validate_bootloader_dd(self):
+        bootloader_dd = self.bootloader_dd
+        if bootloader_dd is None:
             return
         try:
-            assert int(uboot_dd) > 0
+            assert int(bootloader_dd) > 0
         except:
+            if self._is_v3:
+                name = "bootloader"
+            else:
+                name = "u_boot"
+
             raise HwpackConfigError(
-                "Invalid uboot_dd %s" % (uboot_dd))
+                "Invalid %s_dd %s" % (name, bootloader_dd))
 
     def _validate_spl_dd(self):
         spl_dd = self.spl_dd
