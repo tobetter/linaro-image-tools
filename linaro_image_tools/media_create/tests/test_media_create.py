@@ -1060,7 +1060,7 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_mx5_steps(self):
         class SomeMx5Config(boards.Mx5Config):
-            uboot_flavor = 'uboot_flavor'
+            bootloader_flavor = 'bootloader_flavor'
         SomeMx5Config.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         SomeMx5Config.hardwarepack_handler.get_format = (
@@ -2050,32 +2050,32 @@ class TestBoards(TestCaseWithFixtures):
 
     def test_install_smdk_u_boot(self):
         fixture = self._mock_Popen()
-        uboot_flavor = boards.SMDKV310Config.bootloader_flavor
+        bootloader_flavor = boards.SMDKV310Config.bootloader_flavor
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
                                              lambda file: 1))
         boards.SMDKV310Config.install_samsung_boot_loader(
-            "%s/%s/SPL" % ("chroot_dir", uboot_flavor),
-            "%s/%s/uboot" % ("chroot_dir", uboot_flavor), "boot_disk")
+            "%s/%s/SPL" % ("chroot_dir", bootloader_flavor),
+            "%s/%s/uboot" % ("chroot_dir", bootloader_flavor), "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor,
+            'seek=%d' % (sudo_args, bootloader_flavor,
                          boards.SMDKV310Config.SAMSUNG_V310_BL1_START),
             '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor,
+            'seek=%d' % (sudo_args, bootloader_flavor,
                          boards.SMDKV310Config.SAMSUNG_V310_BL2_START)]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_install_origen_u_boot(self):
         fixture = self._mock_Popen()
-        uboot_flavor = boards.OrigenConfig.bootloader_flavor
+        bootloader_flavor = boards.OrigenConfig.bootloader_flavor
         self.useFixture(MockSomethingFixture(
             boards.OrigenConfig, '_get_samsung_spl',
             classmethod(lambda cls, chroot_dir: "%s/%s/SPL" % (
-                chroot_dir, uboot_flavor))))
+                chroot_dir, bootloader_flavor))))
         self.useFixture(MockSomethingFixture(
             boards.OrigenConfig, '_get_samsung_uboot',
             classmethod(lambda cls, chroot_dir: "%s/%s/uboot" % (
-                chroot_dir, uboot_flavor))))
+                chroot_dir, bootloader_flavor))))
         boards.OrigenConfig.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         boards.OrigenConfig.hardwarepack_handler.get_format = (
@@ -2087,10 +2087,10 @@ class TestBoards(TestCaseWithFixtures):
             boards.OrigenConfig._get_samsung_uboot("chroot_dir"), "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor,
+            'seek=%d' % (sudo_args, bootloader_flavor,
                          boards.OrigenConfig.SAMSUNG_V310_BL1_START),
             '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
-            'seek=%d' % (sudo_args, uboot_flavor,
+            'seek=%d' % (sudo_args, bootloader_flavor,
                          boards.OrigenConfig.SAMSUNG_V310_BL2_START)]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
@@ -2919,9 +2919,9 @@ class TestPopulateBoot(TestCaseWithFixtures):
             self.expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)
 
-    def test_populate_boot_uboot_flavor(self):
+    def test_populate_boot_bootloader_flavor(self):
         self.prepare_config(boards.BoardConfig)
-        self.config.uboot_flavor = "uboot_flavor"
+        self.config.bootloader_flavor = "bootloader_flavor"
         self.call_populate_boot(self.config)
         self.assertEquals(
             self.expected_calls, self.popen_fixture.mock.commands_executed)
@@ -2929,12 +2929,12 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
     def test_populate_boot_bootloader_file_in_boot_part(self):
         self.prepare_config(boards.BoardConfig)
-        self.config.uboot_flavor = "uboot_flavor"
+        self.config.bootloader_flavor = "bootloader_flavor"
         self.config.bootloader_file_in_boot_part = True
         self.call_populate_boot(self.config)
         expected_calls = self.expected_calls[:]
         expected_calls.insert(2,
-            '%s cp -v chroot_dir/usr/lib/u-boot/uboot_flavor/u-boot.bin '
+            '%s cp -v chroot_dir/usr/lib/u-boot/bootloader_flavor/u-boot.bin '
             'boot_disk' % sudo_args)
         self.assertEquals(
             expected_calls, self.popen_fixture.mock.commands_executed)
@@ -2942,7 +2942,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
     def test_populate_boot_bootloader_file_in_boot_part_false(self):
         self.prepare_config(boards.BoardConfig)
-        self.config.uboot_flavor = "uboot_flavor"
+        self.config.bootloader_flavor = "bootloader_flavor"
         self.config.bootloader_file_in_boot_part = False
         self.call_populate_boot(self.config)
         expected_calls = self.expected_calls[:]
@@ -2950,7 +2950,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
             expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)
 
-    def test_populate_boot_no_uboot_flavor(self):
+    def test_populate_boot_no_bootloader_flavor(self):
         self.prepare_config(boards.BoardConfig)
         self.config.bootloader_file_in_boot_part = True
         self.assertRaises(

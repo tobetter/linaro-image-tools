@@ -217,7 +217,7 @@ class BoardConfig(object):
     bootloader_flavor = None
     # whether to copy u-boot to the boot partition
     bootloader_file_in_boot_part = False
-    bootloader_dd = False
+    uboot_dd = False
     spl_in_boot_part = False
     spl_dd = False
     env_dd = False
@@ -407,12 +407,12 @@ class BoardConfig(object):
             elif string.lower(env_dd) == 'no':
                 cls.env_dd = False
 
-            bootloader_dd = cls.get_metadata_field('bootloader_dd')
-            # Either bootloader_dd is not specified, or it contains the dd offset.
-            if bootloader_dd is None:
-                cls.bootloader_dd = False
+            uboot_dd = cls.get_metadata_field('uboot_dd')
+            # Either uboot_dd is not specified, or it contains the dd offset.
+            if uboot_dd is None:
+                cls.uboot_dd = False
             else:
-                cls.bootloader_dd = int(bootloader_dd)
+                cls.uboot_dd = int(uboot_dd)
             spl_dd = cls.get_metadata_field('spl_dd')
             # Either spl_dd is not specified, or it contains the dd offset.
             if spl_dd is None:
@@ -722,8 +722,8 @@ class BoardConfig(object):
                 cls._dd_file(spl_file, boot_device_or_file, cls.spl_dd)
 
             uboot_file = cls.get_file('bootloader_file')
-            if cls.bootloader_dd:
-                cls._dd_file(uboot_file, boot_device_or_file, cls.bootloader_dd)
+            if cls.uboot_dd:
+                cls._dd_file(uboot_file, boot_device_or_file, cls.uboot_dd)
 
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
@@ -937,7 +937,7 @@ class OmapConfig(BoardConfig):
 
 
 class BeagleConfig(OmapConfig):
-    uboot_flavor = 'omap3_beagle'
+    bootloader_flavor = 'omap3_beagle'
     dtb_name = 'omap3-beagle.dtb'
     _serial_tty = 'ttyO2'
     _extra_serial_opts = 'console=tty0 console=%s,115200n8'
@@ -953,7 +953,7 @@ class BeagleConfig(OmapConfig):
 
 
 class OveroConfig(OmapConfig):
-    uboot_flavor = 'omap3_overo'
+    bootloader_flavor = 'omap3_overo'
     dtb_name = 'omap3-overo.dtb'
     _serial_tty = 'ttyO2'
     _extra_serial_opts = 'console=tty0 console=%s,115200n8'
@@ -968,7 +968,7 @@ class OveroConfig(OmapConfig):
 
 
 class PandaConfig(OmapConfig):
-    uboot_flavor = 'omap4_panda'
+    bootloader_flavor = 'omap4_panda'
     dtb_name = 'omap4-panda.dtb'
     _serial_tty = 'ttyO2'
     _extra_serial_opts = 'console=tty0 console=%s,115200n8'
@@ -985,7 +985,7 @@ class PandaConfig(OmapConfig):
 
 class IgepConfig(BeagleConfig):
     bootloader_file_in_boot_part = False
-    uboot_flavor = None
+    bootloader_flavor = None
     dtb_name = 'isee-igep-v2.dtb'
 
     @classmethod
@@ -1312,27 +1312,27 @@ class Mx53Config(Mx5Config):
 
 
 class EfikamxConfig(Mx51Config):
-    uboot_flavor = 'efikamx'
+    bootloader_flavor = 'efikamx'
     dtb_name = 'genesi-efikamx.dtb'
 
 
 class EfikasbConfig(Mx51Config):
-    uboot_flavor = 'efikasb'
+    bootloader_flavor = 'efikasb'
     dtb_name = 'genesi-efikasb.dtb'
 
 
 class Mx51evkConfig(Mx51Config):
-    uboot_flavor = 'mx51evk'
+    bootloader_flavor = 'mx51evk'
     dtb_name = 'mx51-babbage.dtb'
 
 
 class Mx53LoCoConfig(Mx53Config):
-    uboot_flavor = 'mx53loco'
+    bootloader_flavor = 'mx53loco'
     dtb_name = 'mx53-loco.dtb'
 
 
 class VexpressConfig(BoardConfig):
-    uboot_flavor = 'ca9x4_ct_vxp'
+    bootloader_flavor = 'ca9x4_ct_vxp'
     bootloader_file_in_boot_part = True
     serial_tty = 'ttyAMA0'
     _extra_serial_opts = 'console=tty0 console=%s,38400n8'
@@ -1497,7 +1497,7 @@ class SamsungConfig(BoardConfig):
 
 
 class SMDKV310Config(SamsungConfig):
-    uboot_flavor = 'smdkv310'
+    bootloader_flavor = 'smdkv310'
     serial_tty = 'ttySAC1'
     _extra_serial_opts = 'console=%s,115200n8'
     kernel_addr = '0x40007000'
@@ -1521,7 +1521,7 @@ class SMDKV310Config(SamsungConfig):
 
 
 class OrigenConfig(SamsungConfig):
-    uboot_flavor = 'origen'
+    bootloader_flavor = 'origen'
     serial_tty = 'ttySAC2'
     _extra_serial_opts = 'console=%s,115200n8'
     kernel_addr = '0x40007000'
