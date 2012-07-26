@@ -627,7 +627,7 @@ class TestGetSMDKUboot(TestCaseWithFixtures):
         uboot_file = os.path.join(chroot_dir, 'usr', 'lib', 'u-boot',
                                   self.config.bootloader_flavor, 'u-boot.bin')
         self.assertEquals(
-            uboot_file, self.config._get_samsung_uboot(chroot_dir))
+            uboot_file, self.config._get_samsung_bootloader(chroot_dir))
 
 
 class TestGetOrigenSPL(TestCaseWithFixtures):
@@ -2073,7 +2073,7 @@ class TestBoards(TestCaseWithFixtures):
             classmethod(lambda cls, chroot_dir: "%s/%s/SPL" % (
                 chroot_dir, bootloader_flavor))))
         self.useFixture(MockSomethingFixture(
-            boards.OrigenConfig, '_get_samsung_uboot',
+            boards.OrigenConfig, '_get_samsung_bootloader',
             classmethod(lambda cls, chroot_dir: "%s/%s/uboot" % (
                 chroot_dir, bootloader_flavor))))
         boards.OrigenConfig.hardwarepack_handler = (
@@ -2084,7 +2084,8 @@ class TestBoards(TestCaseWithFixtures):
                                              lambda file: 1))
         boards.OrigenConfig.install_samsung_boot_loader(
             boards.OrigenConfig._get_samsung_spl("chroot_dir"),
-            boards.OrigenConfig._get_samsung_uboot("chroot_dir"), "boot_disk")
+            boards.OrigenConfig._get_samsung_bootloader("chroot_dir"),
+            "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
             'seek=%d' % (sudo_args, bootloader_flavor,

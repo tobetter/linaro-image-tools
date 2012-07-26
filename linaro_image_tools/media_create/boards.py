@@ -771,7 +771,7 @@ class BoardConfig(object):
         parts_dir = 'boot'
         if is_live:
             parts_dir = 'casper'
-        uboot_parts_dir = os.path.join(chroot_dir, parts_dir)
+        bootloader_parts_dir = os.path.join(chroot_dir, parts_dir)
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
         with partition_mounted(boot_partition, boot_disk):
             if cls.bootloader_file_in_boot_part:
@@ -791,14 +791,14 @@ class BoardConfig(object):
                     bootloader_bin = cls.get_file('bootloader_file',
                                                    default=default)
                     assert bootloader_bin is not None, (
-                        "uboot binary could not be found")
+                        "bootloader binary could not be found")
 
                     proc = cmd_runner.run(
                         ['cp', '-v', bootloader_bin, boot_disk], as_root=True)
                     proc.wait()
 
             cls.make_boot_files(
-                uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
+                bootloader_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
                 rootfs_uuid, boot_disk, boot_device_or_file)
 
     @classmethod
@@ -1285,10 +1285,11 @@ class Mx5Config(BoardConfig):
         # XXX: delete this method when hwpacks V1 can die
         assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         with cls.hardwarepack_handler:
-            uboot_file = cls.get_file('bootloader_file', default=os.path.join(
+            bootloader_file = cls.get_file('bootloader_file',
+                default=os.path.join(
                     chroot_dir, 'usr', 'lib', 'u-boot', cls.bootloader_flavor,
                     'u-boot.imx'))
-            install_mx5_boot_loader(uboot_file, boot_device_or_file,
+            install_mx5_boot_loader(bootloader_file, boot_device_or_file,
                                     cls.LOADER_MIN_SIZE_S)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
@@ -1432,8 +1433,7 @@ class SamsungConfig(BoardConfig):
         # XXX: delete this method when hwpacks V1 can die
         assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         cls.install_samsung_boot_loader(cls._get_samsung_spl(chroot_dir),
-                                        cls._get_samsung_uboot(chroot_dir),
-                                        boot_device_or_file)
+            cls._get_samsung_bootloader(chroot_dir), boot_device_or_file)
         env_size = cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
         _dd(env_file, boot_device_or_file, seek=cls.SAMSUNG_V310_ENV_START)
@@ -1472,13 +1472,13 @@ class SamsungConfig(BoardConfig):
         return spl_file
 
     @classmethod
-    def _get_samsung_uboot(cls, chroot_dir):
+    def _get_samsung_bootloader(cls, chroot_dir):
         # XXX: delete this method when hwpacks V1 can die
         assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
-        uboot_file = os.path.join(
+        bootloader_file = os.path.join(
             chroot_dir, 'usr', 'lib', 'u-boot', cls.bootloader_flavor,
             'u-boot.bin')
-        return uboot_file
+        return bootloader_file
 
     @classmethod
     def populate_raw_partition(cls, boot_device_or_file, chroot_dir):
