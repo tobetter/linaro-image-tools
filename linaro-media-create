@@ -129,9 +129,9 @@ if __name__ == '__main__':
         print >> sys.stderr, "\nError:", e.value
         sys.exit(1)
 
-    board_config = board_configs[args.board]
-    board_config.set_metadata(args.hwpacks)
-    board_config.set_board(args.board)
+    board_config = board_configs[args.dev]
+    board_config.set_metadata(args.hwpacks, args.bootloader, args.dev)
+    board_config.set_board(args.dev)
     board_config.add_boot_args(args.extra_boot_args)
     board_config.add_boot_args_from_file(args.extra_boot_args_file)
 
@@ -141,7 +141,7 @@ if __name__ == '__main__':
         if not board_config.supports_writing_to_mmc:
             print ("The board '%s' does not support the --mmc option. "
                     "Please use --image_file to create an image file for this "
-                    "board." % args.board)
+                    "board." % args.dev)
             sys.exit(1)
         if not confirm_device_selection_and_ensure_it_is_ready(
                 args.device, args.nocheck_mmc):

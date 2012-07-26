@@ -514,7 +514,7 @@ class ConfigTests(TestCase):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)
         config.validate()
         self.assertEqual("Yes",
-                         config.uboot_in_boot_part)
+                         config.bootloader_file_in_boot_part)
 
     def test_spl_package(self):
         config = self.get_config(self.valid_complete_v2 + self.valid_end)

@@ -142,6 +142,53 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         self.metadata = (
             "NAME=ahwpack\nVERSION=4\nARCHITECTURE=armel\nORIGIN=linaro\n")
 
+    def test_hardwarepack_bootloaders(self):
+        metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
+                    "armel\norigin: linaro\n")
+        metadata += ("bootloaders:\n u_boot:\n  file: a_file\n uefi:\n  file: "
+                        "b_file\n")
+        data = '3.0'
+        format = "%s\n" % data
+        tarball = self.add_to_tarball(
+            [('FORMAT', format), ('metadata', metadata)])
+        hp = HardwarepackHandler([tarball], bootloader='u_boot')
+        with hp:
+            self.assertEquals(hp.get_field('u_boot_file')[0], 'a_file')
+
+    def test_hardwarepack_boards(self):
+        metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
+                    "armel\norigin: linaro\n")
+        metadata += ("bootloaders:\n u_boot:\n  file: a_file\n uefi:\n  file: "
+                        "b_file\n")
+        metadata += ("boards:\n panda:\n  bootloaders:\n   u_boot:\n    "
+                        "file: panda_file")
+        data = '3.0'
+        format = "%s\n" % data
+        tarball = self.add_to_tarball(
+            [('FORMAT', format), ('metadata', metadata)])
+        hp = HardwarepackHandler([tarball], board='panda')
+        with hp:
+            self.assertEquals(hp.get_field('u_boot_file')[0], 'panda_file')
+
+    def test_hardwarepack_boards_and_bootloaders(self):
+        metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
+                    "armel\norigin: linaro\n")
+        metadata += ("bootloaders:\n u_boot:\n  file: a_file\n uefi:\n  file: "
+                        "b_file\n")
+        metadata += ("boards:\n panda:\n  bootloaders:\n   u_boot:\n    "
+                        "file: panda_file\n   uefi:\n    file: "
+                        "uefi_panda_file\n")
+        metadata += (" panda-lt:\n bootloaders:\n   u_boot:\n    "
+                        "file: panda_lt_file")
+        data = '3.0'
+        format = "%s\n" % data
+        tarball = self.add_to_tarball(
+            [('FORMAT', format), ('metadata', metadata)])
+        hp = HardwarepackHandler([tarball], board='panda', bootloader='uefi')
+        with hp:
+            self.assertEquals(hp.get_field('u_boot_file')[0],
+                                           'uefi_panda_file')
+
     def add_to_tarball(self, files, tarball=None):
         if tarball is None:
             tarball = self.tarball_fixture.get_tarball()
@@ -2880,10 +2927,10 @@ class TestPopulateBoot(TestCaseWithFixtures):
             self.expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)
 
-    def test_populate_boot_uboot_in_boot_part(self):
+    def test_populate_boot_bootloader_file_in_boot_part(self):
         self.prepare_config(boards.BoardConfig)
         self.config.uboot_flavor = "uboot_flavor"
-        self.config.uboot_in_boot_part = True
+        self.config.bootloader_file_in_boot_part = True
         self.call_populate_boot(self.config)
         expected_calls = self.expected_calls[:]
         expected_calls.insert(2,
@@ -2893,9 +2940,19 @@ class TestPopulateBoot(TestCaseWithFixtures):
             expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)
 
+    def test_populate_boot_bootloader_file_in_boot_part_false(self):
+        self.prepare_config(boards.BoardConfig)
+        self.config.uboot_flavor = "uboot_flavor"
+        self.config.bootloader_file_in_boot_part = False
+        self.call_populate_boot(self.config)
+        expected_calls = self.expected_calls[:]
+        self.assertEquals(
+            expected_calls, self.popen_fixture.mock.commands_executed)
+        self.assertEquals(self.expected_args, self.saved_args)
+
     def test_populate_boot_no_uboot_flavor(self):
         self.prepare_config(boards.BoardConfig)
-        self.config.uboot_in_boot_part = True
+        self.config.bootloader_file_in_boot_part = True
         self.assertRaises(
             AssertionError, self.call_populate_boot, self.config)
 

@@ -96,7 +96,7 @@ def get_args_parser():
         help=('Read the hardware pack and print information about the '
                 'supported boards and bootloaders.'))
     parser.add_argument(
-        '--dev', dest='board', choices=KNOWN_BOARDS,
+        '--dev', dest='dev', choices=KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
     parser.add_argument(
         '--rootfs', default='ext4', choices=['ext2', 'ext3', 'ext4', 'btrfs'],
@@ -165,6 +165,10 @@ def get_args_parser():
         action='store_true',
         help=('Assume yes to the question "Are you 100%% sure, '
               'on selecting [mmc]"'))
+    parser.add_argument(
+        '--bootloader',
+        help="Select a bootloader from a hardware pack that contains more than"
+             "one.")
 
     add_common_options(parser)
     return parser
@@ -184,7 +188,7 @@ def get_android_args_parser():
         help=('The image size, specified in mega/giga bytes (e.g. 3000M or '
               '3G); use with --image_file only'))
     parser.add_argument(
-        '--dev', required=True, dest='board', choices=ANDROID_KNOWN_BOARDS,
+        '--dev', required=True, dest='dev', choices=ANDROID_KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
     parser.add_argument(
         '--boot-label', '--boot_label', default='boot',
