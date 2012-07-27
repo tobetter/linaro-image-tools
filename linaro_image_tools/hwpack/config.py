@@ -103,17 +103,17 @@ class Config(object):
     translate_v2_metadata[ARCHITECTURES_FIELD] = "ARCHITECTURE"
     ASSUME_INSTALLED_KEY = "assume-installed"
     translate_v2_to_v3[ASSUME_INSTALLED_KEY] = ASSUME_INSTALLED_FIELD
-    U_BOOT_PACKAGE_KEY = "u_boot_package"
-    translate_v2_to_v3[U_BOOT_PACKAGE_KEY] = PACKAGE_FIELD
-    U_BOOT_FILE_KEY = "u_boot_file"
-    translate_v2_to_v3[U_BOOT_FILE_KEY] = FILE_FIELD
-    translate_v2_metadata[U_BOOT_FILE_KEY] = "U_BOOT"
+    BOOTLOADER_PACKAGE_KEY = "u_boot_package"
+    translate_v2_to_v3[BOOTLOADER_PACKAGE_KEY] = PACKAGE_FIELD
+    BOOTLOADER_FILE_KEY = "u_boot_file"
+    translate_v2_to_v3[BOOTLOADER_FILE_KEY] = FILE_FIELD
+    translate_v2_metadata[BOOTLOADER_FILE_KEY] = "U_BOOT"
     SPL_FILE_KEY = "spl_file"
     translate_v2_metadata[SPL_FILE_KEY] = "SPL"
-    UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
-    translate_v2_to_v3[UBOOT_IN_BOOT_PART_KEY] = IN_BOOT_PART_FIELD
-    UBOOT_DD_KEY = 'u_boot_dd'
-    translate_v2_to_v3[UBOOT_DD_KEY] = DD_FIELD
+    BOOTLOADER_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
+    translate_v2_to_v3[BOOTLOADER_IN_BOOT_PART_KEY] = IN_BOOT_PART_FIELD
+    BOOTLOADER_DD_KEY = 'u_boot_dd'
+    translate_v2_to_v3[BOOTLOADER_DD_KEY] = DD_FIELD
 
     def __init__(self, fp, bootloader=None, board=None):
         """Create a Config.
@@ -193,8 +193,8 @@ class Config(object):
         self._validate_assume_installed()
 
         if self.format.has_v2_fields:
-            self._validate_u_boot_package()
-            self._validate_u_boot_file()
+            self._validate_bootloader_package()
+            self._validate_bootloader_file()
             self._validate_serial_tty()
             self._validate_kernel_addr()
             self._validate_initrd_addr()
@@ -216,7 +216,7 @@ class Config(object):
             self._validate_extra_boot_options()
             self._validate_boot_script()
             self._validate_bootloader_file_in_boot_part()
-            self._validate_uboot_dd()
+            self._validate_bootloader_dd()
             self._validate_spl_in_boot_part()
             self._validate_spl_dd()
             self._validate_env_dd()
@@ -291,13 +291,13 @@ class Config(object):
     @property
     def bootloader_file_in_boot_part(self):
         """Whether uboot binary should be put in the boot partition. A str."""
-        return self._get_bootloader_option(self.UBOOT_IN_BOOT_PART_KEY)
+        return self._get_bootloader_option(self.BOOTLOADER_IN_BOOT_PART_KEY)
 
     @property
-    def uboot_dd(self):
+    def bootloader_dd(self):
         """If the uboot binary should be dd:d to the boot partition
         this field specifies the offset. An int."""
-        return self._get_bootloader_option(self.UBOOT_DD_KEY)
+        return self._get_bootloader_option(self.BOOTLOADER_DD_KEY)
 
     @property
     def spl_in_boot_part(self):
@@ -645,20 +645,20 @@ class Config(object):
         return self._get_list(PACKAGES_FIELD)
 
     @property
-    def u_boot_package(self):
+    def bootloader_package(self):
         """The u-boot package that contains the u-boot bin.
 
         A str.
         """
-        return self._get_bootloader_option(self.U_BOOT_PACKAGE_KEY)
+        return self._get_bootloader_option(self.BOOTLOADER_PACKAGE_KEY)
 
     @property
-    def u_boot_file(self):
+    def bootloader_file(self):
         """The u-boot bin file that will be unpacked from the u-boot package.
 
         A str.
         """
-        return self._get_bootloader_option(self.U_BOOT_FILE_KEY)
+        return self._get_bootloader_option(self.BOOTLOADER_FILE_KEY)
 
     @property
     def spl_file(self):
@@ -797,11 +797,12 @@ class Config(object):
             raise HwpackConfigError(
                 "No name in the [%s] section" % self.MAIN_SECTION)
 
-    def _validate_u_boot_file(self):
-        u_boot_file = self.u_boot_file
-        if u_boot_file is not None:
+    def _validate_bootloader_file(self):
+        bootloader_file = self.bootloader_file
+        if bootloader_file is not None:
             self._assert_matches_pattern(
-                self.PATH_REGEX, u_boot_file, "Invalid path: %s" % u_boot_file)
+                self.PATH_REGEX, bootloader_file,
+                "Invalid path: %s" % bootloader_file)
 
     def _validate_spl_file(self):
         spl_file = self.spl_file
@@ -995,9 +996,13 @@ class Config(object):
 
     def _validate_bootloader_file_in_boot_part(self):
         if not self._validate_bool(self.bootloader_file_in_boot_part):
+            if self._is_v3:
+                name = "bootloader"
+            else:
+                name = "u_boot"
             raise HwpackConfigError(
-                "Invalid value for u_boot_in_boot_part: %s"
-                % self.bootloader_file_in_boot_part)
+                "Invalid value for %s_in_boot_part: %s"
+                % (name, self.bootloader_file_in_boot_part))
 
     def _validate_spl_in_boot_part(self):
         spl_in_boot_part = self.spl_in_boot_part
@@ -1017,15 +1022,20 @@ class Config(object):
                 "Invalid value for env_dd: %s"
                 % self.env_dd)
 
-    def _validate_uboot_dd(self):
-        uboot_dd = self.uboot_dd
-        if uboot_dd is None:
+    def _validate_bootloader_dd(self):
+        bootloader_dd = self.bootloader_dd
+        if bootloader_dd is None:
             return
         try:
-            assert int(uboot_dd) > 0
+            assert int(bootloader_dd) > 0
         except:
+            if self._is_v3:
+                name = "bootloader"
+            else:
+                name = "u_boot"
+
             raise HwpackConfigError(
-                "Invalid uboot_dd %s" % (uboot_dd))
+                "Invalid %s_dd %s" % (name, bootloader_dd))
 
     def _validate_spl_dd(self):
         spl_dd = self.spl_dd
@@ -1062,14 +1072,14 @@ class Config(object):
                 self._invalid_package_message(
                     PACKAGES_FIELD, self.MAIN_SECTION, package))
 
-    def _validate_u_boot_package(self):
-        u_boot_package = self.u_boot_package
-        if u_boot_package is not None:
+    def _validate_bootloader_package(self):
+        bootloader_package = self.bootloader_package
+        if bootloader_package is not None:
             self._assert_matches_pattern(
-                self.PACKAGE_REGEX, u_boot_package,
+                self.PACKAGE_REGEX, bootloader_package,
                 self._invalid_package_message(
-                    self.U_BOOT_PACKAGE_KEY, self.MAIN_SECTION,
-                    u_boot_package))
+                    self.BOOTLOADER_PACKAGE_KEY, self.MAIN_SECTION,
+                    bootloader_package))
 
     def _validate_spl_package(self):
         spl_package = self.spl_package

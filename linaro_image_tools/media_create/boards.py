@@ -214,10 +214,10 @@ class BoardConfig(object):
     """The configuration used when building an image for a board."""
     hwpack_format = None
     # These attributes may not need to be redefined on some subclasses.
-    uboot_flavor = None
+    bootloader_flavor = None
     # whether to copy u-boot to the boot partition
     bootloader_file_in_boot_part = False
-    uboot_dd = False
+    bootloader_dd = False
     spl_in_boot_part = False
     spl_dd = False
     env_dd = False
@@ -407,12 +407,13 @@ class BoardConfig(object):
             elif string.lower(env_dd) == 'no':
                 cls.env_dd = False
 
-            uboot_dd = cls.get_metadata_field('uboot_dd')
-            # Either uboot_dd is not specified, or it contains the dd offset.
-            if uboot_dd is None:
-                cls.uboot_dd = False
+            bootloader_dd = cls.get_metadata_field('bootloader_dd')
+            # Either bootloader_dd is not specified, or it contains the dd
+            # offset.
+            if bootloader_dd is None:
+                cls.bootloader_dd = False
             else:
-                cls.uboot_dd = int(uboot_dd)
+                cls.bootloader_dd = int(bootloader_dd)
             spl_dd = cls.get_metadata_field('spl_dd')
             # Either spl_dd is not specified, or it contains the dd offset.
             if spl_dd is None:
@@ -660,11 +661,11 @@ class BoardConfig(object):
         return boot_env
 
     @classmethod
-    def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        chroot_dir, rootfs_uuid, boot_dir,
+    def make_boot_files(cls, bootloader_parts_dir, is_live, is_lowmem,
+                        consoles, chroot_dir, rootfs_uuid, boot_dir,
                         boot_device_or_file):
         if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
-            parts_dir = uboot_parts_dir
+            parts_dir = bootloader_parts_dir
         else:
             parts_dir = chroot_dir
         (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
@@ -692,12 +693,12 @@ class BoardConfig(object):
         _dd(from_file, to_file, seek=seek)
 
     @classmethod
-    def install_samsung_boot_loader(cls, samsung_spl_file, uboot_file,
+    def install_samsung_boot_loader(cls, samsung_spl_file, bootloader_file,
                                     boot_device_or_file):
                 cls._dd_file(samsung_spl_file, boot_device_or_file,
                              cls.SAMSUNG_V310_BL1_START,
                              cls.SAMSUNG_V310_BL1_LEN * SECTOR_SIZE)
-                cls._dd_file(uboot_file, boot_device_or_file,
+                cls._dd_file(bootloader_file, boot_device_or_file,
                              cls.SAMSUNG_V310_BL2_START,
                              cls.SAMSUNG_V310_BL2_LEN * SECTOR_SIZE)
 
@@ -721,9 +722,10 @@ class BoardConfig(object):
             if cls.spl_dd:
                 cls._dd_file(spl_file, boot_device_or_file, cls.spl_dd)
 
-            uboot_file = cls.get_file('u_boot_file')
-            if cls.uboot_dd:
-                cls._dd_file(uboot_file, boot_device_or_file, cls.uboot_dd)
+            bootloader_file = cls.get_file('bootloader_file')
+            if cls.bootloader_dd:
+                cls._dd_file(bootloader_file, boot_device_or_file,
+                             cls.bootloader_dd)
 
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
@@ -769,33 +771,34 @@ class BoardConfig(object):
         parts_dir = 'boot'
         if is_live:
             parts_dir = 'casper'
-        uboot_parts_dir = os.path.join(chroot_dir, parts_dir)
+        bootloader_parts_dir = os.path.join(chroot_dir, parts_dir)
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
         with partition_mounted(boot_partition, boot_disk):
             if cls.bootloader_file_in_boot_part:
                 with cls.hardwarepack_handler:
                     # <legacy v1 support>
-                    if cls.uboot_flavor is not None:
+                    if cls.bootloader_flavor is not None:
                         default = os.path.join(
                             chroot_dir, 'usr', 'lib', 'u-boot',
-                            cls.uboot_flavor, 'u-boot.img')
+                            cls.bootloader_flavor, 'u-boot.img')
                         if not os.path.exists(default):
                             default = os.path.join(
                                 chroot_dir, 'usr', 'lib', 'u-boot',
-                                cls.uboot_flavor, 'u-boot.bin')
+                                cls.bootloader_flavor, 'u-boot.bin')
                     else:
                         default = None
                     # </legacy v1 support>
-                    uboot_bin = cls.get_file('u_boot_file', default=default)
-                    assert uboot_bin is not None, (
-                        "uboot binary could not be found")
+                    bootloader_bin = cls.get_file('bootloader_file',
+                                                   default=default)
+                    assert bootloader_bin is not None, (
+                        "bootloader binary could not be found")
 
                     proc = cmd_runner.run(
-                        ['cp', '-v', uboot_bin, boot_disk], as_root=True)
+                        ['cp', '-v', bootloader_bin, boot_disk], as_root=True)
                     proc.wait()
 
             cls.make_boot_files(
-                uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
+                bootloader_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
                 rootfs_uuid, boot_disk, boot_device_or_file)
 
     @classmethod
@@ -908,8 +911,8 @@ class OmapConfig(BoardConfig):
                 cls.serial_tty = classproperty(lambda cls: 'ttyS2')
 
     @classmethod
-    def make_boot_files(cls, uboot_parts_dir, is_live, is_lowmem, consoles,
-                        chroot_dir, rootfs_uuid, boot_dir,
+    def make_boot_files(cls, bootloader_parts_dir, is_live, is_lowmem,
+                        consoles, chroot_dir, rootfs_uuid, boot_dir,
                         boot_device_or_file):
         # XXX: This is also part of our temporary hack to fix bug 697824; we
         # need to call set_appropriate_serial_tty() before doing anything that
@@ -917,7 +920,7 @@ class OmapConfig(BoardConfig):
         if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
             cls.set_appropriate_serial_tty(chroot_dir)
         super(OmapConfig, cls).make_boot_files(
-            uboot_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
+            bootloader_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
             rootfs_uuid, boot_dir, boot_device_or_file)
 
     @classmethod
@@ -936,7 +939,7 @@ class OmapConfig(BoardConfig):
 
 
 class BeagleConfig(OmapConfig):
-    uboot_flavor = 'omap3_beagle'
+    bootloader_flavor = 'omap3_beagle'
     dtb_name = 'omap3-beagle.dtb'
     _serial_tty = 'ttyO2'
     _extra_serial_opts = 'console=tty0 console=%s,115200n8'
@@ -952,7 +955,7 @@ class BeagleConfig(OmapConfig):
 
 
 class OveroConfig(OmapConfig):
-    uboot_flavor = 'omap3_overo'
+    bootloader_flavor = 'omap3_overo'
     dtb_name = 'omap3-overo.dtb'
     _serial_tty = 'ttyO2'
     _extra_serial_opts = 'console=tty0 console=%s,115200n8'
@@ -967,7 +970,7 @@ class OveroConfig(OmapConfig):
 
 
 class PandaConfig(OmapConfig):
-    uboot_flavor = 'omap4_panda'
+    bootloader_flavor = 'omap4_panda'
     dtb_name = 'omap4-panda.dtb'
     _serial_tty = 'ttyO2'
     _extra_serial_opts = 'console=tty0 console=%s,115200n8'
@@ -984,7 +987,7 @@ class PandaConfig(OmapConfig):
 
 class IgepConfig(BeagleConfig):
     bootloader_file_in_boot_part = False
-    uboot_flavor = None
+    bootloader_flavor = None
     dtb_name = 'isee-igep-v2.dtb'
 
     @classmethod
@@ -1282,10 +1285,11 @@ class Mx5Config(BoardConfig):
         # XXX: delete this method when hwpacks V1 can die
         assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         with cls.hardwarepack_handler:
-            uboot_file = cls.get_file('u_boot_file', default=os.path.join(
-                    chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+            bootloader_file = cls.get_file('bootloader_file',
+                default=os.path.join(
+                    chroot_dir, 'usr', 'lib', 'u-boot', cls.bootloader_flavor,
                     'u-boot.imx'))
-            install_mx5_boot_loader(uboot_file, boot_device_or_file,
+            install_mx5_boot_loader(bootloader_file, boot_device_or_file,
                                     cls.LOADER_MIN_SIZE_S)
         make_uImage(cls.load_addr, k_img_data, boot_dir)
         make_uInitrd(i_img_data, boot_dir)
@@ -1311,27 +1315,27 @@ class Mx53Config(Mx5Config):
 
 
 class EfikamxConfig(Mx51Config):
-    uboot_flavor = 'efikamx'
+    bootloader_flavor = 'efikamx'
     dtb_name = 'genesi-efikamx.dtb'
 
 
 class EfikasbConfig(Mx51Config):
-    uboot_flavor = 'efikasb'
+    bootloader_flavor = 'efikasb'
     dtb_name = 'genesi-efikasb.dtb'
 
 
 class Mx51evkConfig(Mx51Config):
-    uboot_flavor = 'mx51evk'
+    bootloader_flavor = 'mx51evk'
     dtb_name = 'mx51-babbage.dtb'
 
 
 class Mx53LoCoConfig(Mx53Config):
-    uboot_flavor = 'mx53loco'
+    bootloader_flavor = 'mx53loco'
     dtb_name = 'mx53-loco.dtb'
 
 
 class VexpressConfig(BoardConfig):
-    uboot_flavor = 'ca9x4_ct_vxp'
+    bootloader_flavor = 'ca9x4_ct_vxp'
     bootloader_file_in_boot_part = True
     serial_tty = 'ttyAMA0'
     _extra_serial_opts = 'console=tty0 console=%s,38400n8'
@@ -1429,8 +1433,7 @@ class SamsungConfig(BoardConfig):
         # XXX: delete this method when hwpacks V1 can die
         assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         cls.install_samsung_boot_loader(cls._get_samsung_spl(chroot_dir),
-                                        cls._get_samsung_uboot(chroot_dir),
-                                        boot_device_or_file)
+            cls._get_samsung_bootloader(chroot_dir), boot_device_or_file)
         env_size = cls.SAMSUNG_V310_ENV_LEN * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
         _dd(env_file, boot_device_or_file, seek=cls.SAMSUNG_V310_ENV_START)
@@ -1448,7 +1451,7 @@ class SamsungConfig(BoardConfig):
         # XXX: delete this method when hwpacks V1 can die
         assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
         spl_dir = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor)
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.bootloader_flavor)
         old_spl_path = os.path.join(spl_dir, 'v310_mmc_spl.bin')
         new_spl_path = os.path.join(spl_dir, 'u-boot-mmc-spl.bin')
         new_new_spl_path = os.path.join(spl_dir, 'origen-spl.bin')
@@ -1469,13 +1472,13 @@ class SamsungConfig(BoardConfig):
         return spl_file
 
     @classmethod
-    def _get_samsung_uboot(cls, chroot_dir):
+    def _get_samsung_bootloader(cls, chroot_dir):
         # XXX: delete this method when hwpacks V1 can die
         assert cls.hwpack_format == HardwarepackHandler.FORMAT_1
-        uboot_file = os.path.join(
-            chroot_dir, 'usr', 'lib', 'u-boot', cls.uboot_flavor,
+        bootloader_file = os.path.join(
+            chroot_dir, 'usr', 'lib', 'u-boot', cls.bootloader_flavor,
             'u-boot.bin')
-        return uboot_file
+        return bootloader_file
 
     @classmethod
     def populate_raw_partition(cls, boot_device_or_file, chroot_dir):
@@ -1496,7 +1499,7 @@ class SamsungConfig(BoardConfig):
 
 
 class SMDKV310Config(SamsungConfig):
-    uboot_flavor = 'smdkv310'
+    bootloader_flavor = 'smdkv310'
     serial_tty = 'ttySAC1'
     _extra_serial_opts = 'console=%s,115200n8'
     kernel_addr = '0x40007000'
@@ -1520,7 +1523,7 @@ class SMDKV310Config(SamsungConfig):
 
 
 class OrigenConfig(SamsungConfig):
-    uboot_flavor = 'origen'
+    bootloader_flavor = 'origen'
     serial_tty = 'ttySAC2'
     _extra_serial_opts = 'console=%s,115200n8'
     kernel_addr = '0x40007000'

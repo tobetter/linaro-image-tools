@@ -189,7 +189,7 @@ class AndroidBeagleConfig(AndroidOmapConfig, BeagleConfig):
 
 
 class AndroidPandaConfig(AndroidOmapConfig, PandaConfig):
-    uboot_flavor = 'omap4_panda'
+    bootloader_flavor = 'omap4_panda'
     dtb_addr = '0x815f0000'
     dtb_name = 'board.dtb'
     _extra_serial_opts = 'console=ttyO2,115200n8'
@@ -298,7 +298,7 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
 
 
 class AndroidMx6QSabreliteConfig(AndroidMx53LoCoConfig):
-    uboot_flavor = 'mx6qsabrelite'
+    bootloader_flavor = 'mx6qsabrelite'
     kernel_addr = '0x10000000'
     initrd_addr = '0x12000000'
     load_addr = '0x10008000'
