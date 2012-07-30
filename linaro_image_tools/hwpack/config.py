@@ -184,6 +184,7 @@ class Config(object):
         if isinstance(self.parser, ConfigParser.RawConfigParser):
             if not self.parser.has_section(self.MAIN_SECTION):
                 raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
+        self._validate_keys()
         self._validate_format()
         self._validate_name()
         self._validate_include_debs()
@@ -1198,3 +1199,120 @@ class Config(object):
         if not found:
             raise HwpackConfigError(
                 "No sections other than [%s]" % self.MAIN_SECTION)
+
+    def _validate_keys(self):
+        """Check the dictionary created by the YAML parser for unknown keys"""
+
+        if not self._is_v3:
+            # We don't check V1 or V2 configurations in this way
+            return
+
+        # Create a layout that represents where keys are allowed.
+        # If a key has a value None, this indicates there is either a value or
+        #  list of values that can be associated with it.
+        # If a key contains a dictionary, this means that the key can
+        #  contain a dictionary.
+        # The string "root" indicates that the key can contain the root
+        #  structure. This is used for the boards section, where each
+        #  board can contain the full or partial layout, overwriting the global
+        #  settings.
+        self._validate_keys_layout = {
+            FORMAT_FIELD: None,
+            NAME_FIELD: None,
+            ARCHITECTURES_FIELD: None,
+            ORIGIN_FIELD: None,
+            MAINTAINER_FIELD: None,
+            SUPPORT_FIELD: None,
+            ASSUME_INSTALLED_FIELD: None,
+            INCLUDE_DEBS_FIELD: None,
+            DTB_FILE_FIELD: None,
+            DTB_ADDR_FIELD: None,
+            SERIAL_TTY_FIELD: None,
+            EXTRA_SERIAL_OPTIONS_FIELD: None,
+            MMC_ID_FIELD: None,
+            PACKAGES_FIELD: None,
+            PARTITION_LAYOUT_FIELD: None,
+            KERNEL_FILE_FIELD: None,
+            KERNEL_ADDR_FIELD: None,
+            INITRD_FILE_FIELD: None,
+            INITRD_ADDR_FIELD: None,
+            LOAD_ADDR_FIELD: None,
+            BOOT_SCRIPT_FIELD: None,
+            LOADER_START_FIELD: None,
+            WIRED_INTERFACES_FIELD: None,
+            WIRELESS_INTERFACES_FIELD: None,
+            BOOT_MIN_SIZE_FIELD: None,
+            ROOT_MIN_SIZE_FIELD: None,
+            LOADER_MIN_SIZE_FIELD: None,
+            SAMSUNG_BL1_LEN_FIELD: None,
+            SAMSUNG_BL1_LEN_FIELD: None,
+            SAMSUNG_ENV_LEN_FIELD: None,
+            SAMSUNG_BL2_LEN_FIELD: None,
+            SNOWBALL_STARTUP_FILES_CONFIG_FIELD: None,
+            SOURCES_FIELD: None,
+            BOOTLOADERS_FIELD: {
+                "*": {
+                    PACKAGE_FIELD: None,
+                    FILE_FIELD: None,
+                    IN_BOOT_PART_FIELD: None,
+                    DD_FIELD: None,
+                    EXTRA_BOOT_OPTIONS_FIELD: None,
+                    SPL_PACKAGE_FIELD: None,
+                    SPL_FILE_FIELD: None,
+                    SPL_IN_BOOT_PART_FIELD: None,
+                    SPL_DD_FIELD: None,
+                    ENV_DD_FIELD: None,
+                }
+            },
+            BOARDS_FIELD: "root",
+        }
+
+        self._do_validate_keys_prefix = []
+        self._do_validate_keys(self._validate_keys_layout, self.parser)
+
+    def _do_validate_keys_push_prefix(self, prefix):
+        self._do_validate_keys_prefix.append(prefix)
+        prefix = ": ".join(self._do_validate_keys_prefix)[2:]
+        if prefix:
+            prefix += ": "
+        return prefix
+
+    def _do_validate_keys(self, expected, config, prefix=""):
+        prefix = self._do_validate_keys_push_prefix(prefix)
+
+        if not isinstance(config, dict):
+            raise HwpackConfigError("Invalid structure in metadata. Expected "
+                                    "key: value pairs, found: '%s'" %
+                                    (prefix + str(config)))
+
+        for key in config.keys():
+            # If expected == {"*": {...}} then we can accept any key
+            if("*" in expected and expected.keys() == ["*"] and
+               isinstance(expected["*"], dict)):
+                # Have found a sub-dictionary to check. Recurse.
+                self._do_validate_keys(expected["*"], config[key], key)
+                continue
+
+            # Check to see if the key is valid
+            if key not in expected:
+                raise HwpackConfigError("Unknown key in metadata: '%s'" %
+                                        (prefix + str(key)))
+
+            # Have a valid key. If it should point to a dictionary, recurse
+            if expected[key]:
+                if isinstance(expected[key], dict):
+                    # Have found a sub-dictionary to check. Recurse.
+                    self._do_validate_keys(expected[key], config[key], key)
+                    continue
+
+            if expected[key] == "root":
+                config = config[key]
+                prefix = self._do_validate_keys_push_prefix(key)
+
+                for key in config.keys():
+                    self._do_validate_keys(self._validate_keys_layout,
+                                           config[key], key)
+
+                self._do_validate_keys_prefix.pop()
+
+        self._do_validate_keys_prefix.pop()
