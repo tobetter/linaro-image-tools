@@ -694,7 +694,6 @@ class ConfigTests(TestCase):
 
     def test_architectures(self):
         config = self.get_config(
-            "hello: there\n"
             "name: ahwpack\n"
             "packages: foo\n"
             "architectures:\n"
@@ -736,3 +735,47 @@ class ConfigTests(TestCase):
             " - bar\n"
             " - foo\n")
         self.assertEqual(["foo", "bar"], config.assume_installed)
+
+    def test_invalid_key_in_root(self):
+        config = self.get_config("foo: bar")
+        self.assertValidationError("Unknown key in metadata: 'foo'",
+                                   config._validate_keys)
+
+    def test_invalid_key_value_root(self):
+        config = self.get_config("bootloaders: bar")
+        self.assertValidationError("Invalid structure in metadata. Expected "
+                                   "key: value pairs, found: 'bootloaders: "
+                                   "bar'",
+                                   config._validate_keys)
+
+    def test_invalid_key_value_bootloaders(self):
+        config = self.get_config("\n".join([
+            "bootloaders:",
+            " u_boot:",
+            "  foo: bar"
+        ]))
+        self.assertValidationError("Unknown key in metadata: 'bootloaders: "
+                                   "u_boot: foo'",
+                                   config._validate_keys)
+
+    def test_invalid_key_in_board(self):
+        config = self.get_config("\n".join([
+            "boards:",
+            " pandaboard:",
+            "  foo: bar"
+        ]))
+        self.assertValidationError("Unknown key in metadata: "
+                                   "'boards: pandaboard: foo'",
+                                   config._validate_keys)
+
+    def test_invalid_key_in_board_2(self):
+        config = self.get_config("\n".join([
+            "boards:",
+            " pandaboard:",
+            "  name: bar",
+            " snowball:",
+            "  foo: bar",
+        ]))
+        self.assertValidationError("Unknown key in metadata: "
+                                   "'boards: snowball: foo'",
+                                   config._validate_keys)

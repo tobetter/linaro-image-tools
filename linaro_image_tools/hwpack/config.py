@@ -80,6 +80,7 @@ from hwpack_fields import (
     WIRELESS_INTERFACES_FIELD,
     DEFINED_PARTITION_LAYOUTS,
     VERSION_FIELD,
+    hwpack_v3_layout,
 )
 
 
@@ -184,6 +185,7 @@ class Config(object):
         if isinstance(self.parser, ConfigParser.RawConfigParser):
             if not self.parser.has_section(self.MAIN_SECTION):
                 raise HwpackConfigError("No [%s] section" % self.MAIN_SECTION)
+        self._validate_keys()
         self._validate_format()
         self._validate_name()
         self._validate_include_debs()
@@ -1198,3 +1200,61 @@ class Config(object):
         if not found:
             raise HwpackConfigError(
                 "No sections other than [%s]" % self.MAIN_SECTION)
+
+    def _validate_keys(self):
+        """Check the dictionary created by the YAML parser for unknown keys"""
+
+        if not self._is_v3:
+            # We don't check V1 or V2 configurations in this way
+            return
+
+        self._validate_keys_layout = hwpack_v3_layout
+        self._do_validate_keys_prefix = []
+        self._do_validate_keys(self._validate_keys_layout, self.parser)
+
+    def _do_validate_keys_push_prefix(self, prefix):
+        self._do_validate_keys_prefix.append(prefix)
+        prefix = ": ".join(self._do_validate_keys_prefix)[2:]
+        if prefix:
+            prefix += ": "
+        return prefix
+
+    def _do_validate_keys(self, expected, config, prefix=""):
+        prefix = self._do_validate_keys_push_prefix(prefix)
+
+        if not isinstance(config, dict):
+            raise HwpackConfigError("Invalid structure in metadata. Expected "
+                                    "key: value pairs, found: '%s'" %
+                                    (prefix + str(config)))
+
+        for key in config.keys():
+            # If expected == {"*": {...}} then we can accept any key
+            if("*" in expected and expected.keys() == ["*"] and
+               isinstance(expected["*"], dict)):
+                # Have found a sub-dictionary to check. Recurse.
+                self._do_validate_keys(expected["*"], config[key], key)
+                continue
+
+            # Check to see if the key is valid
+            if key not in expected:
+                raise HwpackConfigError("Unknown key in metadata: '%s'" %
+                                        (prefix + str(key)))
+
+            # Have a valid key. If it should point to a dictionary, recurse
+            if expected[key]:
+                if isinstance(expected[key], dict):
+                    # Have found a sub-dictionary to check. Recurse.
+                    self._do_validate_keys(expected[key], config[key], key)
+                    continue
+
+            if expected[key] == "root":
+                config = config[key]
+                prefix = self._do_validate_keys_push_prefix(key)
+
+                for key in config.keys():
+                    self._do_validate_keys(self._validate_keys_layout,
+                                           config[key], key)
+
+                self._do_validate_keys_prefix.pop()
+
+        self._do_validate_keys_prefix.pop()
