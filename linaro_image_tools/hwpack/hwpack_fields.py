@@ -89,3 +89,63 @@ DEFINED_PARTITION_LAYOUTS = [
     'bootfs16_rootfs',
     'bootfs_rootfs',
     'reserved_bootfs_rootfs', ]
+
+# Define where fields are valid, so we can test them.
+# If a key has a value None, this indicates there is either a value or
+#  list of values that can be associated with it.
+# If a key contains a dictionary, this means that the key can
+#  contain a dictionary.
+# The string "root" indicates that the key can contain the root
+#  structure. This is used for the boards section, where each
+#  board can contain the full or partial layout, overwriting the global
+#  settings.
+hwpack_v3_layout = {
+    FORMAT_FIELD: None,
+    NAME_FIELD: None,
+    ARCHITECTURES_FIELD: None,
+    ORIGIN_FIELD: None,
+    MAINTAINER_FIELD: None,
+    SUPPORT_FIELD: None,
+    ASSUME_INSTALLED_FIELD: None,
+    INCLUDE_DEBS_FIELD: None,
+    DTB_FILE_FIELD: None,
+    DTB_ADDR_FIELD: None,
+    SERIAL_TTY_FIELD: None,
+    EXTRA_SERIAL_OPTIONS_FIELD: None,
+    MMC_ID_FIELD: None,
+    PACKAGES_FIELD: None,
+    PARTITION_LAYOUT_FIELD: None,
+    KERNEL_FILE_FIELD: None,
+    KERNEL_ADDR_FIELD: None,
+    INITRD_FILE_FIELD: None,
+    INITRD_ADDR_FIELD: None,
+    LOAD_ADDR_FIELD: None,
+    BOOT_SCRIPT_FIELD: None,
+    LOADER_START_FIELD: None,
+    WIRED_INTERFACES_FIELD: None,
+    WIRELESS_INTERFACES_FIELD: None,
+    BOOT_MIN_SIZE_FIELD: None,
+    ROOT_MIN_SIZE_FIELD: None,
+    LOADER_MIN_SIZE_FIELD: None,
+    SAMSUNG_BL1_LEN_FIELD: None,
+    SAMSUNG_BL1_LEN_FIELD: None,
+    SAMSUNG_ENV_LEN_FIELD: None,
+    SAMSUNG_BL2_LEN_FIELD: None,
+    SNOWBALL_STARTUP_FILES_CONFIG_FIELD: None,
+    SOURCES_FIELD: None,
+    BOOTLOADERS_FIELD: {
+        "*": {
+            PACKAGE_FIELD: None,
+            FILE_FIELD: None,
+            IN_BOOT_PART_FIELD: None,
+            DD_FIELD: None,
+            EXTRA_BOOT_OPTIONS_FIELD: None,
+            SPL_PACKAGE_FIELD: None,
+            SPL_FILE_FIELD: None,
+            SPL_IN_BOOT_PART_FIELD: None,
+            SPL_DD_FIELD: None,
+            ENV_DD_FIELD: None,
+            }
+    },
+    BOARDS_FIELD: "root",
+}
