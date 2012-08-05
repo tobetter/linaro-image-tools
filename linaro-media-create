@@ -224,11 +224,19 @@ if __name__ == '__main__':
         args.rootfs, args.should_create_partitions, args.should_format_bootfs,
         args.should_format_rootfs, args.should_align_boot_part)
 
-    rootfs_uuid = get_uuid(root_partition)
+    uuid = get_uuid(root_partition)
+    # In case we're only extracting the kernel packages, avoid
+    # using uuid because we don't have a working initrd
+    if extract_kpkgs:
+        # XXX: this needs to be smarter as we can't always assume mmcblk devices
+        rootfs_id = '/dev/mmcblk%dp%s' % (
+                board_config.mmc_device_id, 2 + board_config.mmc_part_offset)
+    else:
+        rootfs_id = "UUID=%s" % uuid
 
     if args.should_format_bootfs:
         board_config.populate_boot(
-            ROOTFS_DIR, rootfs_uuid, boot_partition, BOOT_DISK, media.path,
+            ROOTFS_DIR, rootfs_id, boot_partition, BOOT_DISK, media.path,
             args.is_live, args.is_lowmem, args.consoles)
 
     if args.should_format_rootfs:
@@ -236,7 +244,7 @@ if __name__ == '__main__':
         if args.swap_file is not None:
             create_swap = True
         populate_rootfs(ROOTFS_DIR, ROOT_DISK, root_partition, args.rootfs,
-            rootfs_uuid, create_swap, str(args.swap_file),
+            rootfs_id, create_swap, str(args.swap_file),
             board_config.mmc_device_id, board_config.mmc_part_offset,
             board_config)
 

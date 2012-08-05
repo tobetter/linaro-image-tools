@@ -42,7 +42,7 @@ def rootfs_mount_options(rootfs_type):
 
 
 def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
-                    rootfs_uuid, should_create_swap, swap_size,
+                    rootfs_id, should_create_swap, swap_size,
                     mmc_device_id, partition_offset, board_config=None):
     """Populate the rootfs and make the necessary tweaks to make it usable.
 
@@ -64,8 +64,8 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
         move_contents(content_dir, root_disk)
 
         mount_options = rootfs_mount_options(rootfs_type)
-        fstab_additions = ["UUID=%s / %s  %s 0 1" % (
-                rootfs_uuid, rootfs_type, mount_options)]
+        fstab_additions = ["%s / %s  %s 0 1" % (
+                rootfs_id, rootfs_type, mount_options)]
         if should_create_swap:
             print "\nCreating SWAP File\n"
             if has_space_left_for_swap(root_disk, swap_size):

@@ -950,7 +950,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
 
         boot_env = board_configs['snowball_emmc']._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
-            rootfs_uuid="test_boot_env_uuid", d_img_data=None)
+            rootfs_id="UUID=test_boot_env_uuid", d_img_data=None)
         boards.SnowballEmmcConfig._make_boot_files(boot_env, self.tempdir,
             self.temp_bootdir_path, 'boot_device_or_file', k_img_file,
             i_img_file, None)
@@ -1577,7 +1577,7 @@ class TestGetBootCmd(TestCase):
     def test_vexpress(self):
         boot_commands = board_configs['vexpress']._get_boot_env(
             is_live=False, is_lowmem=False, consoles=['ttyXXX'],
-            rootfs_uuid="deadbeef", d_img_data=None)
+            rootfs_id="UUID=deadbeef", d_img_data=None)
         expected = {
             'bootargs': 'console=tty0 console=ttyAMA0,38400n8 '
                         'console=ttyXXX  root=UUID=deadbeef rootwait ro',
@@ -1589,7 +1589,7 @@ class TestGetBootCmd(TestCase):
     def test_vexpress_a9(self):
         boot_commands = board_configs['vexpress-a9']._get_boot_env(
             is_live=False, is_lowmem=False, consoles=['ttyXXX'],
-            rootfs_uuid="deadbeef", d_img_data=None)
+            rootfs_id="UUID=deadbeef", d_img_data=None)
         expected = {
             'bootargs': 'console=tty0 console=ttyAMA0,38400n8 '
                         'console=ttyXXX  root=UUID=deadbeef rootwait ro',
@@ -1601,7 +1601,7 @@ class TestGetBootCmd(TestCase):
     def test_mx51(self):
         boot_commands = boards.Mx51Config._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
-            rootfs_uuid="deadbeef", d_img_data="mx51.dtb")
+            rootfs_id="UUID=deadbeef", d_img_data="mx51.dtb")
         expected = {
             'bootargs': 'console=tty0 console=ttymxc0,115200n8  '
                         'root=UUID=deadbeef rootwait ro',
@@ -1614,7 +1614,7 @@ class TestGetBootCmd(TestCase):
     def test_smdkv310(self):
         boot_commands = board_configs['smdkv310']._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
-            rootfs_uuid="deadbeef", d_img_data=None)
+            rootfs_id="UUID=deadbeef", d_img_data=None)
         expected = {
             'bootargs': 'console=ttySAC1,115200n8  root=UUID=deadbeef '
                         'rootwait ro',
@@ -1628,7 +1628,7 @@ class TestGetBootCmd(TestCase):
     def test_origen(self):
         boot_commands = board_configs['origen']._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
-            rootfs_uuid="deadbeef", d_img_data=None)
+            rootfs_id="UUID=deadbeef", d_img_data=None)
         expected = {
             'bootargs': 'console=ttySAC2,115200n8  root=UUID=deadbeef '
                         'rootwait ro',
@@ -1640,7 +1640,7 @@ class TestGetBootCmd(TestCase):
     def test_ux500(self):
         boot_commands = board_configs['ux500']._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
-            rootfs_uuid="deadbeef", d_img_data=None)
+            rootfs_id="UUID=deadbeef", d_img_data=None)
         expected = {
             'bootargs': 'console=tty0 console=ttyAMA2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk '
@@ -1656,7 +1656,7 @@ class TestGetBootCmd(TestCase):
     def test_snowball_emmc(self):
         boot_commands = board_configs['snowball_emmc']._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
-            rootfs_uuid="deadbeef", d_img_data=None)
+            rootfs_id="UUID=deadbeef", d_img_data=None)
         expected = {
             'bootargs': 'console=tty0 console=ttyAMA2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk '
@@ -1677,7 +1677,7 @@ class TestGetBootCmd(TestCase):
         config.serial_tty = config._serial_tty
         boot_commands = config._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
-            rootfs_uuid="deadbeef", d_img_data="panda.dtb")
+            rootfs_id="UUID=deadbeef", d_img_data="panda.dtb")
         expected = {
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
@@ -1697,7 +1697,7 @@ class TestGetBootCmd(TestCase):
         config.serial_tty = config._serial_tty
         boot_commands = config._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
-            rootfs_uuid="deadbeef", d_img_data="beagle.dtb")
+            rootfs_id="UUID=deadbeef", d_img_data="beagle.dtb")
         expected = {
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
@@ -1717,7 +1717,7 @@ class TestGetBootCmd(TestCase):
         config.serial_tty = config._serial_tty
         boot_cmd = config._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
-            rootfs_uuid="deadbeef", d_img_data="igep.dtb")
+            rootfs_id="UUID=deadbeef", d_img_data="igep.dtb")
         expected = {
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk fixrtc '
@@ -1737,7 +1737,7 @@ class TestGetBootCmd(TestCase):
         config.serial_tty = config._serial_tty
         boot_commands = config._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
-            rootfs_uuid="deadbeef", d_img_data="overo.dtb")
+            rootfs_id="UUID=deadbeef", d_img_data="overo.dtb")
         expected = {
             'bootargs': 'console=tty0 console=ttyO2,115200n8  '
                         'root=UUID=deadbeef rootwait ro earlyprintk '
@@ -1760,7 +1760,7 @@ class TestExtraBootCmd(TestCaseWithFixtures):
             extra_boot_args_options = boot_args
         boot_commands = config._get_boot_env(
             is_live=False, is_lowmem=False, consoles=['ttyXXX'],
-            rootfs_uuid="deadbeef", d_img_data=None)
+            rootfs_id="UUID=deadbeef", d_img_data=None)
         expected = (
             ' console=ttyXXX  root=UUID=deadbeef rootwait ro %s' % boot_args)
         self.assertEqual(expected, boot_commands['bootargs'])
@@ -2874,10 +2874,10 @@ class TestMountedPartitionContextManager(TestCaseWithFixtures):
 class TestPopulateBoot(TestCaseWithFixtures):
 
     expected_args = (
-        'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_uuid',
+        'chroot_dir/boot', False, False, [], 'chroot_dir', 'rootfs_id',
         'boot_disk', 'boot_device_or_file')
     expected_args_live = (
-        'chroot_dir/casper', True, False, [], 'chroot_dir', 'rootfs_uuid',
+        'chroot_dir/casper', True, False, [], 'chroot_dir', 'rootfs_id',
         'boot_disk', 'boot_device_or_file')
     expected_calls = [
         'mkdir -p boot_disk',
@@ -2903,7 +2903,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
 
     def call_populate_boot(self, config, is_live=False):
         config.populate_boot(
-            'chroot_dir', 'rootfs_uuid', 'boot_partition', 'boot_disk',
+            'chroot_dir', 'rootfs_id', 'boot_partition', 'boot_disk',
             'boot_device_or_file', is_live, False, [])
 
     def test_populate_boot_live(self):
@@ -3000,7 +3000,7 @@ class TestPopulateRootFS(TestCaseWithFixtures):
 
         populate_rootfs(
             contents_dir, root_disk, partition='/dev/rootfs',
-            rootfs_type='ext3', rootfs_uuid='uuid', should_create_swap=True,
+            rootfs_type='ext3', rootfs_id='UUID=uuid', should_create_swap=True,
             swap_size=100, mmc_device_id=0, partition_offset=0)
 
         self.assertEqual(
