@@ -182,15 +182,20 @@ def temporarily_overwrite_file_on_dir(filepath, directory, tmp_dir):
     basename = os.path.basename(filepath)
     path_to_orig = os.path.join(tmp_dir, basename)
     # Move the existing file from the given directory to the temp dir.
-    cmd_runner.run(
-        ['mv', '-f', os.path.join(directory, basename), path_to_orig],
-        as_root=True).wait()
+    oldpath = os.path.join(directory, basename)
+    if os.path.exists(oldpath):
+        cmd_runner.run(
+            ['mv', '-f', oldpath, path_to_orig], as_root=True).wait()
     # Now copy the given file onto the given directory.
     cmd_runner.run(['cp', filepath, directory], as_root=True).wait()
 
     def undo():
-        cmd_runner.run(
-            ['mv', '-f', path_to_orig, directory], as_root=True).wait()
+        if os.path.exists(path_to_orig):
+            cmd_runner.run(
+                ['mv', '-f', path_to_orig, directory], as_root=True).wait()
+        else:
+            cmd_runner.run(
+                ['rm', '-f', oldpath], as_root=True).wait()
     local_atexit.append(undo)
 
 

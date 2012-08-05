@@ -3314,14 +3314,13 @@ class TestInstallHWPack(TestCaseWithFixtures):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         temporarily_overwrite_file_on_dir('/path/to/file', '/dir', '/tmp/dir')
         self.assertEquals(
-            ['%s mv -f /dir/file /tmp/dir/file' % sudo_args,
-             '%s cp /path/to/file /dir' % sudo_args],
+            ['%s cp /path/to/file /dir' % sudo_args],
             fixture.mock.commands_executed)
 
         fixture.mock.calls = []
         run_local_atexit_funcs()
         self.assertEquals(
-            ['%s mv -f /tmp/dir/file /dir' % sudo_args],
+            ['%s rm -f /dir/file' % sudo_args],
             fixture.mock.commands_executed)
 
     def test_copy_file(self):
@@ -3504,14 +3503,12 @@ class TestInstallHWPack(TestCaseWithFixtures):
         prepare_chroot('chroot', '/tmp/dir')
         run_local_atexit_funcs()
         expected = [
-            'mv -f chroot/etc/resolv.conf /tmp/dir/resolv.conf',
             'cp /etc/resolv.conf chroot/etc',
-            'mv -f chroot/etc/hosts /tmp/dir/hosts',
             'cp /etc/hosts chroot/etc',
             'cp /usr/bin/qemu-arm-static chroot/usr/bin',
             'rm -f chroot/usr/bin/qemu-arm-static',
-            'mv -f /tmp/dir/hosts chroot/etc',
-            'mv -f /tmp/dir/resolv.conf chroot/etc']
+            'rm -f chroot/etc/hosts',
+            'rm -f chroot/etc/resolv.conf']
         expected = [
             "%s %s" % (sudo_args, line) for line in expected]
         self.assertEquals(expected, fixture.mock.commands_executed)
