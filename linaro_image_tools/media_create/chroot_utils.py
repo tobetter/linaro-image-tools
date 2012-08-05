@@ -46,7 +46,7 @@ def prepare_chroot(chroot_dir, tmp_dir):
 
 def install_hwpacks(
     chroot_dir, tmp_dir, tools_dir, hwpack_force_yes, verified_files,
-    *hwpack_files):
+    extract_kpkgs = False, *hwpack_files):
     """Install the given hwpacks onto the given chroot."""
     prepare_chroot(chroot_dir, tmp_dir)
 
@@ -79,18 +79,19 @@ def install_hwpacks(
             hwpack_verified = False
             if os.path.basename(hwpack_file) in verified_files:
                 hwpack_verified = True
-            install_hwpack(chroot_dir, hwpack_file,
+            install_hwpack(chroot_dir, hwpack_file, extract_kpkgs,
                            hwpack_force_yes or hwpack_verified)
     finally:
         run_local_atexit_funcs()
 
 
-def install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes):
+def install_hwpack(chroot_dir, hwpack_file, extract_kpkgs, hwpack_force_yes):
     """Install an hwpack on the given chroot.
 
     Copy the hwpack file to the chroot and run linaro-hwpack-install passing
     that hwpack file to it.  If hwpack_force_yes is True, also pass
-    --force-yes to linaro-hwpack-install.
+    --force-yes to linaro-hwpack-install. In case extract_kpkgs is True, it
+    will not install all the packages, but just extract the kernel ones.
     """
     hwpack_basename = os.path.basename(hwpack_file)
     copy_file(hwpack_file, chroot_dir)
@@ -110,6 +111,8 @@ def install_hwpack(chroot_dir, hwpack_file, hwpack_force_yes):
             '--hwpack-name', name]
     if hwpack_force_yes:
         args.append('--force-yes')
+    if extract_kpkgs:
+        args.append('--extract-kernel-only')
     args.append('/%s' % hwpack_basename)
     cmd_runner.run(args, as_root=True, chroot=chroot_dir).wait()
     print "-" * 60

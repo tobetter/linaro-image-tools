@@ -164,14 +164,27 @@ if __name__ == '__main__':
 
     # If --help was specified this won't execute.
     # Create temp dir and initialize rest of path vars.
-    filesystem_dir = 'binary'
-    if not path_in_tarfile_exists('binary/etc', args.binary):
-        # The binary image is in the new live format.
-        filesystem_dir = 'binary/boot/filesystem.dir'
     TMP_DIR = tempfile.mkdtemp()
-    ROOTFS_DIR = os.path.join(TMP_DIR, filesystem_dir)
     BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
     ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
+    BIN_DIR = os.path.join(TMP_DIR, 'rootfs')
+    os.mkdir(BIN_DIR)
+
+    # Identify the correct path for the rootfs
+    filesystem_dir = ''
+    if path_in_tarfile_exists('binary/etc', args.binary):
+        filesystem_dir = 'binary'
+    elif path_in_tarfile_exists('binary/boot/filesystem.dir', args.binary):
+        # The binary image is in the new live format.
+        filesystem_dir = 'binary/boot/filesystem.dir'
+
+    # if not a debian compatible system, just extract the kernel packages
+    extract_kpkgs = False
+    if not path_in_tarfile_exists(
+            filesystem_dir + '/etc/debian_version', args.binary):
+        extract_kpkgs = True
+
+    ROOTFS_DIR = os.path.join(BIN_DIR, filesystem_dir)
 
     ensure_required_commands(args)
 
@@ -188,17 +201,23 @@ if __name__ == '__main__':
 
     atexit.register(cleanup_tempdir)
 
-    unpack_binary_tarball(args.binary, TMP_DIR)
+    unpack_binary_tarball(args.binary, BIN_DIR)
 
     hwpacks = args.hwpacks
     lmc_dir = os.path.dirname(__file__)
     if lmc_dir == '':
         lmc_dir = None
     install_hwpacks(ROOTFS_DIR, TMP_DIR, lmc_dir, args.hwpack_force_yes,
-                    verified_files, *hwpacks)
+                    verified_files, extract_kpkgs, *hwpacks)
 
     if args.rootfs == 'btrfs':
-        install_packages(ROOTFS_DIR, TMP_DIR, "btrfs-tools")
+        if not extract_kpkgs:
+            print ("Desired rootfs type is 'btrfs', trying to auto-install "
+                   "the 'btrfs-tools' package")
+            install_packages(ROOTFS_DIR, TMP_DIR, "btrfs-tools")
+        else:
+            print ("Desired rootfs type is 'btrfs', please make sure the "
+                   "rootfs also includes 'btrfs-tools'")
 
     boot_partition, root_partition = setup_partitions(
         board_config, media, args.image_size, args.boot_label, args.rfs_label,

@@ -3355,14 +3355,48 @@ class TestInstallHWPack(TestCaseWithFixtures):
         hwpack_name = "foo"
         hwpack_version = "4"
         hwpack_architecture = "armel"
+        extract_kpkgs = False
         self.create_minimal_v3_hwpack(hwpack_tgz_location, hwpack_name,
                                       hwpack_version, hwpack_architecture)
         force_yes = False
-        install_hwpack(chroot_dir, hwpack_tgz_location, force_yes)
+        install_hwpack(chroot_dir, hwpack_tgz_location,
+                       extract_kpkgs, force_yes)
         self.assertEquals(
             ['%s cp %s %s' % (sudo_args, hwpack_tgz_location, chroot_dir),
              '%s %s %s linaro-hwpack-install --hwpack-version %s '
              '--hwpack-arch %s --hwpack-name %s /%s'
+                % (sudo_args, chroot_args, chroot_dir,
+                   hwpack_version, hwpack_architecture, hwpack_name,
+                   hwpack_file_name)],
+            fixture.mock.commands_executed)
+
+        fixture.mock.calls = []
+        run_local_atexit_funcs()
+        self.assertEquals(
+            ['%s rm -f %s/hwpack.tgz' % (sudo_args, chroot_dir)],
+            fixture.mock.commands_executed)
+
+    def test_install_hwpack_extract(self):
+        self.useFixture(MockSomethingFixture(
+            sys, 'stdout', open('/dev/null', 'w')))
+        fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        chroot_dir = 'chroot_dir'
+        hwpack_dir = tempfile.mkdtemp()
+        hwpack_file_name = 'hwpack.tgz'
+        hwpack_tgz_location = os.path.join(hwpack_dir, hwpack_file_name)
+        hwpack_name = "foo"
+        hwpack_version = "4"
+        hwpack_architecture = "armel"
+        extract_kpkgs = True
+        self.create_minimal_v3_hwpack(hwpack_tgz_location, hwpack_name,
+                                      hwpack_version, hwpack_architecture)
+        force_yes = False
+        install_hwpack(chroot_dir, hwpack_tgz_location,
+                       extract_kpkgs, force_yes)
+        self.assertEquals(
+            ['%s cp %s %s' % (sudo_args, hwpack_tgz_location, chroot_dir),
+             '%s %s %s linaro-hwpack-install --hwpack-version %s '
+             '--hwpack-arch %s --hwpack-name %s --extract-kernel-only /%s'
                 % (sudo_args, chroot_args, chroot_dir,
                    hwpack_version, hwpack_architecture, hwpack_name,
                    hwpack_file_name)],
@@ -3389,6 +3423,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
         hwpack_file_names = ['hwpack1.tgz', 'hwpack2.tgz']
         hwpack_tgz_locations = []
         hwpack_names = []
+        extract_kpkgs = False
         for hwpack_file_name in hwpack_file_names:
             hwpack_tgz_location = os.path.join(hwpack_dir, hwpack_file_name)
             hwpack_tgz_locations.append(hwpack_tgz_location)
@@ -3400,7 +3435,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
                 hwpack_architecture)
 
         install_hwpacks(
-            chroot_dir, tmp_dir, prefer_dir, force_yes, [],
+            chroot_dir, tmp_dir, prefer_dir, force_yes, [], extract_kpkgs,
             hwpack_tgz_locations[0], hwpack_tgz_locations[1])
         linaro_hwpack_install = find_command(
             'linaro-hwpack-install', prefer_dir=prefer_dir)
@@ -3508,7 +3543,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
         def mock_run_local_atexit_functions():
             self.run_local_atexit_functions_called = True
 
-        def mock_install_hwpack(p1, p2, p3):
+        def mock_install_hwpack(p1, p2, p3, p4):
             raise Exception('hwpack mock exception')
 
         self.useFixture(MockSomethingFixture(
@@ -3524,10 +3559,11 @@ class TestInstallHWPack(TestCaseWithFixtures):
 
         force_yes = True
         exception_caught = False
+        extract_kpkgs = False
         try:
             install_hwpacks(
                 'chroot', '/tmp/dir', preferred_tools_dir(), force_yes, [],
-                'hwp.tgz', 'hwp2.tgz')
+                extract_kpkgs, 'hwp.tgz', 'hwp2.tgz')
         except:
             exception_caught = True
         self.assertTrue(self.run_local_atexit_functions_called)
