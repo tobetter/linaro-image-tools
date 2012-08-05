@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # linaro-hwpack-install - Install a Linaro Hardware Pack.
 #   This script is meant to run inside a chroot containing nothing other than
 #   ubuntu-minimal, so it must not depend on anything that's not in
@@ -62,6 +62,7 @@ HWPACK_TARBALL_FOUND="no"
 HWPACK_VERSION=""
 HWPACK_ARCH=""
 HWPACK_NAME=""
+EXTRACT_KERNEL_ONLY="no"
 
 while [ $# -gt 0 ]; do
   case "$1" in 
@@ -83,6 +84,9 @@ while [ $# -gt 0 ]; do
       HWPACK_NAME=$2
       shift;
       shift;;
+    --extract-kernel-only)
+      EXTRACT_KERNEL_ONLY="yes"
+      shift;;
     --*)
       die $usage_msg "\nUnrecognized option: \"$1\"";;
     *)
@@ -98,84 +102,86 @@ done
 [ "$HWPACK_ARCH" = "" ] && die $usage_msg
 [ "$HWPACK_NAME" = "" ] && die $usage_msg
 
-# Try to acquire fd #9 (i.e. /var/lock/hwpack) for 2 seconds.
-# Using 9 as the file descriptor because of https://launchpad.net/bugs/249620
-exec 9>$LOCKFILE
-flock -w2 9 || die "Could not acquire lock: $LOCKFILE"
+setup_hwpack() {
+  # This creates all the directories we need.
+  mkdir -p "$HWPACK_DIR"
 
-cleanup() {
-  # Ensure our temp dir and apt sources are removed.
-  echo -n "Cleaning up ..."
-  rm -rf $TEMP_DIR
-  rm -f /usr/sbin/policy-rc.d
-  mv -f /sbin/start-stop-daemon.REAL /sbin/start-stop-daemon
-  if [ -x /sbin/initctl.REAL ]; then
-    mv -f /sbin/initctl.REAL /sbin/initctl
-  fi
-  $sudo apt-get update -qq
+  # Unpack the hwpack tarball. We don't download it here because the chroot may
+  # not contain any tools that would allow us to do that.
+  echo -n "Unpacking hardware pack ..."
+  tar zxf "$HWPACK_TARBALL" -C "$HWPACK_DIR"
   echo "Done"
+
+  # Check the format of the hwpack is supported.
+  hwpack_format=$(cat ${HWPACK_DIR}/FORMAT)
+  supported="false"
+  for format in $SUPPORTED_FORMATS; do
+    if [ "x$hwpack_format" = "x$format" ]; then
+      supported="true"
+      break
+    fi
+  done
+
+  [ $supported = "true" ] || \
+    die "Unsupported hwpack format: $hwpack_format. "\
+        "Try using a newer version of $(basename $0)."
+
+  # Check the architecture of the hwpack matches that of the host system.
+  if [ "x$EXTRACT_KERNEL_ONLY" = "xno" ]; then
+    # TODO: create a generic way to identify the architecture, without depending on dpkg
+    [ "$HWPACK_ARCH" = `dpkg --print-architecture` ] || \
+      die "Hardware pack architecture ($HWPACK_ARCH) does not match the host's architecture"
+  fi
 }
 
-# From now on we'll be making changes to the system, so we need to clean
-# things up when the script exits.
-trap cleanup EXIT
+setup_apt_sources() {
+  # Install the apt sources that contain the packages we need.
+  for filename in $(ls "${HWPACK_DIR}"/sources.list.d/); do
+    file="${HWPACK_DIR}"/sources.list.d/$filename
+    should_install=0
+    stripped_file=${TEMP_DIR}/$filename
+    grep -v "\(^#\|^\s*$\)" $file > $stripped_file
+    while read line; do
+      # Only install files that have at least one line not present in the
+      # existing sources lists.
+      grep -qF "$line" $(find /etc/apt/sources.list.d/ -name '*.list') /etc/apt/sources.list \
+        || should_install=1
+    done < $stripped_file
 
-# This creates all the directories we need.
-mkdir -p "$HWPACK_DIR"
+    if [ $should_install -eq 1 ]; then
+      $sudo cp $file /etc/apt/sources.list.d/hwpack.$filename
+    fi
+  done
 
-# Unpack the hwpack tarball. We don't download it here because the chroot may
-# not contain any tools that would allow us to do that.
-echo -n "Unpacking hardware pack ..."
-tar zxf "$HWPACK_TARBALL" -C "$HWPACK_DIR"
-echo "Done"
+  # Import the OpenPGP keys for the files installed above.
+  for filename in $(ls "${HWPACK_DIR}"/sources.list.d.gpg/); do
+    file="${HWPACK_DIR}"/sources.list.d.gpg/$filename
+    $sudo apt-key add $file
+  done
 
-# Check the format of the hwpack is supported.
-hwpack_format=$(cat ${HWPACK_DIR}/FORMAT)
-supported="false"
-for format in $SUPPORTED_FORMATS; do
-  if [ $hwpack_format == $format ]; then
-    supported="true"
-    break
+  # Add one extra apt source for the packages included in the hwpack and make
+  # sure it's the first on the list of sources so that it gets precedence over
+  # the others.
+  echo "deb file:${HWPACK_DIR}/pkgs ./" > "$SOURCES_LIST_FILE"
+  cat /etc/apt/sources.list >> "$SOURCES_LIST_FILE"
+
+  if [ "$FORCE_YES" = "yes" ]; then
+    FORCE_OPTIONS="--yes --force-yes"
+  else
+    FORCE_OPTIONS=""
   fi
-done
-[ $supported == "true" ] || \
-  die "Unsupported hwpack format: $hwpack_format. "\
-      "Try using a newer version of $(basename $0)."
 
-# Check the architecture of the hwpack matches that of the host system.
-[ "$HWPACK_ARCH" == `dpkg --print-architecture` ] || \
-  die "Hardware pack architecture ($HWPACK_ARCH) does not match the host's architecture"
+  echo "Updating apt package lists ..."
+  $sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" update -q
+}
 
-# Install the apt sources that contain the packages we need.
-for filename in $(ls "${HWPACK_DIR}"/sources.list.d/); do
-  file="${HWPACK_DIR}"/sources.list.d/$filename
-  should_install=0
-  stripped_file=${TEMP_DIR}/$filename
-  grep -v "\(^#\|^\s*$\)" $file > $stripped_file
-  while read line; do
-    # Only install files that have at least one line not present in the
-    # existing sources lists.
-    grep -qF "$line" $(find /etc/apt/sources.list.d/ -name '*.list') /etc/apt/sources.list \
-      || should_install=1
-  done < $stripped_file
+setup_ubuntu_rootfs() {
+  # Prevent daemons to start in the chroot
+  echo "exit 101" > /usr/sbin/policy-rc.d
+  chmod a+x /usr/sbin/policy-rc.d
 
-  if [ $should_install -eq 1 ]; then
-    $sudo cp $file /etc/apt/sources.list.d/hwpack.$filename
-  fi
-done
-
-# Import the OpenPGP keys for the files installed above.
-for filename in $(ls "${HWPACK_DIR}"/sources.list.d.gpg/); do
-  file="${HWPACK_DIR}"/sources.list.d.gpg/$filename
-  $sudo apt-key add $file
-done
-
-# Prevent daemons to start in the chroot
-echo "exit 101" > /usr/sbin/policy-rc.d
-chmod a+x /usr/sbin/policy-rc.d
-
-mv -f /sbin/start-stop-daemon /sbin/start-stop-daemon.REAL
-cat > /sbin/start-stop-daemon << EOF
+  mv -f /sbin/start-stop-daemon /sbin/start-stop-daemon.REAL
+  cat > /sbin/start-stop-daemon << EOF
 #!/bin/sh
 
 echo "Warning: Fake start-stop-daemon called, doing nothing"
@@ -189,74 +195,114 @@ if [ -x /sbin/initctl ]; then
 
 echo "Warning: Fake initctl called, doing nothing"
 EOF
-  chmod 755 /sbin/initctl
-fi
-
-# Add one extra apt source for the packages included in the hwpack and make
-# sure it's the first on the list of sources so that it gets precedence over
-# the others.
-echo "deb file:${HWPACK_DIR}/pkgs ./" > "$SOURCES_LIST_FILE"
-cat /etc/apt/sources.list >> "$SOURCES_LIST_FILE"
-
-if [ "$FORCE_YES" == "yes" ]; then
-  FORCE_OPTIONS="--yes --force-yes"
-else
-  FORCE_OPTIONS=""
-fi
-
-echo "Updating apt package lists ..."
-$sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" update -q
-
-echo -n "Installing packages ..."
-
-# "newer" hwpacks contain a dependency package whose Depends is the
-# same as the packages config setting from the file the hwpack was
-# build from.  But if we just installed that, a newer version of a
-# package than that in the hwpack might have made it to the main
-# archive and apt-get would install that instead.  So we install the
-# specific package versions that make up the hwpack.  /That/ however
-# would leave all the packages from the hwpack marked as manually
-# installed, so if a newer hwpack was installed over the top which no
-# longer depended on one of the packages the older one did, the
-# package would not be eligible for autoremoval.  So we mark the all
-# packages newly installed as part of hwpack installed (apart from the
-# dependency package) as automatically installed with apt-get
-# markauto.
-#
-# For "older" hwpacks that don't have a dependency package, we just
-# manually install the contents of the hwpack.
-
-dependency_package="hwpack-${HWPACK_NAME}"
-if grep -q "^${dependency_package}=${HWPACK_VERSION}\$" "${HWPACK_DIR}"/manifest; then
-  DEP_PACKAGE_PRESENT="yes"
-else
-  DEP_PACKAGE_PRESENT="no"
-fi
-
-packages_without_versions=`sed 's/=.*//' "${HWPACK_DIR}"/manifest`
-packages_with_versions=`cat "${HWPACK_DIR}"/manifest`
-
-if [ "$INSTALL_LATEST" == "yes" ]; then
-  packages="${packages_without_versions}"
-else
-  packages="${packages_with_versions}"
-fi
-
-if [ "$DEP_PACKAGE_PRESENT" == "yes" ]; then
-  to_be_installed=
-  for package in $packages_without_versions; do
-    if [ "${package}" != "${dependency_package}" ]; then
-      { dpkg --get-selections $package 2>/dev/null| grep -qw 'install$'; } || to_be_installed="$to_be_installed $package"
-    fi
-  done
-fi
-
-$sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" install ${packages}
-
-if [ "$DEP_PACKAGE_PRESENT" == "yes" ]; then
-  if [ -n "${to_be_installed}" ]; then
-    $sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" markauto ${to_be_installed}
+    chmod 755 /sbin/initctl
   fi
+}
+
+install_deb_packages() {
+  echo -n "Installing packages ..."
+
+  # "newer" hwpacks contain a dependency package whose Depends is the
+  # same as the packages config setting from the file the hwpack was
+  # build from.  But if we just installed that, a newer version of a
+  # package than that in the hwpack might have made it to the main
+  # archive and apt-get would install that instead.  So we install the
+  # specific package versions that make up the hwpack.  /That/ however
+  # would leave all the packages from the hwpack marked as manually
+  # installed, so if a newer hwpack was installed over the top which no
+  # longer depended on one of the packages the older one did, the
+  # package would not be eligible for autoremoval.  So we mark the all
+  # packages newly installed as part of hwpack installed (apart from the
+  # dependency package) as automatically installed with apt-get
+  # markauto.
+  #
+  # For "older" hwpacks that don't have a dependency package, we just
+  # manually install the contents of the hwpack.
+
+  dependency_package="hwpack-${HWPACK_NAME}"
+  if grep -q "^${dependency_package}=${HWPACK_VERSION}\$" "${HWPACK_DIR}"/manifest; then
+    DEP_PACKAGE_PRESENT="yes"
+  else
+    DEP_PACKAGE_PRESENT="no"
+  fi
+
+  packages_without_versions=`sed 's/=.*//' "${HWPACK_DIR}"/manifest`
+  packages_with_versions=`cat "${HWPACK_DIR}"/manifest`
+
+  if [ "$INSTALL_LATEST" = "yes" ]; then
+    packages="${packages_without_versions}"
+  else
+    packages="${packages_with_versions}"
+  fi
+
+  if [ "$DEP_PACKAGE_PRESENT" = "yes" ]; then
+    to_be_installed=
+    for package in $packages_without_versions; do
+      if [ "${package}" != "${dependency_package}" ]; then
+        { dpkg --get-selections $package 2>/dev/null| grep -qw 'install$'; } || to_be_installed="$to_be_installed $package"
+      fi
+    done
+  fi
+
+  $sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" install ${packages}
+
+  if [ "$DEP_PACKAGE_PRESENT" = "yes" ]; then
+    if [ -n "${to_be_installed}" ]; then
+      $sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" markauto ${to_be_installed}
+    fi
+  fi
+}
+
+extract_kernel_packages() {
+  echo "Extracting all kernel packages ..."
+
+  ls ${HWPACK_DIR}/pkgs/linux-[ih]*.deb | while read pkg; do
+    echo "Extracting package `basename $pkg`"
+    dpkg-deb -x ${pkg} /
+  done
+
+  # manually generate modules.dep
+  ls /lib/modules | while read kernel; do
+    depmod ${kernel}
+  done;
+}
+
+cleanup() {
+  # Ensure our temp dir and apt sources are removed.
+  echo -n "Cleaning up ..."
+  rm -rf $TEMP_DIR
+  if [ "x$EXTRACT_KERNEL_ONLY" = "xno" ]; then
+    rm -f /usr/sbin/policy-rc.d
+    mv -f /sbin/start-stop-daemon.REAL /sbin/start-stop-daemon
+    if [ -x /sbin/initctl.REAL ]; then
+      mv -f /sbin/initctl.REAL /sbin/initctl
+    fi
+    $sudo apt-get update -qq
+  fi
+  echo "Done"
+}
+
+## main
+
+# Try to acquire fd #9 (i.e. /var/lock/hwpack)
+# Using 9 as the file descriptor because of https://launchpad.net/bugs/249620
+exec 9>$LOCKFILE
+flock -n 9 || die "Could not acquire lock: $LOCKFILE"
+
+# From now on we'll be making changes to the system, so we need to clean
+# things up when the script exits.
+trap cleanup EXIT
+
+# Extract and set up the hwpack at the rootfs
+setup_hwpack
+
+# In case we only care about the kernel, don't mess up with the system
+if [ "x$EXTRACT_KERNEL_ONLY" = "xno" ]; then
+  setup_apt_sources
+  setup_ubuntu_rootfs
+  install_deb_packages
+else
+  extract_kernel_packages
 fi
 
 echo "Done"
