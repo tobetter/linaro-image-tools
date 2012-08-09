@@ -164,14 +164,27 @@ if __name__ == '__main__':
 
     # If --help was specified this won't execute.
     # Create temp dir and initialize rest of path vars.
-    filesystem_dir = 'binary'
-    if not path_in_tarfile_exists('binary/etc', args.binary):
-        # The binary image is in the new live format.
-        filesystem_dir = 'binary/boot/filesystem.dir'
     TMP_DIR = tempfile.mkdtemp()
-    ROOTFS_DIR = os.path.join(TMP_DIR, filesystem_dir)
     BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
     ROOT_DISK = os.path.join(TMP_DIR, 'root-disc')
+    BIN_DIR = os.path.join(TMP_DIR, 'rootfs')
+    os.mkdir(BIN_DIR)
+
+    # Identify the correct path for the rootfs
+    filesystem_dir = ''
+    if path_in_tarfile_exists('binary/etc', args.binary):
+        filesystem_dir = 'binary'
+    elif path_in_tarfile_exists('binary/boot/filesystem.dir', args.binary):
+        # The binary image is in the new live format.
+        filesystem_dir = 'binary/boot/filesystem.dir'
+
+    # if not a debian compatible system, just extract the kernel packages
+    extract_kpkgs = False
+    if not path_in_tarfile_exists(
+            filesystem_dir + '/etc/debian_version', args.binary):
+        extract_kpkgs = True
+
+    ROOTFS_DIR = os.path.join(BIN_DIR, filesystem_dir)
 
     ensure_required_commands(args)
 
@@ -188,28 +201,42 @@ if __name__ == '__main__':
 
     atexit.register(cleanup_tempdir)
 
-    unpack_binary_tarball(args.binary, TMP_DIR)
+    unpack_binary_tarball(args.binary, BIN_DIR)
 
     hwpacks = args.hwpacks
     lmc_dir = os.path.dirname(__file__)
     if lmc_dir == '':
         lmc_dir = None
     install_hwpacks(ROOTFS_DIR, TMP_DIR, lmc_dir, args.hwpack_force_yes,
-                    verified_files, *hwpacks)
+                    verified_files, extract_kpkgs, *hwpacks)
 
     if args.rootfs == 'btrfs':
-        install_packages(ROOTFS_DIR, TMP_DIR, "btrfs-tools")
+        if not extract_kpkgs:
+            print ("Desired rootfs type is 'btrfs', trying to auto-install "
+                   "the 'btrfs-tools' package")
+            install_packages(ROOTFS_DIR, TMP_DIR, "btrfs-tools")
+        else:
+            print ("Desired rootfs type is 'btrfs', please make sure the "
+                   "rootfs also includes 'btrfs-tools'")
 
     boot_partition, root_partition = setup_partitions(
         board_config, media, args.image_size, args.boot_label, args.rfs_label,
         args.rootfs, args.should_create_partitions, args.should_format_bootfs,
         args.should_format_rootfs, args.should_align_boot_part)
 
-    rootfs_uuid = get_uuid(root_partition)
+    uuid = get_uuid(root_partition)
+    # In case we're only extracting the kernel packages, avoid
+    # using uuid because we don't have a working initrd
+    if extract_kpkgs:
+        # XXX: this needs to be smarter as we can't always assume mmcblk devices
+        rootfs_id = '/dev/mmcblk%dp%s' % (
+                board_config.mmc_device_id, 2 + board_config.mmc_part_offset)
+    else:
+        rootfs_id = "UUID=%s" % uuid
 
     if args.should_format_bootfs:
         board_config.populate_boot(
-            ROOTFS_DIR, rootfs_uuid, boot_partition, BOOT_DISK, media.path,
+            ROOTFS_DIR, rootfs_id, boot_partition, BOOT_DISK, media.path,
             args.is_live, args.is_lowmem, args.consoles)
 
     if args.should_format_rootfs:
@@ -217,7 +244,7 @@ if __name__ == '__main__':
         if args.swap_file is not None:
             create_swap = True
         populate_rootfs(ROOTFS_DIR, ROOT_DISK, root_partition, args.rootfs,
-            rootfs_uuid, create_swap, str(args.swap_file),
+            rootfs_id, create_swap, str(args.swap_file),
             board_config.mmc_device_id, board_config.mmc_part_offset,
             board_config)
 

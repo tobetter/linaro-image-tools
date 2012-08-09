@@ -576,7 +576,7 @@ class BoardConfig(object):
             return cls.get_v1_sfdisk_cmd(should_align_boot_part)
 
     @classmethod
-    def _get_bootcmd(cls, d_img_data):
+    def _get_bootcmd(cls, i_img_data, d_img_data):
         """Get the bootcmd for this board.
 
         In general subclasses should not have to override this.
@@ -587,20 +587,22 @@ class BoardConfig(object):
             initrd_addr=cls.initrd_addr, dtb_addr=cls.dtb_addr)
         boot_script = (
             ("%(fatload_command)s mmc %(mmc_option)s %(kernel_addr)s " +
-             "%(uimage_path)suImage; ") +
+             "%(uimage_path)suImage; ")) % replacements
+        if i_img_data is not None:
+            boot_script += (
             ("%(fatload_command)s mmc %(mmc_option)s %(initrd_addr)s " +
              "%(uimage_path)suInitrd; ")) % replacements
-        if d_img_data is not None:
-            assert cls.dtb_addr is not None, (
-                "Need a dtb_addr when passing d_img_data")
-            boot_script += (
-                ("%(fatload_command)s mmc %(mmc_option)s %(dtb_addr)s " +
-                 "board.dtb; ") +
-                "bootm %(kernel_addr)s %(initrd_addr)s %(dtb_addr)s"
-                ) % replacements
-        else:
-            boot_script += (
-                "bootm %(kernel_addr)s %(initrd_addr)s" % replacements)
+            if d_img_data is not None:
+                assert cls.dtb_addr is not None, (
+                    "Need a dtb_addr when passing d_img_data")
+                boot_script += (
+                    ("%(fatload_command)s mmc %(mmc_option)s %(dtb_addr)s " +
+                     "board.dtb; ")) % replacements
+        boot_script += (("bootm %(kernel_addr)s")) % replacements
+        if i_img_data is not None:
+            boot_script += ((" %(initrd_addr)s")) % replacements
+            if d_img_data is not None:
+                boot_script += ((" %(dtb_addr)s")) % replacements
         return boot_script
 
     @classmethod
@@ -618,7 +620,7 @@ class BoardConfig(object):
                 cls.add_boot_args(boot_args_file.read().strip())
 
     @classmethod
-    def _get_bootargs(cls, is_live, is_lowmem, consoles, rootfs_uuid):
+    def _get_bootargs(cls, is_live, is_lowmem, consoles, rootfs_id):
         """Get the bootargs for this board.
 
         In general subclasses should not have to override this.
@@ -631,7 +633,7 @@ class BoardConfig(object):
             serial_opts += ' console=%s' % console
 
         lowmem_opt = ''
-        boot_snippet = 'root=UUID=%s' % rootfs_uuid
+        boot_snippet = 'root=%s' % rootfs_id
         if is_live:
             serial_opts += ' %s' % cls.live_serial_opts
             boot_snippet = 'boot=casper'
@@ -648,21 +650,21 @@ class BoardConfig(object):
              % replacements)
 
     @classmethod
-    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid,
-                      d_img_data):
+    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_id,
+                      i_img_data, d_img_data):
         """Get the boot environment for this board.
 
         In general subclasses should not have to override this.
         """
         boot_env = {}
         boot_env["bootargs"] = cls._get_bootargs(
-            is_live, is_lowmem, consoles, rootfs_uuid)
-        boot_env["bootcmd"] = cls._get_bootcmd(d_img_data)
+            is_live, is_lowmem, consoles, rootfs_id)
+        boot_env["bootcmd"] = cls._get_bootcmd(i_img_data, d_img_data)
         return boot_env
 
     @classmethod
     def make_boot_files(cls, bootloader_parts_dir, is_live, is_lowmem,
-                        consoles, chroot_dir, rootfs_uuid, boot_dir,
+                        consoles, chroot_dir, rootfs_id, boot_dir,
                         boot_device_or_file):
         if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
             parts_dir = bootloader_parts_dir
@@ -670,8 +672,8 @@ class BoardConfig(object):
             parts_dir = chroot_dir
         (k_img_data, i_img_data, d_img_data) = cls._get_kflavor_files(
             parts_dir)
-        boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_uuid,
-                                     d_img_data)
+        boot_env = cls._get_boot_env(is_live, is_lowmem, consoles, rootfs_id,
+                                     i_img_data, d_img_data)
 
         if cls.hwpack_format == HardwarepackHandler.FORMAT_1:
             cls._make_boot_files(
@@ -728,7 +730,9 @@ class BoardConfig(object):
                              cls.bootloader_dd)
 
         make_uImage(cls.load_addr, k_img_data, boot_dir)
-        make_uInitrd(i_img_data, boot_dir)
+
+        if i_img_data is not None:
+            make_uInitrd(i_img_data, boot_dir)
 
         if d_img_data is not None:
             make_dtb(d_img_data, boot_dir)
@@ -766,7 +770,7 @@ class BoardConfig(object):
         raise NotImplementedError()
 
     @classmethod
-    def populate_boot(cls, chroot_dir, rootfs_uuid, boot_partition, boot_disk,
+    def populate_boot(cls, chroot_dir, rootfs_id, boot_partition, boot_disk,
                       boot_device_or_file, is_live, is_lowmem, consoles):
         parts_dir = 'boot'
         if is_live:
@@ -799,7 +803,7 @@ class BoardConfig(object):
 
             cls.make_boot_files(
                 bootloader_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
-                rootfs_uuid, boot_disk, boot_device_or_file)
+                rootfs_id, boot_disk, boot_device_or_file)
 
     @classmethod
     def _get_kflavor_files(cls, path):
@@ -833,18 +837,18 @@ class BoardConfig(object):
     def _get_kflavor_files_v2(cls, path):
         kernel = _get_file_matching(os.path.join(path, cls.vmlinuz))
         if kernel is not None:
+            logger = logging.getLogger("linaro_image_tools")
             initrd = _get_file_matching(os.path.join(path, cls.initrd))
-            if initrd is not None:
-                dtb = None
-                if cls.dtb_file is not None:
-                    dtb = _get_file_matching(os.path.join(path, cls.dtb_file))
-                logger = logging.getLogger("linaro_image_tools")
-                logger.info("Will use kernel=%s, initrd=%s, dtb=%s." % \
-                                 (kernel, initrd, dtb))
-                return (kernel, initrd, dtb)
-            raise ValueError(
-                "Found kernel matching %s but no initrd matching %s" % (
-                    cls.vmlinuz, cls.initrd))
+            if initrd is None:
+                logger.warn(
+                    "Could not find a valid initrd, skipping uInitd.")
+            dtb = _get_file_matching(os.path.join(path, cls.dtb_file))
+            if dtb is None and cls.dtb_file is not None:
+                logger.warn(
+                    "Could not find a valid dtb file, skipping it.")
+            logger.info("Will use kernel=%s, initrd=%s, dtb=%s." % \
+                             (kernel, initrd, dtb))
+            return (kernel, initrd, dtb)
         raise ValueError(
             "No kernel found matching %s." % (cls.vmlinuz))
 
@@ -912,7 +916,7 @@ class OmapConfig(BoardConfig):
 
     @classmethod
     def make_boot_files(cls, bootloader_parts_dir, is_live, is_lowmem,
-                        consoles, chroot_dir, rootfs_uuid, boot_dir,
+                        consoles, chroot_dir, rootfs_id, boot_dir,
                         boot_device_or_file):
         # XXX: This is also part of our temporary hack to fix bug 697824; we
         # need to call set_appropriate_serial_tty() before doing anything that
@@ -921,7 +925,7 @@ class OmapConfig(BoardConfig):
             cls.set_appropriate_serial_tty(chroot_dir)
         super(OmapConfig, cls).make_boot_files(
             bootloader_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
-            rootfs_uuid, boot_dir, boot_device_or_file)
+            rootfs_id, boot_dir, boot_device_or_file)
 
     @classmethod
     def _make_boot_files(cls, boot_env, chroot_dir, boot_dir,
@@ -1511,10 +1515,10 @@ class SMDKV310Config(SamsungConfig):
     mmc_option = '0:2'
 
     @classmethod
-    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_uuid,
-                      d_img_data):
+    def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_id,
+                      i_img_data, d_img_data):
         boot_env = super(SamsungConfig, cls)._get_boot_env(
-            is_live, is_lowmem, consoles, rootfs_uuid, d_img_data)
+            is_live, is_lowmem, consoles, rootfs_id, i_img_data, d_img_data)
 
         boot_env["ethact"] = "smc911x-0"
         boot_env["ethaddr"] = "00:40:5c:26:0a:5b"
