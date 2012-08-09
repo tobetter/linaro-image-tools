@@ -181,7 +181,7 @@ if __name__ == '__main__':
     # if not a debian compatible system, just extract the kernel packages
     extract_kpkgs = False
     if not path_in_tarfile_exists(
-            filesystem_dir + '/etc/debian_version', args.binary):
+            os.path.join(filesystem_dir, '/etc/debian_version'), args.binary):
         extract_kpkgs = True
 
     ROOTFS_DIR = os.path.join(BIN_DIR, filesystem_dir)

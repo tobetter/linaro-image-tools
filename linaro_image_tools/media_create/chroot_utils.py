@@ -46,7 +46,7 @@ def prepare_chroot(chroot_dir, tmp_dir):
 
 def install_hwpacks(
     chroot_dir, tmp_dir, tools_dir, hwpack_force_yes, verified_files,
-    extract_kpkgs = False, *hwpack_files):
+    extract_kpkgs=False, *hwpack_files):
     """Install the given hwpacks onto the given chroot."""
     prepare_chroot(chroot_dir, tmp_dir)
 
