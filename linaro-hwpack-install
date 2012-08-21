@@ -263,7 +263,7 @@ extract_kernel_packages() {
 
   # manually generate modules.dep
   ls /lib/modules | while read kernel; do
-    depmod ${kernel}
+    depmod ${kernel} || true
   done;
 }
 
