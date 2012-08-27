@@ -29,14 +29,22 @@ Before running any tests you need to install the following packages:
   - python-argparse
   - dpkg-dev
   - python-parted
-  - python-dbus
+  - python-dbus (and dbus, udisks)
   - python-apt
   - qemu-kvm
-  - sfdisk
+  - sfdisk (from util-linux)
   - apt-utils
+  - pep8
 
 Also consider installing pyflakes, which is optional but will enable more
 tests.
+
+You can install all packages listed above in one go with the following
+command:
+
+  $ sudo apt-get install testrepository python-testtools python-debian \
+        python-argparse dpkg-dev python-parted dbus udisks python-dbus python-apt \
+        qemu-kvm util-linux apt-utils pep8 pyflakes
 
 And run the following command:
 
