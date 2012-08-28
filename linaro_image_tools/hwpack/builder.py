@@ -159,7 +159,7 @@ class HardwarePackBuilder(object):
                 if not dest_path:
                     dest_path = bootloader_name
                     if board:
-                        dest_path = board + "-" + dest_path
+                        dest_path += "-" + board
                 # Dereference package field to get actual package name
                 package = bootloader_conf.get(package_field)
                 src_files = value
