@@ -116,11 +116,14 @@ class Config(object):
     BOOTLOADER_DD_KEY = 'u_boot_dd'
     translate_v2_to_v3[BOOTLOADER_DD_KEY] = DD_FIELD
 
-    def __init__(self, fp, bootloader=None, board=None):
+    def __init__(self, fp, bootloader=None, board=None,
+                 allow_unset_bootloader=False):
         """Create a Config.
 
         :param fp: a file-like object containing the configuration.
         """
+        self.allow_unset_bootloader = allow_unset_bootloader
+        self.bootloader = None
         obfuscated_e = None
         obfuscated_yaml_e = ""
         try:
@@ -177,6 +180,23 @@ class Config(object):
         """Set board used to look up per-board configuration"""
         self.board = board
 
+    def get_bootloader_list(self):
+        if isinstance(self.bootloaders, dict):
+            # We have a list of bootloaders in the expected format
+            return self.bootloaders.keys()
+        return []
+
+    def validate_bootloader_fields(self):
+        self._validate_bootloader_package()
+        self._validate_bootloader_file()
+        self._validate_spl_package()
+        self._validate_spl_file()
+        self._validate_bootloader_file_in_boot_part()
+        self._validate_bootloader_dd()
+        self._validate_spl_in_boot_part()
+        self._validate_spl_dd()
+        self._validate_env_dd()
+
     def validate(self):
         """Check that this configuration follows the schema.
 
@@ -195,8 +215,15 @@ class Config(object):
         self._validate_assume_installed()
 
         if self.format.has_v2_fields:
-            self._validate_bootloader_package()
-            self._validate_bootloader_file()
+            # Check config for all bootloaders if one isn't specified.
+            if self.bootloader == None and self._is_v3:
+                for bootloader in self.get_bootloader_list():
+                    self.set_bootloader(bootloader)
+                    self.validate_bootloader_fields()
+                self.set_bootloader(None)
+            else:
+                self.validate_bootloader_fields()
+
             self._validate_serial_tty()
             self._validate_kernel_addr()
             self._validate_initrd_addr()
@@ -209,19 +236,12 @@ class Config(object):
             self._validate_root_min_size()
             self._validate_loader_min_size()
             self._validate_loader_start()
-            self._validate_spl_package()
-            self._validate_spl_file()
             self._validate_vmlinuz()
             self._validate_initrd()
             self._validate_dtb_file()
             self._validate_mmc_id()
             self._validate_extra_boot_options()
             self._validate_boot_script()
-            self._validate_bootloader_file_in_boot_part()
-            self._validate_bootloader_dd()
-            self._validate_spl_in_boot_part()
-            self._validate_spl_dd()
-            self._validate_env_dd()
             self._validate_extra_serial_opts()
             self._validate_snowball_startup_files_config()
             self._validate_samsung_bl1_start()
@@ -336,6 +356,8 @@ class Config(object):
         """Get an option inside the current bootloader section."""
         if self._is_v3:
             if not self.bootloader:
+                if self.allow_unset_bootloader:
+                    return None
                 raise ValueError("bootloader not set.")
             if not isinstance(key, list):
                 keys = [key]

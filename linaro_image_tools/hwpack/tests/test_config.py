@@ -66,8 +66,8 @@ class ConfigTests(TestCase):
         e = self.assertRaises(HwpackConfigError, f, *args, **kwargs)
         self.assertEqual(contents, str(e))
 
-    def assertValidationError(self, contents, config):
-        self.assertConfigError(contents, config.validate)
+    def assertValidationError(self, contents, config, function="validate"):
+        self.assertConfigError(contents, config.get_option(function))
 
     def test_validate_no_hwpack_section(self):
         config = self.get_config("")
@@ -219,7 +219,8 @@ class ConfigTests(TestCase):
                                      "u-boot-file = u-boot.bin\n" \
                                      "partition_layout = bootfs_rootfs\n"\
                                      "kernel_file = ~~\n")
-        self.assertValidationError("Invalid path: ~~", config)
+        self.assertValidationError("Invalid path: ~~", config,
+                                   "_validate_vmlinuz")
 
     def test_validate_empty_kernel_file(self):
         config = self.get_config(self.valid_start_v2 +
@@ -228,7 +229,7 @@ class ConfigTests(TestCase):
                                      "partition_layout = bootfs_rootfs\n"\
                                      "kernel_file = \n")
         self.assertValidationError("No kernel_file in the [hwpack] section",
-                                   config)
+                                   config, "_validate_vmlinuz")
 
     def test_validate_invalid_initrd_file(self):
         config = self.get_config(
@@ -238,7 +239,8 @@ class ConfigTests(TestCase):
                 "partition_layout = bootfs_rootfs\n"\
                 "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
                 "initrd_file = ~~\n")
-        self.assertValidationError("Invalid path: ~~", config)
+        self.assertValidationError("Invalid path: ~~", config,
+                                   "_validate_initrd")
 
     def test_validate_empty_initrd_file(self):
         config = self.get_config(
@@ -249,7 +251,7 @@ class ConfigTests(TestCase):
                 "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
                 "initrd_file = \n")
         self.assertValidationError("No initrd_file in the [hwpack] section",
-                                   config)
+                                   config, "_validate_initrd")
 
     def test_validate_invalid_boot_script(self):
         config = self.get_config(
@@ -309,7 +311,8 @@ class ConfigTests(TestCase):
             "Undefined partition layout %s in the [%s] section. "
             "Valid partition layouts are %s."
             % (partition_layout, 'hwpack',
-               ", ".join(DEFINED_PARTITION_LAYOUTS)), config)
+               ", ".join(DEFINED_PARTITION_LAYOUTS)), config,
+            "_validate_partition_layout")
 
     def test_validate_wired_interfaces(self):
         self.assertTrue("XXX What is an invalid interface name?")
@@ -350,13 +353,15 @@ class ConfigTests(TestCase):
             self.valid_start_v2 +
             "u_boot_package = u-boot-linaro-s5pv310\n" \
                 "u_boot_file = u-boot.bin\nserial_tty=tty\n")
-        self.assertValidationError("Invalid serial tty: tty", config)
+        self.assertValidationError("Invalid serial tty: tty", config,
+                                   "_validate_serial_tty")
         config = self.get_config(
             self.valid_start_v2 +
             "u_boot_package = u-boot-linaro-s5pv310\n" \
                 "u_boot_file = u-boot.bin\n" \
                 "serial_tty=ttxSAC1\n")
-        self.assertValidationError("Invalid serial tty: ttxSAC1", config)
+        self.assertValidationError("Invalid serial tty: ttxSAC1", config,
+                                   "_validate_serial_tty")
 
     def test_validate_mmc_id(self):
         config = self.get_config(self.valid_complete_v2 +

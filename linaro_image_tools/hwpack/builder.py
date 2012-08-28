@@ -97,7 +97,7 @@ class HardwarePackBuilder(object):
     def __init__(self, config_path, version, local_debs):
         try:
             with open(config_path) as fp:
-                self.config = Config(fp)
+                self.config = Config(fp, allow_unset_bootloader=True)
         except IOError, e:
             if e.errno == errno.ENOENT:
                 raise ConfigFileMissing(config_path)
@@ -109,6 +109,7 @@ class HardwarePackBuilder(object):
         self.package_unpacker = None
         self.hwpack = None
         self.packages = None
+        self.packages_added_to_hwpack = []
 
     def find_fetched_package(self, packages, wanted_package_name):
         wanted_package = None
@@ -122,8 +123,13 @@ class HardwarePackBuilder(object):
         return wanted_package
 
     def add_file_to_hwpack(self, package, wanted_file, target_path):
+        if (package.name, target_path) in self.packages_added_to_hwpack:
+            # Don't bother adding the same package more than once.
+            return
+
         tempfile_name = self.package_unpacker.get_file(
             package.filepath, wanted_file)
+        self.packages_added_to_hwpack.append((package.name, target_path))
         return self.hwpack.add_file(target_path, tempfile_name)
 
     def find_bootloader_packages(self, bootloaders_config):
@@ -150,7 +156,6 @@ class HardwarePackBuilder(object):
         :param config_dictionary: The dictionary from the Config we need to
                                     look into.
         """
-        remove_packages = []
         for key, value in config_dictionary.iteritems():
             if isinstance(value, dict):
                 self._set_new_values(value)
@@ -171,11 +176,6 @@ class HardwarePackBuilder(object):
                         file_to_add = self.add_file_to_hwpack(
                                             package, boot_file, path)
                         config_dictionary[change_field] = file_to_add
-                        remove_packages.append(package)
-        # Clean up duplicates.
-        for package in remove_packages:
-            if package in self.packages:
-                self.packages.remove(package)
 
     def build(self):
         for architecture in self.config.architectures:
