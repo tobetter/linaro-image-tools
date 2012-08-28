@@ -434,6 +434,7 @@ class HardwarePack(object):
     SOURCES_LIST_GPG_DIRNAME = "sources.list.d.gpg"
     U_BOOT_DIR = "u-boot"
     SPL_DIR = "spl"
+    BOOT_DIR = "boot"
 
     def __init__(self, metadata):
         """Create a HardwarePack.
