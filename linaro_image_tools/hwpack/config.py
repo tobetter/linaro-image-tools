@@ -39,6 +39,7 @@ from hwpack_fields import (
     BOOTLOADERS_FIELD,
     BOOT_MIN_SIZE_FIELD,
     BOOT_SCRIPT_FIELD,
+    COPY_FILES_FIELD,
     DD_FIELD,
     DTB_ADDR_FIELD,
     DTB_FILE_FIELD,
@@ -305,6 +306,11 @@ class Config(object):
     def spl_in_boot_part(self):
         """Whether spl binary should be put in the boot partition. A str."""
         return self._get_bootloader_option(SPL_IN_BOOT_PART_FIELD)
+
+    @property
+    def boot_copy_files(self):
+        """Extra files to copy to boot partition."""
+        return self._get_bootloader_option(COPY_FILES_FIELD)
 
     @property
     def spl_dd(self):
