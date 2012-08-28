@@ -52,9 +52,12 @@ FIELDS_TO_CHANGE = {PACKAGE_FIELD: FILE_FIELD,
                     SPL_PACKAGE_FIELD: SPL_FILE_FIELD}
 # Specification of files (boot related) to extract:
 # <field_containing_filepaths>: (<take_files_from_package>, <put_into_this_hwpack_subdir>)
-EXTRACT_FILES = {FILE_FIELD: (PACKAGE_FIELD, HardwarePack.U_BOOT_DIR),
-                 SPL_FILE_FIELD: (SPL_PACKAGE_FIELD, HardwarePack.SPL_DIR),
-                 COPY_FILES_FIELD: (PACKAGE_FIELD, HardwarePack.BOOT_DIR)}
+# if <put_into_this_hwpack_subdir> is None, it will be <bootloader_name> for
+# global bootloader, or <board>-<bootloader_name> for board-specific
+# bootloader
+EXTRACT_FILES = {FILE_FIELD: (PACKAGE_FIELD, None),
+                 SPL_FILE_FIELD: (SPL_PACKAGE_FIELD, None),
+                 COPY_FILES_FIELD: (PACKAGE_FIELD, None)}
 
 
 logger = logging.getLogger(__name__)
@@ -148,42 +151,55 @@ class HardwarePackBuilder(object):
         # Eliminate duplicates.
         return list(set(boot_packages))
 
-    def extract_files(self, config_dictionary):
+    def extract_bootloader_files(self, board, bootloader_name, bootloader_conf):
+        remove_packages = []
+        for key, value in bootloader_conf.iteritems():
+            if key in EXTRACT_FILES:
+                package_field, dest_path = EXTRACT_FILES[key]
+                if not dest_path:
+                    dest_path = bootloader_name
+                    if board:
+                        dest_path = board + "-" + dest_path
+                # Dereference package field to get actual package name
+                package = bootloader_conf.get(package_field)
+                src_files = value
+
+                # Process scalar and list fields consistently below
+                field_value_scalar = False
+                if type(src_files) != type([]):
+                    src_files = [src_files]
+                    field_value_scalar = True
+
+                package_ref = self.find_fetched_package(
+                                self.packages, package)
+                added_files = []
+                for f in src_files:
+                    added_files.append(self.add_file_to_hwpack(
+                                        package_ref, f, dest_path))
+                # Store within-hwpack file paths with the same
+                # scalar/list type as original field.
+                if field_value_scalar:
+                    assert len(added_files) == 1
+                    added_files = added_files[0]
+                bootloader_conf[key] = added_files
+
+                # We extracted all files for hwpack usages, and we don't
+                # store such boot packages in hwpack, so clean up them now.
+                remove_packages.append(package)
+
+    def extract_files(self, config_dictionary, is_bootloader_config, board=None):
+        print config_dictionary, is_bootloader_config
         """Extract (boot) files based on EXTRACT_FILES spec and put
         them into hwpack."""
         remove_packages = []
-        for key, value in config_dictionary.iteritems():
-            if isinstance(value, dict):
-                self.extract_files(value)
-            else:
-                if key in EXTRACT_FILES:
-                    package_field, dest_path = EXTRACT_FILES[key]
-                    # Dereference package field to get actual package name
-                    package = config_dictionary.get(package_field)
-                    src_files = value
-
-                    # Process scalar and list fields consistently below
-                    field_value_scalar = False
-                    if type(src_files) != type([]):
-                        src_files = [src_files]
-                        field_value_scalar = True
-
-                    package_ref = self.find_fetched_package(
-                                    self.packages, package)
-                    added_files = []
-                    for f in src_files:
-                        added_files.append(self.add_file_to_hwpack(
-                                            package_ref, f, dest_path))
-                    # Store within-hwpack file paths with the same
-                    # scalar/list type as original field.
-                    if field_value_scalar:
-                        assert len(added_files) == 1
-                        added_files = added_files[0]
-                    config_dictionary[key] = added_files
-
-                    # We extracted all files for hwpack usages, and we don't
-                    # store such boot packages in hwpack, so clean up them now.
-                    remove_packages.append(package)
+        if is_bootloader_config:
+            for bootl_name, bootl_conf in config_dictionary.iteritems():
+                self.extract_bootloader_files(board, bootl_name, bootl_conf)
+        else:
+            # This is board config
+            for board, board_conf in config_dictionary.iteritems():
+                bootloaders = board_conf['bootloaders']
+                self.extract_files(bootloaders, True, board)
 
     def _set_new_values(self, config_dictionary):
         """Loop through the bootloaders sections of a hwpack, also from the
@@ -269,10 +285,10 @@ class HardwarePackBuilder(object):
                         # through both of them changing what is necessary.
                         if self.config.format.format_as_string == '3.0':
                             if self.config.bootloaders is not None:
-                                self.extract_files(self.config.bootloaders)
+                                self.extract_files(self.config.bootloaders, True)
                                 metadata.bootloaders = self.config.bootloaders
                             if self.config.boards is not None:
-                                self.extract_files(self.config.boards)
+                                self.extract_files(self.config.boards, False)
                                 metadata.boards = self.config.boards
                         else:
                             bootloader_package = None
