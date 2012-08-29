@@ -130,6 +130,9 @@ class HardwarePackBuilder(object):
         self.hwpack = None
         self.packages = None
         self.out_name = out_name
+        # List of temporary added packages which need to be removed once
+        # processed
+        self.remove_packages = []
 
     def find_fetched_package(self, packages, wanted_package_name):
         wanted_package = None
@@ -164,7 +167,6 @@ class HardwarePackBuilder(object):
         return list(set(boot_packages))
 
     def extract_bootloader_files(self, board, bootloader_name, bootloader_conf):
-        remove_packages = []
         for key, value in bootloader_conf.iteritems():
             if key in EXTRACT_FILES:
                 package_field, dest_path = EXTRACT_FILES[key]
@@ -197,13 +199,12 @@ class HardwarePackBuilder(object):
 
                 # We extracted all files for hwpack usages, and we don't
                 # store such boot packages in hwpack, so clean up them now.
-                remove_packages.append(package)
+                self.remove_packages.append(package_ref)
 
     def extract_files(self, config_dictionary, is_bootloader_config, board=None):
-        print config_dictionary, is_bootloader_config
         """Extract (boot) files based on EXTRACT_FILES spec and put
         them into hwpack."""
-        remove_packages = []
+        self.remove_packages = []
         if is_bootloader_config:
             for bootl_name, bootl_conf in config_dictionary.iteritems():
                 self.extract_bootloader_files(board, bootl_name, bootl_conf)
@@ -212,6 +213,12 @@ class HardwarePackBuilder(object):
             for board, board_conf in config_dictionary.iteritems():
                 bootloaders = board_conf['bootloaders']
                 self.extract_files(bootloaders, True, board)
+
+        # Clean up no longer needed packages.
+        for package in self.remove_packages:
+            if package in self.packages:
+                self.packages.remove(package)
+        self.remove_packages = []
 
     def _set_new_values(self, config_dictionary):
         """Loop through the bootloaders sections of a hwpack, also from the
