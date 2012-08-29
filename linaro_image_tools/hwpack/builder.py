@@ -245,7 +245,10 @@ class HardwarePackBuilder(object):
             sources = self.config.sources
             with LocalArchiveMaker() as local_archive_maker:
                 self.hwpack.add_apt_sources(sources)
-                sources = sources.values()
+                if sources:
+                    sources = sources.values()
+                else:
+                    sources = []
                 self.packages = self.config.packages[:]
                 # Loop through multiple bootloaders.
                 # In V3 of hwpack configuration, all the bootloaders info and

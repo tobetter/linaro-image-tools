@@ -483,7 +483,8 @@ class HardwarePack(object):
             to sources entries.
         :type sources: a dict mapping str to str
         """
-        self.sources.update(sources)
+        if sources:
+            self.sources.update(sources)
 
     def add_packages(self, packages):
         """Add packages to the hardware pack.
