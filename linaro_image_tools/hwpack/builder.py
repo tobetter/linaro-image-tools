@@ -46,10 +46,6 @@ from linaro_image_tools.hwpack.hwpack_fields import (
 
 # The fields that hold packages to be installed.
 PACKAGE_FIELDS = [PACKAGE_FIELD, SPL_PACKAGE_FIELD]
-# The fields that hold values that should be reset to newly calculated ones.
-# The values of the dictionary are the fields whose values should be reset.
-FIELDS_TO_CHANGE = {PACKAGE_FIELD: FILE_FIELD,
-                    SPL_PACKAGE_FIELD: SPL_FILE_FIELD}
 # Specification of files (boot related) to extract:
 # <field_containing_filepaths>: (<take_files_from_package>,
 #                                <put_into_this_hwpack_subdir>)
@@ -222,41 +218,6 @@ class HardwarePackBuilder(object):
             if package in self.packages:
                 self.packages.remove(package)
         self.remove_packages = []
-
-    def _set_new_values(self, config_dictionary):
-        """Loop through the bootloaders sections of a hwpack, also from the
-        boards section, changing the necessary values with the newly calculated
-        ones.
-
-        :param config_dictionary: The dictionary from the Config we need to
-                                    look into.
-        """
-        remove_packages = []
-        for key, value in config_dictionary.iteritems():
-            if isinstance(value, dict):
-                self._set_new_values(value)
-            else:
-                if key in FIELDS_TO_CHANGE.keys():
-                    if key == PACKAGE_FIELD:
-                        # Need to use the correct path for the packages.
-                        path = self.hwpack.U_BOOT_DIR
-                    else:
-                        path = self.hwpack.SPL_DIR
-                    change_field = FIELDS_TO_CHANGE.get(key)
-                    boot_package = value
-                    boot_file = config_dictionary.get(change_field)
-                    if boot_package is not None and boot_file is not None:
-                        package = self.find_fetched_package(
-                                    self.packages,
-                                    boot_package)
-                        file_to_add = self.add_file_to_hwpack(
-                                            package, boot_file, path)
-                        config_dictionary[change_field] = file_to_add
-                        remove_packages.append(package)
-        # Clean up duplicates.
-        for package in remove_packages:
-            if package in self.packages:
-                self.packages.remove(package)
 
     def build(self):
         for architecture in self.config.architectures:
