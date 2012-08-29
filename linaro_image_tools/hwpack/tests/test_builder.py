@@ -82,7 +82,7 @@ class PackageUnpackerTests(TestCaseWithFixtures):
         package_file_name = "package-to-unpack"
         with PackageUnpacker() as package_unpacker:
             package_unpacker.unpack_package(package_file_name)
-            package_dir = package_unpacker.tempdir
+            package_dir = package_unpacker.get_path(package_file_name)
         self.assertEquals(
             ["tar -C %s -xf -" % package_dir,
              "dpkg --fsys-tarfile %s" % package_file_name],
@@ -98,7 +98,7 @@ class PackageUnpackerTests(TestCaseWithFixtures):
                     os.path, 'exists', lambda file: True))
             tempfile = package_unpacker.get_file(package, file)
             self.assertEquals(tempfile,
-                              os.path.join(package_unpacker.tempdir, file))
+                   os.path.join(package_unpacker.get_path(package), file))
 
     def test_get_file_raises(self):
         package = 'package'
@@ -109,6 +109,21 @@ class PackageUnpackerTests(TestCaseWithFixtures):
             self.assertRaises(AssertionError, package_unpacker.get_file,
                               package, file)
 
+    def test_get_file_no_clash(self):
+        # Test that PackageUnpacker, asked to get the same file path
+        # from 2 different packages, return reference to *different*
+        # temporary files
+        package1 = 'package1'
+        package2 = 'package2'
+        file = 'dummyfile'
+        with PackageUnpacker() as package_unpacker:
+            self.useFixture(MockSomethingFixture(
+                    package_unpacker, 'unpack_package', lambda package: None))
+            self.useFixture(MockSomethingFixture(
+                    os.path, 'exists', lambda file: True))
+            tempfile1 = package_unpacker.get_file(package1, file)
+            tempfile2 = package_unpacker.get_file(package2, file)
+            self.assertNotEquals(tempfile1, tempfile2)
 
 class HardwarePackBuilderTests(TestCaseWithFixtures):
 
