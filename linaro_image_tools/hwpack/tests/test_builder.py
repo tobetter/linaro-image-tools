@@ -125,6 +125,7 @@ class PackageUnpackerTests(TestCaseWithFixtures):
             tempfile2 = package_unpacker.get_file(package2, file)
             self.assertNotEquals(tempfile1, tempfile2)
 
+
 class HardwarePackBuilderTests(TestCaseWithFixtures):
 
     def setUp(self):
