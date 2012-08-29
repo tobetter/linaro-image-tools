@@ -114,7 +114,7 @@ class PackageUnpacker(object):
 
 class HardwarePackBuilder(object):
 
-    def __init__(self, config_path, version, local_debs):
+    def __init__(self, config_path, version, local_debs, out_name=None):
         try:
             with open(config_path) as fp:
                 self.config = Config(fp)
@@ -129,6 +129,7 @@ class HardwarePackBuilder(object):
         self.package_unpacker = None
         self.hwpack = None
         self.packages = None
+        self.out_name = out_name
 
     def find_fetched_package(self, packages, wanted_package_name):
         wanted_package = None
@@ -348,9 +349,15 @@ class HardwarePackBuilder(object):
                                     local_package.name)
                         self.hwpack.add_dependency_package(
                                 self.config.packages)
-                        with open(self.hwpack.filename(), 'w') as f:
+                        out_name = self.out_name
+                        if not out_name:
+                            out_name = self.hwpack.filename()
+                        with open(out_name, 'w') as f:
                             self.hwpack.to_file(f)
-                            logger.info("Wrote %s" % self.hwpack.filename())
-                        with open(self.hwpack.filename('.manifest.txt'),
-                                    'w') as f:
+                            logger.info("Wrote %s" % out_name)
+                        manifest_name = os.path.splitext(out_name)[0]
+                        if manifest_name.endswith('.tar'):
+                            manifest_name = os.path.splitext(manifest_name)[0]
+                        manifest_name += '.manifest.txt'
+                        with open(manifest_name, 'w') as f:
                             f.write(self.hwpack.manifest_text())
