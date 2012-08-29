@@ -51,7 +51,8 @@ PACKAGE_FIELDS = [PACKAGE_FIELD, SPL_PACKAGE_FIELD]
 FIELDS_TO_CHANGE = {PACKAGE_FIELD: FILE_FIELD,
                     SPL_PACKAGE_FIELD: SPL_FILE_FIELD}
 # Specification of files (boot related) to extract:
-# <field_containing_filepaths>: (<take_files_from_package>, <put_into_this_hwpack_subdir>)
+# <field_containing_filepaths>: (<take_files_from_package>,
+#                                <put_into_this_hwpack_subdir>)
 # if <put_into_this_hwpack_subdir> is None, it will be <bootloader_name> for
 # global bootloader, or <board>-<bootloader_name> for board-specific
 # bootloader
@@ -166,7 +167,8 @@ class HardwarePackBuilder(object):
         # Eliminate duplicates.
         return list(set(boot_packages))
 
-    def extract_bootloader_files(self, board, bootloader_name, bootloader_conf):
+    def extract_bootloader_files(self, board, bootloader_name,
+                                                bootloader_conf):
         for key, value in bootloader_conf.iteritems():
             if key in EXTRACT_FILES:
                 package_field, dest_path = EXTRACT_FILES[key]
@@ -201,7 +203,8 @@ class HardwarePackBuilder(object):
                 # store such boot packages in hwpack, so clean up them now.
                 self.remove_packages.append(package_ref)
 
-    def extract_files(self, config_dictionary, is_bootloader_config, board=None):
+    def extract_files(self, config_dictionary, is_bootloader_config,
+                      board=None):
         """Extract (boot) files based on EXTRACT_FILES spec and put
         them into hwpack."""
         self.remove_packages = []
@@ -307,7 +310,8 @@ class HardwarePackBuilder(object):
                         # through both of them changing what is necessary.
                         if self.config.format.format_as_string == '3.0':
                             if self.config.bootloaders is not None:
-                                self.extract_files(self.config.bootloaders, True)
+                                self.extract_files(self.config.bootloaders,
+                                                   True)
                                 metadata.bootloaders = self.config.bootloaders
                             if self.config.boards is not None:
                                 self.extract_files(self.config.boards, False)
