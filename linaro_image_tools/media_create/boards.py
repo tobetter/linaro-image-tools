@@ -835,22 +835,27 @@ class BoardConfig(object):
 
     @classmethod
     def _get_kflavor_files_v2(cls, path):
-        kernel = _get_file_matching(os.path.join(path, cls.vmlinuz))
-        if kernel is not None:
-            logger = logging.getLogger("linaro_image_tools")
+        kernel = initrd = dtb = None
+        logger = logging.getLogger("linaro_image_tools")
+
+        if cls.vmlinuz:
+            kernel = _get_file_matching(os.path.join(path, cls.vmlinuz))
+        if not cls.vmlinuz or not kernel:
+            raise ValueError("Unable to find a valid kernel image.")
+
+        if cls.initrd:
             initrd = _get_file_matching(os.path.join(path, cls.initrd))
-            if initrd is None:
-                logger.warn(
-                    "Could not find a valid initrd, skipping uInitd.")
+        if not cls.initrd or not initrd:
+            logger.warn("Could not find a valid initrd, skipping uInitd.")
+
+        if cls.dtb_file:
             dtb = _get_file_matching(os.path.join(path, cls.dtb_file))
-            if dtb is None and cls.dtb_file is not None:
-                logger.warn(
-                    "Could not find a valid dtb file, skipping it.")
-            logger.info("Will use kernel=%s, initrd=%s, dtb=%s." % \
+        if not cls.dtb_file or not dtb:
+            logger.warn("Could not find a valid dtb file, skipping it.")
+
+        logger.info("Will use kernel=%s, initrd=%s, dtb=%s." % \
                              (kernel, initrd, dtb))
-            return (kernel, initrd, dtb)
-        raise ValueError(
-            "No kernel found matching %s." % (cls.vmlinuz))
+        return (kernel, initrd, dtb)
 
     @classmethod
     def populate_raw_partition(cls, media, boot_dir):
