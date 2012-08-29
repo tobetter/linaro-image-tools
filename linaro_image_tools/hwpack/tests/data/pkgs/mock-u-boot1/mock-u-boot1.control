@@ -1,0 +1,9 @@
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+
+Package: mock-u-boot1
+Version: 1.0
+Files: u-boot.img /usr/lib/u-boot/omap4_panda/
+ copyright /usr/share/doc/u-boot-linaro-omap4-panda/
+Description: Mock u-boot package
