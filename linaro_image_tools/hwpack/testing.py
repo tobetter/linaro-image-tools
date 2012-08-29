@@ -336,18 +336,18 @@ class IsHardwarePack(Matcher):
 
     def __init__(self, metadata, packages, sources,
                  packages_without_content=None,
-                 package_spec=None):
+                 package_spec=None, format="1.0"):
         self.metadata = metadata
         self.packages = packages
         self.sources = sources
         self.packages_without_content = packages_without_content or []
         self.package_spec = package_spec
+        self.format = format + "\n"
 
     def match(self, path):
-        tf = tarfile.open(name=path, mode="r:gz")
-        try:
+        with tarfile.open(name=path, mode="r:gz") as tf:
             matchers = []
-            matchers.append(HardwarePackHasFile("FORMAT", content="1.0\n"))
+            matchers.append(HardwarePackHasFile("FORMAT", content=self.format))
             matchers.append(HardwarePackHasFile(
                 "metadata", content=str(self.metadata)))
             manifest_lines = []
@@ -398,8 +398,6 @@ class IsHardwarePack(Matcher):
             matchers.append(HardwarePackHasFile(
                 "sources.list.d.gpg", type=tarfile.DIRTYPE))
             return MatchesAll(*matchers).match(tf)
-        finally:
-            tf.close()
 
     def __str__(self):
         return "Is a valid hardware pack."

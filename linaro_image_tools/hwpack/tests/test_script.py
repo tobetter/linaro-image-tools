@@ -31,8 +31,11 @@ from linaro_image_tools.hwpack.testing import (
     DummyFetchedPackage,
     IsHardwarePack,
     )
+from linaro_image_tools.hwpack.config import Config
 from linaro_image_tools.testing import TestCaseWithFixtures
 from linaro_image_tools.utils import find_command
+import os
+from StringIO import StringIO
 
 
 class ScriptTests(TestCaseWithFixtures):
@@ -40,7 +43,26 @@ class ScriptTests(TestCaseWithFixtures):
 
     def setUp(self):
         super(ScriptTests, self).setUp()
-        self.script_path = find_command("linaro-hwpack-create")
+
+        # Work out root of checkout.
+        # We do this here because when running in PyCharm
+        # the assumption in find_command that os.path.isabs(__file__) is
+        # only true when not running from a Bazaar checkout is broken.
+        # Thankfully find_command allows us to work around this by specifying
+        # prefer_dir.
+        dir = os.path.dirname(__file__)
+        while True:
+            path = os.path.join(dir, "linaro-hwpack-create")
+            if dir == "/" or dir == "":
+                # Didn't find linaro-media-create. Continue as if we haven't
+                # tried to work out prefer_dir.
+                dir = None
+                break
+            if os.path.exists(path) and os.access(path, os.X_OK):
+                break
+            dir = os.path.split(dir)[0]
+
+        self.script_path = find_command("linaro-hwpack-create", prefer_dir=dir)
         self.useFixture(ChdirToTempdirFixture())
 
     def run_script(self, args, expected_returncode=0):
@@ -91,6 +113,70 @@ class ScriptTests(TestCaseWithFixtures):
                 metadata, [available_package],
                 {"ubuntu": source.sources_entry},
                 package_spec=package_name))
+
+    def test_builds_a_v3_hwpack_from_config_with_2_bootloaders(self):
+        config_v3 = ("format: 3.0\n"
+                     "name: ahwpack\n"
+                     "architectures: armel\n"
+                     "serial_tty: ttySAC1\n"
+                     "partition_layout:\n"
+                     " - bootfs_rootfs\n"
+                     "boot_script: boot.scr\n"
+                     "extra_serial_options:\n"
+                     "  - console=tty0\n"
+                     "  - console=ttyO2,115200n8\n"
+                     "mmc_id: 0:1\n"
+                     "kernel_file: boot/vmlinuz-*-linaro-omap\n"
+                     "initrd_file: boot/initrd.img-*-linaro-omap\n"
+                     "dtb_file: boot/dt-*-linaro-omap/omap4-panda.dtb\n"
+                     "packages:\n"
+                     " - %s\n"
+                     " - %s\n")
+        bootloader_config = ("  package: %s\n"
+                             "  in_boot_part: %s\n"
+                             "  extra_boot_options:\n"
+                             "   - earlyprintk\n"
+                             "   - fixrtc\n"
+                             "   - nocompcache\n"
+                             "   - vram=48M\n"
+                             "   - omapfb.vram=0:24M\n"
+                             "   - mem=456M@0x80000000\n"
+                             "   - mem=512M@0xA0000000\n")
+
+        config_v3 += ("bootloaders:\n"
+                      " u_boot:\n" + bootloader_config +
+                      " u_boot_2:\n" + bootloader_config)
+
+        config_v3 += ("sources:\n"
+                      " ubuntu: %s\n")
+
+        package_names = ['foo', 'bar']
+        available_packages = []
+        for package_name in package_names:
+            available_packages.append(
+                DummyFetchedPackage(package_name, "1.1", architecture="armel"))
+        source = self.useFixture(AptSourceFixture(available_packages))
+
+        config_v3 = config_v3 % (package_names[0], package_names[1],
+                                 package_names[0], "True",
+                                 package_names[1], "False",
+                                 source.sources_entry)
+
+        config_file_fixture = self.useFixture(ConfigFileFixture(config_v3))
+        self.run_script([config_file_fixture.filename, "1.0"])
+
+        # We now need a real config object to test against the configuration
+        # in the hardware pack we have created.
+        config = Config(StringIO(config_v3))
+        config.set_bootloader("u_boot")
+        metadata = Metadata.from_config(config, "1.0", "armel")
+        self.assertThat(
+            "hwpack_ahwpack_1.0_armel.tar.gz",
+            IsHardwarePack(
+                metadata, available_packages,
+                {"ubuntu": source.sources_entry},
+                package_spec=",".join(package_names),
+                format="3.0"))
 
     def test_log_output(self):
         package_name = 'foo'
