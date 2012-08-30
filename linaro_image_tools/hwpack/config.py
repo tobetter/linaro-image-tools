@@ -122,7 +122,33 @@ class Config(object):
         """Create a Config.
 
         :param fp: a file-like object containing the configuration.
+        :param allow_unset_bootloader: Bool. If you have more than 1 bootloader
+          in the config object and don't set which one to use, accessing
+          bootloader related parameters will throw an exception. By setting
+          this None will be returned instead.
         """
+        # This Config class is used in two places:
+        # 1. Generating hardware packs
+        # 2. Combining a hardware pack with an OS image to create a bootable
+        #    disk image.
+        #
+        # In both cases we are providing a file format independant interface
+        # to configuration data to the rest of Linaro Image Tools.
+        #
+        # In case 1 we want all information to be put in the hardware pack and
+        # there is no possibility of picking a booloader (all bootloaders are
+        # put in the hardware pack and one is picked later). In this case we
+        # don't want to trip up other code by throwing an exception when a
+        # bootloader dependant parameter is queried so we return None. In
+        # reality this information isn't used, but sometimes gets queried by
+        # tests. This flag allows us to keep things simple.
+        #
+        # In case 2 we may have multiple bootloaders specified, but only one
+        # can be used by the OS image so we need to pick one. If a bootloader
+        # isn't specified we want to throw an error when a choice would make a
+        # difference to what is returned when querying the object.
+        #
+        # self.allow_unset_bootloader allows for both modes of operation.
         self.allow_unset_bootloader = allow_unset_bootloader
         self.bootloader = None
         obfuscated_e = None
