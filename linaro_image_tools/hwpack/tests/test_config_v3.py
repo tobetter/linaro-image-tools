@@ -315,6 +315,23 @@ class ConfigTests(TestCase):
         config._validate_bootloader_file_in_boot_part()
         self.assertEqual(config.bootloader_file_in_boot_part, "yes")
 
+    def test_multiple_bootloaders(self):
+        config = self.get_config(
+            self.valid_start_v3 +
+            "bootloaders:\n"
+            " u_boot:\n"
+            "  in_boot_part: No\n"
+            " anotherboot:\n"
+            "  in_boot_part: Yes\n")
+
+        config.set_bootloader("u_boot")
+        config._validate_bootloader_file_in_boot_part()
+        self.assertEqual(config.bootloader_file_in_boot_part, "no")
+
+        config.set_bootloader("anotherboot")
+        config._validate_bootloader_file_in_boot_part()
+        self.assertEqual(config.bootloader_file_in_boot_part, "yes")
+
     def test_validate_serial_tty(self):
         config = self.get_config(self.valid_start_v3 + "serial_tty: tty\n")
         self.assertValidationError("Invalid serial tty: tty",
