@@ -1385,7 +1385,7 @@ class FastModelConfig(BoardConfig):
     supports_writing_to_mmc = False
 
     @classmethod
-    def _get_bootcmd(cls, d_img_data):
+    def _get_bootcmd(cls, i_img_data, d_img_data):
         """Get the bootcmd for FastModel.
 
         We override this as we don't do uboot.
