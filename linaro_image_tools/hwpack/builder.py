@@ -141,7 +141,7 @@ class HardwarePackBuilder(object):
         return wanted_package
 
     def add_file_to_hwpack(self, package, wanted_file, target_path):
-        if (package.name, target_path) in self.packages_added_to_hwpack:
+        if (package.name, wanted_file) in self.packages_added_to_hwpack:
             # Don't bother adding the same package more than once.
             return
 
@@ -167,7 +167,7 @@ class HardwarePackBuilder(object):
         return list(set(boot_packages))
 
     def extract_bootloader_files(self, board, bootloader_name,
-                                                bootloader_conf):
+                                 bootloader_conf):
         for key, value in bootloader_conf.iteritems():
             if key in EXTRACT_FILES:
                 package_field, dest_path = EXTRACT_FILES[key]

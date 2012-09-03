@@ -225,7 +225,8 @@ Description: Dummy package to install a hwpack
  This package was created automatically by linaro-media-create
 ''')
 
-    def make_package(self, name, version, relationships, architecture='all'):
+    def make_package(self, name, version, relationships, architecture='all',
+                     files=[]):
         tmp_dir = self.make_temporary_directory()
         filename = '%s_%s_%s' % (name, version, architecture)
         packaging_dir = os.path.join(tmp_dir, filename)
@@ -243,6 +244,14 @@ Description: Dummy package to install a hwpack
             )
         control_file_text = self.control_file_template.safe_substitute(
             subst_vars)
+
+        # If any files have been specified, create them
+        for file_path in files:
+            os.makedirs(os.path.join(packaging_dir,
+                                     os.path.dirname(file_path)))
+            with open(os.path.join(packaging_dir, file_path), 'w') as new_file:
+                new_file.write(name + " " + file_path)
+
         with open(os.path.join(
             packaging_dir, 'DEBIAN', 'control'), 'w') as control_file:
             control_file.write(control_file_text)
