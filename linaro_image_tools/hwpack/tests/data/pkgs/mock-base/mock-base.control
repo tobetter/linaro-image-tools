@@ -1,0 +1,7 @@
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+
+Package: mock-base
+Version: 1.0
+Description: Mock base system package

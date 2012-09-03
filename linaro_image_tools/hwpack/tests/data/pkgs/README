@@ -1,0 +1,4 @@
+This directory contains mock Debian packages to use in linaro-image-tools
+tests. All .deb packages are created from "source" files (control + extra
+content) in individual subdirectories. If you updated source files, regenerate
+.deb files by running make-mock-debs.sh .
