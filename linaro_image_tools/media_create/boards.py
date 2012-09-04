@@ -202,11 +202,26 @@ class HardwarepackHandler(object):
         return format
 
     def get_file(self, file_alias):
-        file_name, hwpack_tarfile = self.get_field(file_alias)
-        if file_name is not None:
-            hwpack_tarfile.extract(file_name, self.tempdir)
-            file_name = os.path.join(self.tempdir, file_name)
-        return file_name
+        """Get file(s) from a hwpack.
+        :param file_alias: Property name (not field name) which contains
+                           file reference(s)
+        :return: path to a file or list of paths to files
+        """
+        file_names, hwpack_tarfile = self.get_field(file_alias)
+        if not file_names:
+            return file_names
+        single = False
+        if type(file_names) != type([]):
+            single = True
+            file_names = [file_names]
+        out_files = []
+        for f in file_names:
+            hwpack_tarfile.extract(f, self.tempdir)
+            f = os.path.join(self.tempdir, f)
+            out_files.append(f)
+        if single:
+            return out_files[0]
+        return out_files
 
 
 class BoardConfig(object):
@@ -778,8 +793,9 @@ class BoardConfig(object):
         bootloader_parts_dir = os.path.join(chroot_dir, parts_dir)
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
         with partition_mounted(boot_partition, boot_disk):
-            if cls.bootloader_file_in_boot_part:
-                with cls.hardwarepack_handler:
+            boot_files = []
+            with cls.hardwarepack_handler:
+                if cls.bootloader_file_in_boot_part:
                     # <legacy v1 support>
                     if cls.bootloader_flavor is not None:
                         default = os.path.join(
@@ -797,8 +813,16 @@ class BoardConfig(object):
                     assert bootloader_bin is not None, (
                         "bootloader binary could not be found")
 
+                    boot_files.append(bootloader_bin)
+
+                # XXX: check for field existance?
+                copy_files = cls.get_file('boot_copy_files')
+                if copy_files:
+                    boot_files.extend(copy_files)
+
+                for f in boot_files:
                     proc = cmd_runner.run(
-                        ['cp', '-v', bootloader_bin, boot_disk], as_root=True)
+                        ['cp', '-v', f, boot_disk], as_root=True)
                     proc.wait()
 
             cls.make_boot_files(
