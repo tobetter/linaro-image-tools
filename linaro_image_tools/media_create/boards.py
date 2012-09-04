@@ -815,7 +815,6 @@ class BoardConfig(object):
 
                     boot_files.append(bootloader_bin)
 
-                # XXX: check for field existance?
                 copy_files = cls.get_file('boot_copy_files')
                 if copy_files:
                     boot_files.extend(copy_files)
