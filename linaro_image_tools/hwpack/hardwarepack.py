@@ -434,6 +434,7 @@ class HardwarePack(object):
     SOURCES_LIST_GPG_DIRNAME = "sources.list.d.gpg"
     U_BOOT_DIR = "u-boot"
     SPL_DIR = "spl"
+    BOOT_DIR = "boot"
 
     def __init__(self, metadata):
         """Create a HardwarePack.
@@ -482,7 +483,8 @@ class HardwarePack(object):
             to sources entries.
         :type sources: a dict mapping str to str
         """
-        self.sources.update(sources)
+        if sources:
+            self.sources.update(sources)
 
     def add_packages(self, packages):
         """Add packages to the hardware pack.

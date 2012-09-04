@@ -31,7 +31,7 @@ from linaro_image_tools.hwpack.builder import (
     HardwarePackBuilder,
     logger as builder_logger,
     )
-from linaro_image_tools.hwpack.config import HwpackConfigError
+from linaro_image_tools.hwpack.config import HwpackConfigError, Config
 from linaro_image_tools.hwpack.hardwarepack import Metadata
 from linaro_image_tools.hwpack.packages import (
     FetchedPackage,
@@ -55,6 +55,7 @@ from linaro_image_tools.tests.fixtures import (
     MockSomethingFixture,
     MockCmdRunnerPopenFixture,
     )
+from StringIO import StringIO
 
 
 class ConfigFileMissingTests(TestCase):
@@ -82,7 +83,7 @@ class PackageUnpackerTests(TestCaseWithFixtures):
         package_file_name = "package-to-unpack"
         with PackageUnpacker() as package_unpacker:
             package_unpacker.unpack_package(package_file_name)
-            package_dir = package_unpacker.tempdir
+            package_dir = package_unpacker.get_path(package_file_name)
         self.assertEquals(
             ["tar -C %s -xf -" % package_dir,
              "dpkg --fsys-tarfile %s" % package_file_name],
@@ -98,7 +99,7 @@ class PackageUnpackerTests(TestCaseWithFixtures):
                     os.path, 'exists', lambda file: True))
             tempfile = package_unpacker.get_file(package, file)
             self.assertEquals(tempfile,
-                              os.path.join(package_unpacker.tempdir, file))
+                   os.path.join(package_unpacker.get_path(package), file))
 
     def test_get_file_raises(self):
         package = 'package'
@@ -109,8 +110,42 @@ class PackageUnpackerTests(TestCaseWithFixtures):
             self.assertRaises(AssertionError, package_unpacker.get_file,
                               package, file)
 
+    def test_get_file_no_clash(self):
+        # Test that PackageUnpacker, asked to get the same file path
+        # from 2 different packages, return reference to *different*
+        # temporary files
+        package1 = 'package1'
+        package2 = 'package2'
+        file = 'dummyfile'
+        with PackageUnpacker() as package_unpacker:
+            self.useFixture(MockSomethingFixture(
+                    package_unpacker, 'unpack_package', lambda package: None))
+            self.useFixture(MockSomethingFixture(
+                    os.path, 'exists', lambda file: True))
+            tempfile1 = package_unpacker.get_file(package1, file)
+            tempfile2 = package_unpacker.get_file(package2, file)
+            self.assertNotEquals(tempfile1, tempfile2)
+
 
 class HardwarePackBuilderTests(TestCaseWithFixtures):
+    config_v3 = "\n".join(["format: 3.0",
+                 "name: ahwpack",
+                 "architectures: armel",
+                 "serial_tty: ttySAC1",
+                 "partition_layout:",
+                 " - bootfs_rootfs",
+                 "boot_script: boot.scr",
+                 "mmc_id: 0:1",
+                 "kernel_file: boot/vmlinuz-*-linaro-omap",
+                 "initrd_file: boot/initrd.img-*-linaro-omap",
+                 "dtb_file: boot/dt-*-linaro-omap/omap4-panda.dtb",
+                 "packages:",
+                 " - %s",
+                 " - %s",
+                 ""])
+    bootloader_config = "\n".join(["  package: %s",
+                                   "  in_boot_part: %s",
+                                   ""])
 
     def setUp(self):
         super(HardwarePackBuilderTests, self).setUp()
@@ -394,3 +429,83 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         self.assertThat(
             handler.messages[0].getMessage(),
             Equals("Local package 'bar' not included"))
+
+    def test_global_and_board_bootloader(self):
+        package_names = ['package0', 'package1']
+        files = {package_names[0]:
+                     ["usr/lib/u-boot/omap4_panda/u-boot.img",
+                      "usr/share/doc/u-boot-linaro-omap4-panda/copyright"],
+                 package_names[1]: ["usr/lib/u-boot/omap4_panda/u-boot.img"]}
+
+        config_v3 = self.config_v3 + "\n".join([
+            "bootloaders:",
+            " u_boot:",
+            self.bootloader_config,
+            "  file: " + files[package_names[0]][0],
+            "  copy_files:",
+            "   - " + files[package_names[0]][1],
+            "boards:",
+            " board1:",
+            "  bootloaders:",
+            "   u_boot:",
+            "    package: %s",
+            "    file: " + files[package_names[1]][0],
+            "    in_boot_part: true",
+            "sources:",
+            " ubuntu: %s"])
+
+        # Generate some test packages
+        available_packages = []
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+
+        for package_name in package_names:
+            # The files parameter to make_package is a list of files to create.
+            # These files are text files containing package_name and their
+            # path. Since package_name is different for each package, this
+            # gives each file a unique content.
+            deb_file_path = maker.make_package(package_name, '1.0', {},
+                                               files=files[package_name])
+            dummy_package = DummyFetchedPackage(
+                package_name, "1.0", content=open(deb_file_path).read())
+            available_packages.append(dummy_package)
+
+        source = self.useFixture(AptSourceFixture(available_packages))
+
+        # Generate a V3 config
+        config_v3 = config_v3 % (package_names[0], package_names[1],
+                                 package_names[0], "True",
+                                 package_names[1],
+                                 source.sources_entry)
+
+        config_file_fixture = self.useFixture(ConfigFileFixture(config_v3))
+
+        # Parse the config
+        config = Config(StringIO(config_v3))
+        config.set_bootloader("u_boot")
+
+        # Build a hardware pack
+        builder = HardwarePackBuilder(
+            config_file_fixture.filename, "1.0",
+            [os.path.join(source.rootdir, package.filepath)
+             for package in available_packages])
+
+        builder.build()
+
+        # Read the contents of the hardware pack, making sure it is as expected
+        tf = tarfile.open("hwpack_ahwpack_1.0_armel.tar.gz", mode="r:gz")
+
+        # We check the content of each file when content != None. For our test
+        # files this is "<package_name> <originating path>" so they can be
+        # uniquely identified.
+        expected_files = [
+            ("u_boot/u-boot.img",
+             package_names[0] + " " + files[package_names[0]][0]),
+            ("u_boot/copyright",
+             package_names[0] + " " + files[package_names[0]][1]),
+            ("u_boot-board1/u-boot.img",
+             package_names[1] + " " + files[package_names[1]][0])]
+
+        for expected_file, contents in expected_files:
+            self.assertThat(
+                tf, TarfileHasFile(expected_file, content=contents))
