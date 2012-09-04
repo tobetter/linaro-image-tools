@@ -431,7 +431,7 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             Equals("Local package 'bar' not included"))
 
     def test_global_and_board_bootloader(self):
-        package_names = ['foo', 'bar']
+        package_names = ['package0', 'package1']
         files = {package_names[0]:
                      ["usr/lib/u-boot/omap4_panda/u-boot.img",
                       "usr/share/doc/u-boot-linaro-omap4-panda/copyright"],
@@ -460,6 +460,10 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         self.useFixture(ContextManagerFixture(maker))
 
         for package_name in package_names:
+            # The files parameter to make_package is a list of files to create.
+            # These files are text files containing package_name and their
+            # path. Since package_name is different for each package, this
+            # gives each file a unique content.
             deb_file_path = maker.make_package(package_name, '1.0', {},
                                                files=files[package_name])
             dummy_package = DummyFetchedPackage(
@@ -491,10 +495,10 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         # Read the contents of the hardware pack, making sure it is as expected
         tf = tarfile.open("hwpack_ahwpack_1.0_armel.tar.gz", mode="r:gz")
 
+        # We check the content of each file when content != None. For our test
+        # files this is "<package_name> <originating path>" so they can be
+        # uniquely identified.
         expected_files = [
-            ("u_boot/u-boot.img", None),
-            ("u_boot/copyright", None),
-            ("u_boot-board1/u-boot.img", None),
             ("u_boot/u-boot.img",
              package_names[0] + " " + files[package_names[0]][0]),
             ("u_boot/copyright",
