@@ -309,6 +309,37 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             test_file = hp.get_file('bootloader_file')
             self.assertEquals(data, open(test_file, 'r').read())
 
+    def test_get_file_v3(self):
+        # Test that get_file() works as expected with hwpackv3 and
+        # supports its new file fields.
+        metadata = textwrap.dedent("""\
+        format: 3.0
+        name: ahwpack
+        version: 4
+        architecture: armel
+        origin: linaro
+        bootloaders:
+         u_boot:
+          file: a_file
+          copy_files:
+           - file1
+           - file2
+         uefi:
+          file: b_file
+        """)
+        files = {'FORMAT': '3.0\n', 'metadata': metadata,
+                 'a_file': 'a_file content', 'file1': 'file1 content',
+                 'file2': 'file2 content'}
+        tarball = self.add_to_tarball(files.items())
+        hp = HardwarepackHandler([tarball], bootloader='u_boot')
+        with hp:
+            test_file = hp.get_file('bootloader_file')
+            self.assertEquals(files['a_file'], open(test_file, 'r').read())
+            test_files = hp.get_file('boot_copy_files')
+            self.assertEquals(len(test_files), 2)
+            self.assertEquals(files['file1'], open(test_files[0], 'r').read())
+            self.assertEquals(files['file2'], open(test_files[1], 'r').read())
+
 
 class TestSetMetadata(TestCaseWithFixtures):
 
@@ -2907,6 +2938,21 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             self.config, 'make_boot_files', self.save_args))
 
+    def prepare_config_v3(self, config):
+        class c(config):
+            pass
+
+        self.config = c
+        self.config.boot_script = 'boot_script'
+        self.config.hardwarepack_handler = \
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz')
+        self.config.hardwarepack_handler.get_format = lambda: '3.0'
+        self.config.hardwarepack_handler.get_file = \
+                            lambda file_alias: ['file1', 'file2']
+        self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        self.useFixture(MockSomethingFixture(
+            self.config, 'make_boot_files', self.save_args))
+
     def call_populate_boot(self, config, is_live=False):
         config.populate_boot(
             'chroot_dir', 'rootfs_id', 'boot_partition', 'boot_disk',
@@ -2953,6 +2999,24 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.config.bootloader_file_in_boot_part = False
         self.call_populate_boot(self.config)
         expected_calls = self.expected_calls[:]
+        self.assertEquals(
+            expected_calls, self.popen_fixture.mock.commands_executed)
+        self.assertEquals(self.expected_args, self.saved_args)
+
+    def test_populate_boot_copy_files(self):
+        self.prepare_config_v3(boards.BoardConfig)
+        self.config.bootloader_flavor = "bootloader_flavor"
+        # Test that copy_files works per spec (puts stuff in boot partition)
+        # even if bootloader not in_boot_part.
+        self.config.bootloader_file_in_boot_part = False
+        self.call_populate_boot(self.config)
+        expected_calls = self.expected_calls[:]
+        expected_calls.insert(2,
+            '%s cp -v file1 '
+            'boot_disk' % sudo_args)
+        expected_calls.insert(3,
+            '%s cp -v file2 '
+            'boot_disk' % sudo_args)
         self.assertEquals(
             expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)
