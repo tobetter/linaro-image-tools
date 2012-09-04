@@ -2938,6 +2938,21 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             self.config, 'make_boot_files', self.save_args))
 
+    def prepare_config_v3(self, config):
+        class c(config):
+            pass
+
+        self.config = c
+        self.config.boot_script = 'boot_script'
+        self.config.hardwarepack_handler = \
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz')
+        self.config.hardwarepack_handler.get_format = lambda: '3.0'
+        self.config.hardwarepack_handler.get_file = \
+                            lambda file_alias: ['file1', 'file2']
+        self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        self.useFixture(MockSomethingFixture(
+            self.config, 'make_boot_files', self.save_args))
+
     def call_populate_boot(self, config, is_live=False):
         config.populate_boot(
             'chroot_dir', 'rootfs_id', 'boot_partition', 'boot_disk',
@@ -2984,6 +2999,24 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.config.bootloader_file_in_boot_part = False
         self.call_populate_boot(self.config)
         expected_calls = self.expected_calls[:]
+        self.assertEquals(
+            expected_calls, self.popen_fixture.mock.commands_executed)
+        self.assertEquals(self.expected_args, self.saved_args)
+
+    def test_populate_boot_copy_files(self):
+        self.prepare_config_v3(boards.BoardConfig)
+        self.config.bootloader_flavor = "bootloader_flavor"
+        # Test that copy_files works per spec (puts stuff in boot partition)
+        # even if bootloader not in_boot_part.
+        self.config.bootloader_file_in_boot_part = False
+        self.call_populate_boot(self.config)
+        expected_calls = self.expected_calls[:]
+        expected_calls.insert(2,
+            '%s cp -v file1 '
+            'boot_disk' % sudo_args)
+        expected_calls.insert(3,
+            '%s cp -v file2 '
+            'boot_disk' % sudo_args)
         self.assertEquals(
             expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)
