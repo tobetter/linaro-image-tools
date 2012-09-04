@@ -309,6 +309,37 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             test_file = hp.get_file('bootloader_file')
             self.assertEquals(data, open(test_file, 'r').read())
 
+    def test_get_file_v3(self):
+        # Test that get_file() works as expected with hwpackv3 and
+        # supports its new file fields.
+        metadata = textwrap.dedent("""\
+        format: 3.0
+        name: ahwpack
+        version: 4
+        architecture: armel
+        origin: linaro
+        bootloaders:
+         u_boot:
+          file: a_file
+          copy_files:
+           - file1
+           - file2
+         uefi:
+          file: b_file
+        """)
+        files = {'FORMAT': '3.0\n', 'metadata': metadata,
+                 'a_file': 'a_file content', 'file1': 'file1 content',
+                 'file2': 'file2 content'}
+        tarball = self.add_to_tarball(files.items())
+        hp = HardwarepackHandler([tarball], bootloader='u_boot')
+        with hp:
+            test_file = hp.get_file('bootloader_file')
+            self.assertEquals(files['a_file'], open(test_file, 'r').read())
+            test_files = hp.get_file('boot_copy_files')
+            self.assertEquals(len(test_files), 2)
+            self.assertEquals(files['file1'], open(test_files[0], 'r').read())
+            self.assertEquals(files['file2'], open(test_files[1], 'r').read())
+
 
 class TestSetMetadata(TestCaseWithFixtures):
 
