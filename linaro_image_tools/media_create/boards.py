@@ -211,7 +211,7 @@ class HardwarepackHandler(object):
         if not file_names:
             return file_names
         single = False
-        if not isinstance(args, list):
+        if not isinstance(file_names, list):
             single = True
             file_names = [file_names]
         out_files = []
