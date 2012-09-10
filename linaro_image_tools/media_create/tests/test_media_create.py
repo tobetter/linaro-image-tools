@@ -650,7 +650,7 @@ class TestSetMetadata(TestCaseWithFixtures):
         class config(BoardConfig):
             pass
         config.set_metadata('ahwpack.tar.gz')
-        self.assertEquals((data_to_set, None), config.bootloader_copy_files)
+        self.assertEquals(data_to_set, config.bootloader_copy_files)
 
 
 class TestGetMLOFile(TestCaseWithFixtures):
@@ -3079,6 +3079,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.prepare_config(boards.BoardConfig)
         self.config.bootloader_flavor = "bootloader_flavor"
         self.config.bootloader_file_in_boot_part = True
+        self.config.bootloader = "u_boot"
         self.call_populate_boot(self.config)
         expected_calls = self.expected_calls[:]
         expected_calls.insert(2,
@@ -3114,6 +3115,27 @@ class TestPopulateBoot(TestCaseWithFixtures):
         expected_calls.insert(5,
             '%s cp -v file2 '
             'boot_disk/boot/grub/renamed' % sudo_args)
+        self.assertEquals(
+            expected_calls, self.popen_fixture.mock.commands_executed)
+        self.assertEquals(self.expected_args, self.saved_args)
+
+    def test_populate_bootloader_copy_files_bootloader_set(self):
+        self.prepare_config_v3(boards.BoardConfig)
+        self.config.bootloader_flavor = "bootloader_flavor"
+        # Test that copy_files works per spec (puts stuff in boot partition)
+        # even if bootloader not in_boot_part.
+        self.config.bootloader_file_in_boot_part = False
+        self.config.bootloader = "u_boot"
+        self.call_populate_boot(self.config)
+        expected_calls = self.expected_calls[:]
+        expected_calls.insert(2, '%s mkdir -p boot_disk/boot' % sudo_args)
+        expected_calls.insert(3,
+                              '%s cp -v file1 '
+                              'boot_disk/boot/' % sudo_args)
+        expected_calls.insert(4, '%s mkdir -p boot_disk/boot/grub' % sudo_args)
+        expected_calls.insert(5,
+                              '%s cp -v file2 '
+                              'boot_disk/boot/grub/renamed' % sudo_args)
         self.assertEquals(
             expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)

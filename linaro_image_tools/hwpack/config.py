@@ -117,6 +117,8 @@ class Config(object):
     translate_v2_to_v3[BOOTLOADER_IN_BOOT_PART_KEY] = IN_BOOT_PART_FIELD
     BOOTLOADER_DD_KEY = 'u_boot_dd'
     translate_v2_to_v3[BOOTLOADER_DD_KEY] = DD_FIELD
+    last_used_keys = []
+    board = None
 
     def __init__(self, fp, bootloader=None, board=None,
                  allow_unset_bootloader=False):
@@ -474,7 +476,12 @@ class Config(object):
             key = self._v2_key_to_v3(key)
             if result is not None:
                 result = result.get(key, None)
+        self.last_used_keys = keys
         return result
+
+    def get_last_used_keys(self):
+        """Used so you can work out which boards + boot loader was used"""
+        return self.last_used_keys
 
     def get_option(self, name):
         """Return the value of an attribute by name.

@@ -169,9 +169,10 @@ class HardwarepackHandler(object):
             if tempdir is not None and os.path.exists(tempdir):
                 shutil.rmtree(tempdir)
 
-    def get_field(self, field):
+    def get_field(self, field, return_keys=False):
         data = None
         hwpack_with_data = None
+        keys = None
         for hwpack_tarfile in self.hwpack_tarfiles:
             metadata = hwpack_tarfile.extractfile(self.metadata_filename)
             lines = metadata.readlines()
@@ -188,9 +189,13 @@ class HardwarepackHandler(object):
                                                               new_data)
                     data = new_data
                     hwpack_with_data = hwpack_tarfile
+                    if return_keys:
+                        keys = parser.get_last_used_keys()
             except ConfigParser.NoOptionError:
                 continue
 
+        if return_keys:
+            return data, hwpack_with_data, keys
         return data, hwpack_with_data
 
     def get_format(self):
@@ -214,7 +219,8 @@ class HardwarepackHandler(object):
                            file reference(s)
         :return: path to a file or list of paths to files
         """
-        file_names, hwpack_tarfile = self.get_field(file_alias)
+        file_names, hwpack_tarfile, keys = self.get_field(file_alias,
+                                                          return_keys=True)
         if not file_names:
             return file_names
         single = False
@@ -222,7 +228,24 @@ class HardwarepackHandler(object):
             single = True
             file_names = [file_names]
         out_files = []
+
+        # Depending on if board and/or bootloader were used to look up the
+        # file we are getting, we need to prepend those names to the path
+        # to get the correct extracted file from the hardware pack.
+        config_names = [("board", "boards"), ("bootloader", "bootloaders")]
+        base_path = ""
+        if keys:
+            # If keys is non-empty, we have a V3 config option that was
+            # modified by the bootloader and/or boot option...
+            for name, key in config_names:
+                if self.get_field(name):
+                    value = self.get_field(name)[0]
+                    if keys[0] == key:
+                        base_path = os.path.join(base_path, value)
+                        keys = keys[1:]
+
         for f in file_names:
+            f = os.path.join(base_path, f)
             hwpack_tarfile.extract(f, self.tempdir)
             f = os.path.join(self.tempdir, f)
             out_files.append(f)
@@ -318,7 +341,14 @@ class HardwarepackHandler(object):
         with PackageUnpacker() as self.package_unpacker:
             extracted_file = self.package_unpacker.get_file(package_path,
                                                             file_path)
-
+            after_tmp = re.sub(self.package_unpacker.tempdir, "",
+                               extracted_file).lstrip("/\\")
+            extract_dir = os.path.join(tempdir, "extracted",
+                                       os.path.dirname(after_tmp))
+            os.makedirs(extract_dir)
+            shutil.move(extracted_file, extract_dir)
+            extracted_file = os.path.join(extract_dir,
+                                          os.path.basename(extracted_file))
         return extracted_file
 
 
@@ -564,7 +594,11 @@ class BoardConfig(object):
                                               cls.SAMSUNG_V310_ENV_LEN)
 
             cls.bootloader_copy_files = cls.hardwarepack_handler.get_field(
-                "bootloader_copy_files")
+                "bootloader_copy_files")[0]
+
+            cls.bootloader = cls.hardwarepack_handler.get_field(
+                                "bootloader")
+            cls.board = board
 
     @classmethod
     def get_file(cls, file_alias, default=None):

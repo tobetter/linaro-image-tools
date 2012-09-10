@@ -173,17 +173,22 @@ class HardwarePackBuilder(object):
 
     def do_extract_files(self):
         """Go through a bootloader config, search for files to extract."""
-        dest_path = self.config.bootloader
+        base_dest_path = ""
         if self.config.board:
-            dest_path += "-" + self.config.board
+            base_dest_path = self.config.board
+        base_dest_path = os.path.join(base_dest_path, self.config.bootloader)
         # Extract bootloader file
         if self.config.bootloader_package and self.config.bootloader_file:
+            dest_path = os.path.join(base_dest_path,
+                            os.path.dirname(self.config.bootloader_file))
             self.do_extract_file(self.config.bootloader_package,
                                  self.config.bootloader_file,
                                  dest_path)
 
         # Extract SPL file
         if self.config.spl_package and self.config.spl_file:
+            dest_path = os.path.join(base_dest_path,
+                            os.path.dirname(self.config.spl_file))
             self.do_extract_file(self.config.spl_package,
                                  self.config.spl_file,
                                  dest_path)
