@@ -188,17 +188,12 @@ class HardwarePackBuilder(object):
                                  self.config.spl_file,
                                  dest_path)
 
-    def extract_files(self):
-        """Find bootloaders in config that may contain files to extract."""
-        if float(self.config.format.format_as_string) < 3.0:
-            # extract files was introduced in version 3 configurations and is
-            # a null operation for earlier configuration files
-            return
-
+    def call_for_all_boards_and_bootloaders(self, function):
+        """Call function for each board + bootloader combination in metadata"""
         if self.config.bootloaders is not None:
             for bootloader in self.config.bootloaders:
                 self.config.set_bootloader(bootloader)
-                self.do_extract_files()
+                function()
 
         if self.config.boards is not None:
             for board in self.config.boards:
@@ -206,7 +201,32 @@ class HardwarePackBuilder(object):
                     for bootloader in self.config.bootloaders:
                         self.config.set_board(board)
                         self.config.set_bootloader(bootloader)
-                        self.do_extract_files()
+                        function()
+
+    def extract_files(self):
+        """Find bootloaders in config that may contain files to extract."""
+        if float(self.config.format.format_as_string) < 3.0:
+            # extract files was introduced in version 3 configurations and is
+            # a null operation for earlier configuration files
+            return
+
+        self.call_for_all_boards_and_bootloaders(self.do_extract_files)
+
+    def do_find_copy_files_packages(self):
+        """Find packages referenced by copy_files (single board, bootloader)"""
+        copy_files = self.config.bootloader_copy_files
+        if copy_files:
+            self.copy_files_packages.extend(
+                [package for package in copy_files])
+
+    def find_copy_files_packages(self):
+        """Find all packages referenced by copy_files sections in metadata."""
+        self.copy_files_packages = []
+        self.call_for_all_boards_and_bootloaders(
+            self.do_find_copy_files_packages)
+        packages = self.copy_files_packages
+        del(self.copy_files_packages)
+        return packages
 
     def build(self):
         for architecture in self.config.architectures:
@@ -232,6 +252,8 @@ class HardwarePackBuilder(object):
                     if self.config.boards is not None:
                         self.packages.extend(self.find_bootloader_packages(
                                                 self.config.boards))
+
+                    self.packages.extend(self.find_copy_files_packages())
                 else:
                     if self.config.bootloader_package is not None:
                         self.packages.append(self.config.bootloader_package)

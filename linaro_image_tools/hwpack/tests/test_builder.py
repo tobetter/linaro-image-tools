@@ -428,3 +428,74 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         self.assertThat(
             handler.messages[0].getMessage(),
             Equals("Local package 'bar' not included"))
+
+    def test_global_and_board_bootloader(self):
+        package_names = ['package0', 'package1', 'package2', 'package3']
+        files = {
+            package_names[0]:
+                ["usr/lib/u-boot/omap4_panda/u-boot.img",
+                 "usr/share/doc/u-boot-linaro-omap4-panda/copyright"],
+            package_names[1]:
+                ["usr/lib/u-boot/omap4_panda/u-boot.img",
+                 "some/path/file"],
+            package_names[2]: [],
+            package_names[3]: [],
+        }
+
+        config_v3 = self.config_v3 + "\n".join([
+            "bootloaders:",
+            " u_boot:",
+            self.bootloader_config,
+            "  file: " + files[package_names[0]][0],
+            "  copy_files:",
+            "    " + package_names[2] + ":",
+            "      - some_file",
+            "boards:",
+            " board1:",
+            "  bootloaders:",
+            "   u_boot:",
+            "    package: %s",
+            "    file: " + files[package_names[1]][0],
+            "    copy_files:",
+            "      " + package_names[3] + ":",
+            "       - some_file",
+            "    in_boot_part: true",
+            "sources:",
+            " ubuntu: %s"])
+
+        # Generate some test packages
+        available_packages = []
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+
+        for package_name in package_names:
+            # The files parameter to make_package is a list of files to create.
+            # These files are text files containing package_name and their
+            # path. Since package_name is different for each package, this
+            # gives each file a unique content.
+            deb_file_path = maker.make_package(package_name, '1.0', {},
+                                               files=files[package_name])
+            dummy_package = DummyFetchedPackage(
+                package_name, "1.0", content=open(deb_file_path).read())
+            available_packages.append(dummy_package)
+
+        source = self.useFixture(AptSourceFixture(available_packages))
+
+        # Generate a V3 config
+        config_v3 = config_v3 % (package_names[0], package_names[1],
+                                 package_names[0], "True",
+                                 package_names[1],
+                                 source.sources_entry)
+
+        config_file_fixture = self.useFixture(ConfigFileFixture(config_v3))
+
+        # Build a hardware pack
+        builder = HardwarePackBuilder(
+            config_file_fixture.filename, "1.0",
+            [os.path.join(source.rootdir, package.filepath)
+             for package in available_packages])
+
+        builder.build()
+        stored_package_names = [p.name for p in builder.packages]
+        for package_name in package_names:
+            self.assertIn(package_name, stored_package_names)
