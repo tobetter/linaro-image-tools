@@ -21,6 +21,7 @@
 
 import ConfigParser
 from operator import attrgetter
+import os
 import re
 import string
 import yaml
@@ -354,9 +355,56 @@ class Config(object):
         return self._get_bootloader_option(SPL_IN_BOOT_PART_FIELD)
 
     @property
-    def boot_copy_files(self):
-        """Extra files to copy to boot partition."""
-        return self._get_bootloader_option(COPY_FILES_FIELD)
+    def bootloader_copy_files(self):
+        """Extra files to copy to boot partition.
+
+        This can be stored in several formats. We always present in a common
+        one: {source_package: [{source_file_path: dest_file_path}].
+        dest_file_path (in the above example) is always absolute.
+        """
+        #copy_files:
+        #  source_package:
+        #   - source_file_path : dest_file_path
+        #   - source_file_without_explicit_destination
+        #copy_files:
+        # - file1
+        # - file2: dest_path
+        #
+        # Note that the list of files is always that - a list.
+
+        copy_files = self._get_bootloader_option(COPY_FILES_FIELD)
+
+        if copy_files is None:
+            return None
+
+        if not isinstance(copy_files, dict):
+            copy_files = {self.bootloader_package: copy_files}
+
+        for package in copy_files:
+            new_list = []
+            for value in copy_files[package]:
+                if not isinstance(value, dict):
+                    dest_path = "/boot"
+                    source_path = value
+                else:
+                    if len(value.keys()) > 1:
+                        raise HwpackConfigError("copy_files entry found with"
+                            "more than one destination")
+                    source_path = value.keys()[0]
+                    dest_path = value[source_path]
+
+                if not dest_path.startswith("/boot"):
+                    # Target path should be relative, or start with /boot - we
+                    # don't support to copying to anywhere other than /boot.
+                    if dest_path[0] == "/":
+                        raise HwpackConfigError("copy_files destinations must"
+                            "be relative to /boot or start with /boot.")
+                    dest_path = os.path.join("/boot", dest_path)
+
+                new_list.append({source_path: dest_path})
+            copy_files[package] = new_list
+
+        return copy_files
 
     @property
     def spl_dd(self):
