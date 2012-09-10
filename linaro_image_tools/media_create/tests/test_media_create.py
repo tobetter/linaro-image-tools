@@ -3041,8 +3041,8 @@ class TestPopulateBoot(TestCaseWithFixtures):
             self.get_file_from_package
         self.config.bootloader_copy_files = {
             "package1":
-                [{"file1": "/boot"},
-                 {"file2": "/boot/grub"}]}
+                [{"file1": "/boot/"},
+                 {"file2": "/boot/grub/renamed"}]}
 
         self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
@@ -3106,12 +3106,14 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.config.bootloader_file_in_boot_part = False
         self.call_populate_boot(self.config)
         expected_calls = self.expected_calls[:]
-        expected_calls.insert(2,
-            '%s cp -v file1 '
-            '/boot' % sudo_args)
+        expected_calls.insert(2, '%s mkdir -p boot_disk/boot' % sudo_args)
         expected_calls.insert(3,
+            '%s cp -v file1 '
+            'boot_disk/boot/' % sudo_args)
+        expected_calls.insert(4, '%s mkdir -p boot_disk/boot/grub' % sudo_args)
+        expected_calls.insert(5,
             '%s cp -v file2 '
-            '/boot/grub' % sudo_args)
+            'boot_disk/boot/grub/renamed' % sudo_args)
         self.assertEquals(
             expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)

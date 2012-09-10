@@ -943,6 +943,12 @@ class BoardConfig(object):
                 for source_path, dest_path in file_info.iteritems():
                     source = cls.hardwarepack_handler.get_file_from_package(
                         source_path, source_package)
+                    dest_path = dest_path.lstrip("/\\")
+                    dirname = os.path.dirname(dest_path)
+                    dirname = os.path.join(boot_disk, dirname)
+                    if not os.path.exists(dirname):
+                        cmd_runner.run(["mkdir", "-p", dirname],
+                                       as_root=True).wait()
                     proc = cmd_runner.run(
                         ['cp', '-v', source,
                          os.path.join(boot_disk, dest_path)], as_root=True)
