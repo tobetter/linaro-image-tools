@@ -37,29 +37,13 @@ from linaro_image_tools.hwpack.packages import (
     )
 
 from linaro_image_tools.hwpack.hwpack_fields import (
-    FILE_FIELD,
     PACKAGE_FIELD,
-    SPL_FILE_FIELD,
     SPL_PACKAGE_FIELD,
-    COPY_FILES_FIELD,
 )
 
 # The fields that hold packages to be installed.
 PACKAGE_FIELDS = [PACKAGE_FIELD, SPL_PACKAGE_FIELD]
-# Specification of files (boot related) to extract:
-# <field_containing_filepaths>: (<take_files_from_package>,
-#                                <put_into_this_hwpack_subdir>)
-# if <put_into_this_hwpack_subdir> is None, it will be <bootloader_name> for
-# global bootloader, or <board>-<bootloader_name> for board-specific
-# bootloader
-EXTRACT_FILES = {FILE_FIELD: (PACKAGE_FIELD, None),
-                 SPL_FILE_FIELD: (SPL_PACKAGE_FIELD, None),
-                 COPY_FILES_FIELD: (PACKAGE_FIELD, None)}
-
-
 logger = logging.getLogger(__name__)
-
-
 LOCAL_ARCHIVE_LABEL = 'hwpack-local'
 
 
@@ -166,57 +150,72 @@ class HardwarePackBuilder(object):
         # Eliminate duplicates.
         return list(set(boot_packages))
 
-    def extract_bootloader_files(self, board, bootloader_name,
-                                 bootloader_conf):
-        for key, value in bootloader_conf.iteritems():
-            if key in EXTRACT_FILES:
-                package_field, dest_path = EXTRACT_FILES[key]
-                if not dest_path:
-                    dest_path = bootloader_name
-                    if board:
-                        dest_path += "-" + board
-                # Dereference package field to get actual package name
-                package = bootloader_conf.get(package_field)
-                src_files = value
+    def do_extract_file(self, package, source_path, dest_path):
+        """Extract specified file from package to dest_path."""
+        package_ref = self.find_fetched_package(self.packages, package)
+        return self.add_file_to_hwpack(package_ref, source_path, dest_path)
 
-                # Process scalar and list fields consistently below
-                field_value_scalar = False
-                if type(src_files) != type([]):
-                    src_files = [src_files]
-                    field_value_scalar = True
+    def do_extract_files(self):
+        """Go through a bootloader config, search for files to extract."""
+        base_dest_path = ""
+        if self.config.board:
+            base_dest_path = self.config.board
+        base_dest_path = os.path.join(base_dest_path, self.config.bootloader)
+        # Extract bootloader file
+        if self.config.bootloader_package and self.config.bootloader_file:
+            dest_path = os.path.join(base_dest_path,
+                            os.path.dirname(self.config.bootloader_file))
+            self.do_extract_file(self.config.bootloader_package,
+                                 self.config.bootloader_file,
+                                 dest_path)
 
-                package_ref = self.find_fetched_package(
-                                self.packages, package)
-                added_files = []
-                for f in src_files:
-                    added_files.append(self.add_file_to_hwpack(
-                                        package_ref, f, dest_path))
-                # Store within-hwpack file paths with the same
-                # scalar/list type as original field.
-                if field_value_scalar:
-                    assert len(added_files) == 1
-                    added_files = added_files[0]
-                bootloader_conf[key] = added_files
+        # Extract SPL file
+        if self.config.spl_package and self.config.spl_file:
+            dest_path = os.path.join(base_dest_path,
+                            os.path.dirname(self.config.spl_file))
+            self.do_extract_file(self.config.spl_package,
+                                 self.config.spl_file,
+                                 dest_path)
 
-    def extract_files(self, config_dictionary, is_bootloader_config,
-                      board=None):
-        """Extract (boot) files based on EXTRACT_FILES spec and put
-        them into hwpack."""
-        self.remove_packages = []
-        if is_bootloader_config:
-            for bootl_name, bootl_conf in config_dictionary.iteritems():
-                self.extract_bootloader_files(board, bootl_name, bootl_conf)
-        else:
-            # This is board config
-            for board, board_conf in config_dictionary.iteritems():
-                bootloaders = board_conf['bootloaders']
-                self.extract_files(bootloaders, True, board)
+    def foreach_boards_and_bootloaders(self, function):
+        """Call function for each board + bootloader combination in metadata"""
+        if self.config.bootloaders is not None:
+            for bootloader in self.config.bootloaders:
+                self.config.set_board(None)
+                self.config.set_bootloader(bootloader)
+                function()
 
-        # Clean up no longer needed packages.
-        for package in self.remove_packages:
-            if package in self.packages:
-                self.packages.remove(package)
-        self.remove_packages = []
+        if self.config.boards is not None:
+            for board in self.config.boards:
+                if self.config.bootloaders is not None:
+                    for bootloader in self.config.bootloaders:
+                        self.config.set_board(board)
+                        self.config.set_bootloader(bootloader)
+                        function()
+
+    def extract_files(self):
+        """Find bootloaders in config that may contain files to extract."""
+        if float(self.config.format.format_as_string) < 3.0:
+            # extract files was introduced in version 3 configurations and is
+            # a null operation for earlier configuration files
+            return
+
+        self.foreach_boards_and_bootloaders(self.do_extract_files)
+
+    def do_find_copy_files_packages(self):
+        """Find packages referenced by copy_files (single board, bootloader)"""
+        copy_files = self.config.bootloader_copy_files
+        if copy_files:
+            self.copy_files_packages.extend(copy_files.keys())
+
+    def find_copy_files_packages(self):
+        """Find all packages referenced by copy_files sections in metadata."""
+        self.copy_files_packages = []
+        self.foreach_boards_and_bootloaders(
+            self.do_find_copy_files_packages)
+        packages = self.copy_files_packages
+        del(self.copy_files_packages)
+        return packages
 
     def build(self):
         for architecture in self.config.architectures:
@@ -242,6 +241,8 @@ class HardwarePackBuilder(object):
                     if self.config.boards is not None:
                         self.packages.extend(self.find_bootloader_packages(
                                                 self.config.boards))
+
+                    self.packages.extend(self.find_copy_files_packages())
                 else:
                     if self.config.bootloader_package is not None:
                         self.packages.append(self.config.bootloader_package)
@@ -268,14 +269,9 @@ class HardwarePackBuilder(object):
                         # On a v3 hwpack, all the values we need to check are
                         # in the bootloaders and boards section, so we loop
                         # through both of them changing what is necessary.
+
                         if self.config.format.format_as_string == '3.0':
-                            if self.config.bootloaders is not None:
-                                self.extract_files(self.config.bootloaders,
-                                                   True)
-                                metadata.bootloaders = self.config.bootloaders
-                            if self.config.boards is not None:
-                                self.extract_files(self.config.boards, False)
-                                metadata.boards = self.config.boards
+                            self.extract_files()
                         else:
                             bootloader_package = None
                             if self.config.bootloader_file is not None:

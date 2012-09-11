@@ -37,6 +37,7 @@ import shutil
 import string
 import logging
 from linaro_image_tools.hwpack.config import Config
+from linaro_image_tools.hwpack.builder import PackageUnpacker
 
 from parted import Device
 
@@ -128,6 +129,7 @@ class HardwarepackHandler(object):
         self.hwpack_tarfiles = []
         self.bootloader = bootloader
         self.board = board
+        self.tempdirs = {}
 
     class FakeSecHead(object):
         """ Add a fake section header to the metadata file.
@@ -162,9 +164,15 @@ class HardwarepackHandler(object):
         if self.tempdir is not None and os.path.exists(self.tempdir):
             shutil.rmtree(self.tempdir)
 
-    def get_field(self, field):
+        for name in self.tempdirs:
+            tempdir = self.tempdirs[name]
+            if tempdir is not None and os.path.exists(tempdir):
+                shutil.rmtree(tempdir)
+
+    def get_field(self, field, return_keys=False):
         data = None
         hwpack_with_data = None
+        keys = None
         for hwpack_tarfile in self.hwpack_tarfiles:
             metadata = hwpack_tarfile.extractfile(self.metadata_filename)
             lines = metadata.readlines()
@@ -181,9 +189,13 @@ class HardwarepackHandler(object):
                                                               new_data)
                     data = new_data
                     hwpack_with_data = hwpack_tarfile
+                    if return_keys:
+                        keys = parser.get_last_used_keys()
             except ConfigParser.NoOptionError:
                 continue
 
+        if return_keys:
+            return data, hwpack_with_data, keys
         return data, hwpack_with_data
 
     def get_format(self):
@@ -207,7 +219,8 @@ class HardwarepackHandler(object):
                            file reference(s)
         :return: path to a file or list of paths to files
         """
-        file_names, hwpack_tarfile = self.get_field(file_alias)
+        file_names, hwpack_tarfile, keys = self.get_field(file_alias,
+                                                          return_keys=True)
         if not file_names:
             return file_names
         single = False
@@ -215,13 +228,128 @@ class HardwarepackHandler(object):
             single = True
             file_names = [file_names]
         out_files = []
+
+        # Depending on if board and/or bootloader were used to look up the
+        # file we are getting, we need to prepend those names to the path
+        # to get the correct extracted file from the hardware pack.
+        config_names = [("board", "boards"), ("bootloader", "bootloaders")]
+        base_path = ""
+        if keys:
+            # If keys is non-empty, we have a V3 config option that was
+            # modified by the bootloader and/or boot option...
+            for name, key in config_names:
+                if self.get_field(name):
+                    value = self.get_field(name)[0]
+                    if keys[0] == key:
+                        base_path = os.path.join(base_path, value)
+                        keys = keys[1:]
+
         for f in file_names:
+            f = os.path.join(base_path, f)
             hwpack_tarfile.extract(f, self.tempdir)
             f = os.path.join(self.tempdir, f)
             out_files.append(f)
         if single:
             return out_files[0]
         return out_files
+
+    def list_packages(self):
+        """Return list of (package names, TarFile object containing them)"""
+        packages = []
+        for tf in self.hwpack_tarfiles:
+            for name in tf.getnames():
+                if name.startswith("pkgs/") and name.endswith(".deb"):
+                    packages.append((tf, name))
+        return packages
+
+    def find_package_for(self, name, version=None, revision=None,
+                         architecture=None):
+        """Find a package that matches the name, version, rev and arch given.
+
+        Packages are named according to the debian specification:
+        http://www.debian.org/doc/manuals/debian-faq/ch-pkg_basics.en.html
+        <name>_<Version>-<DebianRevisionNumber>_<DebianArchitecture>.deb
+        DebianRevisionNumber seems to be optional.
+        Use this spec to return a package matching the requirements given.
+        """
+        for tar_file, package in self.list_packages():
+            file_name = os.path.basename(package)
+            dpkg_chunks = re.search("^(.+)_(.+)_(.+)\.deb$",
+                                    file_name)
+            assert dpkg_chunks, "Could not split package file name into"\
+                "<name>_<Version>_<DebianArchitecture>.deb"
+
+            pkg_name = dpkg_chunks.group(1)
+            pkg_version = dpkg_chunks.group(2)
+            pkg_architecture = dpkg_chunks.group(3)
+
+            ver_chunks = re.search("^(.+)-(.+)$", pkg_version)
+            if ver_chunks:
+                pkg_version = ver_chunks.group(1)
+                pkg_revision = ver_chunks.group(2)
+            else:
+                pkg_revision = None
+
+            if name != pkg_name:
+                continue
+            if version != None and str(version) != pkg_version:
+                continue
+            if revision != None and str(revision) != pkg_revision:
+                continue
+            if (architecture != None and
+                str(architecture) != pkg_architecture):
+                continue
+
+            # Got a matching package - return its path inside the tarball
+            return tar_file, package
+
+        # Failed to find a matching package - return None
+        return None
+
+    def get_file_from_package(self, file_path, package_name,
+                              package_version=None, package_revision=None,
+                              package_architecture=None):
+        """Extract named file from package specified by name, ver, rev, arch.
+
+        File is extracted from the package matching the given specification
+        to a temporary directory. The absolute path to the extracted file is
+        returned.
+        """
+
+        package_info = self.find_package_for(package_name,
+                                             package_version,
+                                             package_revision,
+                                             package_architecture)
+        if package_info is None:
+            return None
+        tar_file, package = package_info
+
+        # Avoid unpacking hardware pack more than once by assigning each one
+        # its own tempdir to unpack into.
+        # TODO: update logic that uses self.tempdir so we can get rid of this
+        # by sharing nicely.
+        if not package in self.tempdirs:
+            self.tempdirs[package] = tempfile.mkdtemp()
+        tempdir = self.tempdirs[package]
+
+        # We extract everything in the hardware pack so we don't have to worry
+        # about chasing links (extract a link, find where it points to, extract
+        # that...). This is slower, but more reliable.
+        tar_file.extractall(tempdir)
+        package_path = os.path.join(tempdir, package)
+
+        with PackageUnpacker() as self.package_unpacker:
+            extracted_file = self.package_unpacker.get_file(package_path,
+                                                            file_path)
+            after_tmp = re.sub(self.package_unpacker.tempdir, "",
+                               extracted_file).lstrip("/\\")
+            extract_dir = os.path.join(tempdir, "extracted",
+                                       os.path.dirname(after_tmp))
+            os.makedirs(extract_dir)
+            shutil.move(extracted_file, extract_dir)
+            extracted_file = os.path.join(extract_dir,
+                                          os.path.basename(extracted_file))
+        return extracted_file
 
 
 class BoardConfig(object):
@@ -464,6 +592,13 @@ class BoardConfig(object):
             if (cls.SAMSUNG_V310_ENV_START and cls.SAMSUNG_V310_ENV_LEN):
                 cls.SAMSUNG_V310_BL2_START = (cls.SAMSUNG_V310_ENV_START +
                                               cls.SAMSUNG_V310_ENV_LEN)
+
+            cls.bootloader_copy_files = cls.hardwarepack_handler.get_field(
+                "bootloader_copy_files")[0]
+
+            cls.bootloader = cls.hardwarepack_handler.get_field(
+                                "bootloader")
+            cls.board = board
 
     @classmethod
     def get_file(cls, file_alias, default=None):
@@ -793,7 +928,6 @@ class BoardConfig(object):
         bootloader_parts_dir = os.path.join(chroot_dir, parts_dir)
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
         with partition_mounted(boot_partition, boot_disk):
-            boot_files = []
             with cls.hardwarepack_handler:
                 if cls.bootloader_file_in_boot_part:
                     # <legacy v1 support>
@@ -813,20 +947,46 @@ class BoardConfig(object):
                     assert bootloader_bin is not None, (
                         "bootloader binary could not be found")
 
-                    boot_files.append(bootloader_bin)
-
-                copy_files = cls.get_file('boot_copy_files')
-                if copy_files:
-                    boot_files.extend(copy_files)
-
-                for f in boot_files:
                     proc = cmd_runner.run(
-                        ['cp', '-v', f, boot_disk], as_root=True)
+                        ['cp', '-v', bootloader_bin, boot_disk], as_root=True)
                     proc.wait()
+
+                # Handle copy_files field.
+                cls.copy_files(boot_disk)
 
             cls.make_boot_files(
                 bootloader_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
                 rootfs_id, boot_disk, boot_device_or_file)
+
+    @classmethod
+    def copy_files(cls, boot_disk):
+        """Handle the copy_files metadata field."""
+
+        # Extract anything specified by copy_files sections
+        # self.bootloader_copy_files is always of the form:
+        # {'source_package':
+        #  [
+        #   {'source_path': 'dest_path'}
+        #  ]
+        # }
+        if cls.bootloader_copy_files is None:
+            return
+
+        for source_package, file_list in cls.bootloader_copy_files.iteritems():
+            for file_info in file_list:
+                for source_path, dest_path in file_info.iteritems():
+                    source = cls.hardwarepack_handler.get_file_from_package(
+                        source_path, source_package)
+                    dest_path = dest_path.lstrip("/\\")
+                    dirname = os.path.dirname(dest_path)
+                    dirname = os.path.join(boot_disk, dirname)
+                    if not os.path.exists(dirname):
+                        cmd_runner.run(["mkdir", "-p", dirname],
+                                       as_root=True).wait()
+                    proc = cmd_runner.run(
+                        ['cp', '-v', source,
+                         os.path.join(boot_disk, dest_path)], as_root=True)
+                    proc.wait()
 
     @classmethod
     def _get_kflavor_files(cls, path):

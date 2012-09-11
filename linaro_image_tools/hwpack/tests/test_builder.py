@@ -31,7 +31,7 @@ from linaro_image_tools.hwpack.builder import (
     HardwarePackBuilder,
     logger as builder_logger,
     )
-from linaro_image_tools.hwpack.config import HwpackConfigError, Config
+from linaro_image_tools.hwpack.config import HwpackConfigError
 from linaro_image_tools.hwpack.hardwarepack import Metadata
 from linaro_image_tools.hwpack.packages import (
     FetchedPackage,
@@ -55,7 +55,6 @@ from linaro_image_tools.tests.fixtures import (
     MockSomethingFixture,
     MockCmdRunnerPopenFixture,
     )
-from StringIO import StringIO
 
 
 class ConfigFileMissingTests(TestCase):
@@ -431,11 +430,17 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             Equals("Local package 'bar' not included"))
 
     def test_global_and_board_bootloader(self):
-        package_names = ['package0', 'package1']
-        files = {package_names[0]:
-                     ["usr/lib/u-boot/omap4_panda/u-boot.img",
-                      "usr/share/doc/u-boot-linaro-omap4-panda/copyright"],
-                 package_names[1]: ["usr/lib/u-boot/omap4_panda/u-boot.img"]}
+        package_names = ['package0', 'package1', 'package2', 'package3']
+        files = {
+            package_names[0]:
+                ["usr/lib/u-boot/omap4_panda/u-boot.img",
+                 "usr/share/doc/u-boot-linaro-omap4-panda/copyright"],
+            package_names[1]:
+                ["usr/lib/u-boot/omap4_panda/u-boot.img",
+                 "some/path/file"],
+            package_names[2]: [],
+            package_names[3]: [],
+        }
 
         config_v3 = self.config_v3 + "\n".join([
             "bootloaders:",
@@ -443,13 +448,17 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
             self.bootloader_config,
             "  file: " + files[package_names[0]][0],
             "  copy_files:",
-            "   - " + files[package_names[0]][1],
+            "    " + package_names[2] + ":",
+            "      - some_file",
             "boards:",
             " board1:",
             "  bootloaders:",
             "   u_boot:",
             "    package: %s",
             "    file: " + files[package_names[1]][0],
+            "    copy_files:",
+            "      " + package_names[3] + ":",
+            "       - some_file",
             "    in_boot_part: true",
             "sources:",
             " ubuntu: %s"])
@@ -480,10 +489,6 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
 
         config_file_fixture = self.useFixture(ConfigFileFixture(config_v3))
 
-        # Parse the config
-        config = Config(StringIO(config_v3))
-        config.set_bootloader("u_boot")
-
         # Build a hardware pack
         builder = HardwarePackBuilder(
             config_file_fixture.filename, "1.0",
@@ -491,6 +496,9 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
              for package in available_packages])
 
         builder.build()
+        stored_package_names = [p.name for p in builder.packages]
+        for package_name in package_names:
+            self.assertIn(package_name, stored_package_names)
 
         # Read the contents of the hardware pack, making sure it is as expected
         tf = tarfile.open("hwpack_ahwpack_1.0_armel.tar.gz", mode="r:gz")
@@ -499,11 +507,9 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         # files this is "<package_name> <originating path>" so they can be
         # uniquely identified.
         expected_files = [
-            ("u_boot/u-boot.img",
+            ("u_boot/" + files[package_names[0]][0],
              package_names[0] + " " + files[package_names[0]][0]),
-            ("u_boot/copyright",
-             package_names[0] + " " + files[package_names[0]][1]),
-            ("u_boot-board1/u-boot.img",
+            ("board1/u_boot/" + files[package_names[1]][0],
              package_names[1] + " " + files[package_names[1]][0])]
 
         for expected_file, contents in expected_files:

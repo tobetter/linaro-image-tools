@@ -36,6 +36,7 @@ from StringIO import StringIO
 from testtools import TestCase
 
 from linaro_image_tools import cmd_runner
+from linaro_image_tools.hwpack.packages import PackageMaker
 import linaro_image_tools.media_create
 from linaro_image_tools.media_create import (
     android_boards,
@@ -124,6 +125,7 @@ from linaro_image_tools.tests.fixtures import (
     )
 from linaro_image_tools.utils import find_command, preferred_tools_dir
 
+from linaro_image_tools.hwpack.testing import ContextManagerFixture
 
 chroot_args = " ".join(cmd_runner.CHROOT_ARGS)
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
@@ -309,36 +311,95 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             test_file = hp.get_file('bootloader_file')
             self.assertEquals(data, open(test_file, 'r').read())
 
-    def test_get_file_v3(self):
-        # Test that get_file() works as expected with hwpackv3 and
-        # supports its new file fields.
-        metadata = textwrap.dedent("""\
-        format: 3.0
-        name: ahwpack
-        version: 4
-        architecture: armel
-        origin: linaro
-        bootloaders:
-         u_boot:
-          file: a_file
-          copy_files:
-           - file1
-           - file2
-         uefi:
-          file: b_file
-        """)
-        files = {'FORMAT': '3.0\n', 'metadata': metadata,
-                 'a_file': 'a_file content', 'file1': 'file1 content',
-                 'file2': 'file2 content'}
-        tarball = self.add_to_tarball(files.items())
-        hp = HardwarepackHandler([tarball], bootloader='u_boot')
+    def test_list_packages(self):
+        metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
+                    "armel\norigin: linaro\n")
+        format = "3.0\n"
+        tarball = self.add_to_tarball([
+            ("FORMAT", format),
+            ("metadata", metadata),
+            ("pkgs/foo_1-1_all.deb", ''),
+            ("pkgs/bar_1-1_all.deb", ''),
+        ])
+
+        hp = HardwarepackHandler([tarball], board='panda', bootloader='uefi')
         with hp:
-            test_file = hp.get_file('bootloader_file')
-            self.assertEquals(files['a_file'], open(test_file, 'r').read())
-            test_files = hp.get_file('boot_copy_files')
-            self.assertEquals(len(test_files), 2)
-            self.assertEquals(files['file1'], open(test_files[0], 'r').read())
-            self.assertEquals(files['file2'], open(test_files[1], 'r').read())
+            packages = hp.list_packages()
+            names = [p[1] for p in packages]
+            self.assertIn('pkgs/foo_1-1_all.deb', names)
+            self.assertIn('pkgs/bar_1-1_all.deb', names)
+            self.assertEqual(len(packages), 2)
+
+    def test_find_package_for(self):
+        metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
+                    "armel\norigin: linaro\n")
+        format = "3.0\n"
+        tarball = self.add_to_tarball([
+            ("FORMAT", format),
+            ("metadata", metadata),
+            ("pkgs/foo_1-3_all.deb", ''),
+            ("pkgs/foo_2-5_arm.deb", ''),
+            ("pkgs/bar_1-3_arm.deb", ''),
+        ])
+
+        hp = HardwarepackHandler([tarball], board='panda', bootloader='uefi')
+        with hp:
+            self.assertEqual(hp.find_package_for("foo")[1],
+                             "pkgs/foo_1-3_all.deb")
+            self.assertEqual(hp.find_package_for("bar")[1],
+                             "pkgs/bar_1-3_arm.deb")
+            self.assertEqual(hp.find_package_for("foo", version=2)[1],
+                             "pkgs/foo_2-5_arm.deb")
+            self.assertEqual(hp.find_package_for("foo", version=2,
+                                                 revision=5)[1],
+                             "pkgs/foo_2-5_arm.deb")
+            self.assertEqual(hp.find_package_for("foo", version=2, revision=5,
+                                                 architecture="arm")[1],
+                             "pkgs/foo_2-5_arm.deb")
+            self.assertEqual(hp.find_package_for("foo", architecture="arm")[1],
+                             "pkgs/foo_2-5_arm.deb")
+            self.assertEqual(hp.find_package_for("foo", architecture="all")[1],
+                             "pkgs/foo_1-3_all.deb")
+
+    def test_get_file_from_package(self):
+        metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
+                    "armel\norigin: linaro\n")
+        format = "3.0\n"
+
+        names = ['package0', 'package1', 'package2']
+        files = {names[0]:
+                     ["usr/lib/u-boot/omap4_panda/u-boot.img",
+                      "usr/share/doc/u-boot-linaro-omap4-panda/copyright"],
+                 names[1]: ["usr/lib/u-boot/omap4_panda/u-boot2.img",
+                                    "foo/bar",
+                                    "flim/flam"],
+                 names[2]: ["some/path/config"]}
+
+        # Generate some test packages
+        maker = PackageMaker()
+        self.useFixture(ContextManagerFixture(maker))
+
+        tarball_content = [("FORMAT", format), ("metadata", metadata)]
+
+        package_names = []
+        for package_name in names:
+            # The files parameter to make_package is a list of files to create.
+            # These files are text files containing package_name and their
+            # path. Since package_name is different for each package, this
+            # gives each file a unique content.
+            deb_file_path = maker.make_package(package_name, '1.0', {},
+                                               files=files[package_name])
+            name = os.path.basename(deb_file_path)
+            tarball_content.append((os.path.join("pkgs", name),
+                                    open(deb_file_path).read()))
+            package_names.append(name)
+
+        tarball = self.add_to_tarball(tarball_content)
+
+        hp = HardwarepackHandler([tarball], board='panda', bootloader='uefi')
+        with hp:
+            path = hp.get_file_from_package("some/path/config", "package2")
+            self.assertTrue(path.endswith("some/path/config"))
 
 
 class TestSetMetadata(TestCaseWithFixtures):
@@ -573,6 +634,23 @@ class TestSetMetadata(TestCaseWithFixtures):
             pass
         self.assertRaises(
             AssertionError, config.set_metadata, 'ahwpack.tar.gz')
+
+    def test_sets_copy_files(self):
+        self.useFixture(MockSomethingFixture(
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
+        field_to_test = 'bootloader_copy_files'
+        data_to_set = {'package':
+                           [{"source1": "dest1"},
+                            {"source2": "dest2"}]}
+        self.MockHardwarepackHandler.metadata_dict = {
+            field_to_test: data_to_set,
+            }
+
+        class config(BoardConfig):
+            pass
+        config.set_metadata('ahwpack.tar.gz')
+        self.assertEquals(data_to_set, config.bootloader_copy_files)
 
 
 class TestGetMLOFile(TestCaseWithFixtures):
@@ -2937,6 +3015,16 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             self.config, 'make_boot_files', self.save_args))
+        self.config.hardwarepack_handler.get_file_from_package = \
+            self.get_file_from_package
+        self.config.bootloader_copy_files = None
+
+    def get_file_from_package(self, source_path, source_package):
+        if source_package in self.config.bootloader_copy_files:
+            for file_info in self.config.bootloader_copy_files[source_package]:
+                if source_path in file_info:
+                    return source_path
+        return None
 
     def prepare_config_v3(self, config):
         class c(config):
@@ -2949,6 +3037,13 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.config.hardwarepack_handler.get_format = lambda: '3.0'
         self.config.hardwarepack_handler.get_file = \
                             lambda file_alias: ['file1', 'file2']
+        self.config.hardwarepack_handler.get_file_from_package = \
+            self.get_file_from_package
+        self.config.bootloader_copy_files = {
+            "package1":
+                [{"file1": "/boot/"},
+                 {"file2": "/boot/grub/renamed"}]}
+
         self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             self.config, 'make_boot_files', self.save_args))
@@ -2984,6 +3079,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.prepare_config(boards.BoardConfig)
         self.config.bootloader_flavor = "bootloader_flavor"
         self.config.bootloader_file_in_boot_part = True
+        self.config.bootloader = "u_boot"
         self.call_populate_boot(self.config)
         expected_calls = self.expected_calls[:]
         expected_calls.insert(2,
@@ -3003,7 +3099,7 @@ class TestPopulateBoot(TestCaseWithFixtures):
             expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)
 
-    def test_populate_boot_copy_files(self):
+    def test_populate_bootloader_copy_files(self):
         self.prepare_config_v3(boards.BoardConfig)
         self.config.bootloader_flavor = "bootloader_flavor"
         # Test that copy_files works per spec (puts stuff in boot partition)
@@ -3011,12 +3107,35 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.config.bootloader_file_in_boot_part = False
         self.call_populate_boot(self.config)
         expected_calls = self.expected_calls[:]
-        expected_calls.insert(2,
-            '%s cp -v file1 '
-            'boot_disk' % sudo_args)
+        expected_calls.insert(2, '%s mkdir -p boot_disk/boot' % sudo_args)
         expected_calls.insert(3,
+            '%s cp -v file1 '
+            'boot_disk/boot/' % sudo_args)
+        expected_calls.insert(4, '%s mkdir -p boot_disk/boot/grub' % sudo_args)
+        expected_calls.insert(5,
             '%s cp -v file2 '
-            'boot_disk' % sudo_args)
+            'boot_disk/boot/grub/renamed' % sudo_args)
+        self.assertEquals(
+            expected_calls, self.popen_fixture.mock.commands_executed)
+        self.assertEquals(self.expected_args, self.saved_args)
+
+    def test_populate_bootloader_copy_files_bootloader_set(self):
+        self.prepare_config_v3(boards.BoardConfig)
+        self.config.bootloader_flavor = "bootloader_flavor"
+        # Test that copy_files works per spec (puts stuff in boot partition)
+        # even if bootloader not in_boot_part.
+        self.config.bootloader_file_in_boot_part = False
+        self.config.bootloader = "u_boot"
+        self.call_populate_boot(self.config)
+        expected_calls = self.expected_calls[:]
+        expected_calls.insert(2, '%s mkdir -p boot_disk/boot' % sudo_args)
+        expected_calls.insert(3,
+                              '%s cp -v file1 '
+                              'boot_disk/boot/' % sudo_args)
+        expected_calls.insert(4, '%s mkdir -p boot_disk/boot/grub' % sudo_args)
+        expected_calls.insert(5,
+                              '%s cp -v file2 '
+                              'boot_disk/boot/grub/renamed' % sudo_args)
         self.assertEquals(
             expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)
