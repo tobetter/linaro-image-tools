@@ -499,3 +499,19 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         stored_package_names = [p.name for p in builder.packages]
         for package_name in package_names:
             self.assertIn(package_name, stored_package_names)
+
+        # Read the contents of the hardware pack, making sure it is as expected
+        tf = tarfile.open("hwpack_ahwpack_1.0_armel.tar.gz", mode="r:gz")
+
+        # We check the content of each file when content != None. For our test
+        # files this is "<package_name> <originating path>" so they can be
+        # uniquely identified.
+        expected_files = [
+            ("u_boot/" + files[package_names[0]][0],
+             package_names[0] + " " + files[package_names[0]][0]),
+            ("board1/u_boot/" + files[package_names[1]][0],
+             package_names[1] + " " + files[package_names[1]][0])]
+
+        for expected_file, contents in expected_files:
+            self.assertThat(
+                tf, TarfileHasFile(expected_file, content=contents))

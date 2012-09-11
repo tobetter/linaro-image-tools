@@ -480,7 +480,16 @@ class Config(object):
         return result
 
     def get_last_used_keys(self):
-        """Used so you can work out which boards + boot loader was used"""
+        """Used so you can work out which boards + boot loader was used.
+
+        Configuration data is stored in a dictionary. This returns a list of
+        keys used to traverse into the dictionary the last time an item was
+        looked up.
+
+        This can be used to see where a bit of information came from - we
+        store data that may be indexed differently depending on which board
+        and bootloader are set.
+        """
         return self.last_used_keys
 
     def get_option(self, name):

@@ -37,29 +37,13 @@ from linaro_image_tools.hwpack.packages import (
     )
 
 from linaro_image_tools.hwpack.hwpack_fields import (
-    FILE_FIELD,
     PACKAGE_FIELD,
-    SPL_FILE_FIELD,
     SPL_PACKAGE_FIELD,
-    COPY_FILES_FIELD,
 )
 
 # The fields that hold packages to be installed.
 PACKAGE_FIELDS = [PACKAGE_FIELD, SPL_PACKAGE_FIELD]
-# Specification of files (boot related) to extract:
-# <field_containing_filepaths>: (<take_files_from_package>,
-#                                <put_into_this_hwpack_subdir>)
-# if <put_into_this_hwpack_subdir> is None, it will be <bootloader_name> for
-# global bootloader, or <board>-<bootloader_name> for board-specific
-# bootloader
-EXTRACT_FILES = {FILE_FIELD: (PACKAGE_FIELD, None),
-                 SPL_FILE_FIELD: (SPL_PACKAGE_FIELD, None),
-                 COPY_FILES_FIELD: (PACKAGE_FIELD, None)}
-
-
 logger = logging.getLogger(__name__)
-
-
 LOCAL_ARCHIVE_LABEL = 'hwpack-local'
 
 
@@ -193,10 +177,11 @@ class HardwarePackBuilder(object):
                                  self.config.spl_file,
                                  dest_path)
 
-    def call_for_all_boards_and_bootloaders(self, function):
+    def foreach_boards_and_bootloaders(self, function):
         """Call function for each board + bootloader combination in metadata"""
         if self.config.bootloaders is not None:
             for bootloader in self.config.bootloaders:
+                self.config.set_board(None)
                 self.config.set_bootloader(bootloader)
                 function()
 
@@ -215,19 +200,18 @@ class HardwarePackBuilder(object):
             # a null operation for earlier configuration files
             return
 
-        self.call_for_all_boards_and_bootloaders(self.do_extract_files)
+        self.foreach_boards_and_bootloaders(self.do_extract_files)
 
     def do_find_copy_files_packages(self):
         """Find packages referenced by copy_files (single board, bootloader)"""
         copy_files = self.config.bootloader_copy_files
         if copy_files:
-            self.copy_files_packages.extend(
-                [package for package in copy_files])
+            self.copy_files_packages.extend(copy_files.keys())
 
     def find_copy_files_packages(self):
         """Find all packages referenced by copy_files sections in metadata."""
         self.copy_files_packages = []
-        self.call_for_all_boards_and_bootloaders(
+        self.foreach_boards_and_bootloaders(
             self.do_find_copy_files_packages)
         packages = self.copy_files_packages
         del(self.copy_files_packages)
