@@ -245,7 +245,12 @@ class HardwarepackHandler(object):
                         keys = keys[1:]
 
         for f in file_names:
-            f = os.path.join(base_path, f)
+            # Check that the base path is needed. If the file doesn't exist,
+            # try without it (this provides fallback to V2 style directory
+            # layouts with a V3 config).
+            path_inc_board_and_bootloader = os.path.join(base_path, f)
+            if path_inc_board_and_bootloader in hwpack_tarfile.getnames():
+                f = path_inc_board_and_bootloader
             hwpack_tarfile.extract(f, self.tempdir)
             f = os.path.join(self.tempdir, f)
             out_files.append(f)
