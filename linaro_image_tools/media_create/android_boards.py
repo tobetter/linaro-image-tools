@@ -210,7 +210,7 @@ class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
         'mem=22M@360M mem_issw=1M@383M mem=640M@384M vmalloc=500M')
     _extra_serial_opts = 'console=ttyAMA2,115200n8'
     android_specific_args = 'init=/init androidboot.console=ttyAMA2'
-    dtb_name = 'snowball.dtb'
+    dtb_name = 'board.dtb'
     dtb_addr = '0x8000000'
 
 
