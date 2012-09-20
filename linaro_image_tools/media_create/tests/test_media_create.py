@@ -1970,7 +1970,8 @@ class TestGetBootCmdAndroid(TestCase):
                         'vmalloc=500M init=/init androidboot.console=ttyAMA2',
             'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
                        'fatload mmc 1:1 0x05000000 uInitrd; '
-                       'bootm 0x00100000 0x05000000'}
+                       'fatload mmc 1:1 0x8000000 board.dtb; '
+                       'bootm 0x00100000 0x05000000 0x8000000'}
         self.assertBootEnv(
             android_boards.AndroidSnowballSdConfig, expected)
 
@@ -1983,7 +1984,8 @@ class TestGetBootCmdAndroid(TestCase):
                         'vmalloc=500M init=/init androidboot.console=ttyAMA2',
             'bootcmd': 'fatload mmc 0:2 0x00100000 uImage; '
                        'fatload mmc 0:2 0x05000000 uInitrd; '
-                       'bootm 0x00100000 0x05000000'}
+                       'fatload mmc 0:2 0x8000000 board.dtb; '
+                       'bootm 0x00100000 0x05000000 0x8000000'}
         self.assertBootEnv(
             android_boards.AndroidSnowballEmmcConfig, expected)
 
