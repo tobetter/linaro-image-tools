@@ -223,7 +223,8 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
     _extra_serial_opts = 'console=ttyAMA2,115200n8'
     android_specific_args = 'init=/init androidboot.console=ttyAMA2'
     mmc_option = '0:2'
-    dtb_name = None
+    dtb_name = 'board.dtb'
+    dtb_addr = '0x8000000'
 
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
