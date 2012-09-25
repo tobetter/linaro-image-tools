@@ -404,6 +404,9 @@ class BoardConfig(object):
     partition_layout = None
     LOADER_START_S = 1
 
+    # Support for dtb_files as per hwpack v3 format.
+    dtb_files = None
+
     # Samsung v310 implementation notes and terminology
     #
     # * BL0, BL1 etc. are the various bootloaders in order of execution
@@ -495,6 +498,7 @@ class BoardConfig(object):
             cls.vmlinuz = cls.get_metadata_field('vmlinuz')
             cls.initrd = cls.get_metadata_field('initrd')
             cls.dtb_file = cls.get_metadata_field('dtb_file')
+            cls.dtb_files = cls.get_metadata_field('dtb_files')
             cls.extra_boot_args_options = cls.get_metadata_field(
                 'extra_boot_options')
             cls.boot_script = cls.get_metadata_field('boot_script')
@@ -838,6 +842,30 @@ class BoardConfig(object):
             cls._make_boot_files_v2(
                 boot_env, chroot_dir, boot_dir,
                 boot_device_or_file, k_img_data, i_img_data, d_img_data)
+
+        if cls.hwpack_format == HardwarepackHandler.FORMAT_3:
+            # Handle only v3 specific fields.
+            if cls.dtb_files:
+                cls._copy_dtb_files(cls.dtb_files, chroot_dir, boot_dir)
+
+    @classmethod
+    def _copy_dtb_files(cls, dtb_files, search_dir, dest_dir):
+        """Copy the files defined in dtb_files into the boot directory.
+
+        :param dtb_files: The list of dtb files
+        :param search_dir: The directory where to search for the real file.
+        :param dest_dir: The directory where to copy each dtb file.
+        """
+        logger = logging.getLogger("linaro_image_tools")
+        for dtb_file in dtb_files:
+            if dtb_file:
+                dtb = _get_file_matching(os.path.join(search_dir, dtb_file))
+                if not dtb:
+                    logger.warn('Could not find a valid dtb file, '
+                                'skipping it.')
+                    continue
+                else:
+                    cmd_runner.run(['cp', dtb, dest_dir], as_root=True).wait()
 
     @classmethod
     def _dd_file(cls, from_file, to_file, seek, max_size=None):
