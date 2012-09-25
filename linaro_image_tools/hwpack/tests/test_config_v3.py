@@ -825,3 +825,21 @@ class ConfigTests(TestCase):
         config = self.get_config(self.valid_start_v3 +
                                  'samsung_wrong_field: 1\n')
         self.assertRaises(HwpackConfigError, config._validate_keys)
+
+    # Tests for dtb_files support
+    def test_dtb_files(self):
+        dtb_files = ('dtb_files:\n' +
+                     ' - boot/dt-*-linaro-omap/omap4-panda.dtb\n' +
+                     ' - boot/dt-*-linaro-omap2/omap4-panda2.dtb\n')
+        expected = ['boot/dt-*-linaro-omap/omap4-panda.dtb',
+                    'boot/dt-*-linaro-omap2/omap4-panda2.dtb']
+        config = self.get_config(self.valid_complete_v3 + dtb_files)
+        config.validate()
+        self.assertEqual(expected, config.dtb_files)
+
+    def test_dtb_files_one_wrong(self):
+        dtb_files = ('dtb_files:\n' +
+                     ' - boot/dt-*-linaro-omap/omap4-panda.dtb\n' +
+                     ' - ~~~\n')
+        config = self.get_config(self.valid_start_v3 + dtb_files)
+        self.assertRaises(HwpackConfigError, config._validate_dtb_files)
