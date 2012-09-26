@@ -843,11 +843,6 @@ class BoardConfig(object):
                 boot_env, chroot_dir, boot_dir,
                 boot_device_or_file, k_img_data, i_img_data, d_img_data)
 
-        if cls.hwpack_format == HardwarepackHandler.FORMAT_3:
-            # Handle only v3 specific fields.
-            if cls.dtb_files:
-                cls._copy_dtb_files(cls.dtb_files, chroot_dir, boot_dir)
-
     @classmethod
     def _copy_dtb_files(cls, dtb_files, search_dir, dest_dir):
         """Copy the files defined in dtb_files into the boot directory.
@@ -857,6 +852,7 @@ class BoardConfig(object):
         :param dest_dir: The directory where to copy each dtb file.
         """
         logger = logging.getLogger("linaro_image_tools")
+        logger.info("Copying dtb files")
         for dtb_file in dtb_files:
             if dtb_file:
                 dtb = _get_file_matching(os.path.join(search_dir, dtb_file))
@@ -865,7 +861,8 @@ class BoardConfig(object):
                                 'skipping it.')
                     continue
                 else:
-                    cmd_runner.run(['cp', dtb, dest_dir], as_root=True).wait()
+                    dest = os.path.join(dest_dir, os.path.basename(dtb))
+                    cmd_runner.run(['cp', dtb, dest], as_root=True).wait()
 
     @classmethod
     def _dd_file(cls, from_file, to_file, seek, max_size=None):
@@ -986,6 +983,10 @@ class BoardConfig(object):
 
                 # Handle copy_files field.
                 cls.copy_files(boot_disk)
+
+                # Handle dtb_files field.
+                if cls.dtb_files:
+                    cls._copy_dtb_files(cls.dtb_files, chroot_dir, boot_disk)
 
             cls.make_boot_files(
                 bootloader_parts_dir, is_live, is_lowmem, consoles, chroot_dir,
