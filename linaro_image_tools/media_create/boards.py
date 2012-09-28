@@ -844,25 +844,51 @@ class BoardConfig(object):
                 boot_device_or_file, k_img_data, i_img_data, d_img_data)
 
     @classmethod
-    def _copy_dtb_files(cls, dtb_files, search_dir, dest_dir):
+    def _copy_dtb_files(cls, dtb_files, dest_dir, search_dir):
         """Copy the files defined in dtb_files into the boot directory.
 
         :param dtb_files: The list of dtb files
-        :param search_dir: The directory where to search for the real file.
         :param dest_dir: The directory where to copy each dtb file.
+        :param search_dir: The directory where to search for the real file.
         """
         logger = logging.getLogger("linaro_image_tools")
         logger.info("Copying dtb files")
         for dtb_file in dtb_files:
             if dtb_file:
-                dtb = _get_file_matching(os.path.join(search_dir, dtb_file))
-                if not dtb:
-                    logger.warn('Could not find a valid dtb file, '
-                                'skipping it.')
-                    continue
+                if isinstance(dtb_file, dict):
+                    for key, value in dtb_file.iteritems():
+                        # The name of the dtb file in the new position.
+                        to_file = os.path.basename(key)
+                        # The directory where to copy the dtb file.
+                        to_dir = os.path.join(dest_dir, os.path.dirname(key))
+                        from_file = value
+
+                        # User specified only the directory, without renaming
+                        # the file.
+                        if not to_file:
+                            to_file = os.path.basename(from_file)
+
+                        if not os.path.exists(to_dir):
+                            cmd_runner.run(["mkdir", "-p", to_dir],
+                                           as_root=True).wait()
+                        dtb = _get_file_matching(os.path.join(search_dir,
+                                                              from_file))
+                        if not dtb:
+                            logger.warn('Could not find a valid dtb file, '
+                                        'skipping it.')
+                            continue
+                        else:
+                            dest = os.path.join(to_dir, to_file)
+                            logger.debug('Copying %s into %s' % (dtb, dest))
+                            cmd_runner.run(['cp', dtb, dest],
+                                           as_root=True).wait()
                 else:
-                    dest = os.path.join(dest_dir, os.path.basename(dtb))
-                    cmd_runner.run(['cp', dtb, dest], as_root=True).wait()
+                    # Hopefully we should never get here.
+                    # This should only happen if the hwpack config YAML file is
+                    # wrong
+                    logger.warn('WARNING: Wrong syntax in metadata file. '
+                                'Check the hwpack configuration file used to '
+                                'generate the hwpack archive.')
 
     @classmethod
     def _dd_file(cls, from_file, to_file, seek, max_size=None):
@@ -984,9 +1010,9 @@ class BoardConfig(object):
                 # Handle copy_files field.
                 cls.copy_files(boot_disk)
 
-                # Handle dtb_files field.
-                if cls.dtb_files:
-                    cls._copy_dtb_files(cls.dtb_files, chroot_dir, boot_disk)
+            # Handle dtb_files field.
+            if cls.dtb_files:
+                cls._copy_dtb_files(cls.dtb_files, boot_disk, chroot_dir)
 
             cls.make_boot_files(
                 bootloader_parts_dir, is_live, is_lowmem, consoles, chroot_dir,

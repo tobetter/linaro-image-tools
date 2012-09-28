@@ -969,7 +969,8 @@ class Config(object):
         dtb_files = self.dtb_files
         if dtb_files:
             for dtb_file in dtb_files:
-                self._check_single_dtb_file(dtb_file)
+                for _, src in dtb_file.iteritems():
+                    self._check_single_dtb_file(src)
 
     def _check_single_dtb_file(self, dtb_file):
         if dtb_file is not None:
