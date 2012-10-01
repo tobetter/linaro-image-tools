@@ -26,6 +26,9 @@ from linaro_image_tools.media_create.boards import board_configs
 from linaro_image_tools.media_create.android_boards import (
     android_board_configs)
 from linaro_image_tools.__version__ import __version__
+from linaro_image_tools.hwpack.hwpack_fields import (
+    DEFAULT_BOOTLOADER
+)
 
 
 KNOWN_BOARDS = board_configs.keys()
@@ -167,8 +170,9 @@ def get_args_parser():
               'on selecting [mmc]"'))
     parser.add_argument(
         '--bootloader',
-        help="Select a bootloader from a hardware pack that contains more than"
-             "one.")
+        help="Select a bootloader from a hardware pack that contains more "
+             "than one. If not specified, it will default to '%s'." %
+             DEFAULT_BOOTLOADER)
 
     add_common_options(parser)
     return parser
