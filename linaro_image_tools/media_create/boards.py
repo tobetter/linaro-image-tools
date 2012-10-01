@@ -468,8 +468,8 @@ class BoardConfig(object):
         if not bootloader:
             logger.warning('WARNING: no bootloader specified on the command '
                            'line. Defaulting to \'%s\'.' % DEFAULT_BOOTLOADER)
-            logger.warning('WARNING:specify another bootloader if this is not '
-                           'the correct one to use.')
+            logger.warning('WARNING: specify another bootloader if this is '
+                           'not the correct one to use.')
             bootloader = DEFAULT_BOOTLOADER
         cls.hardwarepack_handler = HardwarepackHandler(hwpacks, bootloader,
                                                        board)
