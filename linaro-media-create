@@ -106,6 +106,14 @@ if __name__ == '__main__':
     parser = get_args_parser()
     args = parser.parse_args()
 
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(message)s")
+    ch.setFormatter(formatter)
+    logger = logging.getLogger("linaro_image_tools")
+    logger.setLevel(logging.INFO)
+    logger.addHandler(ch)
+
     try:
         additional_option_checks(args)
     except IncompatibleOptions as e:
@@ -153,14 +161,6 @@ if __name__ == '__main__':
     else:
         # All good, move on.
         pass
-
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(message)s")
-    ch.setFormatter(formatter)
-    logger = logging.getLogger("linaro_image_tools")
-    logger.setLevel(logging.INFO)
-    logger.addHandler(ch)
 
     # If --help was specified this won't execute.
     # Create temp dir and initialize rest of path vars.

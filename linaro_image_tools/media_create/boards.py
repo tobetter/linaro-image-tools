@@ -47,6 +47,10 @@ from linaro_image_tools.media_create.partitions import (
     partition_mounted, SECTOR_SIZE, register_loopback)
 from StringIO import StringIO
 
+from linaro_image_tools.hwpack.hwpack_fields import (
+    DEFAULT_BOOTLOADER,
+)
+
 KERNEL_GLOB = 'vmlinuz-*-%(kernel_flavor)s'
 INITRD_GLOB = 'initrd.img-*-%(kernel_flavor)s'
 DTB_GLOB = 'dt-*-%(kernel_flavor)s/%(dtb_name)s'
@@ -438,6 +442,14 @@ class BoardConfig(object):
 
     hardwarepack_handler = None
 
+    @staticmethod
+    def _get_logger():
+        """
+        Gets the logger instance.
+        :return: The logger instance
+        """
+        return logging.getLogger('linaro_image_tools')
+
     @classmethod
     def get_metadata_field(cls, field_name):
         """ Return the metadata value for field_name if it can be found.
@@ -451,6 +463,14 @@ class BoardConfig(object):
 
     @classmethod
     def set_metadata(cls, hwpacks, bootloader=None, board=None):
+        # If not bootloader is specified, we use the default one.
+        logger = cls._get_logger()
+        if not bootloader:
+            logger.warning('WARNING: no bootloader specified on the command '
+                           'line. Defaulting to \'%s\'.' % DEFAULT_BOOTLOADER)
+            logger.warning('WARNING: specify another bootloader if this is '
+                           'not the correct one to use.')
+            bootloader = DEFAULT_BOOTLOADER
         cls.hardwarepack_handler = HardwarepackHandler(hwpacks, bootloader,
                                                        board)
         with cls.hardwarepack_handler:
