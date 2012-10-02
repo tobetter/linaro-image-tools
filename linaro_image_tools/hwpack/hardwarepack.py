@@ -43,6 +43,7 @@ from hwpack_fields import (
     BOOT_SCRIPT_FIELD,
     DTB_ADDR_FIELD,
     DTB_FILE_FIELD,
+    DTB_FILES_FIELD,
     EXTRA_SERIAL_OPTIONS_FIELD,
     FORMAT_FIELD,
     INITRD_ADDR_FIELD,
@@ -166,14 +167,16 @@ class Metadata(object):
         self.samsung_bl2_len = samsung_bl2_len
 
     @classmethod
-    def add_v3_config(self, boards=None, bootloaders=None):
+    def add_v3_config(self, boards=None, bootloaders=None, dtb_files=None):
         """Add fields that are specific to the v3 config format.
         These fields are not present in the earlier config files.
 
         :param boards: The boards section of the hwpack.
-        :param bootloaders: The bootloaders section of the hwpack."""
+        :param bootloaders: The bootloaders section of the hwpack.
+        :param dtb_files: The dtb_files section of the hwpack."""
         self.boards = boards
         self.bootloaders = bootloaders
+        self.dtb_files = dtb_files
 
     @classmethod
     def from_config(cls, config, version, architecture):
@@ -235,7 +238,8 @@ class Metadata(object):
                 )
         if config.format.format_as_string == '3.0':
             metadata.add_v3_config(boards=config.boards,
-                                    bootloaders=config.bootloaders)
+                                   bootloaders=config.bootloaders,
+                                   dtb_files=config.dtb_files)
         return metadata
 
     def __str__(self):
@@ -305,6 +309,8 @@ class Metadata(object):
         if self.dtb_file is not None:
             # XXX In V3 this one should be a list, called dtb_files.
             metadata += dump({DTB_FILE_FIELD: self.dtb_file})
+        if self.dtb_files is not None:
+            metadata += dump({DTB_FILES_FIELD: self.dtb_files})
         if self.boot_script is not None:
             metadata += dump({BOOT_SCRIPT_FIELD: self.boot_script})
         if self.extra_serial_opts is not None:

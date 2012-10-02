@@ -44,6 +44,7 @@ from hwpack_fields import (
     DD_FIELD,
     DTB_ADDR_FIELD,
     DTB_FILE_FIELD,
+    DTB_FILES_FIELD,
     ENV_DD_FIELD,
     EXTRA_BOOT_OPTIONS_FIELD,
     EXTRA_SERIAL_OPTIONS_FIELD,
@@ -269,6 +270,7 @@ class Config(object):
             self._validate_vmlinuz()
             self._validate_initrd()
             self._validate_dtb_file()
+            self._validate_dtb_files()
             self._validate_mmc_id()
             self._validate_extra_boot_options()
             self._validate_boot_script()
@@ -821,6 +823,14 @@ class Config(object):
         return self._get_option(DTB_FILE_FIELD)
 
     @property
+    def dtb_files(self):
+        """
+        The list of dtb files.
+        :return: A list of dtb files
+        """
+        return self._get_option(DTB_FILES_FIELD)
+
+    @property
     def samsung_bl1_start(self):
         """BL1 start offset for Samsung boards.
 
@@ -953,7 +963,16 @@ class Config(object):
             return "No " + thing + " in the [" + v2_section + "] section"
 
     def _validate_dtb_file(self):
-        dtb_file = self.dtb_file
+        self._check_single_dtb_file(self.dtb_file)
+
+    def _validate_dtb_files(self):
+        dtb_files = self.dtb_files
+        if dtb_files:
+            for dtb_file in dtb_files:
+                for _, src in dtb_file.iteritems():
+                    self._check_single_dtb_file(src)
+
+    def _check_single_dtb_file(self, dtb_file):
         if dtb_file is not None:
             self._assert_matches_pattern(
                 self.GLOB_REGEX, dtb_file, "Invalid path: %s" % dtb_file)
