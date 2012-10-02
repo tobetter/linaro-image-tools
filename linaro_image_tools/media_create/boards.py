@@ -473,7 +473,6 @@ class BoardConfig(object):
 
     @classmethod
     def set_metadata(cls, hwpacks, bootloader=None, board=None):
-        # If not bootloader is specified, we use the default one.
         cls.hardwarepack_handler = HardwarepackHandler(hwpacks, bootloader,
                                                        board)
         with cls.hardwarepack_handler:
