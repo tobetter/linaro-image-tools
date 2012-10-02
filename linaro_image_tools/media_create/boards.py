@@ -47,10 +47,6 @@ from linaro_image_tools.media_create.partitions import (
     partition_mounted, SECTOR_SIZE, register_loopback)
 from StringIO import StringIO
 
-from linaro_image_tools.hwpack.hwpack_fields import (
-    DEFAULT_BOOTLOADER,
-)
-
 KERNEL_GLOB = 'vmlinuz-*-%(kernel_flavor)s'
 INITRD_GLOB = 'initrd.img-*-%(kernel_flavor)s'
 DTB_GLOB = 'dt-*-%(kernel_flavor)s/%(dtb_name)s'
@@ -134,6 +130,8 @@ class HardwarepackHandler(object):
         self.bootloader = bootloader
         self.board = board
         self.tempdirs = {}
+        # Used to store the config created from the metadata.
+        self.config = None
 
     class FakeSecHead(object):
         """ Add a fake section header to the metadata file.
@@ -173,18 +171,30 @@ class HardwarepackHandler(object):
             if tempdir is not None and os.path.exists(tempdir):
                 shutil.rmtree(tempdir)
 
+    def _get_config_from_metadata(self, metadata):
+        """
+        Retrieves a Config object associated with the metadata.
+
+        :param metadata: The metadata to parse.
+        :return: A Config instance.
+        """
+        if not self.config:
+            lines = metadata.readlines()
+            if re.search("=", lines[0]) and not re.search(":", lines[0]):
+                # Probably V2 hardware pack without [hwpack] on the first line
+                lines = ["[hwpack]\n"] + lines
+            self.config = Config(StringIO("".join(lines)))
+            self.config.set_board(self.board)
+            self.config.set_bootloader(self.bootloader)
+        return self.config
+
     def get_field(self, field, return_keys=False):
         data = None
         hwpack_with_data = None
         keys = None
         for hwpack_tarfile in self.hwpack_tarfiles:
             metadata = hwpack_tarfile.extractfile(self.metadata_filename)
-            lines = metadata.readlines()
-            if re.search("=", lines[0]) and not re.search(":", lines[0]):
-                # Probably V2 hardware pack without [hwpack] on the first line
-                lines = ["[hwpack]\n"] + lines
-            parser = Config(StringIO("".join(lines)), self.bootloader,
-                            self.board)
+            parser = self._get_config_from_metadata(metadata)
             try:
                 new_data = parser.get_option(field)
                 if new_data is not None:
@@ -464,13 +474,6 @@ class BoardConfig(object):
     @classmethod
     def set_metadata(cls, hwpacks, bootloader=None, board=None):
         # If not bootloader is specified, we use the default one.
-        logger = cls._get_logger()
-        if not bootloader:
-            logger.warning('WARNING: no bootloader specified on the command '
-                           'line. Defaulting to \'%s\'.' % DEFAULT_BOOTLOADER)
-            logger.warning('WARNING: specify another bootloader if this is '
-                           'not the correct one to use.')
-            bootloader = DEFAULT_BOOTLOADER
         cls.hardwarepack_handler = HardwarepackHandler(hwpacks, bootloader,
                                                        board)
         with cls.hardwarepack_handler:
