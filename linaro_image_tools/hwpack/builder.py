@@ -25,6 +25,9 @@ import subprocess
 import tempfile
 import os
 import shutil
+from glob import iglob
+
+from debian.debfile import DebFile
 
 from linaro_image_tools import cmd_runner
 
@@ -328,3 +331,28 @@ class HardwarePackBuilder(object):
                         manifest_name += '.manifest.txt'
                         with open(manifest_name, 'w') as f:
                             f.write(self.hwpack.manifest_text())
+
+                        logger.debug("Extracting build-info")
+                        build_info_dir = os.path.join(fetcher.cache.tempdir, 'build-info')
+                        for deb_pkg in self.packages:
+                            deb_pkg_file_path = deb_pkg.filepath
+                            deb_control = DebFile(deb_pkg_file_path).control.debcontrol()
+                            build_info = deb_control.get('Build-Info')
+                            if build_info is not None:
+                                env = os.environ
+                                env['LC_ALL'] = 'C'
+                                env['NO_PKG_MANGLE'] = '1'
+                                proc = cmd_runner.Popen(['dpkg-deb', '-x', deb_pkg_file_path, build_info_dir],
+                                    env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                (stdoutdata, stderrdata) = proc.communicate()
+                                if proc.returncode:
+                                    raise ValueError("dpkg-deb extract failed!\n%s" % stderrdata)
+                                if stderrdata:
+                                    raise ValueError("dpkg-deb extract had warnings:\n%s" % stderrdata)
+
+                        dst_file = open('BUILD-INFO.txt', 'wb')
+                        for src_file in iglob(r'%s/usr/share/doc/*/BUILD-INFO.txt' % build_info_dir):
+                            with open(src_file, 'rb') as f:
+                                dst_file.write('Files-Pattern: %s\n' % out_name)
+                                shutil.copyfileobj(f, dst_file)
+                        dst_file.close()
