@@ -47,6 +47,8 @@ from linaro_image_tools.media_create.partitions import (
     partition_mounted, SECTOR_SIZE, register_loopback)
 from StringIO import StringIO
 
+logger = logging.getLogger(__name__)
+
 KERNEL_GLOB = 'vmlinuz-*-%(kernel_flavor)s'
 INITRD_GLOB = 'initrd.img-*-%(kernel_flavor)s'
 DTB_GLOB = 'dt-*-%(kernel_flavor)s/%(dtb_name)s'
@@ -454,14 +456,6 @@ class BoardConfig(object):
         "BL1 expects BL2 (u-boot) to be 512 KiB")
 
     hardwarepack_handler = None
-
-    @staticmethod
-    def _get_logger():
-        """
-        Gets the logger instance.
-        :return: The logger instance
-        """
-        return logging.getLogger('linaro_image_tools')
 
     @classmethod
     def get_metadata_field(cls, field_name):
@@ -873,7 +867,6 @@ class BoardConfig(object):
         :param dest_dir: The directory where to copy each dtb file.
         :param search_dir: The directory where to search for the real file.
         """
-        logger = logging.getLogger("linaro_image_tools")
         logger.info("Copying dtb files")
         for dtb_file in dtb_files:
             if dtb_file:
@@ -918,7 +911,6 @@ class BoardConfig(object):
         if max_size is not None:
             assert os.path.getsize(from_file) <= max_size, (
                     "'%s' is larger than %s" % (from_file, max_size))
-        logger = logging.getLogger("linaro_image_tools")
         logger.info("Writing '%s' to '%s' at %s." % (from_file, to_file, seek))
         _dd(from_file, to_file, seek=seek)
 
@@ -941,7 +933,6 @@ class BoardConfig(object):
             if cls.spl_in_boot_part:
                 assert spl_file is not None, (
                     "SPL binary could not be found")
-                logger = logging.getLogger("linaro_image_tools")
                 logger.info(
                     "Copying spl '%s' to boot partition." % spl_file)
                 cmd_runner.run(["cp", "-v", spl_file, boot_dir],
@@ -1101,7 +1092,6 @@ class BoardConfig(object):
     @classmethod
     def _get_kflavor_files_v2(cls, path):
         kernel = initrd = dtb = None
-        logger = logging.getLogger("linaro_image_tools")
 
         if cls.vmlinuz:
             kernel = _get_file_matching(os.path.join(path, cls.vmlinuz))
