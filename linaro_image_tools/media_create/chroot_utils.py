@@ -45,28 +45,33 @@ def prepare_chroot(chroot_dir, tmp_dir):
 
 
 def install_hwpacks(
-    chroot_dir, tmp_dir, tools_dir, hwpack_force_yes, verified_files,
+    rootfs_dir, tmp_dir, tools_dir, hwpack_force_yes, verified_files,
     extract_kpkgs=False, *hwpack_files):
-    """Install the given hwpacks onto the given chroot."""
-    prepare_chroot(chroot_dir, tmp_dir)
+    """Install the given hwpacks onto the given rootfs."""
 
-    linaro_hwpack_install_path = find_command(
-        'linaro-hwpack-install', prefer_dir=tools_dir)
-    # FIXME: shouldn't use chroot/usr/bin as this might conflict with installed
-    # packages; would be best to use some custom directory like
-    # chroot/linaro-image-tools/bin
-    copy_file(linaro_hwpack_install_path,
-              os.path.join(chroot_dir, 'usr', 'bin'))
+    # In case we just want to extract the kernel packages, don't force qemu
+    # with chroot, as we could have archs without qemu support
 
-    try:
-        mount_chroot_proc(chroot_dir)
+    if not extract_kpkgs:
+        prepare_chroot(rootfs_dir, tmp_dir)
+
+        linaro_hwpack_install_path = find_command(
+            'linaro-hwpack-install', prefer_dir=tools_dir)
+
+        # FIXME: shouldn't use chroot/usr/bin as this might conflict with
+        # installed packages; would be best to use some custom directory like
+        # chroot/linaro-image-tools/bin
+        copy_file(linaro_hwpack_install_path,
+                  os.path.join(rootfs_dir, 'usr', 'bin'))
+
+        mount_chroot_proc(rootfs_dir)
         try:
             # Sometimes the host will have qemu-user-static installed but
             # another package (i.e. scratchbox) will have mangled its config
             # and thus we won't be able to chroot and install the hwpack, so
             # we fail here and tell the user to ensure qemu-arm-static is
             # setup before trying again.
-            cmd_runner.run(['true'], as_root=True, chroot=chroot_dir).wait()
+            cmd_runner.run(['true'], as_root=True, chroot=rootfs_dir).wait()
         except:
             print ("Cannot proceed with hwpack installation because "
                    "there doesn't seem to be a binfmt interpreter registered "
@@ -75,26 +80,27 @@ def install_hwpacks(
                    "configured before trying again.")
             raise
 
+    try:
         for hwpack_file in hwpack_files:
             hwpack_verified = False
             if os.path.basename(hwpack_file) in verified_files:
                 hwpack_verified = True
-            install_hwpack(chroot_dir, hwpack_file, extract_kpkgs,
+            install_hwpack(rootfs_dir, hwpack_file, extract_kpkgs,
                            hwpack_force_yes or hwpack_verified)
     finally:
         run_local_atexit_funcs()
 
 
-def install_hwpack(chroot_dir, hwpack_file, extract_kpkgs, hwpack_force_yes):
-    """Install an hwpack on the given chroot.
+def install_hwpack(rootfs_dir, hwpack_file, extract_kpkgs, hwpack_force_yes):
+    """Install an hwpack on the given rootfs.
 
-    Copy the hwpack file to the chroot and run linaro-hwpack-install passing
+    Copy the hwpack file to the rootfs and run linaro-hwpack-install passing
     that hwpack file to it.  If hwpack_force_yes is True, also pass
     --force-yes to linaro-hwpack-install. In case extract_kpkgs is True, it
     will not install all the packages, but just extract the kernel ones.
     """
     hwpack_basename = os.path.basename(hwpack_file)
-    copy_file(hwpack_file, chroot_dir)
+    copy_file(hwpack_file, rootfs_dir)
     print "-" * 60
     print "Installing (linaro-hwpack-install) %s in target rootfs." % (
         hwpack_basename)
@@ -111,9 +117,15 @@ def install_hwpack(chroot_dir, hwpack_file, extract_kpkgs, hwpack_force_yes):
             '--hwpack-name', name]
     if hwpack_force_yes:
         args.append('--force-yes')
+
     if extract_kpkgs:
         args.append('--extract-kernel-only')
-    args.append('/%s' % hwpack_basename)
+        args.append(os.path.join(rootfs_dir, hwpack_basename))
+        chroot_dir = None
+    else:
+        args.append('/%s' % hwpack_basename)
+        chroot_dir = rootfs_dir
+
     cmd_runner.run(args, as_root=True, chroot=chroot_dir).wait()
     print "-" * 60
 

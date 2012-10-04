@@ -53,7 +53,7 @@ die() {
   exit 1
 }
 
-usage_msg="Usage: $(basename $0) [--install-latest] [--force-yes] --hwpack-version <version> --hwpack-arch <architecture> --hwpack-name <name> HWPACK_TARBALL"
+usage_msg="Usage: $(basename $0) [--install-latest] [--force-yes] [--extract-kernel-only] --hwpack-version <version> --hwpack-arch <architecture> --hwpack-name <name> HWPACK_TARBALL"
 if [ $# -eq 0 ]; then
   die $usage_msg
 fi
@@ -256,14 +256,17 @@ install_deb_packages() {
 extract_kernel_packages() {
   echo "Extracting all kernel packages ..."
 
+  # We assume the hwpack is always available at the rootfs
+  ROOTFS_DIR=$(dirname $HWPACK_TARBALL)
+
   ls ${HWPACK_DIR}/pkgs/linux-[ih]*.deb | while read pkg; do
     echo "Extracting package `basename $pkg`"
-    dpkg-deb -x ${pkg} /
+    dpkg-deb -x ${pkg} $ROOTFS_DIR
   done
 
   # manually generate modules.dep
-  ls /lib/modules | while read kernel; do
-    depmod ${kernel} || true
+  ls $ROOTFS_DIR/lib/modules | while read kernel; do
+    depmod -b $ROOTFS_DIR ${kernel} || true
   done;
 }
 
