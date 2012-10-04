@@ -25,6 +25,9 @@ import subprocess
 import tempfile
 import os
 import shutil
+from glob import iglob
+
+from debian.debfile import DebFile
 
 from linaro_image_tools import cmd_runner
 
@@ -65,7 +68,7 @@ class PackageUnpacker(object):
             shutil.rmtree(self.tempdir)
 
     def get_path(self, package_file_name, file_name=''):
-        "Get package or file path in unpacker tmp dir."
+        """Get package or file path in unpacker tmp dir."""
         package_dir = os.path.basename(package_file_name)
         return os.path.join(self.tempdir, package_dir, file_name)
 
@@ -214,7 +217,7 @@ class HardwarePackBuilder(object):
         self.foreach_boards_and_bootloaders(
             self.do_find_copy_files_packages)
         packages = self.copy_files_packages
-        del(self.copy_files_packages)
+        del self.copy_files_packages
         return packages
 
     def build(self):
@@ -328,3 +331,45 @@ class HardwarePackBuilder(object):
                         manifest_name += '.manifest.txt'
                         with open(manifest_name, 'w') as f:
                             f.write(self.hwpack.manifest_text())
+
+                        logger.debug("Extracting build-info")
+                        build_info_dir = os.path.join(fetcher.cache.tempdir,
+                                                      'build-info')
+                        build_info_available = 0
+                        for deb_pkg in self.packages:
+                            # Extract Build-Info attribute from debian control
+                            deb_pkg_file_path = deb_pkg.filepath
+                            deb_control = \
+                                DebFile(deb_pkg_file_path).control.debcontrol()
+                            build_info = deb_control.get('Build-Info')
+                            if build_info is not None:
+                                build_info_available += 1
+                                # Extract debian packages with build
+                                # information
+                                env = os.environ
+                                env['LC_ALL'] = 'C'
+                                env['NO_PKG_MANGLE'] = '1'
+                                proc = cmd_runner.Popen(['dpkg-deb', '-x',
+                                       deb_pkg_file_path, build_info_dir],
+                                       env=env, stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+                                (stdoutdata, stderrdata) = proc.communicate()
+                                if proc.returncode:
+                                    raise ValueError('dpkg-deb extract failed!'
+                                        '\n%s' % stderrdata)
+                                if stderrdata:
+                                    raise ValueError('dpkg-deb extract had '
+                                        'warnings:\n%s' % stderrdata)
+
+                        # Concatenate BUILD-INFO.txt files
+                        if build_info_available > 0:
+                            dst_file = open('BUILD-INFO.txt', 'wb')
+                            build_info_path = \
+                                r'%s/usr/share/doc/*/BUILD-INFO.txt' % \
+                                build_info_dir
+                            for src_file in iglob(build_info_path):
+                                with open(src_file, 'rb') as f:
+                                    dst_file.write('Files-Pattern: %s\n' % \
+                                                   out_name)
+                                    shutil.copyfileobj(f, dst_file)
+                            dst_file.close()
