@@ -3585,11 +3585,10 @@ class TestInstallHWPack(TestCaseWithFixtures):
                        extract_kpkgs, force_yes)
         self.assertEquals(
             ['%s cp %s %s' % (sudo_args, hwpack_tgz_location, chroot_dir),
-             '%s %s %s linaro-hwpack-install --hwpack-version %s '
-             '--hwpack-arch %s --hwpack-name %s --extract-kernel-only /%s'
-                % (sudo_args, chroot_args, chroot_dir,
-                   hwpack_version, hwpack_architecture, hwpack_name,
-                   hwpack_file_name)],
+             '%s linaro-hwpack-install --hwpack-version %s '
+             '--hwpack-arch %s --hwpack-name %s --extract-kernel-only %s/%s'
+                % (sudo_args, hwpack_version, hwpack_architecture, hwpack_name,
+                   chroot_dir, hwpack_file_name)],
             fixture.mock.commands_executed)
 
         fixture.mock.calls = []
