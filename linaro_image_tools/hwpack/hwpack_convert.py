@@ -80,7 +80,7 @@ DEFAULT_BOOTLOADER = 'u_boot'
 SPL_KEYS = [SPL_IN_BOOT_PART_FIELD, SPL_DD_FIELD, SPL_PACKAGE_FIELD,
             SPL_FILE_FIELD, ENV_DD_FIELD]
 
-logger = logging.getLogger("linaro_hwpack_converter")
+logger = logging.getLogger(__name__)
 
 
 class HwpackConverterException(Exception):
