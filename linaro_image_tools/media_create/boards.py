@@ -1663,9 +1663,13 @@ class FastModelConfig(BoardConfig):
                          d_img_data):
         output_dir = os.path.dirname(boot_device_or_file)
 
-        bootwrapper = _get_file_matching("%s/boot/img.axf" % chroot_dir)
+        # There are 2 kinds of models now, VE and Foundation
+        bw_ve = _get_file_matching("%s/boot/img.axf" % chroot_dir)
+        bw_foundation = _get_file_matching("%s/boot/img-foundation.axf" %
+                                chroot_dir)
 
-        for filename in (bootwrapper, k_img_data, i_img_data, d_img_data):
+        for filename in (bw_ve, bw_foundation, k_img_data,
+                         i_img_data, d_img_data):
             if filename != None:
                 copy_drop(filename, output_dir)
 
