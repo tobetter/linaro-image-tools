@@ -28,6 +28,7 @@ import shutil
 from glob import iglob
 
 from debian.debfile import DebFile
+from debian.arfile import ArError
 
 from linaro_image_tools import cmd_runner
 
@@ -337,11 +338,21 @@ class HardwarePackBuilder(object):
                                                       'build-info')
                         build_info_available = 0
                         for deb_pkg in self.packages:
-                            # Extract Build-Info attribute from debian control
                             deb_pkg_file_path = deb_pkg.filepath
-                            deb_control = \
+                            if os.path.islink(deb_pkg_file_path):
+                                # Skip symlink-ed debian package file
+                                # e.g. fetched package with dummy information
+                                continue
+                            try:
+                                # Extract Build-Info attribute from debian
+                                # control
+                                deb_control = \
                                 DebFile(deb_pkg_file_path).control.debcontrol()
-                            build_info = deb_control.get('Build-Info')
+                                build_info = deb_control.get('Build-Info')
+                            except ArError:
+                                # Skip invalid debian package file
+                                # e.g. fetched package with dummy information
+                                continue
                             if build_info is not None:
                                 build_info_available += 1
                                 # Extract debian packages with build
