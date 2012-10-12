@@ -362,14 +362,22 @@ class HardwarePackBuilder(object):
                                         'warnings:\n%s' % stderrdata)
 
                         # Concatenate BUILD-INFO.txt files
+                        dst_file = open('BUILD-INFO.txt', 'wb')
                         if build_info_available > 0:
-                            dst_file = open('BUILD-INFO.txt', 'wb')
                             build_info_path = \
                                 r'%s/usr/share/doc/*/BUILD-INFO.txt' % \
                                 build_info_dir
                             for src_file in iglob(build_info_path):
                                 with open(src_file, 'rb') as f:
-                                    dst_file.write('Files-Pattern: %s\n' % \
+                                    dst_file.write('\nFiles-Pattern: %s\n' % \
                                                    out_name)
                                     shutil.copyfileobj(f, dst_file)
-                            dst_file.close()
+                            dst_file.write('\nFiles-Pattern: %s\n'
+                                           'License-Type: open\n' %\
+                                           manifest_name)
+                        else:
+                            dst_file.write('Format-Version: 0.1\n'
+                                           'Files-Pattern: %s, %s\n'
+                                           'License-Type: open\n' % \
+                                           (out_name, manifest_name))
+                        dst_file.close()
