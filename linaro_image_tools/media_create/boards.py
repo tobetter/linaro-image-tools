@@ -403,10 +403,12 @@ class BoardConfig(object):
     # be specified in the hwpack metadata.
     kernel_addr = None
     initrd_addr = None
+    initrd_high = '0xffffffff'
     load_addr = None
     dtb_addr = None
     dtb_name = None
     dtb_file = None
+    fdt_high = '0xffffffff'
     kernel_flavors = None
     boot_script = None
     serial_tty = None
@@ -841,6 +843,8 @@ class BoardConfig(object):
         boot_env["bootargs"] = cls._get_bootargs(
             is_live, is_lowmem, consoles, rootfs_id)
         boot_env["bootcmd"] = cls._get_bootcmd(i_img_data, d_img_data)
+        boot_env["initrd_high"] = cls.initrd_high
+        boot_env["fdt_high"] = cls.fdt_high
         return boot_env
 
     @classmethod
@@ -1976,8 +1980,8 @@ def get_plain_boot_script_contents(boot_env):
     # https://bugs.launchpad.net/linaro-image-tools/+bug/788765
     # for more.
     return (
-        'setenv initrd_high "0xffffffff"\n'
-        'setenv fdt_high "0xffffffff"\n'
+        'setenv initrd_high "%(initrd_high)s"\n'
+        'setenv fdt_high "%(fdt_high)s"\n'
         'setenv bootcmd "%(bootcmd)s"\n'
         'setenv bootargs "%(bootargs)s"\n'
         "boot"
