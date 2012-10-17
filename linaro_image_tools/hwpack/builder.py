@@ -270,125 +270,166 @@ class HardwarePackBuilder(object):
                             self.packages,
                             download_content=self.config.include_debs)
 
-                        # On a v3 hwpack, all the values we need to check are
-                        # in the bootloaders and boards section, so we loop
-                        # through both of them changing what is necessary.
-
-                        if self.config.format.format_as_string == '3.0':
+                        if self.format.format_as_string == '3.0':
                             self.extract_files()
                         else:
-                            bootloader_package = None
-                            if self.config.bootloader_file is not None:
-                                assert(self.config.bootloader_package
-                                       is not None)
-                                bootloader_package = self.find_fetched_package(
-                                    self.packages,
-                                    self.config.bootloader_package)
-                                self.hwpack.metadata.u_boot = \
-                                    self.add_file_to_hwpack(
-                                        bootloader_package,
-                                        self.config.bootloader_file,
-                                        self.hwpack.U_BOOT_DIR)
+                            self._old_format_extract_files()
 
-                            spl_package = None
-                            if self.config.spl_file is not None:
-                                assert self.config.spl_package is not None
-                                spl_package = self.find_fetched_package(
-                                    self.packages,
-                                    self.config.spl_package)
-                                self.hwpack.metadata.spl = \
-                                    self.add_file_to_hwpack(
-                                        spl_package,
-                                        self.config.spl_file,
-                                        self.hwpack.SPL_DIR)
+                        self._add_packages_to_hwpack(local_packages)
 
-                            # bootloader_package and spl_package can be
-                            # identical
-                            if (bootloader_package is not None and
-                                bootloader_package in self.packages):
-                                self.packages.remove(bootloader_package)
-                            if (spl_package is not None and
-                                spl_package in self.packages):
-                                self.packages.remove(spl_package)
-
-                        logger.debug("Adding packages to hwpack")
-                        self.hwpack.add_packages(self.packages)
-                        for local_package in local_packages:
-                            if local_package not in self.packages:
-                                logger.warning(
-                                    "Local package '%s' not included",
-                                    local_package.name)
-                        self.hwpack.add_dependency_package(
-                                self.config.packages)
                         out_name = self.out_name
                         if not out_name:
                             out_name = self.hwpack.filename()
-                        with open(out_name, 'w') as f:
-                            self.hwpack.to_file(f)
-                            logger.info("Wrote %s" % out_name)
+
                         manifest_name = os.path.splitext(out_name)[0]
                         if manifest_name.endswith('.tar'):
                             manifest_name = os.path.splitext(manifest_name)[0]
                         manifest_name += '.manifest.txt'
-                        with open(manifest_name, 'w') as f:
-                            f.write(self.hwpack.manifest_text())
 
-                        logger.debug("Extracting build-info")
-                        build_info_dir = os.path.join(fetcher.cache.tempdir,
-                                                      'build-info')
-                        build_info_available = 0
-                        for deb_pkg in self.packages:
-                            deb_pkg_file_path = deb_pkg.filepath
-                            if os.path.islink(deb_pkg_file_path):
-                                # Skip symlink-ed debian package file
-                                # e.g. fetched package with dummy information
-                                continue
-                            try:
-                                # Extract Build-Info attribute from debian
-                                # control
-                                deb_control = \
-                                DebFile(deb_pkg_file_path).control.debcontrol()
-                                build_info = deb_control.get('Build-Info')
-                            except ArError:
-                                # Skip invalid debian package file
-                                # e.g. fetched package with dummy information
-                                continue
-                            if build_info is not None:
-                                build_info_available += 1
-                                # Extract debian packages with build
-                                # information
-                                env = os.environ
-                                env['LC_ALL'] = 'C'
-                                env['NO_PKG_MANGLE'] = '1'
-                                proc = cmd_runner.Popen(['dpkg-deb', '-x',
-                                       deb_pkg_file_path, build_info_dir],
-                                       env=env, stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-                                (stdoutdata, stderrdata) = proc.communicate()
-                                if proc.returncode:
-                                    raise ValueError('dpkg-deb extract failed!'
-                                        '\n%s' % stderrdata)
-                                if stderrdata:
-                                    raise ValueError('dpkg-deb extract had '
-                                        'warnings:\n%s' % stderrdata)
+                        self._write_hwpack_and_manifest(out_name,
+                                                        manifest_name)
 
-                        # Concatenate BUILD-INFO.txt files
-                        dst_file = open('BUILD-INFO.txt', 'wb')
-                        if build_info_available > 0:
-                            build_info_path = \
-                                r'%s/usr/share/doc/*/BUILD-INFO.txt' % \
-                                build_info_dir
-                            for src_file in iglob(build_info_path):
-                                with open(src_file, 'rb') as f:
-                                    dst_file.write('\nFiles-Pattern: %s\n' % \
-                                                   out_name)
-                                    shutil.copyfileobj(f, dst_file)
-                            dst_file.write('\nFiles-Pattern: %s\n'
-                                           'License-Type: open\n' %\
-                                           manifest_name)
-                        else:
-                            dst_file.write('Format-Version: 0.1\n'
-                                           'Files-Pattern: %s, %s\n'
-                                           'License-Type: open\n' % \
-                                           (out_name, manifest_name))
-                        dst_file.close()
+                        cache_dir = fetcher.cache.tempdir
+                        self._extract_build_info(cache_dir, out_name,
+                                                 manifest_name)
+
+    def _write_hwpack_and_manifest(self, out_name, manifest_name):
+        """Write the real hwpack file and its manifest file.
+
+        :param out_name: The name of the file to write.
+        :type out_name: str
+        :param manifest_name: The name of the manifest file.
+        :type manifest_name: str
+        """
+        logger.debug("Writing hwpack file")
+        with open(out_name, 'w') as f:
+            self.hwpack.to_file(f)
+            logger.info("Wrote %s" % out_name)
+
+        logger.debug("Writing manifest file content")
+        with open(manifest_name, 'w') as f:
+            f.write(self.hwpack.manifest_text())
+
+    def _old_format_extract_files(self):
+        """Extract files for hwpack versions < 3.0."""
+        bootloader_package = None
+        if self.config.bootloader_file is not None:
+            assert(self.config.bootloader_package is not None)
+            bootloader_package = self.find_fetched_package(
+                            self.packages,
+                            self.config.bootloader_package)
+            self.hwpack.metadata.u_boot = self.add_file_to_hwpack(
+                                    bootloader_package,
+                                    self.config.bootloader_file,
+                                    self.hwpack.U_BOOT_DIR)
+
+        spl_package = None
+        if self.config.spl_file is not None:
+            assert self.config.spl_package is not None
+            spl_package = self.find_fetched_package(self.packages,
+                                                    self.config.spl_package)
+            self.hwpack.metadata.spl = self.add_file_to_hwpack(
+                                    spl_package,
+                                    self.config.spl_file,
+                                    self.hwpack.SPL_DIR)
+
+        # bootloader_package and spl_package can be identical
+        if (bootloader_package is not None and
+            bootloader_package in self.packages):
+            self.packages.remove(bootloader_package)
+        if (spl_package is not None and spl_package in self.packages):
+            self.packages.remove(spl_package)
+
+    def _add_packages_to_hwpack(self, local_packages):
+        """Adds the packages to the hwpack.
+
+        :param local_packages: The packages to add.
+        :type local_packages: list
+        """
+        logger.debug("Adding packages to hwpack")
+        self.hwpack.add_packages(self.packages)
+        for local_package in local_packages:
+            if local_package not in self.packages:
+                logger.warning("Local package '%s' not included",
+                                local_package.name)
+        self.hwpack.add_dependency_package(self.config.packages)
+
+    def _extract_build_info(self, cache_dir, out_name, manifest_name):
+        """Extracts build-info from the packages.
+
+        :param cache_dir: The cache directory where build-info should be
+            located.
+        :type cache_dir: str
+        :param out_name: The name of the hwpack file.
+        :type out_name: str
+        :param manifest_name: The name of the manifest file.
+        :type manifest_name: str
+        """
+        logger.debug("Extracting build-info")
+        build_info_dir = os.path.join(cache_dir, 'build-info')
+        build_info_available = 0
+        for deb_pkg in self.packages:
+            deb_pkg_file_path = deb_pkg.filepath
+            if os.path.islink(deb_pkg_file_path):
+                # Skip symlink-ed debian package file
+                # e.g. fetched package with dummy information
+                continue
+            try:
+                # Extract Build-Info attribute from debian control
+                deb_control = DebFile(deb_pkg_file_path).control.debcontrol()
+                build_info = deb_control.get('Build-Info')
+            except ArError:
+                # Skip invalid debian package file
+                # e.g. fetched package with dummy information
+                continue
+            if build_info is not None:
+                build_info_available += 1
+                # Extract debian packages with build information
+                env = os.environ
+                env['LC_ALL'] = 'C'
+                env['NO_PKG_MANGLE'] = '1'
+                proc = cmd_runner.Popen(['dpkg-deb', '-x',
+                                        deb_pkg_file_path, build_info_dir],
+                                        env=env, stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
+
+                (stdoutdata, stderrdata) = proc.communicate()
+                if proc.returncode:
+                    raise ValueError('dpkg-deb extract failed!\n%s' %
+                                     stderrdata)
+                if stderrdata:
+                    raise ValueError('dpkg-deb extract had warnings:\n%s' %
+                                     stderrdata)
+
+        self._concatenate_build_info(build_info_available, build_info_dir,
+                                     out_name, manifest_name)
+
+    def _concatenate_build_info(self, build_info_available, build_info_dir,
+                                out_name, manifest_name):
+        """Concatenates the build-info text if more than one is available.
+
+        :param build_info_available: The number of available build-info.
+        :type build_info_available: int
+        :param build_info_dir: Where build-info files should be.
+        :type build_info_dir: str
+        :param out_name: The name of the hwpack file.
+        :type out_name: str
+        :param manifest_name: The name of the manifest file.
+        :type manifest_name: str
+        """
+        logger.debug("Concatenating build-info files")
+        dst_file = open('BUILD-INFO.txt', 'wb')
+        if build_info_available > 0:
+            build_info_path = (r'%s/usr/share/doc/*/BUILD-INFO.txt' %
+                               build_info_dir)
+            for src_file in iglob(build_info_path):
+                with open(src_file, 'rb') as f:
+                    dst_file.write('\nFiles-Pattern: %s\n' % out_name)
+                    shutil.copyfileobj(f, dst_file)
+            dst_file.write('\nFiles-Pattern: %s\nLicense-Type: open\n' %
+                           manifest_name)
+        else:
+            dst_file.write('Format-Version: 0.1\n'
+                           'Files-Pattern: %s, %s\n'
+                           'License-Type: open\n' % (out_name, manifest_name))
+        dst_file.close()
