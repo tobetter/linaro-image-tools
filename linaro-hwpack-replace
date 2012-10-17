@@ -222,7 +222,7 @@ def main():
 
         modify_Packages_info(debpack_dirname, new_debpack_info, prefix_pkg_remove)
 
-        #tar the hardware pack with the new debian file included in it
+        # Compress the hardware pack with the new debian file included in it
         tar = tarfile.open(hwpack_name , "w:gz")
         origdir = os.getcwd()
         os.chdir(tempdir)
@@ -235,6 +235,10 @@ def main():
         if args.inplace:
             os.rename(hwpack_name, old_hwpack)
             hwpack_name = old_hwpack
+
+        # Export the updated manifest file
+        manifest_name = hwpack_name.replace('.tar.gz', '.manifest.txt')
+        shutil.copy2(os.path.join(tempdir, 'manifest'), manifest_name)
 
     except Exception, details:
         logger.error("Error Details: %s", details)
