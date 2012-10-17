@@ -236,6 +236,10 @@ def main():
             os.rename(hwpack_name, old_hwpack)
             hwpack_name = old_hwpack
 
+        # Also export the updated manifest file
+        hwpack_manifest = hwpack_name.replace(".tar.gz", ".manifest.txt")
+        shutil.copy2(os.path.join(tempdir, "manifest"), hwpack_manifest)
+
     except Exception, details:
         logger.error("Error Details: %s", details)
         status = 1
