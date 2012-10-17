@@ -206,7 +206,7 @@ class AndroidPandaConfig(AndroidOmapConfig, PandaConfig):
 
 class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
     boot_script = 'boot.scr'
-    fdt_high    = '0x05000000'
+    fdt_high = '0x05000000'
     initrd_addr = '0x05000000'
     initrd_high = '0x06000000'
     extra_boot_args_options = (
@@ -220,7 +220,7 @@ class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
 
 class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
     boot_script = 'boot.scr'
-    fdt_high    = '0x05000000'
+    fdt_high = '0x05000000'
     initrd_addr = '0x05000000'
     initrd_high = '0x06000000'
     extra_boot_args_options = (
