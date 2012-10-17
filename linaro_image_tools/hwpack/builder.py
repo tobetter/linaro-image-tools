@@ -304,29 +304,27 @@ class HardwarePackBuilder(object):
             f.write(self.hwpack.manifest_text())
 
     def _old_format_extract_files(self):
-        """
-        Extract files for hwpack versions < 3.0.
-        """
+        """Extract files for hwpack versions < 3.0."""
         bootloader_package = None
         if self.config.bootloader_file is not None:
             assert(self.config.bootloader_package is not None)
-            bootloader_package = \
-                self.find_fetched_package(self.packages,
-                                          self.config.bootloader_package)
-            self.hwpack.metadata.u_boot = \
-                self.add_file_to_hwpack(bootloader_package,
-                                        self.config.bootloader_file,
-                                        self.hwpack.U_BOOT_DIR)
+            bootloader_package = self.find_fetched_package(
+                            self.packages,
+                            self.config.bootloader_package)
+            self.hwpack.metadata.u_boot = self.add_file_to_hwpack(
+                                    bootloader_package,
+                                    self.config.bootloader_file,
+                                    self.hwpack.U_BOOT_DIR)
 
         spl_package = None
         if self.config.spl_file is not None:
             assert self.config.spl_package is not None
             spl_package = self.find_fetched_package(self.packages,
                                                     self.config.spl_package)
-            self.hwpack.metadata.spl = \
-                self.add_file_to_hwpack(spl_package,
-                                        self.config.spl_file,
-                                        self.hwpack.SPL_DIR)
+            self.hwpack.metadata.spl = self.add_file_to_hwpack(
+                                    spl_package,
+                                    self.config.spl_file,
+                                    self.hwpack.SPL_DIR)
 
         # bootloader_package and spl_package can be identical
         if (bootloader_package is not None and
