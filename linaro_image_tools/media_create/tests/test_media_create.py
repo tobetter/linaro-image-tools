@@ -1996,8 +1996,8 @@ class TestGetBootCmdAndroid(TestCase):
                        'fatload mmc 1:1 0x05000000 uInitrd; '
                        'fatload mmc 1:1 0x8000000 board.dtb; '
                        'bootm 0x00100000 0x05000000 0x8000000',
-            'fdt_high': '0xffffffff',
-            'initrd_high': '0xffffffff'}
+            'fdt_high': '0x05000000',
+            'initrd_high': '0x06000000'}
         self.assertBootEnv(
             android_boards.AndroidSnowballSdConfig, expected)
 
@@ -2012,8 +2012,8 @@ class TestGetBootCmdAndroid(TestCase):
                        'fatload mmc 0:2 0x05000000 uInitrd; '
                        'fatload mmc 0:2 0x8000000 board.dtb; '
                        'bootm 0x00100000 0x05000000 0x8000000',
-            'fdt_high': '0xffffffff',
-            'initrd_high': '0xffffffff'}
+            'fdt_high': '0x05000000',
+            'initrd_high': '0x06000000'}
         self.assertBootEnv(
             android_boards.AndroidSnowballEmmcConfig, expected)
 
