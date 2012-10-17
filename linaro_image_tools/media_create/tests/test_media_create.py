@@ -1693,7 +1693,9 @@ class TestGetBootCmd(TestCase):
                         'console=ttyXXX  root=UUID=deadbeef rootwait ro',
             'bootcmd': 'fatload mmc 0:1 0x60000000 uImage; '
                        'fatload mmc 0:1 0x62000000 uInitrd; '
-                       'bootm 0x60000000 0x62000000'}
+                       'bootm 0x60000000 0x62000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
 
     def test_vexpress_a9(self):
@@ -1705,7 +1707,9 @@ class TestGetBootCmd(TestCase):
                         'console=ttyXXX  root=UUID=deadbeef rootwait ro',
             'bootcmd': 'fatload mmc 0:1 0x60000000 uImage; '
                        'fatload mmc 0:1 0x62000000 uInitrd; '
-                       'bootm 0x60000000 0x62000000'}
+                       'bootm 0x60000000 0x62000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
 
     def test_mx51(self):
@@ -1719,7 +1723,9 @@ class TestGetBootCmd(TestCase):
             'bootcmd': 'fatload mmc 0:2 0x90000000 uImage; '
                        'fatload mmc 0:2 0x92000000 uInitrd; '
                        'fatload mmc 0:2 0x91ff0000 board.dtb; '
-                       'bootm 0x90000000 0x92000000 0x91ff0000'}
+                       'bootm 0x90000000 0x92000000 0x91ff0000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
 
     def test_smdkv310(self):
@@ -1733,7 +1739,9 @@ class TestGetBootCmd(TestCase):
                         'fatload mmc 0:2 0x42000000 uInitrd; '
                         'bootm 0x40007000 0x42000000',
              'ethact': 'smc911x-0',
-             'ethaddr': '00:40:5c:26:0a:5b'}
+             'ethaddr': '00:40:5c:26:0a:5b',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
 
     def test_origen(self):
@@ -1745,7 +1753,9 @@ class TestGetBootCmd(TestCase):
                         'rootwait ro',
              'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
                         'fatload mmc 0:2 0x42000000 uInitrd; '
-                        'bootm 0x40007000 0x42000000'}
+                        'bootm 0x40007000 0x42000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
 
     def test_ux500(self):
@@ -1761,7 +1771,9 @@ class TestGetBootCmd(TestCase):
                         'hwmem=48M@302M mem=152M@360M',
             'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
                        'fatload mmc 1:1 0x08000000 uInitrd; '
-                       'bootm 0x00100000 0x08000000'}
+                       'bootm 0x00100000 0x08000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
 
     def test_snowball_emmc(self):
@@ -1777,7 +1789,9 @@ class TestGetBootCmd(TestCase):
                         'hwmem=48M@302M mem=152M@360M',
             'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
                        'fatload mmc 1:1 0x08000000 uInitrd; '
-                       'bootm 0x00100000 0x08000000'}
+                       'bootm 0x00100000 0x08000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
 
     def test_panda(self):
@@ -1798,7 +1812,9 @@ class TestGetBootCmd(TestCase):
             'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
-                       'bootm 0x80200000 0x81600000 0x815f0000'}
+                       'bootm 0x80200000 0x81600000 0x815f0000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
 
     def test_beagle(self):
@@ -1819,7 +1835,9 @@ class TestGetBootCmd(TestCase):
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
-                       'bootm 0x80000000 0x81600000 0x815f0000'}
+                       'bootm 0x80000000 0x81600000 0x815f0000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
 
     def test_igep(self):
@@ -1840,7 +1858,9 @@ class TestGetBootCmd(TestCase):
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
-                       'bootm 0x80000000 0x81600000 0x815f0000'}
+                       'bootm 0x80000000 0x81600000 0x815f0000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_cmd)
 
     def test_overo(self):
@@ -1862,7 +1882,9 @@ class TestGetBootCmd(TestCase):
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
-                       'bootm 0x80000000 0x81600000 0x815f0000'}
+                       'bootm 0x80000000 0x81600000 0x815f0000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
 
 
@@ -1958,7 +1980,9 @@ class TestGetBootCmdAndroid(TestCase):
             'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
-                       'bootm 0x80200000 0x81600000 0x815f0000'}
+                       'bootm 0x80200000 0x81600000 0x815f0000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertBootEnv(config, expected)
 
     def test_android_snowball_sd(self):
@@ -1971,7 +1995,9 @@ class TestGetBootCmdAndroid(TestCase):
             'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
                        'fatload mmc 1:1 0x05000000 uInitrd; '
                        'fatload mmc 1:1 0x8000000 board.dtb; '
-                       'bootm 0x00100000 0x05000000 0x8000000'}
+                       'bootm 0x00100000 0x05000000 0x8000000',
+            'fdt_high': '0x05000000',
+            'initrd_high': '0x06000000'}
         self.assertBootEnv(
             android_boards.AndroidSnowballSdConfig, expected)
 
@@ -1985,7 +2011,9 @@ class TestGetBootCmdAndroid(TestCase):
             'bootcmd': 'fatload mmc 0:2 0x00100000 uImage; '
                        'fatload mmc 0:2 0x05000000 uInitrd; '
                        'fatload mmc 0:2 0x8000000 board.dtb; '
-                       'bootm 0x00100000 0x05000000 0x8000000'}
+                       'bootm 0x00100000 0x05000000 0x8000000',
+            'fdt_high': '0x05000000',
+            'initrd_high': '0x06000000'}
         self.assertBootEnv(
             android_boards.AndroidSnowballEmmcConfig, expected)
 
@@ -1995,7 +2023,9 @@ class TestGetBootCmdAndroid(TestCase):
                         'rootwait ro init=/init androidboot.console=ttySAC2',
             'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
                        'fatload mmc 0:2 0x42000000 uInitrd; '
-                       'bootm 0x40007000 0x42000000'}
+                       'bootm 0x40007000 0x42000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertBootEnv(
             android_boards.AndroidOrigenConfig, expected)
 
@@ -2005,7 +2035,9 @@ class TestGetBootCmdAndroid(TestCase):
                         'rootwait ro init=/init androidboot.console=ttyAMA0',
             'bootcmd': 'fatload mmc 0:1 0x60000000 uImage; '
                        'fatload mmc 0:1 0x62000000 uInitrd; '
-                       'bootm 0x60000000 0x62000000'}
+                       'bootm 0x60000000 0x62000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertBootEnv(
             android_boards.AndroidVexpressConfig, expected)
 
@@ -2017,7 +2049,9 @@ class TestGetBootCmdAndroid(TestCase):
                         'androidboot.console=ttymxc0',
             'bootcmd': 'fatload mmc 0:2 0x70000000 uImage; '
                        'fatload mmc 0:2 0x72000000 uInitrd; '
-                       'bootm 0x70000000 0x72000000'}
+                       'bootm 0x70000000 0x72000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertBootEnv(
             android_boards.AndroidMx53LoCoConfig, expected)
 
@@ -2030,7 +2064,9 @@ class TestGetBootCmdAndroid(TestCase):
             'bootcmd': 'fatload mmc 0:2 0x10000000 uImage; '
                        'fatload mmc 0:2 0x12000000 uInitrd; '
                        'fatload mmc 0:2 0x11ff0000 board.dtb; '
-                       'bootm 0x10000000 0x12000000 0x11ff0000'}
+                       'bootm 0x10000000 0x12000000 0x11ff0000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertBootEnv(
             android_boards.AndroidMx6QSabreliteConfig, expected)
 
@@ -2213,7 +2249,8 @@ class TestBoards(TestCaseWithFixtures):
         self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_get_plain_boot_script_contents(self):
-        boot_env = {'bootargs': 'mybootargs', 'bootcmd': 'mybootcmd'}
+        boot_env = {'bootargs': 'mybootargs', 'bootcmd': 'mybootcmd',
+                    'initrd_high': '0xffffffff', 'fdt_high': '0xffffffff'}
         boot_script_data = get_plain_boot_script_contents(boot_env)
         self.assertEqual(textwrap.dedent("""\
             setenv initrd_high "0xffffffff"
@@ -2230,7 +2267,8 @@ class TestBoards(TestCaseWithFixtures):
         fixture = self._mock_Popen()
         boot_script_path = os.path.join(tempdir, 'boot.scr')
         plain_boot_script_path = os.path.join(tempdir, 'boot.txt')
-        boot_env = {'bootargs': 'mybootargs', 'bootcmd': 'mybootcmd'}
+        boot_env = {'bootargs': 'mybootargs', 'bootcmd': 'mybootcmd',
+                    'initrd_high': '0xffffffff', 'fdt_high': '0xffffffff'}
         make_boot_script(boot_env, boot_script_path)
         expected = [
             '%s cp /tmp/random-abxzr %s' % (

@@ -84,6 +84,8 @@ class AndroidBoardConfig(object):
         # comes from - and lives in the same directory in the boot tarball, so
         # here we don't need to pass the whole path to it.
         boot_env["bootcmd"] = cls._get_bootcmd(initrd, cls.dtb_name)
+        boot_env["initrd_high"] = cls.initrd_high
+        boot_env["fdt_high"] = cls.fdt_high
         return boot_env
 
     @classmethod
@@ -204,7 +206,9 @@ class AndroidPandaConfig(AndroidOmapConfig, PandaConfig):
 
 class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
     boot_script = 'boot.scr'
+    fdt_high = '0x05000000'
     initrd_addr = '0x05000000'
+    initrd_high = '0x06000000'
     extra_boot_args_options = (
         'earlyprintk mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
         'mem=22M@360M mem_issw=1M@383M mem=640M@384M vmalloc=500M')
@@ -216,7 +220,9 @@ class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
 
 class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
     boot_script = 'boot.scr'
+    fdt_high = '0x05000000'
     initrd_addr = '0x05000000'
+    initrd_high = '0x06000000'
     extra_boot_args_options = (
         'earlyprintk mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
         'mem=22M@360M mem_issw=1M@383M mem=640M@384M vmalloc=500M')
