@@ -294,6 +294,13 @@ class HardwarePackBuilder(object):
                                                  manifest_name)
 
     def _write_hwpack_and_manifest(self, out_name, manifest_name):
+        """Write the real hwpack file and its manifest file.
+
+        :param out_name: The name of the file to write.
+        :type out_name: str
+        :param manifest_name: The name of the manifest file.
+        :type manifest_name: str
+        """
         logger.debug("Writing hwpack file")
         with open(out_name, 'w') as f:
             self.hwpack.to_file(f)
@@ -334,6 +341,11 @@ class HardwarePackBuilder(object):
             self.packages.remove(spl_package)
 
     def _add_packages_to_hwpack(self, local_packages):
+        """Adds the packages to the hwpack.
+
+        :param local_packages: The packages to add.
+        :type local_packages: list
+        """
         logger.debug("Adding packages to hwpack")
         self.hwpack.add_packages(self.packages)
         for local_package in local_packages:
@@ -343,6 +355,16 @@ class HardwarePackBuilder(object):
         self.hwpack.add_dependency_package(self.config.packages)
 
     def _extract_build_info(self, cache_dir, out_name, manifest_name):
+        """Extracts build-info from the packages.
+
+        :param cache_dir: The cache directory where build-info should be
+            located.
+        :type cache_dir: str
+        :param out_name: The name of the hwpack file.
+        :type out_name: str
+        :param manifest_name: The name of the manifest file.
+        :type manifest_name: str
+        """
         logger.debug("Extracting build-info")
         build_info_dir = os.path.join(cache_dir, 'build-info')
         build_info_available = 0
@@ -384,7 +406,17 @@ class HardwarePackBuilder(object):
 
     def _concatenate_build_info(self, build_info_available, build_info_dir,
                                 out_name, manifest_name):
-        # Concatenate BUILD-INFO.txt files
+        """Concatenates the build-info text if more than one is available.
+
+        :param build_info_available: The number of available build-info.
+        :type build_info_available: int
+        :param build_info_dir: Where build-info files should be.
+        :type build_info_dir: str
+        :param out_name: The name of the hwpack file.
+        :type out_name: str
+        :param manifest_name: The name of the manifest file.
+        :type manifest_name: str
+        """
         logger.debug("Concatenating build-info files")
         dst_file = open('BUILD-INFO.txt', 'wb')
         if build_info_available > 0:
