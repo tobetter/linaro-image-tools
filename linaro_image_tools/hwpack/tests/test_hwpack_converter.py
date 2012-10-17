@@ -154,3 +154,15 @@ class HwpackConverterTests(TestCaseWithFixtures):
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
         self.assertEqual(out_format, str(converter))
+
+    def test_dtb_file(self):
+        """Test the dtb_file conversion."""
+        ini_format = ("[hwpack]\nformat=2.0\ndtb_file=boot/a-*-path/file.dtb")
+        out_format = ("format: '3.0'\ndtb_files:\n- board.dtb: "
+                      "boot/a-*-path/file.dtb\n")
+        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
+                                                                get_file_name()
+        output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
+        converter = HwpackConverter(input_file, output_file)
+        converter._parse()
+        self.assertEqual(out_format, str(converter))

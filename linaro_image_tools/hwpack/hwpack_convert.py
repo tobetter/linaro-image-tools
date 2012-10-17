@@ -39,6 +39,8 @@ from hwpack_fields import (
     FILE_FIELD,
     IN_BOOT_PART_FIELD,
     DD_FIELD,
+    DTB_FILE_FIELD,
+    DTB_FILES_FIELD,
     ENV_DD_FIELD,
     SPL_IN_BOOT_PART_FIELD,
     SPL_DD_FIELD,
@@ -79,6 +81,9 @@ DEFAULT_BOOTLOADER = 'u_boot'
 # All the SPL keys
 SPL_KEYS = [SPL_IN_BOOT_PART_FIELD, SPL_DD_FIELD, SPL_PACKAGE_FIELD,
             SPL_FILE_FIELD, ENV_DD_FIELD]
+
+# The default name used for renaming dtb file
+DEFAULT_DTB_NAME = 'board.dtb'
 
 logger = logging.getLogger("linaro_hwpack_converter")
 
@@ -125,6 +130,8 @@ class HwpackConverter(object):
         self.spl = {}
         # The list of packages that should be installed.
         self.assume_installed = []
+        # The dtb_files section
+        self.dtb_files = []
 
     def _parse(self):
         """Parses the config file and stores its values."""
@@ -180,6 +187,10 @@ class HwpackConverter(object):
                                 self.parse_list_string(
                                                     self.assume_installed,
                                                     value)
+                                continue
+                            elif key == DTB_FILE_FIELD:
+                                self.dtb_files.append({DEFAULT_DTB_NAME:
+                                                       value})
                                 continue
                             elif key == INCLUDE_DEBS_OLD:
                                 key = INCLUDE_DEBS_FIELD
@@ -258,6 +269,9 @@ class HwpackConverter(object):
         if self.sources:
             sources = {SOURCES_FIELD: self.sources}
             converted += dump(sources)
+        if self.dtb_files:
+            dtb = {DTB_FILES_FIELD: self.dtb_files}
+            converted += dump(dtb)
         if self.bootloaders or self.extra_boot_options or self.spl:
             # The bootloaders section in the new YAML file is a dictionary
             # containing a dictionary which can contains also other
