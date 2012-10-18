@@ -370,6 +370,11 @@ class HardwarePackBuilder(object):
         build_info_available = 0
         for deb_pkg in self.packages:
             deb_pkg_file_path = deb_pkg.filepath
+            # FIXME: test deb_pkg_dir to work around
+            # https://bugs.launchpad.net/bugs/1067786
+            deb_pkg_dir = os.path.dirname(deb_pkg_file_path)
+            if deb_pkg_dir != cache_dir:
+                continue
             if os.path.islink(deb_pkg_file_path):
                 # Skip symlink-ed debian package file
                 # e.g. fetched package with dummy information
