@@ -22,34 +22,16 @@
 
 
 import argparse
-import logging
 import sys
-import os
 
 from linaro_image_tools.hwpack.hwpack_convert import (
     HwpackConverter,
     HwpackConverterException,
     check_and_validate_args,
     )
+from linaro_image_tools.utils import get_logger
 from linaro_image_tools.__version__ import __version__
 
-
-def get_logger(debug=False):
-    ch = logging.StreamHandler()
-    logger = logging.getLogger("linaro_hwpack_converter")
-
-    if debug:
-        ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-        ch.setFormatter(formatter)
-        logger.setLevel(logging.DEBUG)
-    else:
-        ch.setLevel(logging.INFO)
-        formatter = logging.Formatter("%(message)s")
-        ch.setFormatter(formatter)
-        logger.setLevel(logging.INFO)
-        logger.addHandler(ch)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(version='%(prog)s ' + __version__)
@@ -64,10 +46,10 @@ if __name__ == '__main__':
     logger = get_logger(debug=args.debug)
     try:
         input_file, output_file = check_and_validate_args(args)
-        print "Converting '%s' into new YAML format..." % (input_file)
+        logger.info("Converting '%s' into new YAML format..." % input_file)
         converter = HwpackConverter(input_file, output_file)
     except HwpackConverterException, e:
-        sys.stderr.write(str(e) + "\n")
+        logger.error(str(e))
         sys.exit(1)
     converter.convert()
-    print "File '%s' converted in '%s'." % (input_file, output_file)
+    logger.info("File '%s' converted in '%s'." % (input_file, output_file))
