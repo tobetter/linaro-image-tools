@@ -20,7 +20,6 @@
 # USA.
 
 import logging
-from linaro_image_tools.utils import DEFAULT_LOGGER_NAME
 
 
 class NullHandler(logging.Handler):
@@ -29,4 +28,4 @@ class NullHandler(logging.Handler):
 
 
 h = NullHandler()
-logging.getLogger(DEFAULT_LOGGER_NAME).addHandler(h)
+logging.getLogger(__name__).addHandler(h)

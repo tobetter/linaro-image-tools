@@ -28,8 +28,6 @@ import sys
 
 from linaro_image_tools import cmd_runner
 
-DEFAULT_LOGGER_NAME = 'linaro_image_tools'
-
 
 # try_import was copied from python-testtools 0.9.12 and was originally
 # licensed under a MIT-style license but relicensed under the GPL in Linaro
@@ -78,15 +76,13 @@ CommandNotFound = try_import('CommandNotFound.CommandNotFound')
 
 
 def path_in_tarfile_exists(path, tar_file):
-    exists = True
+    tarinfo = tarfile.open(tar_file, 'r:gz')
     try:
-        tarinfo = tarfile.open(tar_file, 'r:gz')
         tarinfo.getmember(path)
-        tarinfo.close()
+        return True
     except KeyError:
-        exists = False
-    finally:
-        return exists
+        return False
+    tarinfo.close()
 
 
 def verify_file_integrity(sig_file_list):
@@ -149,24 +145,24 @@ def check_file_integrity_and_log_errors(sig_file_list, binary, hwpacks):
 
     # Check the outputs from verify_file_integrity
     # Abort if anything fails.
-    logger = logging.getLogger(__name__)
     if len(sig_file_list):
         if not gpg_sig_pass:
-            logger.error("GPG signature verification failed.")
+            logging.error("GPG signature verification failed.")
             return False, []
 
         if not os.path.basename(binary) in verified_files:
-            logger.error("OS Binary verification failed")
+            logging.error("OS Binary verification failed")
             return False, []
 
         for hwpack in hwpacks:
             if not os.path.basename(hwpack) in verified_files:
-                logger.error("Hwpack {0} verification failed".format(hwpack))
+                logging.error("Hwpack {0} verification failed".format(hwpack))
                 return False, []
 
         for verified_file in verified_files:
-            logger.info('Hash verification of file {0} OK.'.format(
+            logging.info('Hash verification of file {0} OK.'.format(
                                                                 verified_file))
+
     return True, verified_files
 
 
@@ -352,31 +348,3 @@ def check_required_args(args):
         raise MissingRequiredOption("--dev option is required")
     if args.binary is None:
         raise MissingRequiredOption("--binary option is required")
-
-
-def get_logger(name=DEFAULT_LOGGER_NAME, debug=False):
-    """
-    Retrieves a named logger. Default name is set in the variable
-    DEFAULT_LOG_NAME. Debug is set to False by default.
-
-    :param name: The name of the logger.
-    :param debug: If debug level should be turned on
-    :return: A logger instance.
-    """
-    logger = logging.getLogger(name)
-    ch = logging.StreamHandler()
-
-    if debug:
-        ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-        ch.setFormatter(formatter)
-        logger.setLevel(logging.DEBUG)
-    else:
-        ch.setLevel(logging.INFO)
-        formatter = logging.Formatter("%(message)s")
-        ch.setFormatter(formatter)
-        logger.setLevel(logging.INFO)
-
-    logger.addHandler(ch)
-    return logger

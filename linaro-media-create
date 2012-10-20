@@ -22,6 +22,7 @@ import atexit
 import os
 import sys
 import tempfile
+import logging
 
 from linaro_image_tools import cmd_runner
 
@@ -56,7 +57,6 @@ from linaro_image_tools.utils import (
     MissingRequiredOption,
     path_in_tarfile_exists,
     prep_media_path,
-    get_logger,
     )
 
 # Just define the global variables
@@ -106,29 +106,35 @@ if __name__ == '__main__':
     parser = get_args_parser()
     args = parser.parse_args()
 
-    logger = get_logger(debug=args.debug)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(message)s")
+    ch.setFormatter(formatter)
+    logger = logging.getLogger("linaro_image_tools")
+    logger.setLevel(logging.INFO)
+    logger.addHandler(ch)
 
     try:
         additional_option_checks(args)
     except IncompatibleOptions as e:
         parser.print_help()
-        logger.error(e.value)
+        print >> sys.stderr, "\nError:", e.value
         sys.exit(1)
 
     if args.readhwpack:
         try:
             reader = HwpackReader(args.hwpacks)
-            logger.info(reader.get_supported_boards())
+            print reader.get_supported_boards()
             sys.exit(0)
         except HwpackReaderError as e:
-            logger.error(e.value)
+            print >> sys.stderr, "\nError:", e.value
             sys.exit(1)
 
     try:
         check_required_args(args)
     except MissingRequiredOption as e:
         parser.print_help()
-        logger.error(e.value)
+        print >> sys.stderr, "\nError:", e.value
         sys.exit(1)
 
     board_config = board_configs[args.dev]
@@ -141,16 +147,16 @@ if __name__ == '__main__':
 
     if media.is_block_device:
         if not board_config.supports_writing_to_mmc:
-            logger.error("The board '%s' does not support the --mmc option. "
-                         "Please use --image_file to create an image file for "
-                         "this board." % args.dev)
+            print ("The board '%s' does not support the --mmc option. "
+                    "Please use --image_file to create an image file for this "
+                    "board." % args.dev)
             sys.exit(1)
         if not confirm_device_selection_and_ensure_it_is_ready(
                 args.device, args.nocheck_mmc):
             sys.exit(1)
     elif not args.should_format_rootfs or not args.should_format_bootfs:
-        logger.error("Do not use --no-boot or --no-part in conjunction with "
-                     "--image_file.")
+        print ("Do not use --no-boot or --no-part in conjunction with "
+               "--image_file.")
         sys.exit(1)
     else:
         # All good, move on.
@@ -164,7 +170,6 @@ if __name__ == '__main__':
     BIN_DIR = os.path.join(TMP_DIR, 'rootfs')
     os.mkdir(BIN_DIR)
 
-    logger.info('Searching correct rootfs path')
     # Identify the correct path for the rootfs
     filesystem_dir = ''
     if path_in_tarfile_exists('binary/etc', args.binary):
@@ -207,12 +212,12 @@ if __name__ == '__main__':
 
     if args.rootfs == 'btrfs':
         if not extract_kpkgs:
-            logger.info("Desired rootfs type is 'btrfs', trying to "
-                        "auto-install the 'btrfs-tools' package")
+            print ("Desired rootfs type is 'btrfs', trying to auto-install "
+                   "the 'btrfs-tools' package")
             install_packages(ROOTFS_DIR, TMP_DIR, "btrfs-tools")
         else:
-            logger.info("Desired rootfs type is 'btrfs', please make sure the "
-                        "rootfs also includes 'btrfs-tools'")
+            print ("Desired rootfs type is 'btrfs', please make sure the "
+                   "rootfs also includes 'btrfs-tools'")
 
     boot_partition, root_partition = setup_partitions(
         board_config, media, args.image_size, args.boot_label, args.rfs_label,
@@ -243,4 +248,4 @@ if __name__ == '__main__':
             board_config.mmc_device_id, board_config.mmc_part_offset,
             board_config)
 
-    logger.info("Done creating Linaro image on %s" % media.path)
+    print "Done creating Linaro image on %s" % media.path

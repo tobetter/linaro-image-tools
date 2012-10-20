@@ -36,8 +36,6 @@ from parted import (
 
 from linaro_image_tools import cmd_runner
 
-logger = logging.getLogger(__name__)
-
 HEADS = 128
 SECTORS = 32
 SECTOR_SIZE = 512  # bytes
@@ -207,6 +205,7 @@ def partition_mounted(device, path, *args):
         try:
             umount(path)
         except cmd_runner.SubcommandNonZeroReturnValue, e:
+            logger = logging.getLogger("linaro_image_tools")
             logger.warn("Failed to umount %s, but ignoring it because of a "
                         "previous error" % path)
             logger.warn(e)
@@ -587,6 +586,7 @@ def wait_partition_to_settle(media):
 
     :param media: A setup_partitions.Media object to partition.
     """
+    logger = logging.getLogger("linaro_image_tools")
     tts = 1
     while (tts > 0) and (tts <= MAX_TTS):
         try:

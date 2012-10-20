@@ -26,6 +26,7 @@ import os
 import sys
 import shutil
 import glob
+import logging
 import tarfile
 import tempfile
 import argparse
@@ -34,7 +35,6 @@ import fileinput
 from debian.deb822 import Packages
 from linaro_image_tools.hwpack.packages import get_packages_file
 from linaro_image_tools.hwpack.packages import FetchedPackage
-from linaro_image_tools.utils import get_logger
 
 
 parser = argparse.ArgumentParser()
@@ -53,7 +53,7 @@ parser.add_argument("-i", "--in-place", action="store_true", dest="inplace",
 parser.add_argument("-d", "--debug-output", action="store_true", dest="debug",
                     help="Verbose messages are displayed when specified")
 
-logger = None
+logger = logging.getLogger("linaro-hwpack-replace")
 
 
 class DummyStanza(object):
@@ -64,6 +64,20 @@ class DummyStanza(object):
     def dump(self, fd):
         fd.write(get_packages_file([self.info]))
 
+
+def set_logging_param(args):
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(message)s")
+    ch.setFormatter(formatter)
+    logger.setLevel(logging.INFO)
+    logger.addHandler(ch)
+    if args.debug:
+        ch.setLevel(logging.DEBUG)
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        ch.setFormatter(formatter)
+        logger.setLevel(logging.DEBUG)
 
 
 def get_hwpack_name(old_hwpack, build_number):
@@ -164,7 +178,7 @@ def main():
                      "and the debian package information\n")
         return 1
 
-    logger = get_logger(debug=args.debug)
+    set_logging_param(args)
 
     old_hwpack = args.hwpack_name
     new_deb_file_to_copy = args.deb_pack

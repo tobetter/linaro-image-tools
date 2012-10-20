@@ -85,7 +85,7 @@ SPL_KEYS = [SPL_IN_BOOT_PART_FIELD, SPL_DD_FIELD, SPL_PACKAGE_FIELD,
 # The default name used for renaming dtb file
 DEFAULT_DTB_NAME = 'board.dtb'
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("linaro_hwpack_converter")
 
 
 class HwpackConverterException(Exception):
