@@ -164,6 +164,7 @@ def main():
                      "and the debian package information\n")
         return 1
 
+    global logger
     logger = get_logger(debug=args.debug)
 
     old_hwpack = args.hwpack_name
