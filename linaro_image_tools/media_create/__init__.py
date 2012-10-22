@@ -173,6 +173,7 @@ def get_args_parser():
         help="Select a bootloader from a hardware pack that contains more "
              "than one. If not specified, it will default to '%s'." %
              DEFAULT_BOOTLOADER)
+    parser.add_argument("--debug", action="store_true")
 
     add_common_options(parser)
     return parser
