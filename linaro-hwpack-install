@@ -42,6 +42,8 @@ FORCE_YES="no"
 SOURCES_LIST_FILE="${TEMP_DIR}/sources.list"
 APT_GET_OPTIONS="Dir::Etc::SourceList=${SOURCES_LIST_FILE}"
 SUPPORTED_FORMATS="1.0 2.0 3.0"  # A space-separated list of hwpack formats.
+FLASH_KERNEL_SKIP="true" 
+export FLASH_KERNEL_SKIP # skip attempting to run flash-kernel-hooks
 
 sudo="sudo"
 if [ $(id -u) -eq 0 ]; then
