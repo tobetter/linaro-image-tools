@@ -41,6 +41,7 @@ from linaro_image_tools.media_create.unpack_binary_tarball import (
     )
 from linaro_image_tools.media_create import get_android_args_parser
 from linaro_image_tools.utils import (
+    additional_android_option_checks,
     ensure_command,
     get_logger
     )
@@ -57,7 +58,6 @@ SDCARD_DISK = None
 
 # Registered as the first atexit handler as we want this to be the last
 # handler to execute.
-@atexit.register
 def cleanup_tempdir():
     """Remove TEMP_DIR with all its contents.
 
@@ -93,6 +93,10 @@ if __name__ == '__main__':
 
     logger = get_logger(debug=args.debug)
 
+    additional_android_option_checks(args)
+
+    atexit.register(cleanup_tempdir)
+
     # If --help was specified this won't execute.
     # Create temp dir and initialize rest of path vars.
     TMP_DIR = tempfile.mkdtemp()
@@ -107,6 +111,11 @@ if __name__ == '__main__':
     SDCARD_DISK = os.path.join(TMP_DIR, 'sdcard-disc')
 
     board_config = get_board_config(args.dev)
+    if args.hwpack:
+        board_config.from_file(args.hwpack)
+    else:
+        logger.warning("No Android hwpack provided: default board values "
+                       "will be used.")
     board_config.add_boot_args(args.extra_boot_args)
     board_config.add_boot_args_from_file(args.extra_boot_args_file)
 

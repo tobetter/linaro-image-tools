@@ -78,6 +78,7 @@ def add_common_options(parser):
     parser.add_argument(
         '--extra-boot-args-file', dest='extra_boot_args_file',
         required=False, help=('File containing extra boot arguments.'))
+    parser.add_argument("--debug", action="store_true")
 
 
 def get_args_parser():
@@ -173,7 +174,6 @@ def get_args_parser():
         help="Select a bootloader from a hardware pack that contains more "
              "than one. If not specified, it will default to '%s'." %
              DEFAULT_BOOTLOADER)
-    parser.add_argument("--debug", action="store_true")
 
     add_common_options(parser)
     return parser
@@ -189,6 +189,9 @@ def get_android_args_parser():
         '--image-file', '--image_file', dest='device',
         help='File where we should write the image file.')
     parser.add_argument(
+        '--hwpack', required=False,
+        help=('An Android hardware pack file with the board configuration.'))
+    parser.add_argument(
         '--image-size', '--image_size', default='2G',
         help=('The image size, specified in mega/giga bytes (e.g. 3000M or '
               '3G); use with --image_file only'))
@@ -202,7 +205,6 @@ def get_android_args_parser():
         '--console', action='append', dest='consoles', default=[],
         help=('Add a console to kernel boot parameter; this parameter can be '
               'defined multiple times.'))
-
     parser.add_argument(
         '--system', default='system.tar.bz2', required=True,
         help=('The tarball containing the Android system paritition'))
@@ -212,7 +214,6 @@ def get_android_args_parser():
     parser.add_argument(
         '--boot', default='boot.tar.bz2', required=True,
         help=('The tarball containing the Android root partition'))
-
     parser.add_argument(
         '--no-part', dest='should_create_partitions', action='store_false',
         help='Reuse existing partitions on the given media.')
