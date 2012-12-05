@@ -25,7 +25,7 @@ from linaro_image_tools.utils import (
     is_arm_host,
     find_command,
     )
-from linaro_image_tools.media_create.boards import HardwarepackHandler
+from linaro_image_tools.hwpack.handler import HardwarepackHandler
 
 # It'd be nice if we could use atexit here, but all the things we need to undo
 # have to happen right after install_hwpacks completes and the atexit

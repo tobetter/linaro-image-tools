@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
 
-from linaro_image_tools.media_create.boards import HardwarepackHandler
+from linaro_image_tools.hwpack.handler import HardwarepackHandler
 from linaro_image_tools.hwpack.hwpack_fields import (
     FORMAT_FIELD,
     NAME_FIELD,
