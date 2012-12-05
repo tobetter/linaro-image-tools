@@ -20,44 +20,137 @@
 """Configuration for boards supported by linaro-android-media-create.
 
 To add support for a new board, you need to create a subclass of
-AndroidBoardConfig, set appropriate values for its variables and add it to
-android_board_configs at the bottom of this file.
+AndroidBoardConfig, create an Android hwpack as explained here:
+
+https://wiki.linaro.org/AndroidHardwarePacksV3
+
+and add the board to 'android_board_configs' at the end of this file.
 """
 
-from linaro_image_tools.media_create.partitions import SECTOR_SIZE
-from linaro_image_tools.media_create.boards import PART_ALIGN_S
-from linaro_image_tools.media_create.boards import BeagleConfig
-from linaro_image_tools.media_create.boards import PandaConfig
-from linaro_image_tools.media_create.boards import Mx53LoCoConfig
-from linaro_image_tools.media_create.boards import SnowballSdConfig
-from linaro_image_tools.media_create.boards import SnowballEmmcConfig
-from linaro_image_tools.media_create.boards import SMDKV310Config
-from linaro_image_tools.media_create.boards import OrigenConfig
-from linaro_image_tools.media_create.boards import VexpressConfig
-from linaro_image_tools.media_create.boards import (
-    align_up,
-    align_partition,
-    classproperty,
-    make_boot_script,
-    install_mx5_boot_loader,
-    )
+import os
+import yaml
+import logging
 
 from linaro_image_tools import cmd_runner
-import os
+from linaro_image_tools.media_create.partitions import SECTOR_SIZE
+from linaro_image_tools.media_create.boards import (
+    BeagleConfig,
+    BoardConfig,
+    BoardConfigException,
+    Mx53LoCoConfig,
+    OrigenConfig,
+    PART_ALIGN_S,
+    PandaConfig,
+    SMDKV310Config,
+    SnowballEmmcConfig,
+    SnowballSdConfig,
+    VexpressConfig,
+    align_partition,
+    align_up,
+    install_mx5_boot_loader,
+    make_boot_script,
+    )
+from linaro_image_tools.utils import DEFAULT_LOGGER_NAME
+
+logger = logging.getLogger(DEFAULT_LOGGER_NAME)
+
+BOOT_MIN_SIZE_S = align_up(128 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+SYSTEM_MIN_SIZE_S = align_up(512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+CACHE_MIN_SIZE_S = align_up(256 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+USERDATA_MIN_SIZE_S = align_up(512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+SDCARD_MIN_SIZE_S = align_up(512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
+LOADER_MIN_SIZE_S = align_up(1 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
 
 
-class AndroidBoardConfig(object):
-    @classmethod
-    def _get_bootargs(cls, consoles):
+class AndroidBoardConfig(BoardConfig):
+
+    def __init__(self):
+        super(AndroidBoardConfig, self).__init__()
+        self._dtb_name = None
+        self._extra_serial_options = []
+        self._android_specific_args = []
+        self._extra_boot_args_options = []
+
+    def _get_android_specific_args(self):
+        android_args = self._android_specific_args
+        if isinstance(android_args, list):
+            android_args = ' '.join(self._android_specific_args)
+        return android_args
+
+    def _set_android_specific_args(self, value):
+        self._android_specific_args = value
+
+    android_specific_args = property(_get_android_specific_args,
+                                     _set_android_specific_args)
+
+    def _get_extra_boot_args_options(self):
+        extra_boot_args = self._extra_boot_args_options
+        if isinstance(extra_boot_args, list):
+            extra_boot_args = ' '.join(self._extra_boot_args_options)
+        return extra_boot_args
+
+    def _set_extra_boot_args_options(self, value):
+        self._extra_boot_args_options = value
+
+    extra_boot_args_options = property(_get_extra_boot_args_options,
+                                       _set_extra_boot_args_options)
+
+    def _get_extra_serial_options(self):
+        return ' '.join(self._extra_serial_options)
+
+    def _set_extra_serial_options(self, value):
+        self._extra_serial_options = value
+
+    extra_serial_options = property(_get_extra_serial_options,
+                                    _set_extra_serial_options)
+
+    def _get_dtb_name(self):
+        return self._dtb_name
+
+    def _set_dtb_name(self, value):
+        self._dtb_name = value
+
+    dtb_name = property(_get_dtb_name, _set_dtb_name)
+
+    def from_file(self, hwpack):
+        """Loads the Android board configuration from an Android hardware pack
+        configuration file and sets the config attributes with their values.
+
+        :param hwpack: The Android hwpack configuration file.
+        :return The configuration read from the file as a dictionary.
+        """
+        try:
+            config = yaml.safe_load(hwpack)
+            self._set_attributes(config)
+            return config
+        except yaml.YAMLError, ex:
+            logger.debug("Error loading YAML file %s" % hwpack, ex)
+            raise BoardConfigException("Error reading Android hwpack %s"
+                                       % hwpack)
+
+    def _set_attributes(self, config):
+        """Initialize the class attributes with the values read from the
+        Android hardware pack configuration file.
+
+        :param config: The config read from the Android hwpack.
+        """
+        for name, value in config.iteritems():
+            if hasattr(self, name):
+                setattr(self, name, value)
+            else:
+                logger.warning("Attribute '%s' does not belong to this "
+                               "instance of '%s'." % (name, self.__class__))
+
+    def _get_bootargs(self, consoles):
         """Get the bootargs for this board.
 
         In general subclasses should not have to override this.
         """
         boot_args_options = 'rootwait ro'
-        if cls.extra_boot_args_options is not None:
-            boot_args_options += ' %s' % cls.extra_boot_args_options
-        boot_args_options += ' %s' % cls.android_specific_args
-        serial_opts = cls._extra_serial_opts
+        if self.extra_boot_args_options:
+            boot_args_options += ' %s' % self.extra_boot_args_options
+        boot_args_options += ' %s' % self.android_specific_args
+        serial_opts = self.extra_serial_options
         for console in consoles:
             serial_opts += ' console=%s' % console
 
@@ -69,34 +162,32 @@ class AndroidBoardConfig(object):
             "%(boot_args_options)s"
              % replacements)
 
-    @classmethod
-    def _get_boot_env(cls, consoles):
+    def _get_boot_env(self, consoles):
         """Get the boot environment for this board.
 
         In general subclasses should not have to override this.
         """
         boot_env = {}
-        boot_env["bootargs"] = cls._get_bootargs(consoles)
+        boot_env["bootargs"] = self._get_bootargs(consoles)
         initrd = False
-        if cls.initrd_addr:
+        if self.initrd_addr:
             initrd = True
         # On Android, the DTB file is always built as part of the kernel it
         # comes from - and lives in the same directory in the boot tarball, so
         # here we don't need to pass the whole path to it.
-        boot_env["bootcmd"] = cls._get_bootcmd(initrd, cls.dtb_name)
-        boot_env["initrd_high"] = cls.initrd_high
-        boot_env["fdt_high"] = cls.fdt_high
+        boot_env["bootcmd"] = self._get_bootcmd(initrd, self.dtb_name)
+        boot_env["initrd_high"] = self.initrd_high
+        boot_env["fdt_high"] = self.fdt_high
         return boot_env
 
-    @classmethod
-    def populate_boot_script(cls, boot_partition, boot_disk, consoles):
+    def populate_boot_script(self, boot_partition, boot_disk, consoles):
         cmd_runner.run(['mkdir', '-p', boot_disk]).wait()
         # TODO: Use partition_mounted() here to make sure the partition is
         # always umounted after we're done.
         cmd_runner.run(['mount', boot_partition, boot_disk],
             as_root=True).wait()
 
-        boot_env = cls._get_boot_env(consoles)
+        boot_env = self._get_boot_env(consoles)
         cmdline_filepath = os.path.join(boot_disk, "cmdline")
         cmdline_file = open(cmdline_filepath, 'r')
         android_kernel_cmdline = cmdline_file.read()
@@ -105,7 +196,7 @@ class AndroidBoardConfig(object):
         cmdline_file.close()
 
         boot_dir = boot_disk
-        boot_script_path = os.path.join(boot_dir, cls.boot_script)
+        boot_script_path = os.path.join(boot_dir, self.boot_script)
         make_boot_script(boot_env, boot_script_path)
 
         cmd_runner.run(['sync']).wait()
@@ -114,24 +205,12 @@ class AndroidBoardConfig(object):
         except cmd_runner.SubcommandNonZeroReturnValue:
             pass
 
-    @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False,
+    def get_sfdisk_cmd(self, should_align_boot_part=False,
                        start_addr=0, extra_part=False):
-        if cls.fat_size == 32:
+        if self.fat_size == 32:
             partition_type = '0x0C'
         else:
             partition_type = '0x0E'
-
-        BOOT_MIN_SIZE_S = align_up(
-            128 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        SYSTEM_MIN_SIZE_S = align_up(
-            512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        CACHE_MIN_SIZE_S = align_up(
-            256 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        USERDATA_MIN_SIZE_S = align_up(
-            512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-        SDCARD_MIN_SIZE_S = align_up(
-            512 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
 
         # align on sector 63 for compatibility with broken versions of x-loader
         # unless align_boot_part is set
@@ -174,86 +253,89 @@ class AndroidBoardConfig(object):
             cache_start, _cache_len, userdata_start, userdata_start,
             _userdata_len, sdcard_start)
 
-    @classmethod
-    def populate_raw_partition(cls, media, boot_dir):
-        super(AndroidBoardConfig, cls).populate_raw_partition(media, boot_dir)
+    def populate_raw_partition(self, media, boot_dir):
+        super(AndroidBoardConfig, self).populate_raw_partition(media, boot_dir)
 
-    @classmethod
-    def install_boot_loader(cls, boot_partition, boot_device_or_file):
+    def install_boot_loader(self, boot_partition, boot_device_or_file):
         pass
 
 
 class AndroidOmapConfig(AndroidBoardConfig):
-    dtb_name = None
+    """Placeholder class for OMAP configuration inheritance."""
 
 
 class AndroidBeagleConfig(AndroidOmapConfig, BeagleConfig):
-    _extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
-    android_specific_args = 'init=/init androidboot.console=ttyO2'
-    dtb_name = None
+    """Placeholder class for Beagle configuration inheritance."""
+    def __init__(self):
+        super(AndroidBeagleConfig, self).__init__()
+        self._android_specific_args = 'init=/init androidboot.console=ttyO2'
+        self._extra_serial_options = 'console=tty0 console=ttyO2,115200n8'
 
 
-class AndroidPandaConfig(AndroidOmapConfig, PandaConfig):
-    bootloader_flavor = 'omap4_panda'
-    dtb_addr = '0x815f0000'
-    dtb_name = 'board.dtb'
-    _extra_serial_opts = 'console=ttyO2,115200n8'
-    extra_boot_args_options = (
-        'earlyprintk fixrtc nocompcache vram=48M '
-        'omapfb.vram=0:24M,1:24M mem=456M@0x80000000 mem=512M@0xA0000000')
-    android_specific_args = 'init=/init androidboot.console=ttyO2'
+class AndroidPandaConfig(AndroidBoardConfig, PandaConfig):
+    """Placeholder class for Panda configuration inheritance."""
+    def __init__(self):
+        super(AndroidPandaConfig, self).__init__()
+        self._dtb_name = 'board.dtb'
+        self._extra_serial_options = 'console=ttyO2,115200n8'
+        self._extra_boot_args_options = (
+            'earlyprintk fixrtc nocompcache vram=48M '
+            'omapfb.vram=0:24M,1:24M mem=456M@0x80000000 mem=512M@0xA0000000')
+        self._android_specific_args = 'init=/init androidboot.console=ttyO2'
+        self.dtb_addr = '0x815f0000'
+        self.bootloader_flavor = 'omap4_panda'
 
 
 class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
-    boot_script = 'boot.scr'
-    fdt_high = '0x05000000'
-    initrd_addr = '0x05000000'
-    initrd_high = '0x06000000'
-    extra_boot_args_options = (
-        'earlyprintk mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
-        'mem=22M@360M mem_issw=1M@383M mem=640M@384M vmalloc=500M')
-    _extra_serial_opts = 'console=ttyAMA2,115200n8'
-    android_specific_args = 'init=/init androidboot.console=ttyAMA2'
-    dtb_name = 'board.dtb'
-    dtb_addr = '0x8000000'
+    """Placeholder class for Snowball Sd configuration inheritance."""
+    def __init__(self):
+        super(AndroidSnowballSdConfig, self).__init__()
+        self._dtb_name = 'board.dtb'
+        self._android_specific_args = 'init=/init androidboot.console=ttyAMA2'
+        self._extra_boot_args_options = (
+            'earlyprintk mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
+            'mem=22M@360M mem_issw=1M@383M mem=640M@384M vmalloc=500M')
+        self._extra_serial_options = 'console=ttyAMA2,115200n8'
+        self.boot_script = 'boot.scr'
+        self.fdt_high = '0x05000000'
+        self.initrd_addr = '0x05000000'
+        self.initrd_high = '0x06000000'
+        self.dtb_addr = '0x8000000'
 
 
 class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
-    boot_script = 'boot.scr'
-    fdt_high = '0x05000000'
-    initrd_addr = '0x05000000'
-    initrd_high = '0x06000000'
-    extra_boot_args_options = (
-        'earlyprintk mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
-        'mem=22M@360M mem_issw=1M@383M mem=640M@384M vmalloc=500M')
-    _extra_serial_opts = 'console=ttyAMA2,115200n8'
-    android_specific_args = 'init=/init androidboot.console=ttyAMA2'
-    mmc_option = '0:2'
-    dtb_name = 'board.dtb'
-    dtb_addr = '0x8000000'
+    """Class for Snowball Emmc configuration inheritance."""
+    def __init__(self):
+        super(AndroidSnowballEmmcConfig, self).__init__()
+        self._dtb_name = 'board.dtb'
+        self._extra_boot_args_options = (
+            'earlyprintk mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
+            'mem=22M@360M mem_issw=1M@383M mem=640M@384M vmalloc=500M')
+        self._extra_serial_options = 'console=ttyAMA2,115200n8'
+        self._android_specific_args = 'init=/init androidboot.console=ttyAMA2'
+        self.boot_script = 'boot.scr'
+        self.fdt_high = '0x05000000'
+        self.initrd_addr = '0x05000000'
+        self.initrd_high = '0x06000000'
+        self.mmc_option = '0:2'
+        self.dtb_addr = '0x8000000'
 
-    @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False):
-
-        LOADER_MIN_SIZE_S = align_up(
-            1 * 1024 * 1024, SECTOR_SIZE) / SECTOR_SIZE
-
+    def get_sfdisk_cmd(self, should_align_boot_part=False):
         loader_start, loader_end, loader_len = align_partition(
             SnowballEmmcConfig.SNOWBALL_LOADER_START_S,
             LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
 
-        command = super(AndroidSnowballEmmcConfig, cls).get_sfdisk_cmd(
+        command = super(AndroidSnowballEmmcConfig, self).get_sfdisk_cmd(
             should_align_boot_part=True, start_addr=loader_end,
             extra_part=True)
 
         return '%s,%s,0xDA\n%s' % (
             loader_start, loader_len, command)
 
-    @classmethod
-    def populate_raw_partition(cls, media, boot_dir):
+    def populate_raw_partition(self, media, boot_dir):
         # To avoid adding a Snowball specific command line option, we assume
         # that the user already has unpacked the startfiles to ./startupfiles
-        config_files_dir = cls.snowball_config(boot_dir)
+        config_files_dir = self.snowball_config(boot_dir)
         assert os.path.exists(config_files_dir), (
             "You need to unpack the Snowball startupfiles to the directory "
             "'startupfiles' in your current working directory. See "
@@ -264,72 +346,99 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
         for boot_file in boot_files:
             cmd_runner.run(['cp', os.path.join(boot_dir, 'boot', boot_file),
                             config_files_dir], as_root=True).wait()
-        super(AndroidSnowballEmmcConfig, cls).populate_raw_partition(
+        super(AndroidSnowballEmmcConfig, self).populate_raw_partition(
             media, boot_dir)
 
-    @classmethod
-    def snowball_config(cls, chroot_dir):
+    def snowball_config(self, chroot_dir):
         # The user is expected to have unpacked the startupfiles to this subdir
         # of their working dir.
         return os.path.join('.', 'startupfiles')
 
-    @classproperty
-    def delete_startupfiles(cls):
+    @property
+    def delete_startupfiles(self):
         # The startupfiles will have been unpacked to the user's working dir
         # and should not be deleted after they have been installed.
         return False
 
 
 class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
-    extra_boot_args_options = (
-        'earlyprintk rootdelay=1 fixrtc nocompcache di1_primary tve')
-    _extra_serial_opts = 'console=%s,115200n8' % (
-        Mx53LoCoConfig.serial_tty)
-    android_specific_args = 'init=/init androidboot.console=%s' % (
-        Mx53LoCoConfig.serial_tty)
-    dtb_name = None
+    """Class for Mx53LoCo configuration inheritance."""
+    def __init__(self):
+        super(AndroidMx53LoCoConfig, self).__init__()
+        self._extra_boot_args_options = (
+            'earlyprintk rootdelay=1 fixrtc nocompcache di1_primary tve')
+        self._extra_serial_options = 'console=%s,115200n8'
+        self._android_specific_args = 'init=/init androidboot.console=%s'
 
-    @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+    def _get_extra_serial_options(self):
+        serial_opts = self._extra_serial_options
+        if serial_opts:
+            if isinstance(serial_opts, list):
+                serial_opts = ' '.join(serial_opts)
+            if self._check_placeholder_presence(serial_opts, '%s'):
+                serial_opts = serial_opts % self.serial_tty
+        return serial_opts
+
+    def _set_extra_serial_options(self, value):
+        self._extra_serial_options = value
+
+    extra_serial_options = property(_get_extra_serial_options,
+                                    _set_extra_serial_options)
+
+    def _get_android_specific_args(self):
+        android_args = self._android_specific_args
+        if android_args:
+            if isinstance(android_args, list):
+                android_args = ' '.join(android_args)
+            if self._check_placeholder_presence(android_args, '%s'):
+                android_args = android_args % self.serial_tty
+        return android_args
+
+    def _set_android_specific_args(self, value):
+        self._android_specific_args = value
+
+    android_specific_args = property(_get_android_specific_args,
+                                     _set_android_specific_args)
+
+    def get_sfdisk_cmd(self, should_align_boot_part=False):
         loader_start, loader_end, loader_len = align_partition(
-            1, cls.LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
+            1, self.LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
 
-        command = super(AndroidMx53LoCoConfig, cls).get_sfdisk_cmd(
+        command = super(AndroidMx53LoCoConfig, self).get_sfdisk_cmd(
             should_align_boot_part=True, start_addr=loader_end,
             extra_part=True)
 
         return '%s,%s,0xDA\n%s' % (
             loader_start, loader_len, command)
 
-    @classmethod
-    def install_boot_loader(cls, boot_partition, boot_device_or_file):
+    def install_boot_loader(self, boot_partition, boot_device_or_file):
         install_mx5_boot_loader(
             os.path.join(boot_device_or_file, "u-boot.imx"),
-            boot_partition, cls.LOADER_MIN_SIZE_S)
+            boot_partition, self.LOADER_MIN_SIZE_S)
 
 
 class AndroidMx6QSabreliteConfig(AndroidMx53LoCoConfig):
-    bootloader_flavor = 'mx6qsabrelite'
-    kernel_addr = '0x10000000'
-    initrd_addr = '0x12000000'
-    load_addr = '0x10008000'
-    dtb_addr = '0x11ff0000'
-    dtb_name = 'board.dtb'
+    """Placeholder class for Mx6Q Sabrelite configuration inheritance."""
+    def __init__(self):
+        super(AndroidMx6QSabreliteConfig, self).__init__()
+        self._dtb_name = 'board.dtb'
+        self.bootloader_flavor = 'mx6qsabrelite'
+        self.kernel_addr = '0x10000000'
+        self.initrd_addr = '0x12000000'
+        self.load_addr = '0x10008000'
+        self.dtb_addr = '0x11ff0000'
 
 
 class AndroidSamsungConfig(AndroidBoardConfig):
-    dtb_name = None
-
-    @classmethod
-    def get_sfdisk_cmd(cls, should_align_boot_part=False):
+    def get_sfdisk_cmd(self, should_align_boot_part=False):
         loaders_min_len = (
-            cls.SAMSUNG_V310_BL2_START + cls.SAMSUNG_V310_BL2_LEN -
-            cls.SAMSUNG_V310_BL1_START)
+            self.samsung_v310_bl2_start + self.samsung_v310_bl2_len -
+            self.samsung_v310_bl1_start)
 
         loader_start, loader_end, loader_len = align_partition(
             1, loaders_min_len, 1, PART_ALIGN_S)
 
-        command = super(AndroidSamsungConfig, cls).get_sfdisk_cmd(
+        command = super(AndroidSamsungConfig, self).get_sfdisk_cmd(
             should_align_boot_part=False, start_addr=loader_end,
             extra_part=True)
 
@@ -338,33 +447,59 @@ class AndroidSamsungConfig(AndroidBoardConfig):
 
 
 class AndroidSMDKV310Config(AndroidSamsungConfig, SMDKV310Config):
-    _extra_serial_opts = 'console=tty0 console=ttySAC1,115200n8'
-    android_specific_args = 'init=/init androidboot.console=ttySAC1'
-    dtb_name = None
+    """Placeholder class for SMDKV310 configuration inheritance."""
+    def __init__(self):
+        super(AndroidSMDKV310Config, self).__init__()
+        self._extra_serial_options = 'console=tty0 console=ttySAC1,115200n8'
+        self._android_specific_args = 'init=/init androidboot.console=ttySAC1'
 
 
 class AndroidOrigenConfig(AndroidSamsungConfig, OrigenConfig):
-    _extra_serial_opts = 'console=tty0 console=ttySAC2,115200n8'
-    android_specific_args = 'init=/init androidboot.console=ttySAC2'
-    dtb_name = None
+    """Placeholder class for Origen configuration inheritance."""
+    def __init__(self):
+        super(AndroidOrigenConfig, self).__init__()
+        self._extra_serial_options = 'console=tty0 console=ttySAC2,115200n8'
+        self._android_specific_args = 'init=/init androidboot.console=ttySAC2'
 
 
 class AndroidVexpressConfig(AndroidBoardConfig, VexpressConfig):
-    _extra_serial_opts = 'console=tty0 console=ttyAMA0,38400n8'
-    android_specific_args = 'init=/init androidboot.console=ttyAMA0'
-    dtb_name = None
+    """Placeholder class for Vexpress configuration inheritance."""
+    def __init__(self):
+        super(AndroidVexpressConfig, self).__init__()
+        self._extra_serial_options = 'console=tty0 console=ttyAMA0,38400n8'
+        self._android_specific_args = 'init=/init androidboot.console=ttyAMA0'
 
 
+# This dictionary is composed as follows:
+# <device_name>: <class>
+# The <device_name> is the command line argument passed to l-a-m-c, the
+# <class> is the corresponding config class in this file (not the instance).
+# If a new device does not have special needs, it is possible to use the
+# general AndroidBoardConfig class.
 android_board_configs = {
     'beagle': AndroidBeagleConfig,
-    'panda': AndroidPandaConfig,
-    'snowball_sd': AndroidSnowballSdConfig,
-    'snowball_emmc': AndroidSnowballEmmcConfig,
-    'smdkv310': AndroidSMDKV310Config,
-    'mx53loco': AndroidMx53LoCoConfig,
     'iMX53': AndroidMx53LoCoConfig,
+    'mx53loco': AndroidMx53LoCoConfig,
     'mx6qsabrelite': AndroidMx6QSabreliteConfig,
     'origen': AndroidOrigenConfig,
+    'panda': AndroidPandaConfig,
+    'smdkv310': AndroidSMDKV310Config,
+    'snowball_emmc': AndroidSnowballEmmcConfig,
+    'snowball_sd': AndroidSnowballSdConfig,
     'vexpress': AndroidVexpressConfig,
     'vexpress-a9': AndroidVexpressConfig,
     }
+
+
+def get_board_config(board):
+    """Get the board configuration for the specified board.
+
+    :param board: The name of the board to get the configuration of.
+    :type board: str
+    """
+    clazz = android_board_configs.get(board, None)
+    if clazz:
+        return clazz()
+    else:
+        raise BoardConfigException("Board name '%s' has no configuration "
+                                   "available." % board)
