@@ -1776,7 +1776,6 @@ class SMDKV310Config(SamsungConfig):
     samsung_bl2_start = 65
     samsung_bl2_len = 1024
 
-
     @classmethod
     def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_id,
                       i_img_data, d_img_data):
