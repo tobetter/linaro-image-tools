@@ -32,6 +32,7 @@ import struct
 import tarfile
 import dbus
 
+from mock import MagicMock
 from StringIO import StringIO
 from testtools import TestCase
 
@@ -2144,14 +2145,14 @@ class TestBoards(TestCaseWithFixtures):
         fixture = self._mock_Popen()
         board_conf = boards.OrigenConfig()
         bootloader_flavor = board_conf.bootloader_flavor
-        self.useFixture(MockSomethingFixture(
-            board_conf, '_get_samsung_spl',
-            classmethod(lambda cls, chroot_dir: "%s/%s/SPL" % (
-                chroot_dir, bootloader_flavor))))
-        self.useFixture(MockSomethingFixture(
-            board_conf, '_get_samsung_bootloader',
-            classmethod(lambda cls, chroot_dir: "%s/%s/uboot" % (
-                chroot_dir, bootloader_flavor))))
+        # Made-up value to be used as the chroot directory.
+        chroot_dir_value = 'chroot_dir'
+        board_conf._get_samsung_spl = MagicMock()
+        board_conf._get_samsung_spl.return_value = ("%s/%s/SPL" %
+            (chroot_dir_value, bootloader_flavor))
+        board_conf._get_samsung_bootloader = MagicMock()
+        board_conf._get_samsung_bootloader.return_value = ("%s/%s/uboot" %
+            (chroot_dir_value, bootloader_flavor))
         board_conf.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         board_conf.hardwarepack_handler.get_format = (
@@ -2159,8 +2160,8 @@ class TestBoards(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
                                              lambda file: 1))
         board_conf.install_samsung_boot_loader(
-            board_conf._get_samsung_spl("chroot_dir"),
-            board_conf._get_samsung_bootloader("chroot_dir"),
+            board_conf._get_samsung_spl(chroot_dir_value),
+            board_conf._get_samsung_bootloader(chroot_dir_value),
             "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
