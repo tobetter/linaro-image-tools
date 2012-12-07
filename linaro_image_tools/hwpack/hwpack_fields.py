@@ -86,10 +86,15 @@ METADATA_ARCH_FIELD = 'architecture'
 METADATA_VERSION_FIELD = 'version'
 
 # The allowed partition layouts.
+BOOTFS16 = 'bootfs16_rootfs'
+BOOTFS = 'bootfs_rootfs'
+RESERVED_BOOTFS = 'reserved_bootfs_rootfs'
+
 DEFINED_PARTITION_LAYOUTS = [
-    'bootfs16_rootfs',
-    'bootfs_rootfs',
-    'reserved_bootfs_rootfs', ]
+    BOOTFS16,
+    BOOTFS,
+    RESERVED_BOOTFS,
+    ]
 
 # Supported bootloaders
 U_BOOT = 'u_boot'

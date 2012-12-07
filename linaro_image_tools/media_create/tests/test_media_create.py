@@ -36,6 +36,7 @@ from StringIO import StringIO
 from testtools import TestCase
 
 from linaro_image_tools import cmd_runner
+from linaro_image_tools.hwpack.handler import HardwarepackHandler
 from linaro_image_tools.hwpack.packages import PackageMaker
 import linaro_image_tools.media_create
 from linaro_image_tools.media_create import (
@@ -61,7 +62,6 @@ from linaro_image_tools.media_create.boards import (
     _get_file_matching,
     _get_mlo_file,
     _run_mkimage,
-    HardwarepackHandler,
     BoardConfig,
     )
 from linaro_image_tools.media_create.android_boards import (
