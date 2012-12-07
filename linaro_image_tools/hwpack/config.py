@@ -71,7 +71,9 @@ from hwpack_fields import (
     SAMSUNG_BL1_LEN_FIELD,
     SAMSUNG_BL1_START_FIELD,
     SAMSUNG_BL2_LEN_FIELD,
+    SAMSUNG_BL2_START_FIELD,
     SAMSUNG_ENV_LEN_FIELD,
+    SAMSUNG_ENV_START_FIELD,
     SERIAL_TTY_FIELD,
     SNOWBALL_STARTUP_FILES_CONFIG_FIELD,
     SOURCES_FIELD,
@@ -298,7 +300,9 @@ class Config(object):
             self._validate_snowball_startup_files_config()
             self._validate_samsung_bl1_start()
             self._validate_samsung_bl1_len()
+            self._validate_samsung_env_start()
             self._validate_samsung_env_len()
+            self._validate_samsung_bl2_start()
             self._validate_samsung_bl2_len()
 
         self._validate_sources()
@@ -867,12 +871,28 @@ class Config(object):
         return self._get_option(SAMSUNG_BL1_LEN_FIELD)
 
     @property
+    def samsung_env_start(self):
+        """Env start offset for Samsung boards.
+
+        A str.
+        """
+        return self._get_option(SAMSUNG_ENV_START_FIELD)
+
+    @property
     def samsung_env_len(self):
         """Env length for Samsung boards.
 
         A str.
         """
         return self._get_option(SAMSUNG_ENV_LEN_FIELD)
+
+    @property
+    def samsung_bl2_start(self):
+        """BL2 start offset for Samsung boards.
+
+        A str.
+        """
+        return self._get_option(SAMSUNG_BL2_START_FIELD)
 
     @property
     def samsung_bl2_len(self):
@@ -1269,6 +1289,16 @@ class Config(object):
             raise HwpackConfigError(
                 "Invalid samsung_bl1_len %s" % (samsung_bl1_len))
 
+    def _validate_samsung_env_start(self):
+        samsung_env_start = self.samsung_env_start
+        if samsung_env_start is None:
+            return
+        try:
+            assert int(samsung_env_start) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid samsung_env_start %s" % (samsung_env_start))
+
     def _validate_samsung_env_len(self):
         samsung_env_len = self.samsung_env_len
         if samsung_env_len is None:
@@ -1278,6 +1308,16 @@ class Config(object):
         except:
             raise HwpackConfigError(
                 "Invalid samsung_env_len %s" % (samsung_env_len))
+
+    def _validate_samsung_bl2_start(self):
+        samsung_bl2_start = self.samsung_bl2_start
+        if samsung_bl2_start is None:
+            return
+        try:
+            assert int(samsung_bl2_start) > 0
+        except:
+            raise HwpackConfigError(
+                "Invalid samsung_bl2_start %s" % (samsung_bl2_start))
 
     def _validate_samsung_bl2_len(self):
         samsung_bl2_len = self.samsung_bl2_len

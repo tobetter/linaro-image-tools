@@ -64,7 +64,9 @@ from hwpack_fields import (
     SAMSUNG_BL1_LEN_FIELD,
     SAMSUNG_BL1_START_FIELD,
     SAMSUNG_BL2_LEN_FIELD,
+    SAMSUNG_BL2_START_FIELD,
     SAMSUNG_ENV_LEN_FIELD,
+    SAMSUNG_ENV_START_FIELD,
     SERIAL_TTY_FIELD,
     SNOWBALL_STARTUP_FILES_CONFIG_FIELD,
     SUPPORT_FIELD,
@@ -129,7 +131,8 @@ class Metadata(object):
                       extra_serial_opts=None, loader_start=None,
                       snowball_startup_files_config=None,
                       samsung_bl1_start=None, samsung_bl1_len=None,
-                      samsung_env_len=None, samsung_bl2_len=None):
+                      samsung_env_start=None, samsung_env_len=None,
+                      samsung_bl2_start=None, samsung_bl2_len=None):
         """Add fields that are specific to the new format.
 
         These fields are not present in earlier config files.
@@ -163,7 +166,9 @@ class Metadata(object):
         self.snowball_startup_files_config = snowball_startup_files_config
         self.samsung_bl1_start = samsung_bl1_start
         self.samsung_bl1_len = samsung_bl1_len
+        self.samsung_env_start = samsung_env_start
         self.samsung_env_len = samsung_env_len
+        self.samsung_bl2_start = samsung_bl2_start
         self.samsung_bl2_len = samsung_bl2_len
 
     @classmethod
@@ -224,7 +229,9 @@ class Metadata(object):
                 samsung_bl1_len=config.samsung_bl1_len,
                 samsung_bl1_start=config.samsung_bl1_start,
                 samsung_bl2_len=config.samsung_bl2_len,
+                samsung_bl2_start=config.samsung_bl2_start,
                 samsung_env_len=config.samsung_env_len,
+                samsung_env_start=config.samsung_env_start,
                 serial_tty=config.serial_tty,
                 snowball_startup_files_config=snowball_startup_config,
                 spl_dd=config.spl_dd,
@@ -329,8 +336,12 @@ class Metadata(object):
             metadata += dump({SAMSUNG_BL1_START_FIELD: self.samsung_bl1_start})
         if self.samsung_bl1_len is not None:
             metadata += dump({SAMSUNG_BL1_LEN_FIELD: self.samsung_bl1_len})
+        if self.samsung_env_start is not None:
+            metadata += dump({SAMSUNG_ENV_START_FIELD: self.samsung_env_start})
         if self.samsung_env_len is not None:
             metadata += dump({SAMSUNG_ENV_LEN_FIELD: self.samsung_env_len})
+        if self.samsung_bl2_start is not None:
+            metadata += dump({SAMSUNG_BL2_START_FIELD: self.samsung_bl2_start})
         if self.samsung_bl2_len is not None:
             metadata += dump({SAMSUNG_BL2_LEN_FIELD: self.samsung_bl2_len})
         return metadata
@@ -415,8 +426,12 @@ class Metadata(object):
             metadata += "SAMSUNG_BL1_START=%s\n" % self.samsung_bl1_start
         if self.samsung_bl1_len is not None:
             metadata += "SAMSUNG_BL1_LEN=%s\n" % self.samsung_bl1_len
+        if self.samsung_env_start is not None:
+            metadata += "SAMSUNG_ENV_START=%s\n" % self.samsung_env_start
         if self.samsung_env_len is not None:
             metadata += "SAMSUNG_ENV_LEN=%s\n" % self.samsung_env_len
+        if self.samsung_bl2_start is not None:
+            metadata += "SAMSUNG_BL2_START=%s\n" % self.samsung_bl2_start
         if self.samsung_bl2_len is not None:
             metadata += "SAMSUNG_BL2_LEN=%s\n" % self.samsung_bl2_len
         return metadata
