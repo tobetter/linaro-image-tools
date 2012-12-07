@@ -93,7 +93,8 @@ RESERVED_BOOTFS = 'reserved_bootfs_rootfs'
 DEFINED_PARTITION_LAYOUTS = [
     BOOTFS16,
     BOOTFS,
-    RESERVED_BOOTFS, ]
+    RESERVED_BOOTFS,
+    ]
 
 # Supported bootloaders
 U_BOOT = 'u_boot'
