@@ -484,10 +484,10 @@ class BoardConfig(object):
                 cls.mmc_part_offset = None
                 cls.samsung_bl1_start = None
                 cls.samsung_bl1_len = None
-                cls.samsung_env_start = None
                 cls.samsung_env_len = None
-                cls.samsung_bl2_start = None
                 cls.samsung_bl2_len = None
+                # cls.samsung_bl2_start and cls.samsung_env_start should
+                # be initialized to default value for backward compatibility.
 
             # Set new values from metadata.
             cls.kernel_addr = cls.get_metadata_field('kernel_addr')
@@ -1769,12 +1769,6 @@ class SMDKV310Config(SamsungConfig):
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
-    samsung_bl1_start = 1
-    samsung_bl1_len = 32
-    samsung_env_start = 33
-    samsung_env_len = 32
-    samsung_bl2_start = 65
-    samsung_bl2_len = 1024
 
     @classmethod
     def _get_boot_env(cls, is_live, is_lowmem, consoles, rootfs_id,
@@ -1799,12 +1793,6 @@ class OrigenConfig(SamsungConfig):
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
-    samsung_bl1_start = 1
-    samsung_bl1_len = 32
-    samsung_env_start = 33
-    samsung_env_len = 32
-    samsung_bl2_start = 65
-    samsung_bl2_len = 1024
 
 
 class I386Config(BoardConfig):
