@@ -1119,8 +1119,6 @@ class TestBootSteps(TestCaseWithFixtures):
         super(TestBootSteps, self).setUp()
         self.funcs_calls = []
         self.mock_all_boards_funcs()
-        boards = linaro_image_tools.media_create.boards
-        boards.BoardConfig.hwpack_format = '1.0'
 
     def mock_all_boards_funcs(self):
         """Mock functions of boards module with a call tracer."""
@@ -1137,39 +1135,40 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def mock_set_appropriate_serial_tty(self, config):
 
-        def set_appropriate_serial_tty_mock(cls, chroot_dir):
-            cls.serial_tty = cls._serial_tty
+        def set_appropriate_serial_tty_mock(chroot_dir):
+            config.serial_tty = config._serial_tty
 
-        self.useFixture(MockSomethingFixture(
-            config, 'set_appropriate_serial_tty',
-            classmethod(set_appropriate_serial_tty_mock)))
+        config.set_appropriate_serial_tty = MagicMock(
+            side_effect=set_appropriate_serial_tty_mock)
 
     def make_boot_files(self, config):
-        def _get_kflavor_files_mock(self, path):
-            if self.dtb_name is None:
+        def _get_kflavor_files_mock(path):
+            if config.dtb_name is None:
                 return (path, path, None)
             return (path, path, path)
 
-        self.useFixture(MockSomethingFixture(
-            config, '_get_kflavor_files',
-            classmethod(_get_kflavor_files_mock)))
+        config._get_kflavor_files = MagicMock(
+            side_effect=_get_kflavor_files_mock)
 
         config.make_boot_files('', False, False, [], '', '', '', '')
 
     def test_vexpress_steps(self):
         board_conf = boards.VexpressConfig()
+        board_conf.hwpack_format = '1.0'
         self.make_boot_files(board_conf)
         expected = ['make_uImage', 'make_uInitrd']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_vexpress_a9_steps(self):
         board_conf = boards.VexpressA9Config()
+        board_conf.hwpack_format = '1.0'
         self.make_boot_files(board_conf)
         expected = ['make_uImage', 'make_uInitrd']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_mx5_steps(self):
         board_conf = boards.Mx5Config()
+        board_conf.hwpack_format = '1.0'
         board_conf.bootloader_flavor = 'bootloader_flavor'
         board_conf.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
@@ -1183,20 +1182,20 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_smdkv310_steps(self):
         def mock_func_creator(name):
-            return classmethod(
-                lambda *args, **kwargs: self.funcs_calls.append(name))
+            return self.funcs_calls.append(name)
 
-        self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards.SMDKV310Config,
-                'install_samsung_boot_loader',
-                mock_func_creator('install_samsung_boot_loader')))
+        board_conf = boards.SMDKV310Config()
+        board_conf.hwpack_format = '1.0'
+        board_conf.install_samsung_boot_loader = MagicMock()
+        board_conf.install_samsung_boot_loader.return_value = \
+            self.funcs_calls.append('install_samsung_boot_loader')
         self.useFixture(MockSomethingFixture(os.path, 'exists',
                                              lambda file: True))
-        boards.SMDKV310Config.hardwarepack_handler = (
+        board_conf.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
-        boards.SMDKV310Config.hardwarepack_handler.get_format = (
+        board_conf.hardwarepack_handler.get_format = (
             lambda: '1.0')
-        self.make_boot_files(boards.SMDKV310Config)
+        self.make_boot_files(board_conf)
         expected = [
             'install_samsung_boot_loader', 'make_flashable_env', '_dd',
             'make_uImage', 'make_uInitrd', 'make_boot_script']
@@ -1207,34 +1206,40 @@ class TestBootSteps(TestCaseWithFixtures):
             return classmethod(
                 lambda *args, **kwargs: self.funcs_calls.append(name))
 
-        self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards.OrigenConfig,
-                'install_samsung_boot_loader',
-                mock_func_creator('install_samsung_boot_loader')))
+        board_conf = boards.OrigenConfig()
+        board_conf.hwpack_format = '1.0'
+        board_conf.install_samsung_boot_loader = MagicMock()
+        board_conf.install_samsung_boot_loader.return_value = \
+            self.funcs_calls.append('install_samsung_boot_loader')
         self.useFixture(MockSomethingFixture(os.path, 'exists',
                                              lambda file: True))
-        boards.OrigenConfig.hardwarepack_handler = (
+        board_conf.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
-        boards.OrigenConfig.hardwarepack_handler.get_format = (
+        board_conf.hardwarepack_handler.get_format = (
             lambda: '1.0')
-        self.make_boot_files(boards.OrigenConfig)
+        self.make_boot_files(board_conf)
         expected = [
             'install_samsung_boot_loader', 'make_flashable_env', '_dd',
             'make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_ux500_steps(self):
-        self.make_boot_files(boards.Ux500Config())
+        board_conf = boards.Ux500Config()
+        board_conf.hwpack_format = '1.0'
+        self.make_boot_files(board_conf)
         expected = ['make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_snowball_sd_steps(self):
-        self.make_boot_files(boards.SnowballSdConfig())
+        board_conf = boards.SnowballSdConfig()
+        board_conf.hwpack_format = '1.0'
+        self.make_boot_files(board_conf)
         expected = ['make_uImage', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_panda_steps(self):
         board_conf = boards.PandaConfig()
+        board_conf.hwpack_format = '1.0'
         self.mock_set_appropriate_serial_tty(board_conf)
         self.make_boot_files(board_conf)
         expected = [
@@ -1244,6 +1249,7 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_beagle_steps(self):
         board_conf = boards.BeagleConfig()
+        board_conf.hwpack_format = '1.0'
         self.mock_set_appropriate_serial_tty(board_conf)
         self.make_boot_files(board_conf)
         expected = [
@@ -1253,6 +1259,7 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_igep_steps(self):
         board_conf = boards.IgepConfig()
+        board_conf.hwpack_format = '1.0'
         self.mock_set_appropriate_serial_tty(board_conf)
         self.make_boot_files(board_conf)
         expected = [
@@ -1262,6 +1269,7 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_overo_steps(self):
         board_conf = boards.OveroConfig()
+        board_conf.hwpack_format = '1.0'
         self.mock_set_appropriate_serial_tty(board_conf)
         self.make_boot_files(board_conf)
         expected = [
@@ -1499,25 +1507,29 @@ class TestFixForBug697824(TestCaseWithFixtures):
 
     def mock_set_appropriate_serial_tty(self, config):
 
-        def set_appropriate_serial_tty_mock(cls, chroot_dir):
+        def set_appropriate_serial_tty_mock(chroot_dir):
             self.set_appropriate_serial_tty_called = True
-            cls.serial_tty = cls._serial_tty
 
-        self.useFixture(MockSomethingFixture(
-            config, 'set_appropriate_serial_tty',
-            classmethod(set_appropriate_serial_tty_mock)))
+        config.set_appropriate_serial_tty = MagicMock(
+            side_effect=set_appropriate_serial_tty_mock)
+        # self.useFixture(MockSomethingFixture(
+        #     config, 'set_appropriate_serial_tty',
+        #     set_appropriate_serial_tty_mock))
 
     def test_omap_make_boot_files(self):
         self.set_appropriate_serial_tty_called = False
-        board_conf = get_board_config('beagle')
+        board_conf = boards.BeagleConfig()
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         self.mock_set_appropriate_serial_tty(board_conf)
-        self.useFixture(MockSomethingFixture(
-            board_conf, 'make_boot_files',
-            classmethod(lambda *args: None)))
+        board_conf.make_boot_files = MagicMock(spec=board_conf.make_boot_files)
+        # self.useFixture(MockSomethingFixture(
+        #     board_conf, 'make_boot_files',
+        #     lambda *args: None))
         # We don't need to worry about what's passed to make_boot_files()
         # because we mock the method which does the real work above and here
         # we're only interested in ensuring that OmapConfig.make_boot_files()
         # calls set_appropriate_serial_tty().
+
         board_conf.make_boot_files(
             None, None, None, None, None, None, None, None)
         self.assertTrue(
@@ -1530,15 +1542,16 @@ class TestFixForBug697824(TestCaseWithFixtures):
         board_conf = boards.BeagleConfig()
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_2
         self.mock_set_appropriate_serial_tty(board_conf)
-        self.useFixture(MockSomethingFixture(
-            board_conf, 'make_boot_files',
-            classmethod(lambda *args: None)))
+        # self.useFixture(MockSomethingFixture(
+        #     board_conf, 'make_boot_files',
+        #     lambda *args: None))
         # We don't need to worry about what's passed to make_boot_files()
         # because we mock the method which does the real work above and here
         # we're only interested in ensuring that OmapConfig.make_boot_files()
         # does not call set_appropriate_serial_tty().
-        board_conf.make_boot_files(
-            None, None, None, None, None, None, None, None)
+        board_conf.make_boot_files('', False, False, [], '', '', '', '')
+        # board_conf.make_boot_files(
+        #     None, None, None, None, None, None, None, None)
         self.assertFalse(
             self.set_appropriate_serial_tty_called,
             "make_boot_files called set_appropriate_serial_tty")
