@@ -1507,29 +1507,28 @@ class TestFixForBug697824(TestCaseWithFixtures):
 
     def mock_set_appropriate_serial_tty(self, config):
 
-        def set_appropriate_serial_tty_mock(chroot_dir):
+        def set_appropriate_serial_tty_mock(arg):
             self.set_appropriate_serial_tty_called = True
 
+        # Need to mock all the calls done from make_boot_files in order
+        # to be able to correctly call it.
+        config._get_kflavor_files = MagicMock(return_value=('', '', ''))
+        config._get_boot_env = MagicMock(return_value=None)
+        config._make_boot_files = MagicMock()
+        config._make_boot_files_v2 = MagicMock()
         config.set_appropriate_serial_tty = MagicMock(
-            side_effect=set_appropriate_serial_tty_mock)
-        # self.useFixture(MockSomethingFixture(
-        #     config, 'set_appropriate_serial_tty',
-        #     set_appropriate_serial_tty_mock))
+             side_effect=set_appropriate_serial_tty_mock)
 
     def test_omap_make_boot_files(self):
         self.set_appropriate_serial_tty_called = False
+
         board_conf = boards.BeagleConfig()
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         self.mock_set_appropriate_serial_tty(board_conf)
-        board_conf.make_boot_files = MagicMock(spec=board_conf.make_boot_files)
-        # self.useFixture(MockSomethingFixture(
-        #     board_conf, 'make_boot_files',
-        #     lambda *args: None))
         # We don't need to worry about what's passed to make_boot_files()
         # because we mock the method which does the real work above and here
         # we're only interested in ensuring that OmapConfig.make_boot_files()
         # calls set_appropriate_serial_tty().
-
         board_conf.make_boot_files(
             None, None, None, None, None, None, None, None)
         self.assertTrue(
@@ -1542,16 +1541,12 @@ class TestFixForBug697824(TestCaseWithFixtures):
         board_conf = boards.BeagleConfig()
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_2
         self.mock_set_appropriate_serial_tty(board_conf)
-        # self.useFixture(MockSomethingFixture(
-        #     board_conf, 'make_boot_files',
-        #     lambda *args: None))
         # We don't need to worry about what's passed to make_boot_files()
         # because we mock the method which does the real work above and here
         # we're only interested in ensuring that OmapConfig.make_boot_files()
         # does not call set_appropriate_serial_tty().
-        board_conf.make_boot_files('', False, False, [], '', '', '', '')
-        # board_conf.make_boot_files(
-        #     None, None, None, None, None, None, None, None)
+        board_conf.make_boot_files(
+            None, None, None, None, None, None, None, None)
         self.assertFalse(
             self.set_appropriate_serial_tty_called,
             "make_boot_files called set_appropriate_serial_tty")
