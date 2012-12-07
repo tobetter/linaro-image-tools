@@ -1,4 +1,4 @@
-# Copyright (C) 2010, 2011 Linaro
+# Copyright (C) 2010, 2011, 2012 Linaro
 #
 # Author: Guilherme Salgado <guilherme.salgado@linaro.org>
 #
