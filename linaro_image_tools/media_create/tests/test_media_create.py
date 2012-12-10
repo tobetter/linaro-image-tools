@@ -1664,9 +1664,10 @@ class TestGetSfdiskCmdV2(TestCase):
     def test_smdkv310(self):
         class config(board_configs['smdkv310']):
             partition_layout = 'reserved_bootfs_rootfs'
-            LOADER_MIN_SIZE_S = (boards.BoardConfig.SAMSUNG_V310_BL2_START +
-                                 boards.BoardConfig.SAMSUNG_V310_BL2_LEN -
-                                 boards.BoardConfig.SAMSUNG_V310_BL1_START)
+            LOADER_MIN_SIZE_S = (boards.BoardConfig.samsung_bl1_start +
+                                 boards.BoardConfig.samsung_bl1_len +
+                                 boards.BoardConfig.samsung_bl2_len +
+                                 boards.BoardConfig.samsung_env_len)
         self.assertEquals(
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             config.get_sfdisk_cmd())
@@ -1674,9 +1675,10 @@ class TestGetSfdiskCmdV2(TestCase):
     def test_origen(self):
         class config(board_configs['origen']):
             partition_layout = 'reserved_bootfs_rootfs'
-            LOADER_MIN_SIZE_S = (boards.BoardConfig.SAMSUNG_V310_BL2_START +
-                                 boards.BoardConfig.SAMSUNG_V310_BL2_LEN -
-                                 boards.BoardConfig.SAMSUNG_V310_BL1_START)
+            LOADER_MIN_SIZE_S = (boards.BoardConfig.samsung_bl1_start +
+                                 boards.BoardConfig.samsung_bl1_len +
+                                 boards.BoardConfig.samsung_bl2_len +
+                                 boards.BoardConfig.samsung_env_len)
         self.assertEquals(
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             config.get_sfdisk_cmd())
@@ -2212,10 +2214,10 @@ class TestBoards(TestCaseWithFixtures):
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
             'seek=%d' % (sudo_args, bootloader_flavor,
-                         boards.SMDKV310Config.SAMSUNG_V310_BL1_START),
+                         boards.SMDKV310Config.samsung_bl1_start),
             '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
             'seek=%d' % (sudo_args, bootloader_flavor,
-                         boards.SMDKV310Config.SAMSUNG_V310_BL2_START)]
+                         boards.SMDKV310Config.samsung_bl2_start)]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_install_origen_u_boot(self):
@@ -2242,10 +2244,10 @@ class TestBoards(TestCaseWithFixtures):
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
             'seek=%d' % (sudo_args, bootloader_flavor,
-                         boards.OrigenConfig.SAMSUNG_V310_BL1_START),
+                         boards.OrigenConfig.samsung_bl1_start),
             '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
             'seek=%d' % (sudo_args, bootloader_flavor,
-                         boards.OrigenConfig.SAMSUNG_V310_BL2_START)]
+                         boards.OrigenConfig.samsung_bl2_start)]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_get_plain_boot_script_contents(self):
