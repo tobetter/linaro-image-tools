@@ -76,7 +76,9 @@ SPL_PACKAGE_FIELD = 'spl_package'
 SAMSUNG_BL1_LEN_FIELD = 'samsung_bl1_len'
 SAMSUNG_BL1_START_FIELD = 'samsung_bl1_start'
 SAMSUNG_BL2_LEN_FIELD = 'samsung_bl2_len'
+SAMSUNG_BL2_START_FIELD = 'samsung_bl2_start'
 SAMSUNG_ENV_LEN_FIELD = 'samsung_env_len'
+SAMSUNG_ENV_START_FIELD = 'samsung_env_start'
 
 # Snowball fields
 SNOWBALL_STARTUP_FILES_CONFIG_FIELD = 'snowball_startup_files_config'
@@ -142,7 +144,9 @@ hwpack_v3_layout = {
     SAMSUNG_BL1_LEN_FIELD: None,
     SAMSUNG_BL1_START_FIELD: None,
     SAMSUNG_ENV_LEN_FIELD: None,
+    SAMSUNG_ENV_START_FIELD: None,
     SAMSUNG_BL2_LEN_FIELD: None,
+    SAMSUNG_BL2_START_FIELD: None,
     SNOWBALL_STARTUP_FILES_CONFIG_FIELD: None,
     SOURCES_FIELD: None,
     BOOTLOADERS_FIELD: {
