@@ -185,6 +185,7 @@ class BoardConfig(object):
         self.supports_writing_to_mmc = True
         self.uimage_path = ''
         self.wired_interfaces = None
+        self.wireless_interfaces = None
         # Samsung Boot-loader implementation notes and terminology
         #
         # * BL0, BL1 etc. are the various bootloaders in order of execution
