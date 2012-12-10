@@ -431,9 +431,8 @@ class AndroidMx6QSabreliteConfig(AndroidMx53LoCoConfig):
 
 class AndroidSamsungConfig(AndroidBoardConfig):
     def get_sfdisk_cmd(self, should_align_boot_part=False):
-        loaders_min_len = (
-            self.samsung_v310_bl2_start + self.samsung_v310_bl2_len -
-            self.samsung_v310_bl1_start)
+        loaders_min_len = (self.samsung_bl1_start + self.samsung_bl1_len +
+            self.samsung_bl2_len + self.samsung_env_len)
 
         loader_start, loader_end, loader_len = align_partition(
             1, loaders_min_len, 1, PART_ALIGN_S)

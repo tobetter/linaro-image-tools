@@ -29,7 +29,9 @@ from linaro_image_tools.hwpack.hwpack_fields import (
     SAMSUNG_BL1_LEN_FIELD,
     SAMSUNG_BL1_START_FIELD,
     SAMSUNG_BL2_LEN_FIELD,
+    SAMSUNG_BL2_START_FIELD,
     SAMSUNG_ENV_LEN_FIELD,
+    SAMSUNG_ENV_START_FIELD,
 )
 
 
@@ -816,9 +818,19 @@ class ConfigTests(TestCase):
                                  SAMSUNG_BL2_LEN_FIELD + ': 1\n')
         self.assertEqual(None, config._validate_keys())
 
+    def test_valid_samsung_bl2_start_field(self):
+        config = self.get_config(self.valid_start_v3 +
+                                 SAMSUNG_BL2_START_FIELD + ': 1\n')
+        self.assertEqual(None, config._validate_keys())
+
     def test_valid_samsung_env_len_field(self):
         config = self.get_config(self.valid_start_v3 +
                                  SAMSUNG_ENV_LEN_FIELD + ': 1\n')
+        self.assertEqual(None, config._validate_keys())
+
+    def test_valid_samsung_env_start_field(self):
+        config = self.get_config(self.valid_start_v3 +
+                                 SAMSUNG_ENV_START_FIELD + ': 1\n')
         self.assertEqual(None, config._validate_keys())
 
     def test_samsung_field_wrong(self):
