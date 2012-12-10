@@ -323,8 +323,8 @@ class AndroidSamsungConfig(AndroidBoardConfig):
     @classmethod
     def get_sfdisk_cmd(cls, should_align_boot_part=False):
         loaders_min_len = (
-            cls.SAMSUNG_V310_BL2_START + cls.SAMSUNG_V310_BL2_LEN -
-            cls.SAMSUNG_V310_BL1_START)
+            cls.samsung_bl1_start + cls.samsung_bl1_len + cls.samsung_bl2_len +
+            cls.samsung_env_len)
 
         loader_start, loader_end, loader_len = align_partition(
             1, loaders_min_len, 1, PART_ALIGN_S)
