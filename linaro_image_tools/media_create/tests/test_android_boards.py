@@ -67,14 +67,14 @@ class TestAndroidBoardsHwpack(TestCase):
         expected = 'init=/init androidboot.console=ttyO2'
         self.assertEqual(expected, self.config.android_specific_args)
 
-    def test_extra_serial_options(self):
-        """The field extra_serial_options should be a concatenated string."""
-        extra_serial_opts = ("extra_serial_options:\n - console=tty0\n "
+    def test_extra_serial_opts(self):
+        """The field extra_serial_opts should be a concatenated string."""
+        extra_serial_opts = ("extra_serial_opts:\n - console=tty0\n "
                              "- console=ttyO2,115200n8")
         hwpack_config = self.hwpack_base + extra_serial_opts
         self.config.from_file(StringIO(hwpack_config))
         expected = 'console=tty0 console=ttyO2,115200n8'
-        self.assertEqual(expected, self.config.extra_serial_options)
+        self.assertEqual(expected, self.config.extra_serial_opts)
 
     def test_extra_boot_args_options(self):
         """The field extra_boot_args_options should be a concatenated string.
@@ -91,7 +91,7 @@ class TestAndroidBoardsHwpack(TestCase):
         android_mx6_config = (self.hwpack_base + "bootloader_flavor: "
             "mx6qsabrelite\nextra_boot_args_options:\n - earlyprintk\n"
             " - rootdelay=1\n - fixrtc\n - nocompcache\n - di1_primary\n"
-            " - tve\nextra_serial_options:\n - console=%s,115200n8\n"
+            " - tve\nextra_serial_opts:\n - console=%s,115200n8\n"
             "android_specific_args:\n - init=/init\n - "
             "androidboot.console=%s\nkernel_addr: '0x10000000'\n"
             "initrd_addr: '0x12000000'\nload_addr: '0x10008000'\ndtb_addr:"
@@ -114,7 +114,7 @@ class TestAndroidBoardsHwpack(TestCase):
     def test_panda(self):
         panda_config = (self.hwpack_base + "bootloader_flavor: omap4_panda\n"
                         "dtb_addr: '0x815f0000'\ndtb_name: board.dtb\n"
-                        "extra_serial_options:\n - console=ttyO2,115200n8\n"
+                        "extra_serial_opts:\n - console=ttyO2,115200n8\n"
                         "extra_boot_args_options:\n - earlyprintk\n"
                         " - fixrtc\n - nocompcache\n - vram=48M\n"
                         " - omapfb.vram=0:24M,1:24M\n - mem=456M@0x80000000\n"
@@ -145,7 +145,7 @@ class TestAndroidBoardsHwpack(TestCase):
             "initrd_high: '0x06000000'\nextra_boot_args_options:\n "
             "- earlyprintk\n - mem=128M@0\n - mali.mali_mem=64M@128M\n "
             "- hwmem=168M@192M\n - mem=22M@360M\n - mem_issw=1M@383M\n "
-            "- mem=640M@384M\n - vmalloc=500M\nextra_serial_options:\n"
+            "- mem=640M@384M\n - vmalloc=500M\nextra_serial_opts:\n"
             " - console=ttyAMA2,115200n8\nandroid_specific_args:\n "
             "- init=/init\n - androidboot.console=ttyAMA2\n"
             "dtb_name: board.dtb\ndtb_addr: '0x8000000'")
@@ -171,7 +171,7 @@ class TestAndroidBoardsHwpack(TestCase):
             "initrd_high: '0x06000000'\nextra_boot_args_options:\n "
             "- earlyprintk\n - mem=128M@0\n - mali.mali_mem=64M@128M\n "
             "- hwmem=168M@192M\n - mem=22M@360M\n - mem_issw=1M@383M\n "
-            "- mem=640M@384M\n - vmalloc=500M\nextra_serial_options:\n"
+            "- mem=640M@384M\n - vmalloc=500M\nextra_serial_opts:\n"
             " - console=ttyAMA2,115200n8\nandroid_specific_args:\n "
             "- init=/init\n - androidboot.console=ttyAMA2\n"
             "dtb_name: board.dtb\ndtb_addr: '0x8000000'\nmmc_option: '0:2'")
@@ -192,7 +192,7 @@ class TestAndroidBoardsHwpack(TestCase):
         self.assertBootEnv(config, expected)
 
     def test_android_origen(self):
-        origen_config = (self.hwpack_base + "extra_serial_options:\n "
+        origen_config = (self.hwpack_base + "extra_serial_opts:\n "
             "- console=tty0\n - console=ttySAC2,115200n8\n"
             "android_specific_args:\n - init=/init\n "
             "- androidboot.console=ttySAC2")
@@ -209,7 +209,7 @@ class TestAndroidBoardsHwpack(TestCase):
         self.assertBootEnv(config, expected)
 
     def test_android_vexpress(self):
-        vexpress_config = (self.hwpack_base + "extra_serial_options:\n "
+        vexpress_config = (self.hwpack_base + "extra_serial_opts:\n "
             "- console=tty0\n - console=ttyAMA0,38400n8\n"
             "android_specific_args:\n - init=/init\n "
             "- androidboot.console=ttyAMA0")
@@ -228,7 +228,7 @@ class TestAndroidBoardsHwpack(TestCase):
     def test_android_mx5(self):
         mx5_config = (self.hwpack_base + "extra_boot_args_options:\n "
             "- earlyprintk\n - rootdelay=1\n - fixrtc\n - nocompcache\n "
-            "- di1_primary\n - tve\nextra_serial_options:\n"
+            "- di1_primary\n - tve\nextra_serial_opts:\n"
             " - console=%s,115200n8\nandroid_specific_args:\n "
             "- init=/init\n - androidboot.console=%s")
         config = get_board_config('mx53loco')
