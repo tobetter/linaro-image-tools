@@ -1453,6 +1453,7 @@ class SamsungConfig(BoardConfig):
         old_spl_path = os.path.join(spl_dir, 'v310_mmc_spl.bin')
         new_spl_path = os.path.join(spl_dir, 'u-boot-mmc-spl.bin')
         new_new_spl_path = os.path.join(spl_dir, 'origen-spl.bin')
+        samsung_spl_path_4 = os.path.join(spl_dir, 'origen_quad-spl.bin')
 
         spl_file = old_spl_path
         # The new upstream u-boot filename has changed
@@ -1462,6 +1463,10 @@ class SamsungConfig(BoardConfig):
         # The new upstream u-boot filename has changed again
         if not os.path.exists(spl_file):
             spl_file = new_new_spl_path
+
+        # upstream u-boot filename is dependent on board name
+        if not os.path.exists(spl_file):
+            spl_file = samsung_spl_path_4
 
         if not os.path.exists(spl_file):
             # missing SPL loader
@@ -1531,6 +1536,22 @@ class OrigenConfig(SamsungConfig):
     boot_script = 'boot.scr'
     mmc_part_offset = 1
     mmc_option = '0:2'
+
+
+class OrigenQuadConfig(SamsungConfig):
+    bootloader_flavor = 'origen_quad'
+    serial_tty = 'ttySAC2'
+    _extra_serial_opts = 'console=%s,115200n8'
+    kernel_addr = '0x40007000'
+    initrd_addr = '0x42000000'
+    load_addr = '0x40008000'
+    kernel_flavors = ['origen_quad']
+    boot_script = 'boot.scr'
+    mmc_part_offset = 1
+    mmc_option = '0:2'
+    samsung_bl1_len = 48
+    samsung_bl2_start = 49
+    samsung_env_start = 1073
 
 
 class I386Config(BoardConfig):
@@ -1618,6 +1639,7 @@ board_configs = {
     'overo': OveroConfig,
     'smdkv310': SMDKV310Config,
     'origen': OrigenConfig,
+    'origen_quad': OrigenQuadConfig,
     'mx6qsabrelite': BoardConfig,
     'i386': I386Config,
     }
