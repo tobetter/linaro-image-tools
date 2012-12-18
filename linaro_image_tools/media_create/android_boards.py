@@ -33,6 +33,7 @@ from linaro_image_tools.media_create.boards import SnowballSdConfig
 from linaro_image_tools.media_create.boards import SnowballEmmcConfig
 from linaro_image_tools.media_create.boards import SMDKV310Config
 from linaro_image_tools.media_create.boards import OrigenConfig
+from linaro_image_tools.media_create.boards import OrigenQuadConfig
 from linaro_image_tools.media_create.boards import VexpressConfig
 from linaro_image_tools.media_create.boards import (
     align_up,
@@ -349,6 +350,12 @@ class AndroidOrigenConfig(AndroidSamsungConfig, OrigenConfig):
     dtb_name = None
 
 
+class AndroidOrigenQuadConfig(AndroidSamsungConfig, OrigenQuadConfig):
+    _extra_serial_opts = 'console=tty0 console=ttySAC2,115200n8'
+    android_specific_args = 'init=/init androidboot.console=ttySAC2'
+    dtb_name = None
+
+
 class AndroidVexpressConfig(AndroidBoardConfig, VexpressConfig):
     _extra_serial_opts = 'console=tty0 console=ttyAMA0,38400n8'
     android_specific_args = 'init=/init androidboot.console=ttyAMA0'
@@ -365,6 +372,7 @@ android_board_configs = {
     'iMX53': AndroidMx53LoCoConfig,
     'mx6qsabrelite': AndroidMx6QSabreliteConfig,
     'origen': AndroidOrigenConfig,
+    'origen_quad': AndroidOrigenQuadConfig,
     'vexpress': AndroidVexpressConfig,
     'vexpress-a9': AndroidVexpressConfig,
     }
