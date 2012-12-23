@@ -1452,21 +1452,26 @@ class SamsungConfig(BoardConfig):
             chroot_dir, 'usr', 'lib', 'u-boot', cls.bootloader_flavor)
         old_spl_path = os.path.join(spl_dir, 'v310_mmc_spl.bin')
         new_spl_path = os.path.join(spl_dir, 'u-boot-mmc-spl.bin')
-        new_new_spl_path = os.path.join(spl_dir, 'origen-spl.bin')
-        samsung_spl_path_4 = os.path.join(spl_dir, 'origen_quad-spl.bin')
+        spl_path_origen2 = os.path.join(spl_dir, 'origen-spl.bin')
+        spl_path_origen4 = os.path.join(spl_dir, 'origen_quad-spl.bin')
+        spl_path_arndale = os.path.join(spl_dir, 'smdk5250-spl.bin')
 
         spl_file = old_spl_path
         # The new upstream u-boot filename has changed
         if not os.path.exists(spl_file):
             spl_file = new_spl_path
 
-        # The new upstream u-boot filename has changed again
+        # upstream u-boot filename for Origen Dual (Exynos 4210)
         if not os.path.exists(spl_file):
-            spl_file = new_new_spl_path
+            spl_file = spl_path_origen2
 
-        # upstream u-boot filename is dependent on board name
+        # upstream u-boot filename for Origen Quad (Exynos 4412)
         if not os.path.exists(spl_file):
-            spl_file = samsung_spl_path_4
+            spl_file = spl_path_origen4
+
+        # upstream u-boot filename for Arndale (Exynos 5250)
+        if not os.path.exists(spl_file):
+            spl_file = spl_path_arndale
 
         if not os.path.exists(spl_file):
             # missing SPL loader
@@ -1554,6 +1559,23 @@ class OrigenQuadConfig(SamsungConfig):
     samsung_env_start = 1073
 
 
+class ArndaleConfig(SamsungConfig):
+    bootloader_flavor = 'arndale'
+    serial_tty = 'ttySAC2'
+    _extra_serial_opts = 'console=%s,115200n8'
+    kernel_addr = '0x40007000'
+    initrd_addr = '0x42000000'
+    dtb_addr = '0x41f00000'
+    load_addr = '0x40008000'
+    kernel_flavors = ['arndale']
+    boot_script = 'boot.scr'
+    mmc_part_offset = 1
+    mmc_option = '0:2'
+    samsung_bl1_start = 17
+    samsung_bl2_start = 49
+    samsung_env_start = 1073
+
+
 class I386Config(BoardConfig):
     # define serial
     serial_tty = 'ttyS0'
@@ -1623,6 +1645,7 @@ class I386Config(BoardConfig):
 
 
 board_configs = {
+    'arndale': ArndaleConfig,
     'beagle': BeagleConfig,
     'igep': IgepConfig,
     'panda': PandaConfig,
