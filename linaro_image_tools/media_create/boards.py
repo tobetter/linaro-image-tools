@@ -1530,19 +1530,21 @@ class OrigenConfig(SamsungConfig):
 
 
 class OrigenQuadConfig(SamsungConfig):
-    bootloader_flavor = 'origen_quad'
-    serial_tty = 'ttySAC2'
-    _extra_serial_opts = 'console=%s,115200n8'
-    kernel_addr = '0x40007000'
-    initrd_addr = '0x42000000'
-    load_addr = '0x40008000'
-    kernel_flavors = ['origen_quad']
-    boot_script = 'boot.scr'
-    mmc_part_offset = 1
-    mmc_option = '0:2'
-    samsung_bl1_len = 48
-    samsung_bl2_start = 49
-    samsung_env_start = 1073
+    def __init__(self):
+        super(OrigenQuadConfig, self).__init__()
+        self.boot_script = 'boot.scr'
+        self.bootloader_flavor = 'origen_quad'
+        self.initrd_addr = '0x42000000'
+        self.kernel_addr = '0x40007000'
+        self.kernel_flavors = ['origen_quad']
+        self.load_addr = '0x40008000'
+        self.mmc_option = '0:2'
+        self.mmc_part_offset = 1
+        self.samsung_bl1_len = 48
+        self.samsung_bl2_start = 49
+        self.samsung_env_start = 1073
+        self.serial_tty = 'ttySAC2'
+        self._extra_serial_opts = 'console=%s,115200n8'
 
 
 class I386Config(BoardConfig):
