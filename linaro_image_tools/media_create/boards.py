@@ -1441,21 +1441,26 @@ class SamsungConfig(BoardConfig):
             chroot_dir, 'usr', 'lib', 'u-boot', self.bootloader_flavor)
         old_spl_path = os.path.join(spl_dir, 'v310_mmc_spl.bin')
         new_spl_path = os.path.join(spl_dir, 'u-boot-mmc-spl.bin')
-        new_new_spl_path = os.path.join(spl_dir, 'origen-spl.bin')
-        samsung_spl_path_4 = os.path.join(spl_dir, 'origen_quad-spl.bin')
+        spl_path_origen2 = os.path.join(spl_dir, 'origen-spl.bin')
+        spl_path_origen4 = os.path.join(spl_dir, 'origen_quad-spl.bin')
+        spl_path_arndale = os.path.join(spl_dir, 'smdk5250-spl.bin')
 
         spl_file = old_spl_path
         # The new upstream u-boot filename has changed
         if not os.path.exists(spl_file):
             spl_file = new_spl_path
 
-        # The new upstream u-boot filename has changed again
+        # upstream u-boot filename for Origen Dual (Exynos 4210)
         if not os.path.exists(spl_file):
-            spl_file = new_new_spl_path
+            spl_file = spl_path_origen2
 
-        # upstream u-boot filename is dependent on board name
+        # upstream u-boot filename for Origen Quad (Exynos 4412)
         if not os.path.exists(spl_file):
-            spl_file = samsung_spl_path_4
+            spl_file = spl_path_origen4
+
+        # upstream u-boot filename for Arndale (Exynos 5250)
+        if not os.path.exists(spl_file):
+            spl_file = spl_path_arndale
 
         if not os.path.exists(spl_file):
             # missing SPL loader
@@ -1547,6 +1552,25 @@ class OrigenQuadConfig(SamsungConfig):
         self._extra_serial_opts = 'console=%s,115200n8'
 
 
+class ArndaleConfig(SamsungConfig):
+    def __init__(self):
+        super(ArndaleConfig, self).__init__()
+        self.boot_script = 'boot.scr'
+        self.bootloader_flavor = 'arndale'
+        self.dtb_addr = '0x41f00000'
+        self.initrd_addr = '0x42000000'
+        self.kernel_addr = '0x40007000'
+        self.kernel_flavors = ['arndale']
+        self.load_addr = '0x40008000'
+        self.mmc_option = '0:2'
+        self.mmc_part_offset = 1
+        self.samsung_bl1_start = 17
+        self.samsung_bl2_start = 49
+        self.samsung_env_start = 1073
+        self.serial_tty = 'ttySAC2'
+        self._extra_serial_opts = 'console=%s,115200n8'
+
+
 class I386Config(BoardConfig):
     # define bootloader
     BOOTLOADER_CMD = 'grub-install'
@@ -1609,6 +1633,7 @@ class BoardConfigException(Exception):
 
 
 board_configs = {
+    'arndale': ArndaleConfig,
     'beagle': BeagleConfig,
     'efikamx': EfikamxConfig,
     'efikasb': EfikasbConfig,
