@@ -168,7 +168,11 @@ class HwpackConverterTests(TestCaseWithFixtures):
         self.assertEqual(out_format, str(converter))
 
     def test_mmc_id(self):
-        """Test correct handling of mmc_id field."""
+        """Test correct handling of mmc_id field.
+
+        The mmc_id field has to be quoted coming out from the converter
+        otherwise when reading the yaml file the value is read as a number,
+        not a string."""
         ini_format = ("[hwpack]\nformat=2.0\nmmc_id=1:1")
         out_format = ("format: '3.0'\nmmc_id: '1:1'\n")
         input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
