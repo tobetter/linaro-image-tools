@@ -166,3 +166,14 @@ class HwpackConverterTests(TestCaseWithFixtures):
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
         self.assertEqual(out_format, str(converter))
+
+    def test_mmc_id(self):
+        """Test correct handling of mmc_id field."""
+        ini_format = ("[hwpack]\nformat=2.0\nmmc_id=1:1")
+        out_format = ("format: '3.0'\nmmc_id: '1:1'\n")
+        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
+                                                                get_file_name()
+        output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
+        converter = HwpackConverter(input_file, output_file)
+        converter._parse()
+        self.assertEqual(out_format, str(converter))
