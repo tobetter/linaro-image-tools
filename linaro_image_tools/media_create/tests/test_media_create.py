@@ -750,7 +750,10 @@ class TestGetOrigenSPL(TestCaseWithFixtures):
 
 
 class TestGetOrigenUboot(TestGetSMDKUboot):
-    config = boards.OrigenConfig()
+    def setUp(self):
+        super(TestGetOrigenUboot, self).setUp()
+        self.config = boards.OrigenConfig()
+        self.config.hwpack_format = HardwarepackHandler.FORMAT_1
 
 
 class TestGetOrigenQuadSPL(TestCaseWithFixtures):
@@ -773,7 +776,10 @@ class TestGetOrigenQuadSPL(TestCaseWithFixtures):
 
 
 class TestGetOrigenQuadUboot(TestGetSMDKUboot):
-    config = boards.OrigenQuadConfig
+    def setUp(self):
+        super(TestGetOrigenQuadUboot, self).setUp()
+        self.config = boards.OrigenQuadConfig()
+        self.config.hwpack_format = HardwarepackHandler.FORMAT_1
 
 
 class TestCreateToc(TestCaseWithFixtures):
