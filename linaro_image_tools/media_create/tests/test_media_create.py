@@ -783,7 +783,10 @@ class TestGetOrigenQuadUboot(TestGetSMDKUboot):
 
 
 class TestGetArndaleSPL(TestCaseWithFixtures):
-    config = boards.ArndaleConfig
+    def setUp(self):
+        super(TestGetArndaleSPL, self).setUp()
+        self.config = boards.ArndaleConfig()
+        self.config.hwpack_format = HardwarepackHandler.FORMAT_1
 
     def test_no_file_present(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
@@ -1230,9 +1233,6 @@ class TestBootSteps(TestCaseWithFixtures):
         self.assertEqual(expected, self.funcs_calls)
 
     def test_smdkv310_steps(self):
-        def mock_func_creator(name):
-            return self.funcs_calls.append(name)
-
         board_conf = boards.SMDKV310Config()
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         board_conf.install_samsung_boot_loader = MagicMock()
@@ -1251,10 +1251,6 @@ class TestBootSteps(TestCaseWithFixtures):
         self.assertEqual(expected, self.funcs_calls)
 
     def test_origen_steps(self):
-        def mock_func_creator(name):
-            return classmethod(
-                lambda *args, **kwargs: self.funcs_calls.append(name))
-
         board_conf = boards.OrigenConfig()
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         board_conf.install_samsung_boot_loader = MagicMock()
@@ -1273,10 +1269,6 @@ class TestBootSteps(TestCaseWithFixtures):
         self.assertEqual(expected, self.funcs_calls)
 
     def test_origen_quad_steps(self):
-        def mock_func_creator(name):
-            return classmethod(
-                lambda *args, **kwargs: self.funcs_calls.append(name))
-
         board_conf = boards.OrigenQuadConfig()
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         board_conf.install_samsung_boot_loader = MagicMock()
@@ -1296,21 +1288,19 @@ class TestBootSteps(TestCaseWithFixtures):
         self.assertEqual(expected, self.funcs_calls)
 
     def test_arndale_steps(self):
-        def mock_func_creator(name):
-            return classmethod(
-                lambda *args, **kwargs: self.funcs_calls.append(name))
+        board_conf = boards.ArndaleConfig()
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
+        board_conf.install_samsung_boot_loader = MagicMock()
+        board_conf.install_samsung_boot_loader.return_value = \
+            self.funcs_calls.append('install_samsung_boot_loader')
 
-        self.useFixture(MockSomethingFixture(
-            linaro_image_tools.media_create.boards.ArndaleConfig,
-            'install_samsung_boot_loader',
-            mock_func_creator('install_samsung_boot_loader')))
         self.useFixture(MockSomethingFixture(os.path, 'exists',
             lambda file: True))
-        boards.ArndaleConfig.hardwarepack_handler = (
+        board_conf.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
-        boards.ArndaleConfig.hardwarepack_handler.get_format = (
+        board_conf.hardwarepack_handler.get_format = (
             lambda: '1.0')
-        self.make_boot_files(boards.ArndaleConfig)
+        self.make_boot_files(board_conf)
         expected = [
             'install_samsung_boot_loader', 'make_flashable_env', '_dd',
             'make_uImage', 'make_uInitrd', 'make_boot_script']
@@ -1475,7 +1465,7 @@ class TestPopulateRawPartition(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
             lambda file: 1))
 
-        self.populate_raw_partition(boards.ArndaleConfig)
+        self.populate_raw_partition(boards.ArndaleConfig())
         expected = ['_dd', '_dd', '_dd']
         self.assertEqual(expected, self.funcs_calls)
 
@@ -1769,9 +1759,11 @@ class TestGetSfdiskCmd(TestCase):
             board_conf.get_sfdisk_cmd())
 
     def test_arndale(self):
+        board_conf = get_board_config('arndale')
+        self.set_up_config(board_conf)
         self.assertEquals(
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
-            board_configs['arndale'].get_sfdisk_cmd())
+            board_conf.get_sfdisk_cmd())
 
     def test_panda_android(self):
         self.assertEqual(
@@ -1877,15 +1869,16 @@ class TestGetSfdiskCmdV2(TestCase):
             board_conf.get_sfdisk_cmd())
 
     def test_arndale(self):
-        class config(board_configs['arndale']):
-            partition_layout = 'reserved_bootfs_rootfs'
-            LOADER_MIN_SIZE_S = (boards.BoardConfig.samsung_bl1_start +
-                                 boards.BoardConfig.samsung_bl1_len +
-                                 boards.BoardConfig.samsung_bl2_len +
-                                 boards.BoardConfig.samsung_env_len)
+        board_conf = get_board_config('arndale')
+        board_conf.partition_layout = 'reserved_bootfs_rootfs'
+        board_conf.LOADER_MIN_SIZE_S = (
+            board_conf.samsung_bl1_start +
+            board_conf.samsung_bl1_len +
+            board_conf.samsung_bl2_len +
+            board_conf.samsung_env_len)
         self.assertEquals(
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
-            config.get_sfdisk_cmd())
+            board_conf.get_sfdisk_cmd())
 
 
 class TestGetBootCmd(TestCase):
@@ -2334,9 +2327,15 @@ class TestBoards(TestCaseWithFixtures):
                          board_conf.samsung_bl2_start)]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
-    def test_install_origen_u_boot(self):
-        fixture = self._mock_Popen()
-        board_conf = boards.OrigenConfig()
+    def _set_up_board_config(self, board_name):
+        """Internal method to set-up correctly board config, with the
+        appropriate mock objects.
+
+        :param board_name: The name of the board to set-up.
+        :return A 3-tuple: the config, the name of the bootloader, and the
+        value of chroot_dir.
+        """
+        board_conf = get_board_config(board_name)
         bootloader_flavor = board_conf.bootloader_flavor
         # Made-up value to be used as the chroot directory.
         chroot_dir_value = 'chroot_dir'
@@ -2350,6 +2349,12 @@ class TestBoards(TestCaseWithFixtures):
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         board_conf.hardwarepack_handler.get_format = (
             lambda: HardwarepackHandler.FORMAT_1)
+        return board_conf, bootloader_flavor, chroot_dir_value
+
+    def test_install_origen_u_boot(self):
+        fixture = self._mock_Popen()
+        board_conf, bootloader_flavor, chroot_dir_value = \
+            self._set_up_board_config('origen')
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
                                              lambda file: 1))
         board_conf.install_samsung_boot_loader(
@@ -2367,26 +2372,13 @@ class TestBoards(TestCaseWithFixtures):
 
     def test_install_origen_quad_u_boot(self):
         fixture = self._mock_Popen()
-        board_conf = boards.OrigenQuadConfig()
-        bootloader_flavor = board_conf.bootloader_flavor
-        # Made-up value to be used as the chroot directory.
-        chroot_dir_value = 'chroot_dir'
-        board_conf._get_samsung_spl = MagicMock()
-        board_conf._get_samsung_spl.return_value = ("%s/%s/SPL" %
-            (chroot_dir_value, bootloader_flavor))
-        board_conf._get_samsung_bootloader = MagicMock()
-        board_conf._get_samsung_bootloader.return_value = ("%s/%s/uboot" %
-            (chroot_dir_value, bootloader_flavor))
-
-        board_conf.hardwarepack_handler = (
-            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
-        board_conf.hardwarepack_handler.get_format = (
-            lambda: HardwarepackHandler.FORMAT_1)
+        board_conf, bootloader_flavor, chroot_dir_value = \
+            self._set_up_board_config('origen_quad')
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
                                              lambda file: 1))
         board_conf.install_samsung_boot_loader(
-            board_conf._get_samsung_spl("chroot_dir"),
-            board_conf._get_samsung_bootloader("chroot_dir"),
+            board_conf._get_samsung_spl(chroot_dir_value),
+            board_conf._get_samsung_bootloader(chroot_dir_value),
             "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
@@ -2399,32 +2391,21 @@ class TestBoards(TestCaseWithFixtures):
 
     def test_install_arndale_u_boot(self):
         fixture = self._mock_Popen()
-        bootloader_flavor = boards.ArndaleConfig.bootloader_flavor
-        self.useFixture(MockSomethingFixture(
-            boards.ArndaleConfig, '_get_samsung_spl',
-            classmethod(lambda cls, chroot_dir: "%s/%s/SPL" % (
-                chroot_dir, bootloader_flavor))))
-        self.useFixture(MockSomethingFixture(
-            boards.ArndaleConfig, '_get_samsung_bootloader',
-            classmethod(lambda cls, chroot_dir: "%s/%s/uboot" % (
-                chroot_dir, bootloader_flavor))))
-        boards.ArndaleConfig.hardwarepack_handler = (
-            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
-        boards.ArndaleConfig.hardwarepack_handler.get_format = (
-            lambda: '1.0')
+        board_conf, bootloader_flavor, chroot_dir_value = \
+            self._set_up_board_config('arndale')
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
             lambda file: 1))
-        boards.ArndaleConfig.install_samsung_boot_loader(
-            boards.ArndaleConfig._get_samsung_spl("chroot_dir"),
-            boards.ArndaleConfig._get_samsung_bootloader("chroot_dir"),
+        board_conf.install_samsung_boot_loader(
+            board_conf._get_samsung_spl(chroot_dir_value),
+            board_conf._get_samsung_bootloader(chroot_dir_value),
             "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
             'seek=%d' % (sudo_args, bootloader_flavor,
-                         boards.ArndaleConfig.samsung_bl1_start),
+                         board_conf.samsung_bl1_start),
             '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
             'seek=%d' % (sudo_args, bootloader_flavor,
-                         boards.ArndaleConfig.samsung_bl2_start)]
+                         board_conf.samsung_bl2_start)]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_get_plain_boot_script_contents(self):
@@ -2684,8 +2665,10 @@ class TestCreatePartitions(TestCaseWithFixtures):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
 
+        board_conf = get_board_config('arndale')
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         create_partitions(
-            board_configs['arndale'], self.media, HEADS, SECTORS, '')
+            board_conf, self.media, HEADS, SECTORS, '')
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
