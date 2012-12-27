@@ -347,6 +347,13 @@ class ConfigTests(TestCase):
         self.assertValidationError("Invalid serial tty: ttxSAC1",
                                    config._validate_serial_tty)
 
+    def test_validate_mmc_id_wrong(self):
+        # The mmc_id value, if coming from a yaml file, has to be quoted.
+        # Make sure the test does not accept a valid-unquoted value.
+        config = self.get_config(self.valid_complete_v3 +
+                                 "mmc_id: 1:1\n")
+        self.assertRaises(HwpackConfigError, config._validate_mmc_id)
+
     def test_validate_mmc_id(self):
         config = self.get_config(self.valid_complete_v3 +
                                  "mmc_id: x\n")
