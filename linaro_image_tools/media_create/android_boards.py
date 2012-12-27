@@ -39,6 +39,7 @@ from linaro_image_tools.media_create.boards import (
     BoardConfigException,
     Mx53LoCoConfig,
     OrigenConfig,
+    OrigenQuadConfig,
     PART_ALIGN_S,
     PandaConfig,
     SMDKV310Config,
@@ -472,6 +473,13 @@ class AndroidOrigenConfig(AndroidSamsungConfig, OrigenConfig):
         self._android_specific_args = 'init=/init androidboot.console=ttySAC2'
 
 
+class AndroidOrigenQuadConfig(AndroidSamsungConfig, OrigenQuadConfig):
+    def __init__(self):
+        super(AndroidOrigenQuadConfig, self).__init__()
+        self._extra_serial_opts = 'console=tty0 console=ttySAC2,115200n8'
+        self._android_specific_args = 'init=/init androidboot.console=ttySAC2'
+
+
 class AndroidVexpressConfig(AndroidBoardConfig, VexpressConfig):
     """Placeholder class for Vexpress configuration inheritance."""
     def __init__(self):
@@ -492,6 +500,7 @@ android_board_configs = {
     'mx53loco': AndroidMx53LoCoConfig,
     'mx6qsabrelite': AndroidMx6QSabreliteConfig,
     'origen': AndroidOrigenConfig,
+    'origen_quad': AndroidOrigenQuadConfig,
     'panda': AndroidPandaConfig,
     'smdkv310': AndroidSMDKV310Config,
     'snowball_emmc': AndroidSnowballEmmcConfig,

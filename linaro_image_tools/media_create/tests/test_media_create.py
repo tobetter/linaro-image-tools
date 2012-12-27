@@ -203,7 +203,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         return tarball
 
     def test_get_format_1(self):
-        data = '1.0'
+        data = HardwarepackHandler.FORMAT_1
         format = "%s\n" % data
         tarball = self.add_to_tarball(
             [('FORMAT', format), ('metadata', self.metadata)])
@@ -230,8 +230,8 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             self.assertRaises(AssertionError, hp.get_format)
 
     def test_mixed_formats(self):
-        format1 = "%s\n" % '1.0'
-        format2 = "%s\n" % '2.0'
+        format1 = "%s\n" % HardwarepackHandler.FORMAT_1
+        format2 = "%s\n" % HardwarepackHandler.FORMAT_2
         tarball1 = self.add_to_tarball(
             [('FORMAT', format1), ('metadata', self.metadata)],
             tarball=self.tarball_fixture.get_tarball())
@@ -247,8 +247,8 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
             self.assertEquals(hp.get_format(), '1.0and2.0')
 
     def test_identical_formats_ok(self):
-        format1 = "%s\n" % '2.0'
-        format2 = "%s\n" % '2.0'
+        format1 = "%s\n" % HardwarepackHandler.FORMAT_2
+        format2 = "%s\n" % HardwarepackHandler.FORMAT_2
         tarball1 = self.add_to_tarball(
             [('FORMAT', format1), ('metadata', self.metadata)],
             tarball=self.tarball_fixture.get_tarball())
@@ -685,7 +685,7 @@ class TestGetSMDKSPL(TestCaseWithFixtures):
     def setUp(self):
             super(TestGetSMDKSPL, self).setUp()
             self.config = boards.SMDKV310Config()
-            self.config.hwpack_format = '1.0'
+            self.config.hwpack_format = HardwarepackHandler.FORMAT_1
 
     def test_no_file_present(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
@@ -720,7 +720,7 @@ class TestGetSMDKUboot(TestCaseWithFixtures):
     def setUp(self):
         super(TestGetSMDKUboot, self).setUp()
         self.config = boards.SMDKV310Config()
-        self.config.hwpack_format = '1.0'
+        self.config.hwpack_format = HardwarepackHandler.FORMAT_1
 
     def test_uses_uboot_flavour(self):
         chroot_dir = "chroot"
@@ -734,7 +734,7 @@ class TestGetOrigenSPL(TestCaseWithFixtures):
     def setUp(self):
         super(TestGetOrigenSPL, self).setUp()
         self.config = boards.OrigenConfig()
-        self.config.hwpack_format = '1.0'
+        self.config.hwpack_format = HardwarepackHandler.FORMAT_1
 
     def test_no_file_present(self):
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
@@ -751,6 +751,29 @@ class TestGetOrigenSPL(TestCaseWithFixtures):
 
 class TestGetOrigenUboot(TestGetSMDKUboot):
     config = boards.OrigenConfig()
+
+
+class TestGetOrigenQuadSPL(TestCaseWithFixtures):
+    def setUp(self):
+        super(TestGetOrigenQuadSPL, self).setUp()
+        self.config = boards.OrigenQuadConfig()
+        self.config.hwpack_format = HardwarepackHandler.FORMAT_1
+
+    def test_no_file_present(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        self.assertRaises(
+            AssertionError, self.config._get_samsung_spl, tempdir)
+
+    def test_new_file_present(self):
+        tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        path = _create_uboot_dir(tempdir, self.config.bootloader_flavor)
+        spl_path = os.path.join(path, 'origen_quad-spl.bin')
+        open(spl_path, 'w').close()
+        self.assertEquals(spl_path, self.config._get_samsung_spl(tempdir))
+
+
+class TestGetOrigenQuadUboot(TestGetSMDKUboot):
+    config = boards.OrigenQuadConfig
 
 
 class TestCreateToc(TestCaseWithFixtures):
@@ -1154,26 +1177,26 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_vexpress_steps(self):
         board_conf = boards.VexpressConfig()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         self.make_boot_files(board_conf)
         expected = ['make_uImage', 'make_uInitrd']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_vexpress_a9_steps(self):
         board_conf = boards.VexpressA9Config()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         self.make_boot_files(board_conf)
         expected = ['make_uImage', 'make_uInitrd']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_mx5_steps(self):
         board_conf = boards.Mx5Config()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         board_conf.bootloader_flavor = 'bootloader_flavor'
         board_conf.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         board_conf.hardwarepack_handler.get_format = (
-            lambda: '1.0')
+            lambda: HardwarepackHandler.FORMAT_1)
         self.make_boot_files(board_conf)
         expected = [
             'install_mx5_boot_loader', 'make_uImage', 'make_uInitrd',
@@ -1185,7 +1208,7 @@ class TestBootSteps(TestCaseWithFixtures):
             return self.funcs_calls.append(name)
 
         board_conf = boards.SMDKV310Config()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         board_conf.install_samsung_boot_loader = MagicMock()
         board_conf.install_samsung_boot_loader.return_value = \
             self.funcs_calls.append('install_samsung_boot_loader')
@@ -1194,7 +1217,7 @@ class TestBootSteps(TestCaseWithFixtures):
         board_conf.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         board_conf.hardwarepack_handler.get_format = (
-            lambda: '1.0')
+            lambda: HardwarepackHandler.FORMAT_1)
         self.make_boot_files(board_conf)
         expected = [
             'install_samsung_boot_loader', 'make_flashable_env', '_dd',
@@ -1207,7 +1230,7 @@ class TestBootSteps(TestCaseWithFixtures):
                 lambda *args, **kwargs: self.funcs_calls.append(name))
 
         board_conf = boards.OrigenConfig()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         board_conf.install_samsung_boot_loader = MagicMock()
         board_conf.install_samsung_boot_loader.return_value = \
             self.funcs_calls.append('install_samsung_boot_loader')
@@ -1216,7 +1239,30 @@ class TestBootSteps(TestCaseWithFixtures):
         board_conf.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         board_conf.hardwarepack_handler.get_format = (
-            lambda: '1.0')
+            lambda: HardwarepackHandler.FORMAT_1)
+        self.make_boot_files(board_conf)
+        expected = [
+            'install_samsung_boot_loader', 'make_flashable_env', '_dd',
+            'make_uImage', 'make_uInitrd', 'make_boot_script']
+        self.assertEqual(expected, self.funcs_calls)
+
+    def test_origen_quad_steps(self):
+        def mock_func_creator(name):
+            return classmethod(
+                lambda *args, **kwargs: self.funcs_calls.append(name))
+
+        board_conf = boards.OrigenQuadConfig()
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
+        board_conf.install_samsung_boot_loader = MagicMock()
+        board_conf.install_samsung_boot_loader.return_value = \
+            self.funcs_calls.append('install_samsung_boot_loader')
+
+        self.useFixture(MockSomethingFixture(os.path, 'exists',
+                                             lambda file: True))
+        board_conf.hardwarepack_handler = (
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
+        board_conf.hardwarepack_handler.get_format = (
+            lambda: HardwarepackHandler.FORMAT_1)
         self.make_boot_files(board_conf)
         expected = [
             'install_samsung_boot_loader', 'make_flashable_env', '_dd',
@@ -1225,21 +1271,21 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_ux500_steps(self):
         board_conf = boards.Ux500Config()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         self.make_boot_files(board_conf)
         expected = ['make_uImage', 'make_uInitrd', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_snowball_sd_steps(self):
         board_conf = boards.SnowballSdConfig()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         self.make_boot_files(board_conf)
         expected = ['make_uImage', 'make_boot_script']
         self.assertEqual(expected, self.funcs_calls)
 
     def test_panda_steps(self):
         board_conf = boards.PandaConfig()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         self.mock_set_appropriate_serial_tty(board_conf)
         self.make_boot_files(board_conf)
         expected = [
@@ -1249,7 +1295,7 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_beagle_steps(self):
         board_conf = boards.BeagleConfig()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         self.mock_set_appropriate_serial_tty(board_conf)
         self.make_boot_files(board_conf)
         expected = [
@@ -1259,7 +1305,7 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_igep_steps(self):
         board_conf = boards.IgepConfig()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         self.mock_set_appropriate_serial_tty(board_conf)
         self.make_boot_files(board_conf)
         expected = [
@@ -1269,7 +1315,7 @@ class TestBootSteps(TestCaseWithFixtures):
 
     def test_overo_steps(self):
         board_conf = boards.OveroConfig()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         self.mock_set_appropriate_serial_tty(board_conf)
         self.make_boot_files(board_conf)
         expected = [
@@ -1367,6 +1413,14 @@ class TestPopulateRawPartition(TestCaseWithFixtures):
                                              lambda file: 1))
 
         self.populate_raw_partition(boards.OrigenConfig())
+        expected = ['_dd', '_dd', '_dd']
+        self.assertEqual(expected, self.funcs_calls)
+
+    def test_origen_quad_raw(self):
+        self.useFixture(MockSomethingFixture(os.path, 'getsize',
+                                             lambda file: 1))
+
+        self.populate_raw_partition(boards.OrigenQuadConfig())
         expected = ['_dd', '_dd', '_dd']
         self.assertEqual(expected, self.funcs_calls)
 
@@ -1475,6 +1529,24 @@ class TestPopulateRawPartitionAndroid(TestCaseWithFixtures):
         self.assertEqual(expected_commands, fixture.mock.commands_executed)
         self.assertEqual(expected, self.funcs_calls)
 
+    def test_origen_quad_raw(self):
+        fixture = MockCmdRunnerPopenFixture()
+        self.useFixture(fixture)
+        expected_commands = [
+            ('sudo -E dd if=/dev/zero of= bs=512 conv=notrunc count=32 '
+             'seek=1073'),
+            ('sudo -E dd if=boot/u-boot-mmc-spl.bin of= bs=512 '
+             'conv=notrunc seek=1'),
+            'sudo -E dd if=boot/u-boot.bin of= bs=512 conv=notrunc seek=49']
+        self.useFixture(MockSomethingFixture(os.path, 'getsize',
+                                             lambda file: 1))
+
+        self.populate_raw_partition(android_boards.AndroidOrigenQuadConfig())
+        expected = []
+        # Test that we dd the files
+        self.assertEqual(expected_commands, fixture.mock.commands_executed)
+        self.assertEqual(expected, self.funcs_calls)
+
     def test_vexpress_raw(self):
         self.populate_raw_partition(android_boards.AndroidVexpressConfig())
         expected = []
@@ -1557,7 +1629,7 @@ class TestFixForBug697824(TestCaseWithFixtures):
         os.makedirs(boot_dir)
         open(os.path.join(boot_dir, 'vmlinuz-2.6.35-23-foo'), 'w').close()
         board_conf = boards.BeagleConfig()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         board_conf.set_appropriate_serial_tty(tempdir)
         self.assertEquals('ttyS2', board_conf.serial_tty)
 
@@ -1567,7 +1639,7 @@ class TestFixForBug697824(TestCaseWithFixtures):
         os.makedirs(boot_dir)
         open(os.path.join(boot_dir, 'vmlinuz-2.6.36-13-foo'), 'w').close()
         board_conf = boards.BeagleConfig()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         board_conf.set_appropriate_serial_tty(tempdir)
         self.assertEquals('ttyO2', board_conf.serial_tty)
 
@@ -1577,7 +1649,7 @@ class TestFixForBug697824(TestCaseWithFixtures):
         os.makedirs(boot_dir)
         open(os.path.join(boot_dir, 'vmlinuz-3.0-13-foo'), 'w').close()
         board_conf = boards.BeagleConfig()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         board_conf.set_appropriate_serial_tty(tempdir)
         self.assertEquals('ttyO2', board_conf.serial_tty)
 
@@ -1585,7 +1657,7 @@ class TestFixForBug697824(TestCaseWithFixtures):
 class TestGetSfdiskCmd(TestCase):
 
     def set_up_config(self, config):
-        config.hwpack_format = '1.0'
+        config.hwpack_format = HardwarepackHandler.FORMAT_1
 
     def test_default(self):
         board_conf = BoardConfig()
@@ -1602,7 +1674,7 @@ class TestGetSfdiskCmd(TestCase):
 
     def test_mx5(self):
         board_conf = boards.Mx5Config()
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         self.assertEqual(
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             board_conf.get_sfdisk_cmd())
@@ -1634,6 +1706,13 @@ class TestGetSfdiskCmd(TestCase):
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             board_conf.get_sfdisk_cmd())
 
+    def test_origen_quad(self):
+        board_conf = get_board_config('origen_quad')
+        self.set_up_config(board_conf)
+        self.assertEquals(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            board_conf.get_sfdisk_cmd())
+
     def test_panda_android(self):
         self.assertEqual(
             '63,270272,0x0C,*\n270336,1048576,L\n1318912,524288,L\n'
@@ -1645,6 +1724,12 @@ class TestGetSfdiskCmd(TestCase):
             '1,8191,0xDA\n8253,270274,0x0C,*\n278528,1048576,L\n'
             '1327104,-,E\n1327104,524288,L\n1851392,1048576,L\n2899968,,,-',
             android_boards.AndroidOrigenConfig().get_sfdisk_cmd())
+
+    def test_origen_quad_android(self):
+        self.assertEqual(
+            '1,8191,0xDA\n8253,270274,0x0C,*\n278528,1048576,L\n'
+            '1327104,-,E\n1327104,524288,L\n1851392,1048576,L\n2899968,,,-',
+            android_boards.AndroidOrigenQuadConfig().get_sfdisk_cmd())
 
     def test_snowball_emmc_android(self):
         self.assertEqual(
@@ -1719,6 +1804,18 @@ class TestGetSfdiskCmdV2(TestCase):
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             board_conf.get_sfdisk_cmd())
 
+    def test_origen_quad(self):
+        board_conf = get_board_config('origen_quad')
+        board_conf.partition_layout = 'reserved_bootfs_rootfs'
+        board_conf.LOADER_MIN_SIZE_S = (
+                                board_conf.samsung_bl1_start +
+                                board_conf.samsung_bl1_len +
+                                board_conf.samsung_bl2_len +
+                                board_conf.samsung_env_len)
+        self.assertEquals(
+            '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
+            board_conf.get_sfdisk_cmd())
+
 
 class TestGetBootCmd(TestCase):
 
@@ -1788,6 +1885,21 @@ class TestGetBootCmd(TestCase):
 
     def test_origen(self):
         board_conf = get_board_config('origen')
+        boot_commands = board_conf._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=[],
+            rootfs_id="UUID=deadbeef", i_img_data="initrd", d_img_data=None)
+        expected = {
+            'bootargs': 'console=ttySAC2,115200n8  root=UUID=deadbeef '
+                        'rootwait ro',
+             'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
+                        'fatload mmc 0:2 0x42000000 uInitrd; '
+                        'bootm 0x40007000 0x42000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
+        self.assertEqual(expected, boot_commands)
+
+    def test_origen_quad(self):
+        board_conf = get_board_config('origen_quad')
         boot_commands = board_conf._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
             rootfs_id="UUID=deadbeef", i_img_data="initrd", d_img_data=None)
@@ -2166,12 +2278,44 @@ class TestBoards(TestCaseWithFixtures):
         board_conf.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         board_conf.hardwarepack_handler.get_format = (
-            lambda: '1.0')
+            lambda: HardwarepackHandler.FORMAT_1)
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
                                              lambda file: 1))
         board_conf.install_samsung_boot_loader(
             board_conf._get_samsung_spl(chroot_dir_value),
             board_conf._get_samsung_bootloader(chroot_dir_value),
+            "boot_disk")
+        expected = [
+            '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
+            'seek=%d' % (sudo_args, bootloader_flavor,
+                         board_conf.samsung_bl1_start),
+            '%s dd if=chroot_dir/%s/uboot of=boot_disk bs=512 conv=notrunc '
+            'seek=%d' % (sudo_args, bootloader_flavor,
+                         board_conf.samsung_bl2_start)]
+        self.assertEqual(expected, fixture.mock.commands_executed)
+
+    def test_install_origen_quad_u_boot(self):
+        fixture = self._mock_Popen()
+        board_conf = boards.OrigenQuadConfig()
+        bootloader_flavor = board_conf.bootloader_flavor
+        # Made-up value to be used as the chroot directory.
+        chroot_dir_value = 'chroot_dir'
+        board_conf._get_samsung_spl = MagicMock()
+        board_conf._get_samsung_spl.return_value = ("%s/%s/SPL" %
+            (chroot_dir_value, bootloader_flavor))
+        board_conf._get_samsung_bootloader = MagicMock()
+        board_conf._get_samsung_bootloader.return_value = ("%s/%s/uboot" %
+            (chroot_dir_value, bootloader_flavor))
+
+        board_conf.hardwarepack_handler = (
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
+        board_conf.hardwarepack_handler.get_format = (
+            lambda: HardwarepackHandler.FORMAT_1)
+        self.useFixture(MockSomethingFixture(os.path, 'getsize',
+                                             lambda file: 1))
+        board_conf.install_samsung_boot_loader(
+            board_conf._get_samsung_spl("chroot_dir"),
+            board_conf._get_samsung_bootloader("chroot_dir"),
             "boot_disk")
         expected = [
             '%s dd if=chroot_dir/%s/SPL of=boot_disk bs=512 conv=notrunc '
@@ -2339,8 +2483,6 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # Stub time.sleep() as create_partitions() use that.
         self.orig_sleep = time.sleep
         time.sleep = lambda s: None
-        #boards = linaro_image_tools.media_create.boards
-        #boards.BoardConfig.hwpack_format = '1.0'
 
     def tearDown(self):
         super(TestCreatePartitions, self).tearDown()
@@ -2399,6 +2541,29 @@ class TestCreatePartitions(TestCaseWithFixtures):
         board_conf = get_board_config('origen')
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         create_partitions(board_conf, self.media, HEADS, SECTORS, '')
+
+        self.assertEqual(
+            ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
+             '%s sfdisk -l %s' % (sudo_args, self.media.path),
+             'sync',
+             '%s sfdisk -l %s' % (sudo_args, self.media.path)],
+            popen_fixture.mock.commands_executed)
+        # Notice that we create all partitions in a single sfdisk run because
+        # every time we run sfdisk it actually repartitions the device,
+        # erasing any partitions created previously.
+        self.assertEqual(
+            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', HEADS,
+              SECTORS, '', self.media.path)], sfdisk_fixture.mock.calls)
+
+    def test_create_partitions_for_origen_quad(self):
+        # For this board we create a one cylinder partition at the beginning.
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        sfdisk_fixture = self.useFixture(MockRunSfdiskCommandsFixture())
+
+        board_conf = get_board_config('origen_quad')
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
+        create_partitions(
+            board_conf, self.media, HEADS, SECTORS, '')
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
@@ -2800,7 +2965,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             lambda image: ('/dev/loop99', '/dev/loop98')))
 
         board_conf = get_board_config('beagle')
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
 
         bootfs_dev, rootfs_dev = setup_partitions(
             board_conf, Media(tmpfile), '2G', 'boot',
@@ -2835,7 +3000,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
 
         board_conf = get_board_config('beagle')
-        board_conf.hwpack_format = '1.0'
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
 
         bootfs_dev, rootfs_dev = setup_partitions(
             board_conf, media, '2G', 'boot', 'root', 'ext3',
@@ -2996,7 +3161,8 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.config.boot_script = 'boot_script'
         self.config.hardwarepack_handler = \
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz')
-        self.config.hardwarepack_handler.get_format = lambda: '1.0'
+        self.config.hardwarepack_handler.get_format = \
+            lambda: HardwarepackHandler.FORMAT_1
         self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
             self.config, 'make_boot_files', self.save_args))

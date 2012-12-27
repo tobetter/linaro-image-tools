@@ -208,6 +208,23 @@ class TestAndroidBoardsHwpack(TestCase):
             'initrd_high': '0xffffffff'}
         self.assertBootEnv(config, expected)
 
+    def test_android_origen_quad(self):
+        origen_quad_config = (self.hwpack_base + "extra_serial_opts:\n "
+            "- console=tty0\n - console=ttySAC2,115200n8\n"
+            "android_specific_args:\n - init=/init\n "
+            "- androidboot.console=ttySAC2")
+        config = get_board_config('origen_quad')
+        config.from_file(StringIO(origen_quad_config))
+        expected = {
+            'bootargs': 'console=tty0 console=ttySAC2,115200n8 '
+                        'rootwait ro init=/init androidboot.console=ttySAC2',
+            'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
+                       'fatload mmc 0:2 0x42000000 uInitrd; '
+                       'bootm 0x40007000 0x42000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
+        self.assertBootEnv(config, expected)
+
     def test_android_vexpress(self):
         vexpress_config = (self.hwpack_base + "extra_serial_opts:\n "
             "- console=tty0\n - console=ttyAMA0,38400n8\n"
