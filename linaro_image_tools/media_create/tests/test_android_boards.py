@@ -111,6 +111,22 @@ class TestAndroidBoardsHwpack(TestCase):
         config.from_file(StringIO(android_mx6_config))
         self.assertBootEnv(config, expected)
 
+    def test_android_mx6_old(self):
+        # Old test: use the values from the class, instead of passing them.
+        expected = {
+            'bootargs': 'console=ttymxc0,115200n8 '
+                        'rootwait ro earlyprintk rootdelay=1 fixrtc '
+                        'nocompcache di1_primary tve init=/init '
+                        'androidboot.console=ttymxc0',
+            'bootcmd': 'fatload mmc 0:2 0x10000000 uImage; '
+                       'fatload mmc 0:2 0x12000000 uInitrd; '
+                       'fatload mmc 0:2 0x11ff0000 board.dtb; '
+                       'bootm 0x10000000 0x12000000 0x11ff0000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
+        config = get_board_config('mx6qsabrelite')
+        self.assertBootEnv(config, expected)
+
     def test_panda(self):
         panda_config = (self.hwpack_base + "bootloader_flavor: omap4_panda\n"
                         "dtb_addr: '0x815f0000'\ndtb_name: board.dtb\n"
@@ -125,6 +141,23 @@ class TestAndroidBoardsHwpack(TestCase):
         # don't interfere with us we'll reset that before doing anything.
         config = get_board_config('panda')
         config.from_file(StringIO(panda_config))
+        expected = {
+            'bootargs': 'console=ttyO2,115200n8 '
+                        'rootwait ro earlyprintk fixrtc '
+                        'nocompcache vram=48M omapfb.vram=0:24M,1:24M '
+                        'mem=456M@0x80000000 mem=512M@0xA0000000 '
+                        'init=/init androidboot.console=ttyO2',
+            'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
+                       'fatload mmc 0:1 0x81600000 uInitrd; '
+                       'fatload mmc 0:1 0x815f0000 board.dtb; '
+                       'bootm 0x80200000 0x81600000 0x815f0000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
+        self.assertBootEnv(config, expected)
+
+    def test_panda_old(self):
+        # Old test: use the values from the class, instead of passing them.
+        config = get_board_config('panda')
         expected = {
             'bootargs': 'console=ttyO2,115200n8 '
                         'rootwait ro earlyprintk fixrtc '
@@ -165,6 +198,23 @@ class TestAndroidBoardsHwpack(TestCase):
             'initrd_high': '0x06000000'}
         self.assertBootEnv(config, expected)
 
+    def test_android_snowball_sd_old(self):
+        # Old test: use the values from the class, instead of passing them.
+        config = get_board_config('snowball_sd')
+        expected = {
+            'bootargs': 'console=ttyAMA2,115200n8 '
+                        'rootwait ro earlyprintk '
+                        'mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
+                        'mem=22M@360M mem_issw=1M@383M mem=640M@384M '
+                        'vmalloc=500M init=/init androidboot.console=ttyAMA2',
+            'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
+                       'fatload mmc 1:1 0x05000000 uInitrd; '
+                       'fatload mmc 1:1 0x8000000 board.dtb; '
+                       'bootm 0x00100000 0x05000000 0x8000000',
+            'fdt_high': '0x05000000',
+            'initrd_high': '0x06000000'}
+        self.assertBootEnv(config, expected)
+
     def test_android_snowball_emmc(self):
         snowball_config = (self.hwpack_base + "boot_script: boot.scr\n"
             "fdt_high: '0x05000000'\ninitrd_addr: '0x05000000'\n"
@@ -177,6 +227,23 @@ class TestAndroidBoardsHwpack(TestCase):
             "dtb_name: board.dtb\ndtb_addr: '0x8000000'\nmmc_option: '0:2'")
         config = get_board_config('snowball_emmc')
         config.from_file(StringIO(snowball_config))
+        expected = {
+            'bootargs': 'console=ttyAMA2,115200n8 '
+                        'rootwait ro earlyprintk '
+                        'mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
+                        'mem=22M@360M mem_issw=1M@383M mem=640M@384M '
+                        'vmalloc=500M init=/init androidboot.console=ttyAMA2',
+            'bootcmd': 'fatload mmc 0:2 0x00100000 uImage; '
+                       'fatload mmc 0:2 0x05000000 uInitrd; '
+                       'fatload mmc 0:2 0x8000000 board.dtb; '
+                       'bootm 0x00100000 0x05000000 0x8000000',
+            'fdt_high': '0x05000000',
+            'initrd_high': '0x06000000'}
+        self.assertBootEnv(config, expected)
+
+    def test_android_snowball_emmc_old(self):
+        # Old test: use the values from the class, instead of passing them.
+        config = get_board_config('snowball_emmc')
         expected = {
             'bootargs': 'console=ttyAMA2,115200n8 '
                         'rootwait ro earlyprintk '
@@ -208,6 +275,19 @@ class TestAndroidBoardsHwpack(TestCase):
             'initrd_high': '0xffffffff'}
         self.assertBootEnv(config, expected)
 
+    def test_android_origen_old(self):
+        # Old test: use the values from the class, instead of passing them.
+        config = get_board_config('origen')
+        expected = {
+            'bootargs': 'console=tty0 console=ttySAC2,115200n8 '
+                        'rootwait ro init=/init androidboot.console=ttySAC2',
+            'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
+                       'fatload mmc 0:2 0x42000000 uInitrd; '
+                       'bootm 0x40007000 0x42000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
+        self.assertBootEnv(config, expected)
+
     def test_android_origen_quad(self):
         origen_quad_config = (self.hwpack_base + "extra_serial_opts:\n "
             "- console=tty0\n - console=ttySAC2,115200n8\n"
@@ -215,6 +295,19 @@ class TestAndroidBoardsHwpack(TestCase):
             "- androidboot.console=ttySAC2")
         config = get_board_config('origen_quad')
         config.from_file(StringIO(origen_quad_config))
+        expected = {
+            'bootargs': 'console=tty0 console=ttySAC2,115200n8 '
+                        'rootwait ro init=/init androidboot.console=ttySAC2',
+            'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
+                       'fatload mmc 0:2 0x42000000 uInitrd; '
+                       'bootm 0x40007000 0x42000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
+        self.assertBootEnv(config, expected)
+
+    def test_android_origen_quad_old(self):
+        # Old test: use the values from the class, instead of passing them.
+        config = get_board_config('origen_quad')
         expected = {
             'bootargs': 'console=tty0 console=ttySAC2,115200n8 '
                         'rootwait ro init=/init androidboot.console=ttySAC2',
@@ -242,6 +335,19 @@ class TestAndroidBoardsHwpack(TestCase):
             'initrd_high': '0xffffffff'}
         self.assertBootEnv(config, expected)
 
+    def test_android_vexpress_old(self):
+        # Old test: use the values from the class, instead of passing them.
+        config = get_board_config('vexpress')
+        expected = {
+            'bootargs': 'console=tty0 console=ttyAMA0,38400n8 '
+                        'rootwait ro init=/init androidboot.console=ttyAMA0',
+            'bootcmd': 'fatload mmc 0:1 0x60000000 uImage; '
+                       'fatload mmc 0:1 0x62000000 uInitrd; '
+                       'bootm 0x60000000 0x62000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
+        self.assertBootEnv(config, expected)
+
     def test_android_mx5(self):
         mx5_config = (self.hwpack_base + "extra_boot_args_options:\n "
             "- earlyprintk\n - rootdelay=1\n - fixrtc\n - nocompcache\n "
@@ -250,6 +356,21 @@ class TestAndroidBoardsHwpack(TestCase):
             "- init=/init\n - androidboot.console=%s")
         config = get_board_config('mx53loco')
         config.from_file(mx5_config)
+        expected = {
+            'bootargs': 'console=ttymxc0,115200n8 '
+                        'rootwait ro earlyprintk rootdelay=1 fixrtc '
+                        'nocompcache di1_primary tve init=/init '
+                        'androidboot.console=ttymxc0',
+            'bootcmd': 'fatload mmc 0:2 0x70000000 uImage; '
+                       'fatload mmc 0:2 0x72000000 uInitrd; '
+                       'bootm 0x70000000 0x72000000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
+        self.assertBootEnv(config, expected)
+
+    def test_android_mx5_old(self):
+        # Old test: use the values from the class, instead of passing them.
+        config = get_board_config('mx53loco')
         expected = {
             'bootargs': 'console=ttymxc0,115200n8 '
                         'rootwait ro earlyprintk rootdelay=1 fixrtc '
