@@ -58,6 +58,7 @@ SDCARD_DISK = None
 
 # Registered as the first atexit handler as we want this to be the last
 # handler to execute.
+@atexit.register
 def cleanup_tempdir():
     """Remove TEMP_DIR with all its contents.
 
@@ -94,8 +95,6 @@ if __name__ == '__main__':
     logger = get_logger(debug=args.debug)
 
     additional_android_option_checks(args)
-
-    atexit.register(cleanup_tempdir)
 
     # If --help was specified this won't execute.
     # Create temp dir and initialize rest of path vars.
