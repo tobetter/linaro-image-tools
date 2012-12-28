@@ -44,58 +44,126 @@ class TestAndroidBoards(TestCase):
 class TestAndroidBoardsHwpack(TestCase):
     """Class to test the new Android hwpack configuration file."""
 
+    # All the necessary Android hwpack fields for the tests.
+    hwpack_format = 'format: 3.0\n'
+    hwpack_dtb_name = 'dtb_name: %(dtb_name)s\n'
+    hwpack_fdt_high = "fdt_high: '%(fdt_high)s'\n"
+    hwpack_fat_size = 'fat_size: 16\n'
+    hwpack_android_args = 'android_specific_args: %(android_specific_args)s\n'
+    hwpack_extra_serial = 'extra_serial_opts: %(extra_serial_opts)s\n'
+    hwpack_extra_boot = ('extra_boot_args_options: '
+                         '%(extra_boot_args_options)s\n')
+    hwpack_bootloader_flavor = 'bootloader_flavor: %(bootloader_flavor)s\n'
+    hwpack_initrd_addr = 'initrd_addr: \'%(initrd_addr)s\'\n'
+    hwpack_initrd_high = 'initrd_high: \'%(initrd_high)s\'\n'
+    hwpack_kernel_addr = 'kernel_addr: \'%(kernel_addr)s\'\n'
+    hwpack_load_addr = 'load_addr: \'%(load_addr)s\'\n'
+    hwpack_dtb_addr = 'dtb_addr: \'%(dtb_addr)s\'\n'
+    hwpack_boot_script = 'boot_script: %(boot_script)s\n'
+    hwpack_mmc_option = 'mmc_option: \'%(mmc_option)s\'\n'
+
+    # Some defaults YAML-like strings to use for the tests.
+    android_hwpack_base = (hwpack_format + hwpack_dtb_name)
+    android_hwpack_simple = (android_hwpack_base + hwpack_fdt_high +
+                             hwpack_fat_size)
+    android_hwpack_android_args = (android_hwpack_base + hwpack_android_args)
+    android_hwpack_extra_serial = (android_hwpack_base + hwpack_extra_serial)
+    android_hwpack_extra_boot = (android_hwpack_base + hwpack_extra_boot)
+
+    android_hwpack_panda = (
+        hwpack_format + hwpack_android_args + hwpack_bootloader_flavor +
+        hwpack_dtb_addr + hwpack_dtb_name + hwpack_extra_boot +
+        hwpack_extra_serial
+        )
+
+    android_hwpack_mx6 = (
+        android_hwpack_panda + hwpack_initrd_addr + hwpack_kernel_addr +
+        hwpack_load_addr
+        )
+
+    android_hwpack_snowball_sd = (
+        hwpack_android_args + hwpack_boot_script + hwpack_dtb_addr +
+        hwpack_dtb_name + hwpack_extra_boot + hwpack_extra_serial +
+        hwpack_fdt_high + hwpack_format + hwpack_initrd_addr
+        )
+
+    android_hwpack_snowball_emmc = (
+        android_hwpack_snowball_sd + hwpack_initrd_high + hwpack_mmc_option)
+
     def setUp(self):
         super(TestAndroidBoardsHwpack, self).setUp()
         # Pick a default board.
         self.config = get_board_config('beagle')
-        self.hwpack_base = "format: 3.0\n"
-        self.fake_hwpack = (self.hwpack_base + "dtb_name: a_name\n"
-                            "fdt_high: '0xFFFFFFFF'\nfat_size: 16\n")
+
+    def assertBootEnv(self, expected, config=None, board='beagle'):
+        """Helper function the boot env parameters.
+
+        :param config: The string containing the YAML configuration.
+        :type str
+        :param expected: The expected configuration.
+        :type dict
+        :param board: The name of the board to test. Defaults to beagle.
+        :type str
+        """
+        board_conf = get_board_config(board)
+        if config:
+            board_conf.from_file(StringIO(config))
+        self.assertEqual(expected, board_conf._get_boot_env(consoles=[]))
 
     def test_read_from_file(self):
-        conf = self.config.from_file(StringIO(self.fake_hwpack))
+        values = {'fdt_high': '0xFFFFFFFF', 'dtb_name': 'a_name'}
         expected = {'format': 3.0, 'dtb_name': 'a_name',
                     'fdt_high': '0xFFFFFFFF', 'fat_size': 16}
+        yaml_config = self.android_hwpack_simple % values
+        conf = self.config.from_file(StringIO(yaml_config))
         self.assertEqual(expected, conf)
 
     def test_android_specific_args(self):
         """The field android_specific_args should be a concatenated string."""
-        specific_args = ("android_specific_args:\n - init=/init\n "
-                         "- androidboot.console=ttyO2")
-        hwpack_config = self.hwpack_base + specific_args
-        self.config.from_file(StringIO(hwpack_config))
+        values = {'android_specific_args': ['init=/init',
+                                            'androidboot.console=ttyO2'],
+                  'dtb_name': 'a_name'}
+        yaml_conf = self.android_hwpack_android_args % values
+        self.config.from_file(StringIO(yaml_conf))
         expected = 'init=/init androidboot.console=ttyO2'
         self.assertEqual(expected, self.config.android_specific_args)
 
     def test_extra_serial_opts(self):
         """The field extra_serial_opts should be a concatenated string."""
-        extra_serial_opts = ("extra_serial_opts:\n - console=tty0\n "
-                             "- console=ttyO2,115200n8")
-        hwpack_config = self.hwpack_base + extra_serial_opts
-        self.config.from_file(StringIO(hwpack_config))
+        values = {'dtb_name': 'a_name',
+                  'extra_serial_opts': ['console=tty0',
+                                        'console=ttyO2,115200n8']}
+        yaml_conf = self.android_hwpack_extra_serial % values
+        self.config.from_file(StringIO(yaml_conf))
         expected = 'console=tty0 console=ttyO2,115200n8'
         self.assertEqual(expected, self.config.extra_serial_opts)
 
     def test_extra_boot_args_options(self):
         """The field extra_boot_args_options should be a concatenated string.
         Testing presence of a field defined in the parent class."""
-        extra_boot_args_options = ("extra_boot_args_options:\n "
-                                   "- earlyprintk\n - mem=128M@0\n "
-                                   "- mali.mali_mem=64M@128M\n")
-        hwpack_config = self.hwpack_base + extra_boot_args_options
-        self.config.from_file(StringIO(hwpack_config))
+        values = {'dtb_name': 'a_name',
+                  'extra_boot_args_options': ['earlyprintk', 'mem=128M@0',
+                                              'mali.mali_mem=64M@128M']
+            }
+        yaml_conf = self.android_hwpack_extra_boot % values
+        self.config.from_file(StringIO(yaml_conf))
         expected = 'earlyprintk mem=128M@0 mali.mali_mem=64M@128M'
         self.assertEqual(expected, self.config.extra_boot_args_options)
 
     def test_android_mx6(self):
-        android_mx6_config = (self.hwpack_base + "bootloader_flavor: "
-            "mx6qsabrelite\nextra_boot_args_options:\n - earlyprintk\n"
-            " - rootdelay=1\n - fixrtc\n - nocompcache\n - di1_primary\n"
-            " - tve\nextra_serial_opts:\n - console=%s,115200n8\n"
-            "android_specific_args:\n - init=/init\n - "
-            "androidboot.console=%s\nkernel_addr: '0x10000000'\n"
-            "initrd_addr: '0x12000000'\nload_addr: '0x10008000'\ndtb_addr:"
-            " '0x11ff0000'\ndtb_name: board.dtb")
+        values = {
+            "android_specific_args": ["init=/init", "androidboot.console=%s"],
+            "bootloader_flavor": "mx6qsabrelite",
+            "dtb_addr": '0x11ff0000',
+            "dtb_name": "board.dtb",
+            "extra_boot_args_options": ["earlyprintk", "rootdelay=1",
+                                        "fixrtc", "nocompcache",
+                                        "di1_primary", "tve"],
+            "extra_serial_opts": ["console=%s,115200n8"],
+            "initrd_addr": '0x12000000',
+            "kernel_addr": '0x10000000',
+            "load_addr": '0x10008000',
+            }
         expected = {
             'bootargs': 'console=ttymxc0,115200n8 '
                         'rootwait ro earlyprintk rootdelay=1 fixrtc '
@@ -107,9 +175,8 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x10000000 0x12000000 0x11ff0000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
-        config = get_board_config('mx6qsabrelite')
-        config.from_file(StringIO(android_mx6_config))
-        self.assertBootEnv(config, expected)
+        config = self.android_hwpack_mx6 % values
+        self.assertBootEnv(expected, config=config, board='mx6qsabrelite')
 
     def test_android_mx6_old(self):
         # Old test: use the values from the class, instead of passing them.
@@ -124,23 +191,23 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x10000000 0x12000000 0x11ff0000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
-        config = get_board_config('mx6qsabrelite')
-        self.assertBootEnv(config, expected)
+        self.assertBootEnv(expected, board='mx6qsabrelite')
 
     def test_panda(self):
-        panda_config = (self.hwpack_base + "bootloader_flavor: omap4_panda\n"
-                        "dtb_addr: '0x815f0000'\ndtb_name: board.dtb\n"
-                        "extra_serial_opts:\n - console=ttyO2,115200n8\n"
-                        "extra_boot_args_options:\n - earlyprintk\n"
-                        " - fixrtc\n - nocompcache\n - vram=48M\n"
-                        " - omapfb.vram=0:24M,1:24M\n - mem=456M@0x80000000\n"
-                        " - mem=512M@0xA0000000\nandroid_specific_args:\n"
-                        " - init=/init\n - androidboot.console=ttyO2")
-        # XXX: To fix bug 697824 we have to change class attributes of our
-        # OMAP board configs, and some tests do that so to make sure they
-        # don't interfere with us we'll reset that before doing anything.
-        config = get_board_config('panda')
-        config.from_file(StringIO(panda_config))
+        values = {
+            "android_specific_args": ["init=/init",
+                                      "androidboot.console=ttyO2"],
+            "bootloader_flavor": "omap4_panda",
+            "dtb_addr": '0x815f0000',
+            "dtb_name": "board.dtb",
+            "extra_boot_args_options": ["earlyprintk", "fixrtc",
+                                        "nocompcache", "vram=48M",
+                                        "omapfb.vram=0:24M,1:24M",
+                                        "mem=456M@0x80000000",
+                                        "mem=512M@0xA0000000"],
+            "extra_serial_opts": ["console=ttyO2,115200n8"],
+            }
+        config = self.android_hwpack_panda % values
         expected = {
             'bootargs': 'console=ttyO2,115200n8 '
                         'rootwait ro earlyprintk fixrtc '
@@ -153,11 +220,10 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x80200000 0x81600000 0x815f0000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
-        self.assertBootEnv(config, expected)
+        self.assertBootEnv(expected, config=config, board='panda')
 
     def test_panda_old(self):
         # Old test: use the values from the class, instead of passing them.
-        config = get_board_config('panda')
         expected = {
             'bootargs': 'console=ttyO2,115200n8 '
                         'rootwait ro earlyprintk fixrtc '
@@ -170,20 +236,25 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x80200000 0x81600000 0x815f0000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
-        self.assertBootEnv(config, expected)
+        self.assertBootEnv(expected, board='panda')
 
     def test_android_snowball_sd(self):
-        snowball_config = (self.hwpack_base + "boot_script: boot.scr\n"
-            "fdt_high: '0x05000000'\ninitrd_addr: '0x05000000'\n"
-            "initrd_high: '0x06000000'\nextra_boot_args_options:\n "
-            "- earlyprintk\n - mem=128M@0\n - mali.mali_mem=64M@128M\n "
-            "- hwmem=168M@192M\n - mem=22M@360M\n - mem_issw=1M@383M\n "
-            "- mem=640M@384M\n - vmalloc=500M\nextra_serial_opts:\n"
-            " - console=ttyAMA2,115200n8\nandroid_specific_args:\n "
-            "- init=/init\n - androidboot.console=ttyAMA2\n"
-            "dtb_name: board.dtb\ndtb_addr: '0x8000000'")
-        config = get_board_config('snowball_sd')
-        config.from_file(StringIO(snowball_config))
+        values = {
+            "android_specific_args": ["init=/init",
+                                      "androidboot.console=ttyAMA2"],
+            "boot_script": "boot.scr",
+            "dtb_addr": '0x8000000',
+            "dtb_name": "board.dtb",
+            "extra_boot_args_options": ["earlyprintk", "mem=128M@0",
+                                        "mali.mali_mem=64M@128M",
+                                        "hwmem=168M@192M", "mem=22M@360M",
+                                        "mem_issw=1M@383M", "mem=640M@384M",
+                                        "vmalloc=500M"],
+            "extra_serial_opts": ["console=ttyAMA2,115200n8"],
+            "fdt_high": '0x05000000',
+            "initrd_addr": '0x05000000',
+            "initrd_high": '0x06000000',
+            }
         expected = {
             'bootargs': 'console=ttyAMA2,115200n8 '
                         'rootwait ro earlyprintk '
@@ -196,11 +267,11 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x00100000 0x05000000 0x8000000',
             'fdt_high': '0x05000000',
             'initrd_high': '0x06000000'}
-        self.assertBootEnv(config, expected)
+        config = self.android_hwpack_snowball_sd % values
+        self.assertBootEnv(expected, config=config, board='snowball_sd')
 
     def test_android_snowball_sd_old(self):
         # Old test: use the values from the class, instead of passing them.
-        config = get_board_config('snowball_sd')
         expected = {
             'bootargs': 'console=ttyAMA2,115200n8 '
                         'rootwait ro earlyprintk '
@@ -213,20 +284,27 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x00100000 0x05000000 0x8000000',
             'fdt_high': '0x05000000',
             'initrd_high': '0x06000000'}
-        self.assertBootEnv(config, expected)
+        self.assertBootEnv(expected, board='snowball_sd')
 
     def test_android_snowball_emmc(self):
-        snowball_config = (self.hwpack_base + "boot_script: boot.scr\n"
-            "fdt_high: '0x05000000'\ninitrd_addr: '0x05000000'\n"
-            "initrd_high: '0x06000000'\nextra_boot_args_options:\n "
-            "- earlyprintk\n - mem=128M@0\n - mali.mali_mem=64M@128M\n "
-            "- hwmem=168M@192M\n - mem=22M@360M\n - mem_issw=1M@383M\n "
-            "- mem=640M@384M\n - vmalloc=500M\nextra_serial_opts:\n"
-            " - console=ttyAMA2,115200n8\nandroid_specific_args:\n "
-            "- init=/init\n - androidboot.console=ttyAMA2\n"
-            "dtb_name: board.dtb\ndtb_addr: '0x8000000'\nmmc_option: '0:2'")
-        config = get_board_config('snowball_emmc')
-        config.from_file(StringIO(snowball_config))
+        values = {
+            "android_specific_args": ["init=/init",
+                                      "androidboot.console=ttyAMA2"],
+            "boot_script": "boot.scr",
+            "dtb_addr": '0x8000000',
+            "dtb_name": "board.dtb",
+            "extra_boot_args_options": ["earlyprintk", "mem=128M@0",
+                                        "mali.mali_mem=64M@128M",
+                                        "hwmem=168M@192M", "mem=22M@360M",
+                                        "mem_issw=1M@383M", "mem=640M@384M",
+                                        "vmalloc=500M"],
+            "extra_serial_opts": ["console=ttyAMA2,115200n8"],
+            "fdt_high": '0x05000000',
+            "initrd_addr": '0x05000000',
+            "initrd_high": '0x06000000',
+            "mmc_option": '0:2'
+            }
+        config = self.android_hwpack_snowball_emmc % values
         expected = {
             'bootargs': 'console=ttyAMA2,115200n8 '
                         'rootwait ro earlyprintk '
@@ -239,11 +317,10 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x00100000 0x05000000 0x8000000',
             'fdt_high': '0x05000000',
             'initrd_high': '0x06000000'}
-        self.assertBootEnv(config, expected)
+        self.assertBootEnv(expected, config, board='snowball_emmc')
 
     def test_android_snowball_emmc_old(self):
         # Old test: use the values from the class, instead of passing them.
-        config = get_board_config('snowball_emmc')
         expected = {
             'bootargs': 'console=ttyAMA2,115200n8 '
                         'rootwait ro earlyprintk '
@@ -256,15 +333,15 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x00100000 0x05000000 0x8000000',
             'fdt_high': '0x05000000',
             'initrd_high': '0x06000000'}
-        self.assertBootEnv(config, expected)
+        self.assertBootEnv(expected, board='snowball_emmc')
 
     def test_android_origen(self):
-        origen_config = (self.hwpack_base + "extra_serial_opts:\n "
-            "- console=tty0\n - console=ttySAC2,115200n8\n"
-            "android_specific_args:\n - init=/init\n "
-            "- androidboot.console=ttySAC2")
-        config = get_board_config('origen')
-        config.from_file(StringIO(origen_config))
+        values = {
+        "extra_serial_opts": ["console=tty0", "console=ttySAC2,115200n8"],
+        "android_specific_args": ["init=/init", "androidboot.console=ttySAC2"]
+        }
+        config = ((self.hwpack_format + self.hwpack_extra_serial +
+                   self.hwpack_android_args) % values)
         expected = {
             'bootargs': 'console=tty0 console=ttySAC2,115200n8 '
                         'rootwait ro init=/init androidboot.console=ttySAC2',
@@ -273,11 +350,10 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x40007000 0x42000000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
-        self.assertBootEnv(config, expected)
+        self.assertBootEnv(expected, config=config, board='origen')
 
     def test_android_origen_old(self):
         # Old test: use the values from the class, instead of passing them.
-        config = get_board_config('origen')
         expected = {
             'bootargs': 'console=tty0 console=ttySAC2,115200n8 '
                         'rootwait ro init=/init androidboot.console=ttySAC2',
@@ -286,15 +362,16 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x40007000 0x42000000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
-        self.assertBootEnv(config, expected)
+        self.assertBootEnv(expected, board='origen')
 
     def test_android_origen_quad(self):
-        origen_quad_config = (self.hwpack_base + "extra_serial_opts:\n "
-            "- console=tty0\n - console=ttySAC2,115200n8\n"
-            "android_specific_args:\n - init=/init\n "
-            "- androidboot.console=ttySAC2")
-        config = get_board_config('origen_quad')
-        config.from_file(StringIO(origen_quad_config))
+        values = {
+            "extra_serial_opts": ["console=tty0", "console=ttySAC2,115200n8"],
+            "android_specific_args": ["init=/init",
+                                      "androidboot.console=ttySAC2"]
+        }
+        config = ((self.hwpack_format + self.hwpack_extra_serial +
+                   self.hwpack_android_args) % values)
         expected = {
             'bootargs': 'console=tty0 console=ttySAC2,115200n8 '
                         'rootwait ro init=/init androidboot.console=ttySAC2',
@@ -303,11 +380,10 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x40007000 0x42000000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
-        self.assertBootEnv(config, expected)
+        self.assertBootEnv(expected, config=config, board='origen_quad')
 
     def test_android_origen_quad_old(self):
         # Old test: use the values from the class, instead of passing them.
-        config = get_board_config('origen_quad')
         expected = {
             'bootargs': 'console=tty0 console=ttySAC2,115200n8 '
                         'rootwait ro init=/init androidboot.console=ttySAC2',
@@ -316,15 +392,16 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x40007000 0x42000000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
-        self.assertBootEnv(config, expected)
+        self.assertBootEnv(expected, board='origen_quad')
 
     def test_android_vexpress(self):
-        vexpress_config = (self.hwpack_base + "extra_serial_opts:\n "
-            "- console=tty0\n - console=ttyAMA0,38400n8\n"
-            "android_specific_args:\n - init=/init\n "
-            "- androidboot.console=ttyAMA0")
-        config = get_board_config('vexpress')
-        config.from_file(StringIO(vexpress_config))
+        values = {
+            "extra_serial_opts": ["console=tty0", "console=ttyAMA0,38400n8"],
+            "android_specific_args": ["init=/init",
+                                      "androidboot.console=ttyAMA0"]
+        }
+        config = ((self.hwpack_format + self.hwpack_extra_serial +
+                   self.hwpack_android_args) % values)
         expected = {
             'bootargs': 'console=tty0 console=ttyAMA0,38400n8 '
                         'rootwait ro init=/init androidboot.console=ttyAMA0',
@@ -333,11 +410,10 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x60000000 0x62000000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
-        self.assertBootEnv(config, expected)
+        self.assertBootEnv(expected, config=config, board='vexpress')
 
     def test_android_vexpress_old(self):
         # Old test: use the values from the class, instead of passing them.
-        config = get_board_config('vexpress')
         expected = {
             'bootargs': 'console=tty0 console=ttyAMA0,38400n8 '
                         'rootwait ro init=/init androidboot.console=ttyAMA0',
@@ -346,16 +422,19 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x60000000 0x62000000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
-        self.assertBootEnv(config, expected)
+        self.assertBootEnv(expected, board='vexpress')
 
     def test_android_mx5(self):
-        mx5_config = (self.hwpack_base + "extra_boot_args_options:\n "
-            "- earlyprintk\n - rootdelay=1\n - fixrtc\n - nocompcache\n "
-            "- di1_primary\n - tve\nextra_serial_opts:\n"
-            " - console=%s,115200n8\nandroid_specific_args:\n "
-            "- init=/init\n - androidboot.console=%s")
-        config = get_board_config('mx53loco')
-        config.from_file(mx5_config)
+        values = {
+            "extra_boot_args_options": ["earlyprintk", "rootdelay=1",
+                                        "fixrtc", "nocompcache",
+                                        "di1_primary", "tve"],
+            "extra_serial_opts": ["console=%s,115200n8"],
+            "android_specific_args": ["init=/init", "androidboot.console=%s"]
+        }
+        config = ((self.hwpack_format + self.hwpack_extra_boot +
+                   self.hwpack_extra_serial + self.hwpack_android_args) %
+                   values)
         expected = {
             'bootargs': 'console=ttymxc0,115200n8 '
                         'rootwait ro earlyprintk rootdelay=1 fixrtc '
@@ -366,11 +445,10 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x70000000 0x72000000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
-        self.assertBootEnv(config, expected)
+        self.assertBootEnv(expected, config=config, board='mx53loco')
 
     def test_android_mx5_old(self):
         # Old test: use the values from the class, instead of passing them.
-        config = get_board_config('mx53loco')
         expected = {
             'bootargs': 'console=ttymxc0,115200n8 '
                         'rootwait ro earlyprintk rootdelay=1 fixrtc '
@@ -381,7 +459,4 @@ class TestAndroidBoardsHwpack(TestCase):
                        'bootm 0x70000000 0x72000000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
-        self.assertBootEnv(config, expected)
-
-    def assertBootEnv(self, config, expected):
-        self.assertEqual(expected, config._get_boot_env(consoles=[]))
+        self.assertBootEnv(expected, board='mx53loco')

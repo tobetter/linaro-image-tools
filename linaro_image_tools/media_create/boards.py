@@ -67,7 +67,9 @@ from linaro_image_tools.hwpack.hwpack_fields import (
     SAMSUNG_BL1_LEN_FIELD,
     SAMSUNG_BL1_START_FIELD,
     SAMSUNG_BL2_LEN_FIELD,
+    SAMSUNG_BL2_START_FIELD,
     SAMSUNG_ENV_LEN_FIELD,
+    SAMSUNG_ENV_START_FIELD,
     SERIAL_TTY_FIELD,
     SNOWBALL_STARTUP_FILES_CONFIG_FIELD,
     SPL_DD_FIELD,
@@ -374,13 +376,15 @@ class BoardConfig(object):
             samsung_env_len = self.get_metadata_field(SAMSUNG_ENV_LEN_FIELD)
             if samsung_env_len:
                 self.samsung_v310_env_len = int(samsung_env_len)
-            samsung_bl2_start = self.get_metadata_field('samsung_bl2_start')
+            samsung_bl2_start = \
+                self.get_metadata_field(SAMSUNG_BL2_START_FIELD)
             if samsung_bl2_start:
                 self.samsung_bl2_start = int(samsung_bl2_start)
             samsung_bl2_len = self.get_metadata_field(SAMSUNG_BL2_LEN_FIELD)
             if samsung_bl2_len:
                 self.samsung_v310_bl2_len = int(samsung_bl2_len)
-            samsung_env_start = self.get_metadata_field('samsung_env_start')
+            samsung_env_start = \
+                self.get_metadata_field(SAMSUNG_ENV_START_FIELD)
             if samsung_env_start is not None:
                 self.samsung_env_start = int(samsung_env_start)
 
