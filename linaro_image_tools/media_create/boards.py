@@ -150,7 +150,7 @@ class BoardConfig(object):
         # leading underscore. It is done in this way since sublcasses use
         # placeholders in the string for dinamically change values. But this
         # is done only for hwpack v1.
-        self._extra_serial_opts = ''
+        self._extra_serial_options = ''
         self._live_serial_opts = ''
         self.board = None
         self.boot_script = None
@@ -223,17 +223,17 @@ class BoardConfig(object):
     live_serial_opts = property(_get_live_serial_opts, _set_live_serial_opts)
 
     # XXX: can be removed when killing v1 hwpack.
-    def _get_extra_serial_opts(self):
-        return_value = self._extra_serial_opts
+    def _get_extra_serial_options(self):
+        return_value = self._extra_serial_options
         if self._check_placeholder_presence(return_value, r'%s'):
             return_value = return_value % self.serial_tty
         return return_value
 
-    def _set_extra_serial_opts(self, value):
-        self._extra_serial_opts = value
+    def _set_extra_serial_options(self, value):
+        self._extra_serial_options = value
 
-    extra_serial_opts = property(_get_extra_serial_opts,
-                                 _set_extra_serial_opts)
+    extra_serial_options = property(_get_extra_serial_options,
+                                 _set_extra_serial_options)
 
     def get_metadata_field(self, field_name):
         """ Return the metadata value for field_name if it can be found.
@@ -296,7 +296,7 @@ class BoardConfig(object):
             self.extra_boot_args_options = self.get_metadata_field(
                 EXTRA_BOOT_OPTIONS_FIELD)
             self.boot_script = self.get_metadata_field(BOOT_SCRIPT_FIELD)
-            self.extra_serial_opts = self.get_metadata_field(
+            self.extra_serial_options = self.get_metadata_field(
                 EXTRA_SERIAL_OPTIONS_FIELD)
             self.snowball_startup_files_config = self.get_metadata_field(
                 SNOWBALL_STARTUP_FILES_CONFIG_FIELD)
@@ -540,7 +540,7 @@ class BoardConfig(object):
         boot_args_options = 'rootwait ro'
         if self.extra_boot_args_options:
             boot_args_options += ' %s' % self.extra_boot_args_options
-        serial_opts = self.extra_serial_opts
+        serial_opts = self.extra_serial_options
         for console in consoles:
             serial_opts += ' console=%s' % console
 
@@ -945,7 +945,7 @@ class BeagleConfig(OmapConfig):
         self.kernel_addr = '0x80000000'
         self.load_addr = '0x80008000'
         self._serial_tty = 'ttyO2'
-        self._extra_serial_opts = 'console=tty0 console=%s,115200n8'
+        self._extra_serial_options = 'console=tty0 console=%s,115200n8'
         self._live_serial_opts = 'serialtty=%s'
 
 
@@ -962,7 +962,7 @@ class OveroConfig(OmapConfig):
         self.initrd_addr = '0x81600000'
         self.kernel_addr = '0x80000000'
         self.load_addr = '0x80008000'
-        self._extra_serial_opts = 'console=tty0 console=%s,115200n8'
+        self._extra_serial_options = 'console=tty0 console=%s,115200n8'
         self._serial_tty = 'ttyO2'
 
 
@@ -980,7 +980,7 @@ class PandaConfig(OmapConfig):
         self.initrd_addr = '0x81600000'
         self.kernel_addr = '0x80200000'
         self.load_addr = '0x80008000'
-        self._extra_serial_opts = 'console=tty0 console=%s,115200n8'
+        self._extra_serial_options = 'console=tty0 console=%s,115200n8'
         self._live_serial_opts = 'serialtty=%s'
 
 
@@ -1019,7 +1019,7 @@ class Ux500Config(BoardConfig):
         self.load_addr = '0x00008000'
         self.mmc_option = '1:1'
         self.serial_tty = 'ttyAMA2'
-        self._extra_serial_opts = 'console=tty0 console=%s,115200n8'
+        self._extra_serial_options = 'console=tty0 console=%s,115200n8'
         self._live_serial_opts = 'serialtty=%s'
 
     def _make_boot_files(self, boot_env, chroot_dir, boot_dir,
@@ -1230,7 +1230,7 @@ class Mx5Config(BoardConfig):
         self.mmc_option = '0:2'
         self.mmc_part_offset = 1
         self.serial_tty = 'ttymxc0'
-        self._extra_serial_opts = 'console=tty0 console=%s,115200n8'
+        self._extra_serial_options = 'console=tty0 console=%s,115200n8'
         self._live_serial_opts = 'serialtty=%s'
 
     def get_v1_sfdisk_cmd(self, should_align_boot_part=None):
@@ -1341,7 +1341,7 @@ class VexpressConfig(BoardConfig):
         self.kernel_flavors = ['linaro-vexpress']
         self.load_addr = '0x60008000'
         self.serial_tty = 'ttyAMA0'
-        self._extra_serial_opts = 'console=tty0 console=%s,38400n8'
+        self._extra_serial_options = 'console=tty0 console=%s,38400n8'
         self._live_serial_opts = 'serialtty=%s'
 
     def _make_boot_files(self, boot_env, chroot_dir, boot_dir,
@@ -1390,7 +1390,7 @@ class FastModelConfig(BoardConfig):
 class SamsungConfig(BoardConfig):
     def __init__(self):
         super(SamsungConfig, self).__init__()
-        self._extra_serial_opts = None
+        self._extra_serial_options = None
 
     def get_v1_sfdisk_cmd(self, should_align_boot_part=False):
         # bootloaders partition needs to hold BL1, U-Boot environment, and BL2
@@ -1505,7 +1505,7 @@ class SMDKV310Config(SamsungConfig):
         self.mmc_option = '0:2'
         self.mmc_part_offset = 1
         self.serial_tty = 'ttySAC1'
-        self._extra_serial_opts = 'console=%s,115200n8'
+        self._extra_serial_options = 'console=%s,115200n8'
 
     def _get_boot_env(self, is_live, is_lowmem, consoles, rootfs_id,
                       i_img_data, d_img_data):
@@ -1531,7 +1531,7 @@ class OrigenConfig(SamsungConfig):
         self.mmc_option = '0:2'
         self.mmc_part_offset = 1
         self.serial_tty = 'ttySAC2'
-        self._extra_serial_opts = 'console=%s,115200n8'
+        self._extra_serial_options = 'console=%s,115200n8'
 
 
 class OrigenQuadConfig(SamsungConfig):
@@ -1549,7 +1549,7 @@ class OrigenQuadConfig(SamsungConfig):
         self.samsung_bl2_start = 49
         self.samsung_env_start = 1073
         self.serial_tty = 'ttySAC2'
-        self._extra_serial_opts = 'console=%s,115200n8'
+        self._extra_serial_options = 'console=%s,115200n8'
 
 
 class ArndaleConfig(SamsungConfig):
@@ -1568,7 +1568,7 @@ class ArndaleConfig(SamsungConfig):
         self.samsung_bl2_start = 49
         self.samsung_env_start = 1073
         self.serial_tty = 'ttySAC2'
-        self._extra_serial_opts = 'console=%s,115200n8'
+        self._extra_serial_options = 'console=%s,115200n8'
 
 
 class I386Config(BoardConfig):
@@ -1587,7 +1587,7 @@ class I386Config(BoardConfig):
         super(I386Config, self).__init__()
         self.kernel_flavors = ['generic', 'pae']
         self.serial_tty = 'ttyS0'
-        self._extra_serial_opts = 'console=tty0 console=%s,115200n8'
+        self._extra_serial_options = 'console=tty0 console=%s,115200n8'
         self._live_serial_opts = 'serialtty=%s'
 
     def _make_boot_files(self, boot_env, chroot_dir, boot_dir,
@@ -1609,7 +1609,7 @@ class I386Config(BoardConfig):
 
         # generate loader config file
         loader_config = self.BOOTLOADER_CFG % (os.path.basename(k_img_data),
-            self.extra_serial_opts, os.path.basename(i_img_data))
+            self.extra_serial_options, os.path.basename(i_img_data))
 
         _, tmpfile = tempfile.mkstemp()
         atexit.register(os.unlink, tmpfile)

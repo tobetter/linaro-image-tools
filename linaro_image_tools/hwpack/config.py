@@ -620,7 +620,7 @@ class Config(object):
                                            join_list_with=" ")
 
     @property
-    def extra_serial_opts(self):
+    def extra_serial_options(self):
         """Extra serial options.
 
         A str.

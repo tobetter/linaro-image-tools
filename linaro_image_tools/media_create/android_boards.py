@@ -32,6 +32,7 @@ import yaml
 import logging
 
 from linaro_image_tools import cmd_runner
+from linaro_image_tools.hwpack.hwpack_fields import FORMAT_FIELD
 from linaro_image_tools.media_create.partitions import SECTOR_SIZE
 from linaro_image_tools.media_create.boards import (
     BeagleConfig,
@@ -68,7 +69,7 @@ class AndroidBoardConfig(BoardConfig):
     def __init__(self):
         super(AndroidBoardConfig, self).__init__()
         self.dtb_name = None
-        self._extra_serial_opts = []
+        self._extra_serial_options = []
         self._android_specific_args = []
         self._extra_boot_args_options = []
         self._live_serial_options = []
@@ -97,17 +98,17 @@ class AndroidBoardConfig(BoardConfig):
     extra_boot_args_options = property(_get_extra_boot_args_options,
                                        _set_extra_boot_args_options)
 
-    def _get_extra_serial_opts(self):
-        extra_serial = self._extra_serial_opts
+    def _get_extra_serial_options(self):
+        extra_serial = self._extra_serial_options
         if isinstance(extra_serial, list):
-            extra_serial = ' '.join(self._extra_serial_opts)
+            extra_serial = ' '.join(self._extra_serial_options)
         return extra_serial
 
-    def _set_extra_serial_opts(self, value):
-        self._extra_serial_opts = value
+    def _set_extra_serial_options(self, value):
+        self._extra_serial_options = value
 
-    extra_serial_opts = property(_get_extra_serial_opts,
-                                 _set_extra_serial_opts)
+    extra_serial_options = property(_get_extra_serial_options,
+                                 _set_extra_serial_options)
 
     def _get_live_serial_options(self):
         serial_options = self._live_serial_options
@@ -132,8 +133,9 @@ class AndroidBoardConfig(BoardConfig):
         :return The configuration read from the file as a dictionary.
         """
         try:
-            config = yaml.safe_load(hwpack)
-            self._set_attributes(config)
+            with open(hwpack, 'r') as hw:
+                config = yaml.safe_load(hw)
+                self._set_attributes(config)
             return config
         except yaml.YAMLError, ex:
             logger.debug("Error loading YAML file %s" % hwpack, ex)
@@ -147,7 +149,9 @@ class AndroidBoardConfig(BoardConfig):
         :param config: The config read from the Android hwpack.
         """
         for name, value in config.iteritems():
-            if hasattr(self, name):
+            if name == FORMAT_FIELD:
+                setattr(self, 'hwpack_format', value)
+            elif hasattr(self, name):
                 setattr(self, name, value)
             else:
                 logger.warning("Attribute '%s' does not belong to this "
@@ -162,7 +166,7 @@ class AndroidBoardConfig(BoardConfig):
         if self.extra_boot_args_options:
             boot_args_options += ' %s' % self.extra_boot_args_options
         boot_args_options += ' %s' % self.android_specific_args
-        serial_opts = self.extra_serial_opts
+        serial_opts = self.extra_serial_options
         for console in consoles:
             serial_opts += ' console=%s' % console
 
@@ -281,7 +285,7 @@ class AndroidBeagleConfig(AndroidOmapConfig, BeagleConfig):
     def __init__(self):
         super(AndroidBeagleConfig, self).__init__()
         self._android_specific_args = 'init=/init androidboot.console=ttyO2'
-        self._extra_serial_opts = 'console=tty0 console=ttyO2,115200n8'
+        self._extra_serial_options = 'console=tty0 console=ttyO2,115200n8'
 
 
 class AndroidPandaConfig(AndroidBoardConfig, PandaConfig):
@@ -289,7 +293,7 @@ class AndroidPandaConfig(AndroidBoardConfig, PandaConfig):
     def __init__(self):
         super(AndroidPandaConfig, self).__init__()
         self.dtb_name = 'board.dtb'
-        self._extra_serial_opts = 'console=ttyO2,115200n8'
+        self._extra_serial_options = 'console=ttyO2,115200n8'
         self._extra_boot_args_options = (
             'earlyprintk fixrtc nocompcache vram=48M '
             'omapfb.vram=0:24M,1:24M mem=456M@0x80000000 mem=512M@0xA0000000')
@@ -307,7 +311,7 @@ class AndroidSnowballSdConfig(AndroidBoardConfig, SnowballSdConfig):
         self._extra_boot_args_options = (
             'earlyprintk mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
             'mem=22M@360M mem_issw=1M@383M mem=640M@384M vmalloc=500M')
-        self._extra_serial_opts = 'console=ttyAMA2,115200n8'
+        self._extra_serial_options = 'console=ttyAMA2,115200n8'
         self.boot_script = 'boot.scr'
         self.fdt_high = '0x05000000'
         self.initrd_addr = '0x05000000'
@@ -323,7 +327,7 @@ class AndroidSnowballEmmcConfig(AndroidBoardConfig, SnowballEmmcConfig):
         self._extra_boot_args_options = (
             'earlyprintk mem=128M@0 mali.mali_mem=64M@128M hwmem=168M@192M '
             'mem=22M@360M mem_issw=1M@383M mem=640M@384M vmalloc=500M')
-        self._extra_serial_opts = 'console=ttyAMA2,115200n8'
+        self._extra_serial_options = 'console=ttyAMA2,115200n8'
         self._android_specific_args = 'init=/init androidboot.console=ttyAMA2'
         self.boot_script = 'boot.scr'
         self.fdt_high = '0x05000000'
@@ -379,11 +383,11 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
         super(AndroidMx53LoCoConfig, self).__init__()
         self._extra_boot_args_options = (
             'earlyprintk rootdelay=1 fixrtc nocompcache di1_primary tve')
-        self._extra_serial_opts = 'console=%s,115200n8'
+        self._extra_serial_options = 'console=%s,115200n8'
         self._android_specific_args = 'init=/init androidboot.console=%s'
 
-    def _get_extra_serial_opts(self):
-        serial_opts = self._extra_serial_opts
+    def _get_extra_serial_options(self):
+        serial_opts = self._extra_serial_options
         if serial_opts:
             if isinstance(serial_opts, list):
                 serial_opts = ' '.join(serial_opts)
@@ -391,11 +395,11 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
                 serial_opts = serial_opts % self.serial_tty
         return serial_opts
 
-    def _set_extra_serial_opts(self, value):
-        self._extra_serial_opts = value
+    def _set_extra_serial_options(self, value):
+        self._extra_serial_options = value
 
-    extra_serial_opts = property(_get_extra_serial_opts,
-                                 _set_extra_serial_opts)
+    extra_serial_options = property(_get_extra_serial_options,
+                                 _set_extra_serial_options)
 
     def _get_android_specific_args(self):
         android_args = self._android_specific_args
@@ -461,7 +465,7 @@ class AndroidSMDKV310Config(AndroidSamsungConfig, SMDKV310Config):
     """Placeholder class for SMDKV310 configuration inheritance."""
     def __init__(self):
         super(AndroidSMDKV310Config, self).__init__()
-        self._extra_serial_opts = 'console=tty0 console=ttySAC1,115200n8'
+        self._extra_serial_options = 'console=tty0 console=ttySAC1,115200n8'
         self._android_specific_args = 'init=/init androidboot.console=ttySAC1'
 
 
@@ -469,14 +473,14 @@ class AndroidOrigenConfig(AndroidSamsungConfig, OrigenConfig):
     """Placeholder class for Origen configuration inheritance."""
     def __init__(self):
         super(AndroidOrigenConfig, self).__init__()
-        self._extra_serial_opts = 'console=tty0 console=ttySAC2,115200n8'
+        self._extra_serial_options = 'console=tty0 console=ttySAC2,115200n8'
         self._android_specific_args = 'init=/init androidboot.console=ttySAC2'
 
 
 class AndroidOrigenQuadConfig(AndroidSamsungConfig, OrigenQuadConfig):
     def __init__(self):
         super(AndroidOrigenQuadConfig, self).__init__()
-        self._extra_serial_opts = 'console=tty0 console=ttySAC2,115200n8'
+        self._extra_serial_options = 'console=tty0 console=ttySAC2,115200n8'
         self._android_specific_args = 'init=/init androidboot.console=ttySAC2'
 
 
@@ -484,7 +488,7 @@ class AndroidVexpressConfig(AndroidBoardConfig, VexpressConfig):
     """Placeholder class for Vexpress configuration inheritance."""
     def __init__(self):
         super(AndroidVexpressConfig, self).__init__()
-        self._extra_serial_opts = 'console=tty0 console=ttyAMA0,38400n8'
+        self._extra_serial_options = 'console=tty0 console=ttyAMA0,38400n8'
         self._android_specific_args = 'init=/init androidboot.console=ttyAMA0'
 
 
