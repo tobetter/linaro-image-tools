@@ -42,6 +42,10 @@ class TestAndroidBoards(TestCase):
     def test_get_board_config_wrong(self):
         self.assertRaises(BoardConfigException, get_board_config, 'notadevice')
 
+    def test_hwpack_not_exists(self):
+        instance = get_board_config('beagle')
+        self.assertRaises(BoardConfigException, instance.from_file, 'a_file')
+
 
 class TestAndroidBoardsHwpack(TestCaseWithFixtures):
     """Class to test the new Android hwpack configuration file."""

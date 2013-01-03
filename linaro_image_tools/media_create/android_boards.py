@@ -135,11 +135,15 @@ class AndroidBoardConfig(BoardConfig):
         try:
             with open(hwpack, 'r') as hw:
                 config = yaml.safe_load(hw)
-                self._set_attributes(config)
+            self._set_attributes(config)
             return config
         except yaml.YAMLError, ex:
             logger.debug("Error loading YAML file %s" % hwpack, ex)
             raise BoardConfigException("Error reading Android hwpack %s"
+                                       % hwpack)
+        except IOError, ex:
+            logger.debug("Error reading hwpack file %s" % hwpack, ex)
+            raise BoardConfigException("Android hwpack %s could not be found"
                                        % hwpack)
 
     def _set_attributes(self, config):
