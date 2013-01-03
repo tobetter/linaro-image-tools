@@ -346,6 +346,14 @@ def additional_option_checks(args):
                 "--hwpack argument (%s) is not a regular file" % hwpack)
 
 
+def additional_android_option_checks(args):
+    """Checks that some of the args passed to l-a-m-c are valid."""
+    if args.hwpack:
+        if not os.path.isfile(args.hwpack):
+            raise InvalidHwpackFile(
+                "--hwpack argument (%s) is not a regular file" % args.hwpack)
+
+
 def check_required_args(args):
     """Check that the required args are passed."""
     if args.dev is None:

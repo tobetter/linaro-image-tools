@@ -257,7 +257,7 @@ class MetadataTests(TestCase):
         metadata = Metadata("ahwpack", "4", "armel",
                             format=HardwarePackFormatV2())
         metadata.add_v2_config(
-            extra_serial_opts='console=tty0 console=ttyO2,115200n8')
+            extra_serial_options='console=tty0 console=ttyO2,115200n8')
         expected_out = ("NAME=ahwpack\nVERSION=4\n"
                         "ARCHITECTURE=armel\nEXTRA_SERIAL_OPTIONS="
                         "console=tty0 console=ttyO2,115200n8\n")
@@ -335,7 +335,7 @@ class NewMetadataTests(TestCase):
                                     format=HardwarePackFormatV3())
         options = ['option1', 'option2,option3']
         # Need to call also this one!
-        metadata.add_v2_config(extra_serial_opts=options)
+        metadata.add_v2_config(extra_serial_options=options)
         metadata.add_v3_config(bootloaders=None)
         expected_out = ("format: '3.0'\nname: ahwpack\nversion: '4'\n"
                         "architecture: armel\nextra_serial_options: option1 "

@@ -26,7 +26,7 @@ import tempfile
 from linaro_image_tools import cmd_runner
 
 from linaro_image_tools.media_create.android_boards import (
-    android_board_configs,
+    get_board_config,
     )
 from linaro_image_tools.media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
@@ -40,8 +40,11 @@ from linaro_image_tools.media_create.unpack_binary_tarball import (
     unpack_android_binary_tarball
     )
 from linaro_image_tools.media_create import get_android_args_parser
-from linaro_image_tools.utils import ensure_command
-
+from linaro_image_tools.utils import (
+    additional_android_option_checks,
+    ensure_command,
+    get_logger
+    )
 
 
 # Just define the global variables
@@ -89,6 +92,10 @@ if __name__ == '__main__':
     parser = get_android_args_parser()
     args = parser.parse_args()
 
+    logger = get_logger(debug=args.debug)
+
+    additional_android_option_checks(args)
+
     # If --help was specified this won't execute.
     # Create temp dir and initialize rest of path vars.
     TMP_DIR = tempfile.mkdtemp()
@@ -102,13 +109,19 @@ if __name__ == '__main__':
     DATA_DISK = os.path.join(TMP_DIR, 'userdata-disc')
     SDCARD_DISK = os.path.join(TMP_DIR, 'sdcard-disc')
 
-    board_config = android_board_configs[args.dev]
+    board_config = get_board_config(args.dev)
+    if args.hwpack:
+        board_config.from_file(args.hwpack)
+    else:
+        logger.warning("No Android hwpack provided: default board values "
+                       "will be used.")
     board_config.add_boot_args(args.extra_boot_args)
     board_config.add_boot_args_from_file(args.extra_boot_args_file)
 
     if args.dev == 'iMX53':
         # XXX: remove this and the corresponding entry in android_board_configs
-        print "DEPRECATION WARNING: iMX53 is deprecated, please use mx53loco."
+        logger.warning("DEPRECATION WARNING: iMX53 is deprecated, please "
+                       "use mx53loco.")
 
     ensure_required_commands(args)
 
@@ -117,11 +130,8 @@ if __name__ == '__main__':
         if not confirm_device_selection_and_ensure_it_is_ready(args.device):
             sys.exit(1)
     elif not args.should_create_partitions:
-        print ("Do not use --no-part in conjunction with --image_file.")
+        logger.error("Do not use --no-part in conjunction with --image_file.")
         sys.exit(1)
-    else:
-        # All good, move on.
-        pass
 
     cmd_runner.run(['mkdir', '-p', BOOT_DIR]).wait()
     cmd_runner.run(['mkdir', '-p', SYSTEM_DIR]).wait()

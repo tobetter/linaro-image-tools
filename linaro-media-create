@@ -25,7 +25,7 @@ import tempfile
 
 from linaro_image_tools import cmd_runner
 
-from linaro_image_tools.media_create.boards import board_configs
+from linaro_image_tools.media_create.boards import get_board_config
 from linaro_image_tools.media_create.check_device import (
     confirm_device_selection_and_ensure_it_is_ready)
 from linaro_image_tools.media_create.chroot_utils import (
@@ -131,9 +131,8 @@ if __name__ == '__main__':
         logger.error(e.value)
         sys.exit(1)
 
-    board_config = board_configs[args.dev]
+    board_config = get_board_config(args.dev)
     board_config.set_metadata(args.hwpacks, args.bootloader, args.dev)
-    board_config.set_board(args.dev)
     board_config.add_boot_args(args.extra_boot_args)
     board_config.add_boot_args_from_file(args.extra_boot_args_file)
 
@@ -152,9 +151,6 @@ if __name__ == '__main__':
         logger.error("Do not use --no-boot or --no-part in conjunction with "
                      "--image_file.")
         sys.exit(1)
-    else:
-        # All good, move on.
-        pass
 
     # If --help was specified this won't execute.
     # Create temp dir and initialize rest of path vars.

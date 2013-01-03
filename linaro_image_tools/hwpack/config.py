@@ -296,7 +296,7 @@ class Config(object):
             self._validate_mmc_id()
             self._validate_extra_boot_options()
             self._validate_boot_script()
-            self._validate_extra_serial_opts()
+            self._validate_extra_serial_options()
             self._validate_snowball_startup_files_config()
             self._validate_samsung_bl1_start()
             self._validate_samsung_bl1_len()
@@ -620,7 +620,7 @@ class Config(object):
                                            join_list_with=" ")
 
     @property
-    def extra_serial_opts(self):
+    def extra_serial_options(self):
         """Extra serial options.
 
         A str.
@@ -1021,7 +1021,7 @@ class Config(object):
         # Optional and tricky to determine a valid pattern.
         pass
 
-    def _validate_extra_serial_opts(self):
+    def _validate_extra_serial_options(self):
         # Optional and tricky to determine a valid pattern.
         pass
 
