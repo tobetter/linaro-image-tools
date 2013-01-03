@@ -128,7 +128,7 @@ class Metadata(object):
                       env_dd=None, boot_script=None,
                       bootloader_file_in_boot_part=None,
                       uboot_dd=None, spl_in_boot_part=None, spl_dd=None,
-                      extra_serial_opts=None, loader_start=None,
+                      extra_serial_options=None, loader_start=None,
                       snowball_startup_files_config=None,
                       samsung_bl1_start=None, samsung_bl1_len=None,
                       samsung_env_start=None, samsung_env_len=None,
@@ -162,7 +162,7 @@ class Metadata(object):
         self.spl_in_boot_part = spl_in_boot_part
         self.spl_dd = spl_dd
         self.env_dd = env_dd
-        self.extra_serial_opts = extra_serial_opts
+        self.extra_serial_options = extra_serial_options
         self.snowball_startup_files_config = snowball_startup_files_config
         self.samsung_bl1_start = samsung_bl1_start
         self.samsung_bl1_len = samsung_bl1_len
@@ -216,7 +216,7 @@ class Metadata(object):
                 dtb_file=config.dtb_file,
                 env_dd=config.env_dd,
                 extra_boot_options=config.extra_boot_options,
-                extra_serial_opts=config.extra_serial_opts,
+                extra_serial_options=config.extra_serial_options,
                 initrd_addr=config.initrd_addr,
                 initrd=config.initrd,
                 kernel_addr=config.kernel_addr,
@@ -320,12 +320,12 @@ class Metadata(object):
             metadata += dump({DTB_FILES_FIELD: self.dtb_files})
         if self.boot_script is not None:
             metadata += dump({BOOT_SCRIPT_FIELD: self.boot_script})
-        if self.extra_serial_opts is not None:
+        if self.extra_serial_options is not None:
             # XXX Check why and where once we get a list once a string.
-            if isinstance(self.extra_serial_opts, list):
-                extra_serial_options = " ".join(self.extra_serial_opts)
+            if isinstance(self.extra_serial_options, list):
+                extra_serial_options = " ".join(self.extra_serial_options)
             else:
-                extra_serial_options = self.extra_serial_opts
+                extra_serial_options = self.extra_serial_options
             metadata += dump({
                             EXTRA_SERIAL_OPTIONS_FIELD:
                             extra_serial_options})
@@ -417,8 +417,8 @@ class Metadata(object):
             metadata += "SPL_DD=%s\n" % self.spl_dd
         if self.env_dd is not None:
             metadata += "ENV_DD=%s\n" % self.env_dd
-        if self.extra_serial_opts is not None:
-            metadata += "EXTRA_SERIAL_OPTIONS=%s\n" % self.extra_serial_opts
+        if self.extra_serial_options is not None:
+            metadata += "EXTRA_SERIAL_OPTIONS=%s\n" % self.extra_serial_options
         if self.snowball_startup_files_config is not None:
             metadata += "SNOWBALL_STARTUP_FILES_CONFIG=%s\n" % (
                 self.snowball_startup_files_config)

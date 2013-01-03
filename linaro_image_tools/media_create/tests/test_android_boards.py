@@ -52,7 +52,7 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
     hwpack_fdt_high = "fdt_high: '%(fdt_high)s'\n"
     hwpack_fat_size = 'fat_size: 16\n'
     hwpack_android_args = 'android_specific_args: %(android_specific_args)s\n'
-    hwpack_extra_serial = 'extra_serial_opts: %(extra_serial_opts)s\n'
+    hwpack_extra_serial = 'extra_serial_options: %(extra_serial_options)s\n'
     hwpack_extra_boot = ('extra_boot_args_options: '
                          '%(extra_boot_args_options)s\n')
     hwpack_bootloader_flavor = 'bootloader_flavor: %(bootloader_flavor)s\n'
@@ -138,16 +138,16 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
         expected = 'init=/init androidboot.console=ttyO2'
         self.assertEqual(expected, self.config.android_specific_args)
 
-    def test_extra_serial_opts(self):
-        """The field extra_serial_opts should be a concatenated string."""
+    def test_extra_serial_options(self):
+        """The field extra_serial_options should be a concatenated string."""
         values = {'dtb_name': 'a_name',
-                  'extra_serial_opts': ['console=tty0',
-                                        'console=ttyO2,115200n8']}
+                  'extra_serial_options': ['console=tty0',
+                                           'console=ttyO2,115200n8']}
         yaml_conf = self.android_hwpack_extra_serial % values
         name = self._get_tmp_file_name(yaml_conf)
         self.config.from_file(name)
         expected = 'console=tty0 console=ttyO2,115200n8'
-        self.assertEqual(expected, self.config.extra_serial_opts)
+        self.assertEqual(expected, self.config.extra_serial_options)
 
     def test_extra_boot_args_options(self):
         """The field extra_boot_args_options should be a concatenated string.
@@ -171,7 +171,7 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
             "extra_boot_args_options": ["earlyprintk", "rootdelay=1",
                                         "fixrtc", "nocompcache",
                                         "di1_primary", "tve"],
-            "extra_serial_opts": ["console=%s,115200n8"],
+            "extra_serial_options": ["console=%s,115200n8"],
             "initrd_addr": '0x12000000',
             "kernel_addr": '0x10000000',
             "load_addr": '0x10008000',
@@ -217,7 +217,7 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
                                         "omapfb.vram=0:24M,1:24M",
                                         "mem=456M@0x80000000",
                                         "mem=512M@0xA0000000"],
-            "extra_serial_opts": ["console=ttyO2,115200n8"],
+            "extra_serial_options": ["console=ttyO2,115200n8"],
             }
         expected = {
             'bootargs': 'console=ttyO2,115200n8 '
@@ -262,7 +262,7 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
                                         "hwmem=168M@192M", "mem=22M@360M",
                                         "mem_issw=1M@383M", "mem=640M@384M",
                                         "vmalloc=500M"],
-            "extra_serial_opts": ["console=ttyAMA2,115200n8"],
+            "extra_serial_options": ["console=ttyAMA2,115200n8"],
             "fdt_high": '0x05000000',
             "initrd_addr": '0x05000000',
             "initrd_high": '0x06000000',
@@ -310,7 +310,7 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
                                         "hwmem=168M@192M", "mem=22M@360M",
                                         "mem_issw=1M@383M", "mem=640M@384M",
                                         "vmalloc=500M"],
-            "extra_serial_opts": ["console=ttyAMA2,115200n8"],
+            "extra_serial_options": ["console=ttyAMA2,115200n8"],
             "fdt_high": '0x05000000',
             "initrd_addr": '0x05000000',
             "initrd_high": '0x06000000',
@@ -349,7 +349,7 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
 
     def test_android_origen(self):
         values = {
-        "extra_serial_opts": ["console=tty0", "console=ttySAC2,115200n8"],
+        "extra_serial_options": ["console=tty0", "console=ttySAC2,115200n8"],
         "android_specific_args": ["init=/init", "androidboot.console=ttySAC2"]
         }
         expected = {
@@ -378,7 +378,8 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
 
     def test_android_origen_quad(self):
         values = {
-            "extra_serial_opts": ["console=tty0", "console=ttySAC2,115200n8"],
+            "extra_serial_options": ["console=tty0",
+                                     "console=ttySAC2,115200n8"],
             "android_specific_args": ["init=/init",
                                       "androidboot.console=ttySAC2"]
         }
@@ -408,7 +409,8 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
 
     def test_android_vexpress(self):
         values = {
-            "extra_serial_opts": ["console=tty0", "console=ttyAMA0,38400n8"],
+            "extra_serial_options": ["console=tty0",
+                                     "console=ttyAMA0,38400n8"],
             "android_specific_args": ["init=/init",
                                       "androidboot.console=ttyAMA0"]
         }
@@ -441,7 +443,7 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
             "extra_boot_args_options": ["earlyprintk", "rootdelay=1",
                                         "fixrtc", "nocompcache",
                                         "di1_primary", "tve"],
-            "extra_serial_opts": ["console=%s,115200n8"],
+            "extra_serial_options": ["console=%s,115200n8"],
             "android_specific_args": ["init=/init", "androidboot.console=%s"]
         }
         expected = {
