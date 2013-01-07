@@ -35,6 +35,7 @@ Before running any tests you need to install the following packages:
   - sfdisk (from util-linux)
   - apt-utils
   - pep8
+  - python-mock
 
 Also consider installing pyflakes, which is optional but will enable more
 tests.
