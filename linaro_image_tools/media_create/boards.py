@@ -541,24 +541,24 @@ class BoardConfig(object):
         boot_args_options = 'rootwait ro'
         if self.extra_boot_args_options:
             boot_args_options += ' %s' % self.extra_boot_args_options
-        serial_opts = self.extra_serial_options
+        serial_options = self.extra_serial_options
         for console in consoles:
-            serial_opts += ' console=%s' % console
+            serial_options += ' console=%s' % console
 
         lowmem_opt = ''
         boot_snippet = 'root=%s' % rootfs_id
         if is_live:
-            serial_opts += ' %s' % self.live_serial_options
+            serial_options += ' %s' % self.live_serial_options
             boot_snippet = 'boot=casper'
             if is_lowmem:
                 lowmem_opt = 'only-ubiquity'
 
         replacements = dict(
-            serial_opts=serial_opts,
+            serial_options=serial_options,
             lowmem_opt=lowmem_opt, boot_snippet=boot_snippet,
             boot_args_options=boot_args_options)
         return (
-            "%(serial_opts)s %(lowmem_opt)s "
+            "%(serial_options)s %(lowmem_opt)s "
                 "%(boot_snippet)s %(boot_args_options)s"
              % replacements)
 
