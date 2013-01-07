@@ -170,15 +170,15 @@ class AndroidBoardConfig(BoardConfig):
         if self.extra_boot_args_options:
             boot_args_options += ' %s' % self.extra_boot_args_options
         boot_args_options += ' %s' % self.android_specific_args
-        serial_opts = self.extra_serial_options
+        serial_options = self.extra_serial_options
         for console in consoles:
-            serial_opts += ' console=%s' % console
+            serial_options += ' console=%s' % console
 
         replacements = dict(
-            serial_opts=serial_opts,
+            serial_options=serial_options,
             boot_args_options=boot_args_options)
         return (
-            "%(serial_opts)s "
+            "%(serial_options)s "
             "%(boot_args_options)s"
              % replacements)
 
@@ -391,13 +391,13 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
         self._android_specific_args = 'init=/init androidboot.console=%s'
 
     def _get_extra_serial_options(self):
-        serial_opts = self._extra_serial_options
-        if serial_opts:
-            if isinstance(serial_opts, list):
-                serial_opts = ' '.join(serial_opts)
-            if self._check_placeholder_presence(serial_opts, '%s'):
-                serial_opts = serial_opts % self.serial_tty
-        return serial_opts
+        serial_options = self._extra_serial_options
+        if serial_options:
+            if isinstance(serial_options, list):
+                serial_options = ' '.join(serial_options)
+            if self._check_placeholder_presence(serial_options, '%s'):
+                serial_options = serial_options % self.serial_tty
+        return serial_options
 
     def _set_extra_serial_options(self, value):
         self._extra_serial_options = value
