@@ -151,7 +151,7 @@ class BoardConfig(object):
         # placeholders in the string for dinamically change values. But this
         # is done only for hwpack v1.
         self._extra_serial_options = ''
-        self._live_serial_opts = ''
+        self._live_serial_options = ''
         self.board = None
         self.boot_script = None
         self.bootloader_dd = False
@@ -211,16 +211,17 @@ class BoardConfig(object):
         self.initrd = None
 
     # XXX: can be removed when killing v1 hwpack.
-    def _get_live_serial_opts(self):
-        return_value = self._live_serial_opts
+    def _get_live_serial_options(self):
+        return_value = self._live_serial_options
         if self._check_placeholder_presence(return_value, r'%s'):
-            return_value = self._live_serial_opts % self.serial_tty
+            return_value = self._live_serial_options % self.serial_tty
         return return_value
 
-    def _set_live_serial_opts(self, value):
-        self._live_serial_opts = value
+    def _set_live_serial_options(self, value):
+        self._live_serial_options = value
 
-    live_serial_opts = property(_get_live_serial_opts, _set_live_serial_opts)
+    live_serial_options = property(_get_live_serial_options,
+                                   _set_live_serial_options)
 
     # XXX: can be removed when killing v1 hwpack.
     def _get_extra_serial_options(self):
@@ -233,7 +234,7 @@ class BoardConfig(object):
         self._extra_serial_options = value
 
     extra_serial_options = property(_get_extra_serial_options,
-                                 _set_extra_serial_options)
+                                   _set_extra_serial_options)
 
     def get_metadata_field(self, field_name):
         """ Return the metadata value for field_name if it can be found.
@@ -547,7 +548,7 @@ class BoardConfig(object):
         lowmem_opt = ''
         boot_snippet = 'root=%s' % rootfs_id
         if is_live:
-            serial_opts += ' %s' % self.live_serial_opts
+            serial_opts += ' %s' % self.live_serial_options
             boot_snippet = 'boot=casper'
             if is_lowmem:
                 lowmem_opt = 'only-ubiquity'
@@ -946,7 +947,7 @@ class BeagleConfig(OmapConfig):
         self.load_addr = '0x80008000'
         self._serial_tty = 'ttyO2'
         self._extra_serial_options = 'console=tty0 console=%s,115200n8'
-        self._live_serial_opts = 'serialtty=%s'
+        self._live_serial_options = 'serialtty=%s'
 
 
 class OveroConfig(OmapConfig):
@@ -981,7 +982,7 @@ class PandaConfig(OmapConfig):
         self.kernel_addr = '0x80200000'
         self.load_addr = '0x80008000'
         self._extra_serial_options = 'console=tty0 console=%s,115200n8'
-        self._live_serial_opts = 'serialtty=%s'
+        self._live_serial_options = 'serialtty=%s'
 
 
 class IgepConfig(BeagleConfig):
@@ -1020,7 +1021,7 @@ class Ux500Config(BoardConfig):
         self.mmc_option = '1:1'
         self.serial_tty = 'ttyAMA2'
         self._extra_serial_options = 'console=tty0 console=%s,115200n8'
-        self._live_serial_opts = 'serialtty=%s'
+        self._live_serial_options = 'serialtty=%s'
 
     def _make_boot_files(self, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
@@ -1231,7 +1232,7 @@ class Mx5Config(BoardConfig):
         self.mmc_part_offset = 1
         self.serial_tty = 'ttymxc0'
         self._extra_serial_options = 'console=tty0 console=%s,115200n8'
-        self._live_serial_opts = 'serialtty=%s'
+        self._live_serial_options = 'serialtty=%s'
 
     def get_v1_sfdisk_cmd(self, should_align_boot_part=None):
         """Return the sfdisk command to partition the media.
@@ -1342,7 +1343,7 @@ class VexpressConfig(BoardConfig):
         self.load_addr = '0x60008000'
         self.serial_tty = 'ttyAMA0'
         self._extra_serial_options = 'console=tty0 console=%s,38400n8'
-        self._live_serial_opts = 'serialtty=%s'
+        self._live_serial_options = 'serialtty=%s'
 
     def _make_boot_files(self, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
@@ -1588,7 +1589,7 @@ class I386Config(BoardConfig):
         self.kernel_flavors = ['generic', 'pae']
         self.serial_tty = 'ttyS0'
         self._extra_serial_options = 'console=tty0 console=%s,115200n8'
-        self._live_serial_opts = 'serialtty=%s'
+        self._live_serial_options = 'serialtty=%s'
 
     def _make_boot_files(self, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
