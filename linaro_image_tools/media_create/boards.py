@@ -212,10 +212,13 @@ class BoardConfig(object):
 
     # XXX: can be removed when killing v1 hwpack.
     def _get_live_serial_options(self):
-        return_value = self._live_serial_options
-        if self._check_placeholder_presence(return_value, r'%s'):
-            return_value = self._live_serial_options % self.serial_tty
-        return return_value
+        live_serial = self._live_serial_options
+        if live_serial:
+            if isinstance(live_serial, list):
+                live_serial = ' '.join(live_serial)
+            if self._check_placeholder_presence(live_serial, r'%s'):
+                live_serial = live_serial % self.serial_tty
+        return live_serial
 
     def _set_live_serial_options(self, value):
         self._live_serial_options = value
@@ -225,16 +228,19 @@ class BoardConfig(object):
 
     # XXX: can be removed when killing v1 hwpack.
     def _get_extra_serial_options(self):
-        return_value = self._extra_serial_options
-        if self._check_placeholder_presence(return_value, r'%s'):
-            return_value = return_value % self.serial_tty
-        return return_value
+        extra_serial = self._extra_serial_options
+        if extra_serial:
+            if isinstance(extra_serial, list):
+                extra_serial = ' '.join(extra_serial)
+            if self._check_placeholder_presence(extra_serial, r'%s'):
+                extra_serial = extra_serial % self.serial_tty
+        return extra_serial
 
     def _set_extra_serial_options(self, value):
         self._extra_serial_options = value
 
     extra_serial_options = property(_get_extra_serial_options,
-                                   _set_extra_serial_options)
+                                    _set_extra_serial_options)
 
     def get_metadata_field(self, field_name):
         """ Return the metadata value for field_name if it can be found.
@@ -539,9 +545,11 @@ class BoardConfig(object):
         In general subclasses should not have to override this.
         """
         boot_args_options = 'rootwait ro'
+        serial_options = ''
         if self.extra_boot_args_options:
             boot_args_options += ' %s' % self.extra_boot_args_options
-        serial_options = self.extra_serial_options
+        if self.extra_serial_options:
+            serial_options = self.extra_serial_options
         for console in consoles:
             serial_options += ' console=%s' % console
 
@@ -553,14 +561,13 @@ class BoardConfig(object):
             if is_lowmem:
                 lowmem_opt = 'only-ubiquity'
 
-        replacements = dict(
-            serial_options=serial_options,
-            lowmem_opt=lowmem_opt, boot_snippet=boot_snippet,
-            boot_args_options=boot_args_options)
-        return (
-            "%(serial_options)s %(lowmem_opt)s "
-                "%(boot_snippet)s %(boot_args_options)s"
-             % replacements)
+        replacements = dict(serial_options=serial_options.strip(),
+                            lowmem_opt=lowmem_opt,
+                            boot_snippet=boot_snippet,
+                            boot_args_options=boot_args_options)
+        boot_args = ("%(serial_options)s %(lowmem_opt)s %(boot_snippet)s"
+                     " %(boot_args_options)s" % replacements).strip()
+        return boot_args
 
     def _get_boot_env(self, is_live, is_lowmem, consoles, rootfs_id,
                       i_img_data, d_img_data):
@@ -859,7 +866,7 @@ class BoardConfig(object):
         """Checks if the passed string contains the particular placeholder."""
         # Very simple way of achieving that.
         presence = False
-        if placeholder in string:
+        if string and placeholder in string:
             presence = True
         return presence
 
