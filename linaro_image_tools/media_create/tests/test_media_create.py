@@ -2123,7 +2123,7 @@ class TestExtraBootCmd(TestCaseWithFixtures):
             is_live=False, is_lowmem=False, consoles=['ttyXXX'],
             rootfs_id="UUID=deadbeef", i_img_data=None, d_img_data=None)
         expected = (
-            ' console=ttyXXX  root=UUID=deadbeef rootwait ro %s' % boot_args)
+            'console=ttyXXX  root=UUID=deadbeef rootwait ro %s' % boot_args)
         self.assertEqual(expected, boot_commands['bootargs'])
 
     def test_passing_None_to_add_boot_args(self):
