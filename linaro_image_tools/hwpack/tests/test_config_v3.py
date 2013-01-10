@@ -245,7 +245,7 @@ class ConfigTests(TestCase):
                                  "bootloaders:\n"
                                  " u_boot:\n"
                                  "  spl_package: ~~\n")
-        config.set_board("panda")
+        config.board = "panda"
         self.assertValidationError(
             "Invalid value in spl_package in the metadata: ~~",
             config._validate_spl_package)
@@ -257,7 +257,7 @@ class ConfigTests(TestCase):
                                  "  bootloaders:\n"
                                  "   u_boot:\n"
                                  "    spl_file: ~~\n")
-        config.set_board("panda")
+        config.board = "panda"
         self.assertValidationError("Invalid path: ~~",
                                    config._validate_spl_file)
 
@@ -297,8 +297,8 @@ class ConfigTests(TestCase):
             "   u_boot:\n"
             "    in_boot_part: Yes\n")
 
-        config.set_bootloader("u_boot")
-        config.set_board("panda")
+        config.bootloader = "u_boot"
+        config.board = "panda"
 
         config._validate_bootloader_file_in_boot_part()
         self.assertEqual(config.bootloader_file_in_boot_part, "yes")
@@ -315,8 +315,8 @@ class ConfigTests(TestCase):
             "   u_boot:\n"
             "    in_boot_part: Yes\n")
 
-        config.set_bootloader("u_boot")
-        config.set_board("panda")
+        config.bootloader = "u_boot"
+        config.board = "panda"
 
         config._validate_bootloader_file_in_boot_part()
         self.assertEqual(config.bootloader_file_in_boot_part, "yes")
@@ -330,11 +330,11 @@ class ConfigTests(TestCase):
             " anotherboot:\n"
             "  in_boot_part: Yes\n")
 
-        config.set_bootloader("u_boot")
+        config.bootloader = "u_boot"
         config._validate_bootloader_file_in_boot_part()
         self.assertEqual(config.bootloader_file_in_boot_part, "no")
 
-        config.set_bootloader("anotherboot")
+        config.bootloader = "anotherboot"
         config._validate_bootloader_file_in_boot_part()
         self.assertEqual(config.bootloader_file_in_boot_part, "yes")
 

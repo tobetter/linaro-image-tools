@@ -160,7 +160,8 @@ class Config(object):
         # self.allow_unset_bootloader allows for both modes of operation.
         self.logger = logging.getLogger('linaro_image_tools')
         self.allow_unset_bootloader = allow_unset_bootloader
-        self.bootloader = None
+        self.board = None
+        self._bootloader = None
 
         obfuscated_e = None
         obfuscated_yaml_e = ""
@@ -184,9 +185,9 @@ class Config(object):
                 # If YAML parsed OK, we don't have an error.
                 obfuscated_e = None
                 if board:
-                    self.set_board(board)
+                    self.board = board
                 if bootloader:
-                    self.set_bootloader(bootloader)
+                    self.bootloader = bootloader
 
         if obfuscated_e:
             # If INI parsing from ConfigParser or YAML parsing failed,
@@ -198,24 +199,28 @@ class Config(object):
                    obfuscated_yaml_e)
             raise ConfigParser.Error(msg)
 
-    def set_bootloader(self, bootloader):
+    def _get_bootloader(self):
+        """Returns the bootloader associated with this config."""
+        return self._bootloader
+
+    def _set_bootloader(self, value):
         """Set bootloader used to look up configuration in bootloader section.
 
         If bootloader is None / empty and there is only one bootloader
         available, use that.
         """
-        if not bootloader:
+        if not value:
             # Auto-detect bootloader. If there is a single bootloader specified
             # then use it, else, error.
             bootloaders = self.bootloaders
             if isinstance(bootloaders, dict):
                 # We have a list of bootloaders in the expected format
                 bootloaders = bootloaders.keys()
-                bootloader = bootloaders[0]
+                value = bootloaders[0]
                 if len(bootloaders) > 1:
                     # We have more than one bootloader, use 'u_boot'.
                     if DEFAULT_BOOTLOADER in bootloaders:
-                        bootloader = DEFAULT_BOOTLOADER
+                        value = DEFAULT_BOOTLOADER
                         self.logger.warning('WARNING: no bootloader specified '
                                             'on the command line. Defaulting '
                                             'to \'%s\'.' % DEFAULT_BOOTLOADER)
@@ -226,13 +231,11 @@ class Config(object):
                         self.logger.warning('Default bootloader \'%s\' not '
                                             'found. Will try to use \'%s\'. '
                                             'instead.' % (DEFAULT_BOOTLOADER,
-                                                          bootloader))
+                                                          value))
 
-        self.bootloader = bootloader
+        self._bootloader = value
 
-    def set_board(self, board):
-        """Set board used to look up per-board configuration"""
-        self.board = board
+    bootloader = property(_get_bootloader, _set_bootloader)
 
     def get_bootloader_list(self):
         if isinstance(self.bootloaders, dict):
@@ -272,7 +275,7 @@ class Config(object):
             # Check config for all bootloaders if one isn't specified.
             if not self.bootloader and self._is_v3:
                 for bootloader in self.get_bootloader_list():
-                    self.set_bootloader(bootloader)
+                    self.bootloader = bootloader
                     self.validate_bootloader_fields()
             else:
                 self.validate_bootloader_fields()

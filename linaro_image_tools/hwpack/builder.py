@@ -185,16 +185,16 @@ class HardwarePackBuilder(object):
         """Call function for each board + bootloader combination in metadata"""
         if self.config.bootloaders is not None:
             for bootloader in self.config.bootloaders:
-                self.config.set_board(None)
-                self.config.set_bootloader(bootloader)
+                self.config.board = None
+                self.config.bootloader = bootloader
                 function()
 
         if self.config.boards is not None:
             for board in self.config.boards:
                 if self.config.bootloaders is not None:
                     for bootloader in self.config.bootloaders:
-                        self.config.set_board(board)
-                        self.config.set_bootloader(bootloader)
+                        self.config.board = board
+                        self.config.bootloader = bootloader
                         function()
 
     def extract_files(self):
