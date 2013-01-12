@@ -188,16 +188,19 @@ class BoardConfig(object):
         self.wireless_interfaces = None
         # Samsung Boot-loader implementation notes and terminology
         #
-        # * BL0, BL1 etc. are the various bootloaders in order of execution
-        # * BL0 is the first stage bootloader, located in ROM; it loads BL1/SPL
-        # from MMC offset +1s and runs it.
-        # * BL1 is the secondary program loader (SPL), a small version
-        #   of U-Boot with a checksum; it inits DRAM and loads a 1024s long BL2
-        #   from MMC and runs it.
-        # * BL2 is the U-Boot.
+        # BL0, BL1, BL2, BL3 are the boot loader stages in order of execution
         #
-        # samsung_bl1_{start,len}: Offset and maximum size for BL1
-        # samsung_bl2_{start,len}: Offset and maximum size for BL2
+        # BL0 - embedded boot loader on the internal ROM
+        # BL1 - chip-specific boot loader provided by Samsung
+        # BL2 - tiny boot loader; SPL (Second Program Loader)
+        # BL3 - customized boot loader; U-Boot
+        #
+        # In linaro-image-tools, variables have been named samsung_blN-1
+        # e.g BL1 is samsung_bl0, BL2 is samsung_bl1, BL3 is samsung_bl2
+        #
+        # samsung_bl0_{start,len}: Offset and maximum size for BL1
+        # samsung_bl1_{start,len}: Offset and maximum size for BL2
+        # samsung_bl2_{start,len}: Offset and maximum size for BL3
         # samsung_env_{start,len}: Offset and maximum size for settings
         #
         self.samsung_bl1_start = 1
@@ -1571,6 +1574,7 @@ class OrigenQuadConfig(SamsungConfig):
 class ArndaleConfig(SamsungConfig):
     def __init__(self):
         super(ArndaleConfig, self).__init__()
+        self.bl0_file = 'lib/firmware/arndale/arndale-bl1.bin'
         self.boot_script = 'boot.scr'
         self.bootloader_flavor = 'arndale'
         self.dtb_addr = '0x41f00000'
@@ -1580,11 +1584,73 @@ class ArndaleConfig(SamsungConfig):
         self.load_addr = '0x40008000'
         self.mmc_option = '0:2'
         self.mmc_part_offset = 1
+        self.samsung_bl0_start = 1
+        self.samsung_bl0_len = 16
         self.samsung_bl1_start = 17
+        self.samsung_bl1_len = 32
         self.samsung_bl2_start = 49
+        self.samsung_bl2_len = 1024
         self.samsung_env_start = 1073
+        self.samsung_env_len = 32
         self.serial_tty = 'ttySAC2'
         self._extra_serial_options = 'console=%s,115200n8'
+
+    def _make_boot_files_v2(self, boot_env, chroot_dir, boot_dir,
+                            boot_device_or_file, k_img_data, i_img_data,
+                            d_img_data):
+        with self.hardwarepack_handler:
+            bl0_file = self._get_samsung_bl0(chroot_dir)
+            if self.samsung_bl0_start:
+                self._dd_file(bl0_file, boot_device_or_file,
+                              self.samsung_bl0_start)
+
+            spl_file = self.get_file('spl_file')
+            if self.spl_in_boot_part:
+                assert spl_file is not None, (
+                    "SPL binary could not be found")
+                logger.info(
+                    "Copying spl '%s' to boot partition." % spl_file)
+                cmd_runner.run(["cp", "-v", spl_file, boot_dir],
+                               as_root=True).wait()
+                # XXX: Is this really needed?
+                cmd_runner.run(["sync"]).wait()
+
+            if self.spl_dd:
+                self._dd_file(spl_file, boot_device_or_file, self.spl_dd)
+
+            bootloader_file = self.get_file('bootloader_file')
+            if self.bootloader_dd:
+                self._dd_file(bootloader_file, boot_device_or_file,
+                              self.bootloader_dd)
+
+        make_uImage(self.load_addr, k_img_data, boot_dir)
+
+        if i_img_data is not None:
+            make_uInitrd(i_img_data, boot_dir)
+
+        if d_img_data is not None:
+            make_dtb(d_img_data, boot_dir)
+
+        if self.boot_script is not None:
+            boot_script_path = os.path.join(boot_dir, self.boot_script)
+            make_boot_script(boot_env, boot_script_path)
+
+            # Only used for Omap, will this be bad for the other boards?
+            make_boot_ini(boot_script_path, boot_dir)
+
+        if self.env_dd:
+            # Do we need to zero out the env before flashing it?
+            _dd("/dev/zero", boot_device_or_file,
+                count=self.samsung_env_len,
+                seek=self.samsung_env_start)
+            env_size = self.samsung_env_len * SECTOR_SIZE
+            env_file = make_flashable_env(boot_env, env_size)
+            self._dd_file(env_file, boot_device_or_file,
+                          self.samsung_env_start)
+
+    def _get_samsung_bl0(self, chroot_dir):
+        bl0_file = os.path.join(chroot_dir, self.bl0_file)
+        return bl0_file
 
 
 class I386Config(BoardConfig):
