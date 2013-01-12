@@ -1595,6 +1595,16 @@ class ArndaleConfig(SamsungConfig):
         self.serial_tty = 'ttySAC2'
         self._extra_serial_options = 'console=%s,115200n8'
 
+    def _get_boot_env(self, is_live, is_lowmem, consoles, rootfs_id,
+                      i_img_data, d_img_data):
+        boot_env = super(SamsungConfig, self)._get_boot_env(
+            is_live, is_lowmem, consoles, rootfs_id, i_img_data, d_img_data)
+
+        boot_env["ethact"] = "smc911x-0"
+        boot_env["ethaddr"] = "00:40:5c:26:0a:5b"
+
+        return boot_env
+
     def _make_boot_files_v2(self, boot_env, chroot_dir, boot_dir,
                             boot_device_or_file, k_img_data, i_img_data,
                             d_img_data):
