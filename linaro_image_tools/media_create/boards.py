@@ -376,24 +376,32 @@ class BoardConfig(object):
             samsung_bl1_start = self.get_metadata_field(
                 SAMSUNG_BL1_START_FIELD)
             if samsung_bl1_start:
-                self.samsung_v310_bl1_start = int(samsung_bl1_start)
-            samsung_bl1_len = self.get_metadata_field(SAMSUNG_BL1_LEN_FIELD)
+                self.samsung_bl1_start = int(samsung_bl1_start)
+
+            samsung_bl1_len = self.get_metadata_field(
+                SAMSUNG_BL1_LEN_FIELD)
             if samsung_bl1_len:
-                self.samsung_v310_bl1_len = int(samsung_bl1_len)
-            samsung_env_len = self.get_metadata_field(SAMSUNG_ENV_LEN_FIELD)
-            if samsung_env_len:
-                self.samsung_v310_env_len = int(samsung_env_len)
-            samsung_bl2_start = \
-                self.get_metadata_field(SAMSUNG_BL2_START_FIELD)
+                self.samsung_bl1_len = int(samsung_bl1_len)
+
+            samsung_bl2_start = self.get_metadata_field(
+                SAMSUNG_BL2_START_FIELD)
             if samsung_bl2_start:
                 self.samsung_bl2_start = int(samsung_bl2_start)
-            samsung_bl2_len = self.get_metadata_field(SAMSUNG_BL2_LEN_FIELD)
+
+            samsung_bl2_len = self.get_metadata_field(
+                SAMSUNG_BL2_LEN_FIELD)
             if samsung_bl2_len:
-                self.samsung_v310_bl2_len = int(samsung_bl2_len)
-            samsung_env_start = \
-                self.get_metadata_field(SAMSUNG_ENV_START_FIELD)
+                self.samsung_bl2_len = int(samsung_bl2_len)
+
+            samsung_env_start = self.get_metadata_field(
+                SAMSUNG_ENV_START_FIELD)
             if samsung_env_start is not None:
                 self.samsung_env_start = int(samsung_env_start)
+
+            samsung_env_len = self.get_metadata_field(
+                SAMSUNG_ENV_LEN_FIELD)
+            if samsung_env_len:
+                self.samsung_env_len = int(samsung_env_len)
 
             self.bootloader_copy_files = self.hardwarepack_handler.get_field(
                 "bootloader_copy_files")[0]
