@@ -1977,6 +1977,22 @@ class TestGetBootCmd(TestCase):
             'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
 
+    def test_arndale(self):
+        board_conf = get_board_config('arndale')
+        boot_commands = board_conf._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=[],
+            rootfs_id="UUID=deadbeef", i_img_data="initrd", d_img_data=None)
+        expected = {
+            'bootargs': 'root=UUID=deadbeef rootwait ro',
+            'bootcmd': 'fatload mmc 0:2 None uImage; '
+                       'fatload mmc 0:2 None uInitrd; '
+                       'bootm None None',
+                       'ethact': 'smc911x-0',
+                       'ethaddr': '00:40:5c:26:0a:5b',
+                       'fdt_high': '0xffffffff',
+                       'initrd_high': '0xffffffff'}
+        self.assertEqual(expected, boot_commands)
+
     def test_ux500(self):
         board_conf = get_board_config('ux500')
         boot_commands = board_conf._get_boot_env(
