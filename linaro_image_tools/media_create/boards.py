@@ -1577,23 +1577,11 @@ class ArndaleConfig(SamsungConfig):
         self.bl0_file = 'lib/firmware/arndale/arndale-bl1.bin'
         self.boot_script = 'boot.scr'
         self.bootloader_flavor = 'arndale'
-        self.dtb_addr = '0x41f00000'
-        self.initrd_addr = '0x42000000'
-        self.kernel_addr = '0x40007000'
         self.kernel_flavors = ['arndale']
-        self.load_addr = '0x40008000'
         self.mmc_option = '0:2'
         self.mmc_part_offset = 1
         self.samsung_bl0_start = 1
         self.samsung_bl0_len = 16
-        self.samsung_bl1_start = 17
-        self.samsung_bl1_len = 32
-        self.samsung_bl2_start = 49
-        self.samsung_bl2_len = 1024
-        self.samsung_env_start = 1073
-        self.samsung_env_len = 32
-        self.serial_tty = 'ttySAC2'
-        self._extra_serial_options = 'console=%s,115200n8'
 
     def _get_boot_env(self, is_live, is_lowmem, consoles, rootfs_id,
                       i_img_data, d_img_data):
