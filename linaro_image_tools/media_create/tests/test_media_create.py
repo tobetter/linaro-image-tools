@@ -31,6 +31,7 @@ import types
 import struct
 import tarfile
 import dbus
+import shutil
 
 from mock import MagicMock
 from StringIO import StringIO
@@ -803,6 +804,57 @@ class TestGetArndaleSPL(TestCaseWithFixtures):
 
 class TestGetArndaleUboot(TestGetSMDKUboot):
     config = boards.ArndaleConfig
+
+
+class TestArndaleBootFiles(TestCaseWithFixtures):
+    def test_arndale_make_boot_files_v2(self):
+        popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
+        board_conf = boards.ArndaleConfig()
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
+        board_conf.load_addr = '0x40008000'
+        board_conf.boot_script = None
+
+        board_conf.hardwarepack_handler = (
+            TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
+
+        self.tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
+        self.temp_bootdir_path = os.path.join(self.tempdir, 'boot')
+        self.temp_bl0_path = os.path.join(self.tempdir,
+                                          'lib','firmware', 'arndale')
+        k_img_file = os.path.join(self.tempdir, 'vmlinuz-1-arndale')
+        i_img_file = os.path.join(self.tempdir, 'initrd.img-1-arndale')
+        bl0_file = os.path.join(self.temp_bl0_path, 'arndale-bl1.bin')
+        os.makedirs(self.temp_bl0_path)
+        open(bl0_file, 'w').close()
+
+        boot_env = {'ethact': 'smc911x-0',
+                    'initrd_high': '0xffffffff',
+                    'ethaddr': '00:40:5c:26:0a:5b',
+                    'fdt_high': '0xffffffff',
+                    'bootcmd': 'fatload mmc 0:2 None uImage; bootm None',
+                    'bootargs': 'root=UUID=test_boot_env_uuid rootwait ro'}
+
+        board_conf._make_boot_files_v2(
+            boot_env=boot_env,
+            chroot_dir=self.tempdir,
+            boot_dir=self.temp_bootdir_path,
+            boot_device_or_file='boot_device_or_file',
+            k_img_data=k_img_file,
+            i_img_data=i_img_file,
+            d_img_data=None)
+
+        expected_commands = [
+            ('sudo -E dd if=%s of=boot_device_or_file bs=512 conv=notrunc '
+             'seek=1' % bl0_file),
+            ('sudo -E mkimage -A arm -O linux -T kernel -C none -a %s -e %s '
+             '-n Linux -d %s %s/uImage' % (board_conf.load_addr,
+             board_conf.load_addr, k_img_file, self.temp_bootdir_path)),
+            ('sudo -E mkimage -A arm -O linux -T ramdisk -C none -a 0 -e 0 '
+             '-n initramfs -d %s %s/uInitrd' % (
+             i_img_file, self.temp_bootdir_path))]
+        self.assertEqual(expected_commands,
+                         popen_fixture.mock.commands_executed)
+        shutil.rmtree(self.tempdir)
 
 
 class TestCreateToc(TestCaseWithFixtures):
