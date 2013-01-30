@@ -141,6 +141,13 @@ if __name__ == '__main__':
     unpack_android_binary_tarball(args.system, SYSTEM_DIR)
     unpack_android_binary_tarball(args.userdata, DATA_DIR)
 
+    # Check for hwpack in boottarball
+    CONFIG_FILE = os.path.join(BOOT_DIR + '/boot', 'config')
+    if os.path.exists(CONFIG_FILE):
+        board_config.from_file(CONFIG_FILE)
+        logger.warning("Android hwpack found in boottarball overriding "
+                       "older configs if any...")
+
     # Create partitions
     boot_partition, system_partition, cache_partition, \
         data_partition, sdcard_partition = setup_android_partitions( \
