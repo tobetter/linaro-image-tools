@@ -42,6 +42,7 @@ from linaro_image_tools.media_create.unpack_binary_tarball import (
 from linaro_image_tools.media_create import get_android_args_parser
 from linaro_image_tools.utils import (
     additional_android_option_checks,
+    andorid_hwpack_in_boot_tarball,
     ensure_command,
     get_logger
     )
@@ -109,15 +110,6 @@ if __name__ == '__main__':
     DATA_DISK = os.path.join(TMP_DIR, 'userdata-disc')
     SDCARD_DISK = os.path.join(TMP_DIR, 'sdcard-disc')
 
-    board_config = get_board_config(args.dev)
-    if args.hwpack:
-        board_config.from_file(args.hwpack)
-    else:
-        logger.warning("No Android hwpack provided: default board values "
-                       "will be used.")
-    board_config.add_boot_args(args.extra_boot_args)
-    board_config.add_boot_args_from_file(args.extra_boot_args_file)
-
     if args.dev == 'iMX53':
         # XXX: remove this and the corresponding entry in android_board_configs
         logger.warning("DEPRECATION WARNING: iMX53 is deprecated, please "
@@ -140,6 +132,23 @@ if __name__ == '__main__':
     unpack_android_binary_tarball(args.boot, BOOT_DIR)
     unpack_android_binary_tarball(args.system, SYSTEM_DIR)
     unpack_android_binary_tarball(args.userdata, DATA_DIR)
+
+    board_config = get_board_config(args.dev)
+
+    hwpack_exists, config_file = andorid_hwpack_in_boot_tarball(BOOT_DIR)
+    if not args.hwpack and not hwpack_exists:
+        # No hwpack in the boot tarball nor provided on the command line.
+        logger.warning("No hwpack found in the boot tarball nor passed on "
+                       "the command line. Default values will be used.")
+    elif not args.hwpack and hwpack_exists:
+        board_config.from_file(config_file)
+    elif args.hwpack:
+        logger.warning("Values from the hwpack provided on the command line "
+                       "will be used.")
+        board_config.from_file(args.hwpack)
+
+    board_config.add_boot_args(args.extra_boot_args)
+    board_config.add_boot_args_from_file(args.extra_boot_args_file)
 
     # Create partitions
     boot_partition, system_partition, cache_partition, \

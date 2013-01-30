@@ -37,7 +37,9 @@ from linaro_image_tools.utils import (
     IncompatibleOptions,
     InvalidHwpackFile,
     UnableToFindPackageProvidingCommand,
+    additional_android_option_checks,
     additional_option_checks,
+    andorid_hwpack_in_boot_tarball,
     check_file_integrity_and_log_errors,
     ensure_command,
     find_command,
@@ -333,6 +335,49 @@ class TestAdditionalOptionChecks(TestCaseWithFixtures):
                                device="testdevice",
                                board="testboard"))
         sys.argv.remove("--mmc")
+
+
+class TestAndroidOptionChecks(TestCaseWithFixtures):
+
+    def test_hwpack_is_file(self):
+        class HwPacksArgs:
+            def __init__(self, hwpack):
+                self.hwpack = hwpack
+
+        try:
+            tmpdir = tempfile.mkdtemp()
+            self.assertRaises(InvalidHwpackFile,
+                              additional_android_option_checks,
+                              HwPacksArgs(tmpdir))
+        finally:
+            os.rmdir(tmpdir)
+
+    def test_android_hwpack_in_boot(self):
+        """Test presence of config file in boot directory."""
+        try:
+            tmpdir = tempfile.mkdtemp()
+            boot_dir = os.path.join(tmpdir, "boot")
+            os.mkdir(boot_dir)
+            config_file = os.path.join(boot_dir, "config")
+            expected = (True, config_file)
+            with open(config_file, "w"):
+                self.assertEqual(expected,
+                                 andorid_hwpack_in_boot_tarball(tmpdir))
+        finally:
+            os.unlink(config_file)
+            os.removedirs(boot_dir)
+
+    def test_android_hwpack_not_in_boot(self):
+        """Test missing config file."""
+        try:
+            tmpdir = tempfile.mkdtemp()
+            boot_dir = os.path.join(tmpdir, "boot")
+            os.mkdir(boot_dir)
+            config_file = os.path.join(boot_dir, "config")
+            expected = (False, config_file)
+            self.assertEqual(expected, andorid_hwpack_in_boot_tarball(tmpdir))
+        finally:
+            os.removedirs(boot_dir)
 
 
 class TestHwpackIsFile(TestCaseWithFixtures):
