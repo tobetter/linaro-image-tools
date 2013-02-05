@@ -30,6 +30,11 @@ from linaro_image_tools import cmd_runner
 
 DEFAULT_LOGGER_NAME = 'linaro_image_tools'
 
+# The boot path in the boot tarball.
+BOOT_DIR_IN_TARBALL = "boot"
+# The name of the hwpack file found in the boot tarball.
+HWPACK_NAME = "config"
+
 
 # try_import was copied from python-testtools 0.9.12 and was originally
 # licensed under a MIT-style license but relicensed under the GPL in Linaro
@@ -352,6 +357,19 @@ def additional_android_option_checks(args):
         if not os.path.isfile(args.hwpack):
             raise InvalidHwpackFile(
                 "--hwpack argument (%s) is not a regular file" % args.hwpack)
+
+
+def andorid_hwpack_in_boot_tarball(boot_dir):
+    """Simple check for existence of a path.
+
+    Needed to make cli command testable in some way.
+    :param boot_dir: The path where the boot tarball has been extracted.
+    :type str
+    :return A tuple with a bool if the path exists, and the path to the config
+            file.
+    """
+    conf_file = os.path.join(boot_dir, BOOT_DIR_IN_TARBALL, HWPACK_NAME)
+    return os.path.exists(conf_file), conf_file
 
 
 def check_required_args(args):
