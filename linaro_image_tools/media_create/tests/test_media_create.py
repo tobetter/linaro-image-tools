@@ -2915,8 +2915,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def _create_snowball_android_tmpfile(self):
         # raw, boot, system, cache, (extended), userdata and sdcard partitions
         return self._create_qemu_img_with_partitions(
-            '256,7936,0xDA\n8192,24639,0x0C,*\n32831,65536,L\n' \
-            '98367,-,E\n98367,65536,L\n294975,131072,L\n' \
+            '256,7936,0xDA\n8192,24639,0x0C,*\n32831,65536,L\n'
+            '98367,-,E\n98367,65536,L\n294975,131072,L\n'
             '426047,,,-', '%s' % self.android_image_size)
 
     def test_check_min_size_small(self):
