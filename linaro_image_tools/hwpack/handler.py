@@ -232,11 +232,11 @@ class HardwarepackHandler(object):
 
             if name != pkg_name:
                 continue
-            if version != None and str(version) != pkg_version:
+            if version is not None and str(version) != pkg_version:
                 continue
-            if revision != None and str(revision) != pkg_revision:
+            if revision is not None and str(revision) != pkg_revision:
                 continue
-            if (architecture != None and
+            if (architecture is not None and
                 str(architecture) != pkg_architecture):
                 continue
 

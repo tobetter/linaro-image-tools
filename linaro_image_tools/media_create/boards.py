@@ -317,7 +317,7 @@ class BoardConfig(object):
             elif self.partition_layout == BOOTFS16:
                 self.fat_size = 16
             else:
-                raise AssertionError("Unknown partition layout '%s'." % \
+                raise AssertionError("Unknown partition layout '%s'." %
                                          self.partition_layout)
 
             self.mmc_option = self.get_metadata_field(MMC_ID_FIELD)
@@ -856,7 +856,7 @@ class BoardConfig(object):
         if not self.dtb_file or not dtb:
             logger.warn("Could not find a valid dtb file, skipping it.")
 
-        logger.info("Will use kernel=%s, initrd=%s, dtb=%s." % \
+        logger.info("Will use kernel=%s, initrd=%s, dtb=%s." %
                              (kernel, initrd, dtb))
         return (kernel, initrd, dtb)
 
@@ -1402,7 +1402,7 @@ class FastModelConfig(BoardConfig):
 
         for filename in (bw_ve, bw_foundation, k_img_data,
                          i_img_data, d_img_data):
-            if filename != None:
+            if filename is not None:
                 copy_drop(filename, output_dir)
 
 

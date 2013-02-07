@@ -124,7 +124,7 @@ class HardwarePackBuilder(object):
                 wanted_package = package
                 break
         else:
-            raise AssertionError("Package '%s' was not fetched." % \
+            raise AssertionError("Package '%s' was not fetched." %
                                 wanted_package_name)
         return wanted_package
 

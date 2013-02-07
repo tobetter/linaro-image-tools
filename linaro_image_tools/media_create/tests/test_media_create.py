@@ -905,7 +905,7 @@ class TestCreateToc(TestCaseWithFixtures):
             actual = f.read()
         self.assertEquals(96, len(actual))
         for i in range(len(actual)):
-            self.assertEquals(self.expected[i], actual[i], 'Mismatch at ix' \
+            self.assertEquals(self.expected[i], actual[i], 'Mismatch at ix'
                 ' %d, ref=%c, actual=%c' % (i, self.expected[i], actual[i]))
 
     def test_create_toc_error_too_large_section_name(self):
@@ -990,7 +990,7 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
         ofs = [self.snowball_config.TOC_SIZE,
                self.snowball_config.TOC_SIZE + len('ISSW'), 0x160000,
                0x170000, 0xBA0000, 0xC1F000]
-        size = [len('ISSW'), len('X-LOADER'), len('MEM_INIT'), \
+        size = [len('ISSW'), len('X-LOADER'), len('MEM_INIT'),
                 len('PWR_MGT'), len('NORMAL'), len('UBOOT_ENV')]
         i = 0
         for line in src_data:
@@ -1068,19 +1068,19 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
             files, "boot_device_or_file",
             self.snowball_config.SNOWBALL_LOADER_START_S)
         expected = [
-            '%s dd if=%s of=boot_device_or_file bs=512 conv=notrunc' \
+            '%s dd if=%s of=boot_device_or_file bs=512 conv=notrunc'
             ' seek=%s' % (sudo_args, toc_filename,
             self.snowball_config.SNOWBALL_LOADER_START_S),
-            '%s dd if=%s/boot_image_issw.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/boot_image_issw.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=257' % (sudo_args, self.temp_bootdir_path),
-            '%s dd if=%s/boot_image_x-loader.bin of=boot_device_or_file' \
+            '%s dd if=%s/boot_image_x-loader.bin of=boot_device_or_file'
             ' bs=1 conv=notrunc seek=131588'
             % (sudo_args, self.temp_bootdir_path),
-            '%s dd if=%s/mem_init.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/mem_init.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=3072' % (sudo_args, self.temp_bootdir_path),
-            '%s dd if=%s/power_management.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/power_management.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=3200' % (sudo_args, self.temp_bootdir_path),
-            '%s dd if=%s/u-boot.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/u-boot.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=24064' % (sudo_args, self.temp_bootdir_path),
             '%s dd if=%s/u-boot-env.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=25080' % (sudo_args, self.temp_bootdir_path)]
@@ -1095,26 +1095,26 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
             files, "boot_device_or_file",
             self.snowball_config.SNOWBALL_LOADER_START_S, True)
         expected = [
-            '%s dd if=%s of=boot_device_or_file bs=512 conv=notrunc' \
+            '%s dd if=%s of=boot_device_or_file bs=512 conv=notrunc'
             ' seek=%s' % (sudo_args, toc_filename,
             self.snowball_config.SNOWBALL_LOADER_START_S),
-            '%s dd if=%s/boot_image_issw.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/boot_image_issw.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=257' % (sudo_args, self.temp_bootdir_path),
             '%s rm %s/boot_image_issw.bin' % (sudo_args,
             self.temp_bootdir_path),
-            '%s dd if=%s/boot_image_x-loader.bin of=boot_device_or_file' \
+            '%s dd if=%s/boot_image_x-loader.bin of=boot_device_or_file'
             ' bs=1 conv=notrunc seek=131588'
             % (sudo_args, self.temp_bootdir_path),
             '%s rm %s/boot_image_x-loader.bin' % (sudo_args,
             self.temp_bootdir_path),
-            '%s dd if=%s/mem_init.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/mem_init.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=3072' % (sudo_args, self.temp_bootdir_path),
             '%s rm %s/mem_init.bin' % (sudo_args, self.temp_bootdir_path),
-            '%s dd if=%s/power_management.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/power_management.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=3200' % (sudo_args, self.temp_bootdir_path),
             '%s rm %s/power_management.bin' % (sudo_args,
             self.temp_bootdir_path),
-            '%s dd if=%s/u-boot.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/u-boot.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=24064' % (sudo_args, self.temp_bootdir_path),
             '%s rm %s/u-boot.bin' % (sudo_args, self.temp_bootdir_path),
             '%s dd if=%s/u-boot-env.bin of=boot_device_or_file bs=512'
@@ -1132,19 +1132,19 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
             toc_filename, files, "boot_device_or_file",
             board_conf.SNOWBALL_LOADER_START_S)
         expected = [
-            '%s dd if=%s of=boot_device_or_file bs=512 conv=notrunc' \
+            '%s dd if=%s of=boot_device_or_file bs=512 conv=notrunc'
             ' seek=%s' % (sudo_args, toc_filename,
             board_conf.SNOWBALL_LOADER_START_S),
-            '%s dd if=%s/boot_image_issw.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/boot_image_issw.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=257' % (sudo_args, self.temp_bootdir_path),
-            '%s dd if=%s/boot_image_x-loader.bin of=boot_device_or_file' \
+            '%s dd if=%s/boot_image_x-loader.bin of=boot_device_or_file'
             ' bs=1 conv=notrunc seek=131588'
             % (sudo_args, self.temp_bootdir_path),
-            '%s dd if=%s/mem_init.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/mem_init.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=3072' % (sudo_args, self.temp_bootdir_path),
-            '%s dd if=%s/power_management.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/power_management.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=3200' % (sudo_args, self.temp_bootdir_path),
-            '%s dd if=%s/u-boot.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/u-boot.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=24064' % (sudo_args, self.temp_bootdir_path),
             '%s dd if=%s/u-boot-env.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=25080' % (sudo_args, self.temp_bootdir_path)]
@@ -1167,36 +1167,36 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
             self.temp_bootdir_path, 'boot_device_or_file', k_img_file,
             i_img_file, None)
         expected = [
-            '%s mkimage -A arm -O linux -T kernel -C none -a 0x00008000 -e' \
+            '%s mkimage -A arm -O linux -T kernel -C none -a 0x00008000 -e'
             ' 0x00008000 -n Linux -d %s %s/boot/uImage' % (sudo_args,
             k_img_file, self.tempdir),
             '%s cp /tmp/temp_snowball_make_boot_files %s/boot/boot.txt'
             % (sudo_args, self.tempdir),
-            '%s mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n boot' \
+            '%s mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n boot'
             ' script -d %s/boot/boot.txt %s/boot/flash.scr'
             % (sudo_args, self.tempdir, self.tempdir),
-            '%s dd if=/tmp/temp_snowball_make_boot_files' \
+            '%s dd if=/tmp/temp_snowball_make_boot_files'
             ' of=boot_device_or_file bs=512 conv=notrunc seek=256'
             % (sudo_args),
-            '%s dd if=%s/boot/boot_image_issw.bin of=boot_device_or_file' \
+            '%s dd if=%s/boot/boot_image_issw.bin of=boot_device_or_file'
             ' bs=512 conv=notrunc seek=257' % (sudo_args, self.tempdir),
             '%s rm %s/boot_image_issw.bin' % (sudo_args,
             self.temp_bootdir_path),
-            '%s dd if=%s/boot/boot_image_x-loader.bin of=boot_device_or_file' \
+            '%s dd if=%s/boot/boot_image_x-loader.bin of=boot_device_or_file'
             ' bs=1 conv=notrunc seek=131588' % (sudo_args, self.tempdir),
             '%s rm %s/boot_image_x-loader.bin' % (sudo_args,
             self.temp_bootdir_path),
-            '%s dd if=%s/boot/mem_init.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/boot/mem_init.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=3072' % (sudo_args, self.tempdir),
             '%s rm %s/mem_init.bin' % (sudo_args, self.temp_bootdir_path),
-            '%s dd if=%s/boot/power_management.bin of=boot_device_or_file' \
+            '%s dd if=%s/boot/power_management.bin of=boot_device_or_file'
             ' bs=512 conv=notrunc seek=3200' % (sudo_args, self.tempdir),
             '%s rm %s/power_management.bin' % (sudo_args,
             self.temp_bootdir_path),
-            '%s dd if=%s/boot/u-boot.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/boot/u-boot.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=24064' % (sudo_args, self.tempdir),
             '%s rm %s/u-boot.bin' % (sudo_args, self.temp_bootdir_path),
-            '%s dd if=%s/boot/u-boot-env.bin of=boot_device_or_file bs=512' \
+            '%s dd if=%s/boot/u-boot-env.bin of=boot_device_or_file bs=512'
             ' conv=notrunc seek=25080' % (sudo_args, self.tempdir),
             '%s rm %s/u-boot-env.bin' % (sudo_args, self.temp_bootdir_path),
             '%s rm /tmp/temp_snowball_make_boot_files' % (sudo_args),
@@ -1232,7 +1232,7 @@ class TestBootSteps(TestCaseWithFixtures):
 
         for name in dir(boards):
             attr = getattr(boards, name)
-            if type(attr) == types.FunctionType:
+            if isinstance(attr, types.FunctionType):
                 self.useFixture(MockSomethingFixture(
                     linaro_image_tools.media_create.boards, name,
                     mock_func_creator(name)))
@@ -1428,7 +1428,7 @@ class TestPopulateRawPartition(TestCaseWithFixtures):
 
         for name in dir(boards):
             attr = getattr(boards, name)
-            if type(attr) == types.FunctionType:
+            if isinstance(attr, types.FunctionType):
                 self.useFixture(MockSomethingFixture(
                     linaro_image_tools.media_create.boards, name,
                     mock_func_creator(name)))
@@ -2909,7 +2909,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
     def _create_android_tmpfile(self):
         # boot, system, cache, (extended), userdata and sdcard partitions
         return self._create_qemu_img_with_partitions(
-            '63,32768,0x0C,*\n32831,65536,L\n98367,65536,L\n294975,-,E\n' \
+            '63,32768,0x0C,*\n32831,65536,L\n98367,65536,L\n294975,-,E\n'
                 '294975,131072,L\n426047,,,-', '%s' % self.android_image_size)
 
     def _create_snowball_android_tmpfile(self):

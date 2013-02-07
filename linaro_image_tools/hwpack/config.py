@@ -346,7 +346,7 @@ class Config(object):
     def include_debs(self):
         """Whether the hardware pack should contain .debs. A bool."""
         try:
-            if self._get_option(self.INCLUDE_DEBS_KEY) == None:
+            if self._get_option(self.INCLUDE_DEBS_KEY) is None:
                 return True
             try:
                 return self._get_option_bool(self.INCLUDE_DEBS_KEY)
@@ -551,11 +551,11 @@ class Config(object):
                 result = self._get_v3_option([BOARDS_FIELD, self.board] + keys)
 
             # If a board specific value isn't found, look for a global one
-            if result == None:
+            if result is None:
                 result = self._get_v3_option(keys)
 
             # If no value is found, bail early (return None)
-            if result == None:
+            if result is None:
                 return None
 
             # <v3 compatibility: Lists of items can be converted to strings
@@ -949,7 +949,7 @@ class Config(object):
         if not format:
             raise HwpackConfigError("Empty value for format")
         if not format.is_supported:
-            raise HwpackConfigError("Format version '%s' is not supported." % \
+            raise HwpackConfigError("Format version '%s' is not supported." %
                                         format)
 
     def _assert_matches_pattern(self, regex, config_item, error_message):
@@ -1064,7 +1064,7 @@ class Config(object):
             raise HwpackConfigError("Invalid %s address: %s" %
                                     (name, self._get_option(key)))
 
-        if addr == None:
+        if addr is None:
             return
 
         if not re.match(r"^0x[a-fA-F0-9]{8}$", addr):
@@ -1107,7 +1107,7 @@ class Config(object):
         mmc_id = self.mmc_id
         if not mmc_id:
             raise HwpackConfigError(
-                "No mmc_id in the [%s] section" % \
+                "No mmc_id in the [%s] section" %
                     self.MAIN_SECTION)
         else:
             self._assert_matches_pattern(

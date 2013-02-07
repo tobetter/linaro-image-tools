@@ -260,8 +260,8 @@ class AndroidBoardConfig(BoardConfig):
         # If extra_part is True an extra primary partition will be added.
         # Due to a maximum of 4 primary partitions cache data will be placed in
         # a extended partition
-        if extra_part == True:
-            assert start_addr > 0, ("Not possible to add extra partition" \
+        if extra_part is True:
+            assert start_addr > 0, ("Not possible to add extra partition"
                                     "when boot partition starts at '0'")
             return '%s,%s,%s,*\n%s,%s,L\n%s,-,E\n%s,%s,L\n%s,%s,L\n%s,,,-' % (
             boot_start, boot_len, partition_type, system_start, _system_len,

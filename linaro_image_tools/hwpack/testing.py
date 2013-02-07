@@ -371,7 +371,7 @@ class IsHardwarePack(Matcher):
                     "pkgs/%s" % package.filename,
                     content=package.content.read()))
             package_matchers = [
-                MatchesPackage(p) for p in  packages_with_content]
+                MatchesPackage(p) for p in packages_with_content]
             dep_package_matcher = MatchesStructure(
                 name=Equals('hwpack-' + self.metadata.name),
                 version=Equals(self.metadata.version),
