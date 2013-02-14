@@ -105,8 +105,8 @@ class HardwarepackHandler(object):
                 # Probably V2 hardware pack without [hwpack] on the first line
                 lines = ["[hwpack]\n"] + lines
             self.config = Config(StringIO("".join(lines)))
-            self.config.set_board(self.board)
-            self.config.set_bootloader(self.bootloader)
+            self.config.board = self.board
+            self.config.bootloader = self.bootloader
         return self.config
 
     def get_field(self, field, return_keys=False):
