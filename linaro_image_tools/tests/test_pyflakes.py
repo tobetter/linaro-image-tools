@@ -25,8 +25,8 @@ class TestPyflakes(TestCase):
     def test_pyflakes(self):
         # ignore return code
         proc = subprocess.Popen(['pyflakes', '.'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
         (stdout, stderr) = proc.communicate()
         self.assertEquals('', stdout)
         self.assertEquals('', stderr)

@@ -1461,21 +1461,21 @@ class TestPopulateRawPartition(TestCaseWithFixtures):
                 lambda *args, **kwargs: self.funcs_calls.append(name))
 
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards.SnowballEmmcConfig,
-                'get_file_info',
-                mock_func_creator('get_file_info')))
+            linaro_image_tools.media_create.boards.SnowballEmmcConfig,
+            'get_file_info',
+            mock_func_creator('get_file_info')))
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards.SnowballEmmcConfig,
-                'create_toc',
-                mock_func_creator('create_toc')))
+            linaro_image_tools.media_create.boards.SnowballEmmcConfig,
+            'create_toc',
+            mock_func_creator('create_toc')))
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards.SnowballEmmcConfig,
-                'install_snowball_boot_loader',
-                mock_func_creator('install_snowball_boot_loader')))
+            linaro_image_tools.media_create.boards.SnowballEmmcConfig,
+            'install_snowball_boot_loader',
+            mock_func_creator('install_snowball_boot_loader')))
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards.SnowballEmmcConfig,
-                'delete_file',
-                mock_func_creator('delete_file')))
+            linaro_image_tools.media_create.boards.SnowballEmmcConfig,
+            'delete_file',
+            mock_func_creator('delete_file')))
         self.populate_raw_partition(boards.SnowballEmmcConfig())
         expected = ['get_file_info', 'create_toc',
                     'install_snowball_boot_loader', 'delete_file',
@@ -1515,7 +1515,7 @@ class TestPopulateRawPartition(TestCaseWithFixtures):
 
     def test_arndale_raw(self):
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
-            lambda file: 1))
+                                             lambda file: 1))
 
         self.populate_raw_partition(boards.ArndaleConfig())
         expected = ['_dd', '_dd', '_dd']
@@ -1563,24 +1563,24 @@ class TestPopulateRawPartitionAndroid(TestCaseWithFixtures):
         expected_commands = ['sudo -E cp boot/u-boot.bin ./startupfiles']
 
         self.useFixture(MockSomethingFixture(
-                android_boards.AndroidSnowballEmmcConfig,
-                'get_file_info',
-                mock_func_creator('get_file_info')))
+            android_boards.AndroidSnowballEmmcConfig,
+            'get_file_info',
+            mock_func_creator('get_file_info')))
         self.useFixture(MockSomethingFixture(
-                android_boards.AndroidSnowballEmmcConfig,
-                'create_toc',
-                mock_func_creator('create_toc')))
+            android_boards.AndroidSnowballEmmcConfig,
+            'create_toc',
+            mock_func_creator('create_toc')))
         self.useFixture(MockSomethingFixture(
-                android_boards.AndroidSnowballEmmcConfig,
-                'install_snowball_boot_loader',
-                mock_func_creator('install_snowball_boot_loader')))
+            android_boards.AndroidSnowballEmmcConfig,
+            'install_snowball_boot_loader',
+            mock_func_creator('install_snowball_boot_loader')))
         self.useFixture(MockSomethingFixture(
-                android_boards.AndroidSnowballEmmcConfig,
-                'delete_file',
-                mock_func_creator('delete_file')))
+            android_boards.AndroidSnowballEmmcConfig,
+            'delete_file',
+            mock_func_creator('delete_file')))
         self.populate_raw_partition(android_boards.AndroidSnowballEmmcConfig())
         expected_calls = ['get_file_info', 'create_toc',
-                    'install_snowball_boot_loader', 'delete_file']
+                          'install_snowball_boot_loader', 'delete_file']
         # Test that we copy the u-boot files to the local startupfiles dir.
         self.assertEqual(expected_commands, fixture.mock.commands_executed)
         # Test that we run the Snowball populate_raw_partition() and only
@@ -1664,12 +1664,13 @@ class TestAlignPartition(TestCase):
     def test_align_partition_4_mib_4_mib(self):
         expected = (4 * 1024 * 1024, 8 * 1024 * 1024 - 1, 4 * 1024 * 1024)
         self.assertEqual(expected,
-            align_partition(1, 1, 4 * 1024 * 1024, 4 * 1024 * 1024))
+                         align_partition(1, 1,
+                                         4 * 1024 * 1024, 4 * 1024 * 1024))
 
     def test_align_partition_none_4_mib(self):
         expected = (1, 4 * 1024 * 1024 - 1, 4 * 1024 * 1024 - 1)
         self.assertEqual(expected,
-            align_partition(1, 1, 1, 4 * 1024 * 1024))
+                         align_partition(1, 1, 1, 4 * 1024 * 1024))
 
 
 class TestFixForBug697824(TestCaseWithFixtures):
@@ -1686,7 +1687,7 @@ class TestFixForBug697824(TestCaseWithFixtures):
         config._make_boot_files = MagicMock()
         config._make_boot_files_v2 = MagicMock()
         config.set_appropriate_serial_tty = MagicMock(
-             side_effect=set_appropriate_serial_tty_mock)
+            side_effect=set_appropriate_serial_tty_mock)
 
     def test_omap_make_boot_files(self):
         self.set_appropriate_serial_tty_called = False
@@ -1900,10 +1901,10 @@ class TestGetSfdiskCmdV2(TestCase):
         board_conf = get_board_config('origen')
         board_conf.partition_layout = 'reserved_bootfs_rootfs'
         board_conf.LOADER_MIN_SIZE_S = (
-                                 board_conf.samsung_bl1_start +
-                                 board_conf.samsung_bl1_len +
-                                 board_conf.samsung_bl2_len +
-                                 board_conf.samsung_env_len)
+            board_conf.samsung_bl1_start +
+            board_conf.samsung_bl1_len +
+            board_conf.samsung_bl2_len +
+            board_conf.samsung_env_len)
         self.assertEquals(
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             board_conf.get_sfdisk_cmd())
@@ -1912,10 +1913,10 @@ class TestGetSfdiskCmdV2(TestCase):
         board_conf = get_board_config('origen_quad')
         board_conf.partition_layout = 'reserved_bootfs_rootfs'
         board_conf.LOADER_MIN_SIZE_S = (
-                                board_conf.samsung_bl1_start +
-                                board_conf.samsung_bl1_len +
-                                board_conf.samsung_bl2_len +
-                                board_conf.samsung_env_len)
+            board_conf.samsung_bl1_start +
+            board_conf.samsung_bl1_len +
+            board_conf.samsung_bl2_len +
+            board_conf.samsung_env_len)
         self.assertEquals(
             '1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-',
             board_conf.get_sfdisk_cmd())
@@ -1990,11 +1991,11 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=ttySAC1,115200n8  root=UUID=deadbeef '
                         'rootwait ro',
-             'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
+            'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
                         'fatload mmc 0:2 0x42000000 uInitrd; '
                         'bootm 0x40007000 0x42000000',
-             'ethact': 'smc911x-0',
-             'ethaddr': '00:40:5c:26:0a:5b',
+            'ethact': 'smc911x-0',
+            'ethaddr': '00:40:5c:26:0a:5b',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
@@ -2007,7 +2008,7 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=ttySAC2,115200n8  root=UUID=deadbeef '
                         'rootwait ro',
-             'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
+            'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
                         'fatload mmc 0:2 0x42000000 uInitrd; '
                         'bootm 0x40007000 0x42000000',
             'fdt_high': '0xffffffff',
@@ -2022,7 +2023,7 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'console=ttySAC2,115200n8  root=UUID=deadbeef '
                         'rootwait ro',
-             'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
+            'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
                         'fatload mmc 0:2 0x42000000 uInitrd; '
                         'bootm 0x40007000 0x42000000',
             'fdt_high': '0xffffffff',
@@ -2037,12 +2038,12 @@ class TestGetBootCmd(TestCase):
         expected = {
             'bootargs': 'root=UUID=deadbeef rootwait ro',
             'bootcmd': 'fatload mmc 0:2 None uImage; '
-                       'fatload mmc 0:2 None uInitrd; '
-                       'bootm None None',
-                       'ethact': 'smc911x-0',
-                       'ethaddr': '00:40:5c:26:0a:5b',
-                       'fdt_high': '0xffffffff',
-                       'initrd_high': '0xffffffff'}
+            'fatload mmc 0:2 None uInitrd; '
+            'bootm None None',
+            'ethact': 'smc911x-0',
+            'ethaddr': '00:40:5c:26:0a:5b',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
 
     def test_ux500(self):
@@ -2362,7 +2363,7 @@ class TestBoards(TestCaseWithFixtures):
             lambda s: (BoardConfig.LOADER_MIN_SIZE_S - 1) * SECTOR_SIZE + 1))
         self.assertRaises(AssertionError,
             install_mx5_boot_loader, "imx_file", "boot_device_or_file",
-                          BoardConfig.LOADER_MIN_SIZE_S)
+            BoardConfig.LOADER_MIN_SIZE_S)
 
     def test_install_omap_boot_loader(self):
         fixture = self._mock_Popen()
@@ -2409,10 +2410,12 @@ class TestBoards(TestCaseWithFixtures):
         chroot_dir_value = 'chroot_dir'
         board_conf._get_samsung_spl = MagicMock()
         board_conf._get_samsung_spl.return_value = ("%s/%s/SPL" %
-            (chroot_dir_value, bootloader_flavor))
+                                                    (chroot_dir_value,
+                                                     bootloader_flavor))
         board_conf._get_samsung_bootloader = MagicMock()
         board_conf._get_samsung_bootloader.return_value = ("%s/%s/uboot" %
-            (chroot_dir_value, bootloader_flavor))
+                                                           (chroot_dir_value,
+                                                            bootloader_flavor))
         board_conf.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         board_conf.hardwarepack_handler.get_format = (
@@ -2462,7 +2465,7 @@ class TestBoards(TestCaseWithFixtures):
         board_conf, bootloader_flavor, chroot_dir_value = \
             self._set_up_board_config('arndale')
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
-            lambda file: 1))
+                                             lambda file: 1))
         board_conf.install_samsung_boot_loader(
             board_conf._get_samsung_spl(chroot_dir_value),
             board_conf._get_samsung_bootloader(chroot_dir_value),
@@ -2843,9 +2846,9 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertEqual(0, wait_partition_to_settle(media))
 
     def test_wait_partitions_to_settle_raises_SubcommandNonZeroReturnValue(
-        self):
+            self):
         def mock_run(args, as_root=False, chroot=None, stdin=None, stdout=None,
-            stderr=None, cwd=None):
+                     stderr=None, cwd=None):
             raise cmd_runner.SubcommandNonZeroReturnValue(args, 1)
 
         self.useFixture(MockSomethingFixture(
@@ -2857,8 +2860,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
         media.is_block_device = True
 
         self.assertRaises(cmd_runner.SubcommandNonZeroReturnValue,
-            wait_partition_to_settle,
-            media)
+                          wait_partition_to_settle,
+                          media)
 
 
 class TestPartitionSetup(TestCaseWithFixtures):
@@ -2873,7 +2876,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             (16384 * SECTOR_SIZE, 15746 * SECTOR_SIZE),
             (32768 * SECTOR_SIZE, (self.linux_image_size -
                                         32768 * SECTOR_SIZE))
-            ]
+        ]
         self.android_image_size = 256 * 1024 ** 2
         # Extended partition info takes 32 sectors from the first ext partition
         ext_part_size = 32
@@ -2885,7 +2888,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
              (131072 - ext_part_size) * SECTOR_SIZE),
             ((426047 + ext_part_size) * SECTOR_SIZE,
              self.android_image_size - (426047 + ext_part_size) * SECTOR_SIZE)
-            ]
+        ]
 
         self.android_snowball_offsets_and_sizes = [
             (8192 * SECTOR_SIZE, 24639 * SECTOR_SIZE),
@@ -2895,7 +2898,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             (294975 * SECTOR_SIZE, 131072 * SECTOR_SIZE),
             ((426047 + ext_part_size) * SECTOR_SIZE,
              self.android_image_size - (426047 + ext_part_size) * SECTOR_SIZE)
-            ]
+        ]
 
     def tearDown(self):
         super(TestPartitionSetup, self).tearDown()
@@ -2910,7 +2913,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         # boot, system, cache, (extended), userdata and sdcard partitions
         return self._create_qemu_img_with_partitions(
             '63,32768,0x0C,*\n32831,65536,L\n98367,65536,L\n294975,-,E\n'
-                '294975,131072,L\n426047,,,-', '%s' % self.android_image_size)
+            '294975,131072,L\n426047,,,-', '%s' % self.android_image_size)
 
     def _create_snowball_android_tmpfile(self):
         # raw, boot, system, cache, (extended), userdata and sdcard partitions
@@ -3144,17 +3147,17 @@ class TestPartitionSetup(TestCaseWithFixtures):
             board_conf, Media(tmpfile), '2G', 'boot',
             'root', 'ext3', True, True, True)
         self.assertEqual(
-             # This is the call that would create a 2 GiB image file.
-            ['dd of=%s bs=1 seek=2147483648 count=0' % tmpfile,
-             '%s sfdisk -l %s' % (sudo_args, tmpfile),
-             # This call would partition the image file.
-             '%s sfdisk --force -D -uS -H %s -S %s -C 1024 %s' % (
-                 sudo_args, HEADS, SECTORS, tmpfile),
-             # Make sure changes are written to disk.
-             'sync',
-             '%s sfdisk -l %s' % (sudo_args, tmpfile),
-             '%s mkfs.vfat -F 32 %s -n boot' % (sudo_args, bootfs_dev),
-             '%s mkfs.ext3 %s -L root' % (sudo_args, rootfs_dev)],
+        # This is the call that would create a 2 GiB image file.
+        ['dd of=%s bs=1 seek=2147483648 count=0' % tmpfile,
+        '%s sfdisk -l %s' % (sudo_args, tmpfile),
+        # This call would partition the image file.
+        '%s sfdisk --force -D -uS -H %s -S %s -C 1024 %s' % (
+            sudo_args, HEADS, SECTORS, tmpfile),
+        # Make sure changes are written to disk.
+            'sync',
+            '%s sfdisk -l %s' % (sudo_args, tmpfile),
+            '%s mkfs.vfat -F 32 %s -n boot' % (sudo_args, bootfs_dev),
+            '%s mkfs.ext3 %s -L root' % (sudo_args, rootfs_dev)],
             popen_fixture.mock.commands_executed)
 
     def test_setup_partitions_for_block_device(self):
@@ -3214,8 +3217,8 @@ class TestPartitionSetup(TestCaseWithFixtures):
         media = Media(tmpfile)
         media.is_block_device = True
         self.assertRaises(dbus.exceptions.DBusException,
-            _get_device_file_for_partition_number,
-            media.path, partition)
+                          _get_device_file_for_partition_number,
+                          media.path, partition)
 
     def test_get_device_file_for_partition_number(self):
         class Namespace:
@@ -3357,13 +3360,13 @@ class TestPopulateBoot(TestCaseWithFixtures):
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz')
         self.config.hardwarepack_handler.get_format = lambda: '3.0'
         self.config.hardwarepack_handler.get_file = \
-                            lambda file_alias: ['file1', 'file2']
+          lambda file_alias: ['file1', 'file2']
         self.config.hardwarepack_handler.get_file_from_package = \
             self.get_file_from_package
         self.config.bootloader_copy_files = {
             "package1":
-                [{"file1": "/boot/"},
-                 {"file2": "/boot/grub/renamed"}]}
+            [{"file1": "/boot/"},
+             {"file2": "/boot/grub/renamed"}]}
 
         self.popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
         self.useFixture(MockSomethingFixture(
@@ -3430,12 +3433,12 @@ class TestPopulateBoot(TestCaseWithFixtures):
         expected_calls = self.expected_calls[:]
         expected_calls.insert(2, '%s mkdir -p boot_disk/boot' % sudo_args)
         expected_calls.insert(3,
-            '%s cp -v file1 '
-            'boot_disk/boot/' % sudo_args)
+                              '%s cp -v file1 '
+                              'boot_disk/boot/' % sudo_args)
         expected_calls.insert(4, '%s mkdir -p boot_disk/boot/grub' % sudo_args)
         expected_calls.insert(5,
-            '%s cp -v file2 '
-            'boot_disk/boot/grub/renamed' % sudo_args)
+                              '%s cp -v file2 '
+                              'boot_disk/boot/grub/renamed' % sudo_args)
         self.assertEquals(
             expected_calls, self.popen_fixture.mock.commands_executed)
         self.assertEquals(self.expected_args, self.saved_args)
@@ -3524,7 +3527,7 @@ class TestPopulateRootFS(TestCaseWithFixtures):
             '%s mv %s %s %s' % (
                 sudo_args, contents_bin, contents_etc, root_disk),
             '%s dd if=/dev/zero of=%s bs=1M count=100' % (
-               sudo_args, swap_file),
+                sudo_args, swap_file),
             '%s mkswap %s' % (sudo_args, swap_file),
             'sync',
             '%s umount %s' % (sudo_args, root_disk)]
@@ -3603,8 +3606,8 @@ class TestPopulateRootFS(TestCaseWithFixtures):
 
     def test_update_interfaces_no_interfaces_no_update(self):
         self.useFixture(MockSomethingFixture(
-                rootfs, 'write_data_to_protected_file',
-                self.mock_write_data_to_protected_file))
+            rootfs, 'write_data_to_protected_file',
+            self.mock_write_data_to_protected_file))
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         os.makedirs(os.path.join(tempdir, 'etc', 'network'))
         if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
@@ -3614,8 +3617,8 @@ class TestPopulateRootFS(TestCaseWithFixtures):
 
     def test_update_interfaces_creates_entry(self):
         self.useFixture(MockSomethingFixture(
-                rootfs, 'write_data_to_protected_file',
-                self.mock_write_data_to_protected_file))
+            rootfs, 'write_data_to_protected_file',
+            self.mock_write_data_to_protected_file))
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         os.makedirs(os.path.join(tempdir, 'etc', 'network'))
         if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
@@ -3630,8 +3633,8 @@ class TestPopulateRootFS(TestCaseWithFixtures):
 
     def test_update_interfaces_creates_entries(self):
         self.useFixture(MockSomethingFixture(
-                rootfs, 'write_data_to_protected_file',
-                self.mock_write_data_to_protected_file))
+            rootfs, 'write_data_to_protected_file',
+            self.mock_write_data_to_protected_file))
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         os.makedirs(os.path.join(tempdir, 'etc', 'network'))
         if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
@@ -3650,8 +3653,8 @@ class TestPopulateRootFS(TestCaseWithFixtures):
 
     def test_update_interfaces_leaves_original(self):
         self.useFixture(MockSomethingFixture(
-                rootfs, 'write_data_to_protected_file',
-                self.mock_write_data_to_protected_file))
+            rootfs, 'write_data_to_protected_file',
+            self.mock_write_data_to_protected_file))
         tempdir = self.useFixture(CreateTempDirFixture()).get_temp_dir()
         os.makedirs(os.path.join(tempdir, 'etc', 'network'))
         if_path = os.path.join(tempdir, 'etc', 'network', 'interfaces')
@@ -3791,11 +3794,11 @@ class AtExitRegister(object):
 class TestInstallHWPack(TestCaseWithFixtures):
     def create_minimal_v3_hwpack(self, location, name, version, architecture):
         metadata = "\n".join([
-                    "name: " + name,
-                    "version: " + version,
-                    "architecture: " + architecture,
-                    "format: 3.0"
-                    ])
+            "name: " + name,
+            "version: " + version,
+            "architecture: " + architecture,
+            "format: 3.0"
+            ])
         print metadata
         tar_file = tarfile.open(location, mode='w:gz')
         tarinfo = tarfile.TarInfo("metadata")
@@ -3806,7 +3809,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
     def mock_prepare_chroot(self, chroot_dir, tmp_dir):
         def fake_prepare_chroot(chroot_dir, tmp_dir):
             cmd_runner.run(['prepare_chroot %s %s' % (chroot_dir, tmp_dir)],
-                as_root=True).wait()
+                           as_root=True).wait()
         self.useFixture(MockSomethingFixture(
             linaro_image_tools.media_create.chroot_utils, 'prepare_chroot',
             fake_prepare_chroot))
