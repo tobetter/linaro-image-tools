@@ -41,32 +41,32 @@ class ConfigTests(TestCase):
         "name: ahwpack\npackages: foo\narchitectures: armel\n")
     valid_start_v3 = valid_start + "format: 3.0\n"
     valid_complete_v3 = (valid_start_v3 +
-        "serial_tty: ttySAC1\n"
-        "partition_layout:\n"
-        " - bootfs_rootfs\n"
-        "boot_script: boot.scr\n"
-        "extra_serial_options:\n"
-        "  - console=tty0\n"
-        "  - console=ttyO2,115200n8\n"
-        "mmc_id: 0:1\n"
-        "kernel_file: boot/vmlinuz-*-linaro-omap\n"
-        "initrd_file: boot/initrd.img-*-linaro-omap\n"
-        "dtb_file: boot/dt-*-linaro-omap/omap4-panda.dtb\n"
-        "bootloaders:\n"
-        " u_boot:\n"
-        "  package: u-boot-linaro-s5pv310\n"
-        "  file: usr/lib/u-boot/smdkv310/u-boot.bin\n"
-        "  spl_package: x-loader-omap4-panda\n"
-        "  spl_file: usr/lib/x-loader/omap4430panda/MLO\n"
-        "  in_boot_part: True\n"
-        "  extra_boot_options:\n"
-        "   - earlyprintk\n"
-        "   - fixrtc\n"
-        "   - nocompcache\n"
-        "   - vram=48M\n"
-        "   - omapfb.vram=0:24M\n"
-        "   - mem=456M@0x80000000\n"
-        "   - mem=512M@0xA0000000\n")
+                         "serial_tty: ttySAC1\n"
+                         "partition_layout:\n"
+                         " - bootfs_rootfs\n"
+                         "boot_script: boot.scr\n"
+                         "extra_serial_options:\n"
+                         "  - console=tty0\n"
+                         "  - console=ttyO2,115200n8\n"
+                         "mmc_id: 0:1\n"
+                         "kernel_file: boot/vmlinuz-*-linaro-omap\n"
+                         "initrd_file: boot/initrd.img-*-linaro-omap\n"
+                         "dtb_file: boot/dt-*-linaro-omap/omap4-panda.dtb\n"
+                         "bootloaders:\n"
+                         " u_boot:\n"
+                         "  package: u-boot-linaro-s5pv310\n"
+                         "  file: usr/lib/u-boot/smdkv310/u-boot.bin\n"
+                         "  spl_package: x-loader-omap4-panda\n"
+                         "  spl_file: usr/lib/x-loader/omap4430panda/MLO\n"
+                         "  in_boot_part: True\n"
+                         "  extra_boot_options:\n"
+                         "   - earlyprintk\n"
+                         "   - fixrtc\n"
+                         "   - nocompcache\n"
+                         "   - vram=48M\n"
+                         "   - omapfb.vram=0:24M\n"
+                         "   - mem=456M@0x80000000\n"
+                         "   - mem=512M@0xA0000000\n")
     valid_end = "sources:\n    sources-entry: foo bar\n"
 
     def test_create(self):
@@ -97,64 +97,64 @@ class ConfigTests(TestCase):
 
     def test_validate_invalid_include_debs(self):
         config = self.get_config(
-                "name: ahwpack\n"
-                "include_debs: if you don't mind\n")
+            "name: ahwpack\n"
+            "include_debs: if you don't mind\n")
         self.assertValidationError(
             "Invalid value for include-debs: if you don't mind",
             config._validate_include_debs)
 
     def test_validate_invalid_supported(self):
         config = self.get_config(
-                "name: ahwpack\nsupport: if you pay us\n")
+            "name: ahwpack\nsupport: if you pay us\n")
         self.assertValidationError(
             "Invalid value for support: if you pay us",
             config._validate_support)
 
     def test_validate_no_packages(self):
         config = self.get_config(
-                "name: ahwpack\n\n")
+            "name: ahwpack\n\n")
         self.assertValidationError(
             "No packages found in the metadata", config._validate_packages)
 
     def test_validate_empty_packages(self):
         config = self.get_config(
-                "name: ahwpack\npackages:  \n")
+            "name: ahwpack\npackages:  \n")
         self.assertValidationError(
             "No packages found in the metadata", config._validate_packages)
 
     def test_validate_invalid_package_name(self):
         config = self.get_config(
-                "name: ahwpack\npackages: foo  ~~ bar\n")
+            "name: ahwpack\npackages: foo  ~~ bar\n")
         self.assertValidationError(
             "Invalid value in packages in the metadata: ~~",
             config._validate_packages)
 
     def test_validate_no_architectures(self):
         config = self.get_config(
-                "name: ahwpack\npackages: foo\n")
+            "name: ahwpack\npackages: foo\n")
         self.assertValidationError(
             "No architectures found in the metadata",
             config._validate_architectures)
 
     def test_validate_empty_architectures(self):
         config = self.get_config(
-                "name: ahwpack\npackages: foo\n"
-                "architectures: \n")
+            "name: ahwpack\npackages: foo\n"
+            "architectures: \n")
         self.assertValidationError(
             "No architectures found in the metadata",
             config._validate_architectures)
 
     def test_validate_invalid_package_name_in_assume_installed(self):
         config = self.get_config(
-                "name: ahwpack\npackages: foo\n"
-                "architectures: armel\nassume_installed:\n - bar\n - ~~\n")
+            "name: ahwpack\npackages: foo\n"
+            "architectures: armel\nassume_installed:\n - bar\n - ~~\n")
         self.assertValidationError(
             "Invalid value in assume-installed in the metadata: ~~",
             config._validate_assume_installed)
 
     def test_validate_other_section_empty_sources_entry(self):
         config = self.get_config(
-                self.valid_start + "sources:\n ubuntu:  \n")
+            self.valid_start + "sources:\n ubuntu:  \n")
         self.assertValidationError(
             "The sources-entry, ubuntu is missing the URI",
             config._validate_sources)
@@ -167,14 +167,16 @@ class ConfigTests(TestCase):
             config._validate_sources)
 
     def test_validate_other_section_sources_entry_starting_with_deb(self):
-        config = self.get_config(self.valid_start +
-                  "sources:\n ubuntu: deb http://example.org/ foo main\n")
+        config = self.get_config(
+            self.valid_start +
+            "sources:\n ubuntu: deb http://example.org/ foo main\n")
         self.assertValidationError(
             "The sources-entry, ubuntu shouldn't start with 'deb'",
             config._validate_sources)
 
     def test_validate_other_section_sources_entry_starting_with_deb_src(self):
-        config = self.get_config(self.valid_start +
+        config = self.get_config(
+            self.valid_start +
             "sources:\n ubuntu: deb-src http://example.org/ foo main\n")
         self.assertValidationError(
             "The sources-entry, ubuntu shouldn't start with 'deb'",

@@ -30,13 +30,13 @@ from linaro_image_tools.hwpack.builder import (
     PackageUnpacker,
     HardwarePackBuilder,
     logger as builder_logger,
-    )
+)
 from linaro_image_tools.hwpack.config import HwpackConfigError
 from linaro_image_tools.hwpack.hardwarepack import Metadata
 from linaro_image_tools.hwpack.packages import (
     FetchedPackage,
     PackageMaker,
-    )
+)
 from linaro_image_tools.hwpack.tarfile_matchers import TarfileHasFile
 from linaro_image_tools.hwpack.testing import (
     AppendingHandler,
@@ -49,12 +49,12 @@ from linaro_image_tools.hwpack.testing import (
     IsHardwarePack,
     MatchesStructure,
     Not,
-    )
+)
 from linaro_image_tools.testing import TestCaseWithFixtures
 from linaro_image_tools.tests.fixtures import (
     MockSomethingFixture,
     MockCmdRunnerPopenFixture,
-    )
+)
 
 
 class ConfigFileMissingTests(TestCase):
@@ -93,19 +93,20 @@ class PackageUnpackerTests(TestCaseWithFixtures):
         file = 'dummyfile'
         with PackageUnpacker() as package_unpacker:
             self.useFixture(MockSomethingFixture(
-                    package_unpacker, 'unpack_package', lambda package: None))
+                package_unpacker, 'unpack_package', lambda package: None))
             self.useFixture(MockSomethingFixture(
-                    os.path, 'exists', lambda file: True))
+                os.path, 'exists', lambda file: True))
             tempfile = package_unpacker.get_file(package, file)
             self.assertEquals(tempfile,
-                   os.path.join(package_unpacker.get_path(package), file))
+                              os.path.join(package_unpacker.get_path(package),
+                                           file))
 
     def test_get_file_raises(self):
         package = 'package'
         file = 'dummyfile'
         with PackageUnpacker() as package_unpacker:
             self.useFixture(MockSomethingFixture(
-                    package_unpacker, 'unpack_package', lambda package: None))
+                package_unpacker, 'unpack_package', lambda package: None))
             self.assertRaises(AssertionError, package_unpacker.get_file,
                               package, file)
 
@@ -118,9 +119,9 @@ class PackageUnpackerTests(TestCaseWithFixtures):
         file = 'dummyfile'
         with PackageUnpacker() as package_unpacker:
             self.useFixture(MockSomethingFixture(
-                    package_unpacker, 'unpack_package', lambda package: None))
+                package_unpacker, 'unpack_package', lambda package: None))
             self.useFixture(MockSomethingFixture(
-                    os.path, 'exists', lambda file: True))
+                os.path, 'exists', lambda file: True))
             tempfile1 = package_unpacker.get_file(package1, file)
             tempfile2 = package_unpacker.get_file(package2, file)
             self.assertNotEquals(tempfile1, tempfile2)
@@ -128,20 +129,20 @@ class PackageUnpackerTests(TestCaseWithFixtures):
 
 class HardwarePackBuilderTests(TestCaseWithFixtures):
     config_v3 = "\n".join(["format: 3.0",
-                 "name: ahwpack",
-                 "architectures: armel",
-                 "serial_tty: ttySAC1",
-                 "partition_layout:",
-                 " - bootfs_rootfs",
-                 "boot_script: boot.scr",
-                 "mmc_id: 0:1",
-                 "kernel_file: boot/vmlinuz-*-linaro-omap",
-                 "initrd_file: boot/initrd.img-*-linaro-omap",
-                 "dtb_file: boot/dt-*-linaro-omap/omap4-panda.dtb",
-                 "packages:",
-                 " - %s",
-                 " - %s",
-                 ""])
+                           "name: ahwpack",
+                           "architectures: armel",
+                           "serial_tty: ttySAC1",
+                           "partition_layout:",
+                           " - bootfs_rootfs",
+                           "boot_script: boot.scr",
+                           "mmc_id: 0:1",
+                           "kernel_file: boot/vmlinuz-*-linaro-omap",
+                           "initrd_file: boot/initrd.img-*-linaro-omap",
+                           "dtb_file: boot/dt-*-linaro-omap/omap4-panda.dtb",
+                           "packages:",
+                           " - %s",
+                           " - %s",
+                           ""])
     bootloader_config = "\n".join(["  package: %s",
                                    "  in_boot_part: %s",
                                    ""])
@@ -273,7 +274,7 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         builder = HardwarePackBuilder(config.filename, metadata.version, [])
         builder.build()
         hwpack_filename = "hwpack_%s_%s_%s.tar.gz" % (
-                metadata.name, metadata.version, metadata.architecture)
+            metadata.name, metadata.version, metadata.architecture)
         self.assertThat(
             hwpack_filename,
             IsHardwarePack(
@@ -433,11 +434,11 @@ class HardwarePackBuilderTests(TestCaseWithFixtures):
         package_names = ['package0', 'package1', 'package2', 'package3']
         files = {
             package_names[0]:
-                ["usr/lib/u-boot/omap4_panda/u-boot.img",
-                 "usr/share/doc/u-boot-linaro-omap4-panda/copyright"],
+            ["usr/lib/u-boot/omap4_panda/u-boot.img",
+             "usr/share/doc/u-boot-linaro-omap4-panda/copyright"],
             package_names[1]:
-                ["usr/lib/u-boot/omap4_panda/u-boot.img",
-                 "some/path/file"],
+            ["usr/lib/u-boot/omap4_panda/u-boot.img",
+             "some/path/file"],
             package_names[2]: [],
             package_names[3]: [],
         }

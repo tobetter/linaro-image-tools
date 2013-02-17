@@ -44,13 +44,13 @@ from linaro_image_tools.hwpack.packages import (
     PackageMaker,
     stringify_relationship,
     TemporaryDirectoryManager,
-    )
+)
 from linaro_image_tools.hwpack.testing import (
     AptSourceFixture,
     ContextManagerFixture,
     DummyFetchedPackage,
     MatchesPackage,
-    )
+)
 from linaro_image_tools.testing import TestCaseWithFixtures
 
 
@@ -69,7 +69,7 @@ class GetPackagesFileTests(TestCase):
                 'filename': package.filename,
                 'size': package.size,
                 'md5': package.md5,
-            }), get_packages_file([package]))
+        }), get_packages_file([package]))
 
     def test_two_stanzas(self):
         package1 = DummyFetchedPackage("foo", "1.1")
@@ -88,7 +88,7 @@ class GetPackagesFileTests(TestCase):
             """ % {
             'filename': package.filename,
             'size': package.size,
-            })
+        })
         stanza += relationships
         stanza += "MD5sum: %s\n\n" % package.md5
         return stanza
@@ -149,7 +149,7 @@ class GetPackagesFileTests(TestCase):
                 'filename': package.filename,
                 'size': package.size,
                 'md5': package.md5,
-            }), get_packages_file([package], extra_text="Status: bar"))
+        }), get_packages_file([package], extra_text="Status: bar"))
 
 
 class StringifyRelationshipTests(TestCaseWithFixtures):
@@ -404,7 +404,7 @@ class PackageMakerTests(TestCaseWithFixtures):
             'Provides': 'bar, baz (= 1.0)',
             'Replaces': 'bar, baz (>= 1.0)',
             'Breaks': 'bar, baz (>= 1.0)',
-            })
+        })
 
     def test_unknown_field_name_fails(self):
         maker = PackageMaker()
@@ -706,7 +706,7 @@ class FetchedPackageTests(TestCaseWithFixtures):
             self.assertEqual(target_package, created_package)
 
     def create_package_and_assert_from_apt_translates_relationship(
-        self, relationship):
+            self, relationship):
         kwargs = {}
         kwargs[relationship] = "bar | baz (>= 1.0), zap"
         target_package = DummyFetchedPackage("foo", "1.0", **kwargs)
@@ -771,7 +771,7 @@ class FetchedPackageTests(TestCaseWithFixtures):
         self.assertEqual(target_package, created_package)
 
     def create_package_and_assert_from_deb_translates_relationships(
-        self, relationships):
+            self, relationships):
         maker = PackageMaker()
         self.useFixture(ContextManagerFixture(maker))
         deb_file_path = maker.make_package('foo', '1.0', relationships)

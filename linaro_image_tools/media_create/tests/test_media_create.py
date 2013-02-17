@@ -47,7 +47,7 @@ from linaro_image_tools.media_create import (
     check_device,
     partitions,
     rootfs,
-    )
+)
 from linaro_image_tools.media_create.boards import (
     SECTOR_SIZE,
     align_up,
@@ -65,10 +65,10 @@ from linaro_image_tools.media_create.boards import (
     _run_mkimage,
     BoardConfig,
     get_board_config,
-    )
+)
 from linaro_image_tools.media_create.android_boards import (
     AndroidSnowballEmmcConfig,
-    )
+)
 from linaro_image_tools.media_create.chroot_utils import (
     copy_file,
     install_hwpack,
@@ -78,7 +78,7 @@ from linaro_image_tools.media_create.chroot_utils import (
     prepare_chroot,
     run_local_atexit_funcs,
     temporarily_overwrite_file_on_dir,
-    )
+)
 from linaro_image_tools.media_create.partitions import (
     HEADS,
     MIN_IMAGE_SIZE,
@@ -100,7 +100,7 @@ from linaro_image_tools.media_create.partitions import (
     run_sfdisk_commands,
     setup_partitions,
     wait_partition_to_settle,
-    )
+)
 from linaro_image_tools.media_create.rootfs import (
     append_to_fstab,
     create_flash_kernel_config,
@@ -110,20 +110,20 @@ from linaro_image_tools.media_create.rootfs import (
     rootfs_mount_options,
     update_network_interfaces,
     write_data_to_protected_file,
-    )
+)
 from linaro_image_tools.media_create.tests.fixtures import (
     CreateTarballFixture,
     MockRunSfdiskCommandsFixture,
-    )
+)
 from linaro_image_tools.media_create.unpack_binary_tarball import (
     unpack_binary_tarball,
-    )
+)
 from linaro_image_tools.testing import TestCaseWithFixtures
 from linaro_image_tools.tests.fixtures import (
     CreateTempDirFixture,
     MockCmdRunnerPopenFixture,
     MockSomethingFixture,
-    )
+)
 from linaro_image_tools.utils import find_command, preferred_tools_dir
 
 from linaro_image_tools.hwpack.testing import ContextManagerFixture
@@ -149,7 +149,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
                     "armel\norigin: linaro\n")
         metadata += ("bootloaders:\n u_boot:\n  file: a_file\n uefi:\n  file: "
-                        "b_file\n")
+                     "b_file\n")
         data = '3.0'
         format = "%s\n" % data
         tarball = self.add_to_tarball(
@@ -162,9 +162,9 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
                     "armel\norigin: linaro\n")
         metadata += ("bootloaders:\n u_boot:\n  file: a_file\n uefi:\n  file: "
-                        "b_file\n")
+                     "b_file\n")
         metadata += ("boards:\n panda:\n  bootloaders:\n   u_boot:\n    "
-                        "file: panda_file")
+                     "file: panda_file")
         data = '3.0'
         format = "%s\n" % data
         tarball = self.add_to_tarball(
@@ -177,12 +177,12 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         metadata = ("format: 3.0\nname: ahwpack\nversion: 4\narchitecture: "
                     "armel\norigin: linaro\n")
         metadata += ("bootloaders:\n u_boot:\n  file: a_file\n uefi:\n  file: "
-                        "b_file\n")
+                     "b_file\n")
         metadata += ("boards:\n panda:\n  bootloaders:\n   u_boot:\n    "
-                        "file: panda_file\n   uefi:\n    file: "
-                        "uefi_panda_file\n")
+                     "file: panda_file\n   uefi:\n    file: "
+                     "uefi_panda_file\n")
         metadata += (" panda-lt:\n bootloaders:\n   u_boot:\n    "
-                        "file: panda_lt_file")
+                     "file: panda_lt_file")
         data = '3.0'
         format = "%s\n" % data
         tarball = self.add_to_tarball(
@@ -190,7 +190,7 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         hp = HardwarepackHandler([tarball], board='panda', bootloader='uefi')
         with hp:
             self.assertEquals(hp.get_field('bootloader_file')[0],
-                                           'uefi_panda_file')
+                              'uefi_panda_file')
 
     def add_to_tarball(self, files, tarball=None):
         if tarball is None:
@@ -368,13 +368,14 @@ class TestHardwarepackHandler(TestCaseWithFixtures):
         format = "3.0\n"
 
         names = ['package0', 'package1', 'package2']
-        files = {names[0]:
-                     ["usr/lib/u-boot/omap4_panda/u-boot.img",
-                      "usr/share/doc/u-boot-linaro-omap4-panda/copyright"],
-                 names[1]: ["usr/lib/u-boot/omap4_panda/u-boot2.img",
-                                    "foo/bar",
-                                    "flim/flam"],
-                 names[2]: ["some/path/config"]}
+        files = {
+            names[0]:
+            ["usr/lib/u-boot/omap4_panda/u-boot.img",
+             "usr/share/doc/u-boot-linaro-omap4-panda/copyright"],
+            names[1]: ["usr/lib/u-boot/omap4_panda/u-boot2.img",
+                       "foo/bar",
+                       "flim/flam"],
+            names[2]: ["some/path/config"]}
 
         # Generate some test packages
         maker = PackageMaker()
@@ -425,8 +426,8 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_does_not_set_if_old_format(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -434,13 +435,13 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_sets_kernel_addr(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
         field_to_test = 'kernel_addr'
         data_to_set = '0x8123ABCD'
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -448,13 +449,13 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_sets_initrd_addr(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
         field_to_test = 'initrd_addr'
         data_to_set = '0x8123ABCD'
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -462,13 +463,13 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_sets_load_addr(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
         field_to_test = 'load_addr'
         data_to_set = '0x8123ABCD'
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -476,13 +477,13 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_sets_serial_tty(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
         field_to_test = 'serial_tty'
         data_to_set = 'ttyAA'
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -490,13 +491,13 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_sets_wired_interfaces(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
         field_to_test = 'wired_interfaces'
         data_to_set = 'eth0 eth1'
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -504,13 +505,13 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_sets_wireless_interfaces(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
         field_to_test = 'wireless_interfaces'
         data_to_set = 'wlan0 wl1'
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -518,13 +519,13 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_sets_mmc_id(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
         field_to_test = 'mmc_id'
         data_to_set = '0:1'
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -534,15 +535,15 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_sets_boot_min_size(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
         field_to_test = 'boot_min_size'
         data_to_set = '100'
         expected = align_up(int(data_to_set) * 1024 * 1024,
                             SECTOR_SIZE) / SECTOR_SIZE
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -550,15 +551,15 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_sets_root_min_size(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
         field_to_test = 'root_min_size'
         data_to_set = '3'
         expected = align_up(int(data_to_set) * 1024 * 1024,
                             SECTOR_SIZE) / SECTOR_SIZE
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -566,15 +567,15 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_sets_loader_min_size(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
         field_to_test = 'loader_min_size'
         data_to_set = '2'
         expected = align_up(int(data_to_set) * 1024 * 1024,
                             SECTOR_SIZE) / SECTOR_SIZE
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -582,13 +583,13 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_sets_partition_layout_32(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
         field_to_test = 'partition_layout'
         data_to_set = 'bootfs_rootfs'
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -596,13 +597,13 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_sets_partition_layout_16(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
         field_to_test = 'partition_layout'
         data_to_set = 'bootfs16_rootfs'
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -610,13 +611,13 @@ class TestSetMetadata(TestCaseWithFixtures):
 
     def test_sets_partition_layout_raises(self):
         self.useFixture(MockSomethingFixture(
-                linaro_image_tools.media_create.boards, 'HardwarepackHandler',
-                self.MockHardwarepackHandler))
+            linaro_image_tools.media_create.boards, 'HardwarepackHandler',
+            self.MockHardwarepackHandler))
         field_to_test = 'partition_layout'
         data_to_set = 'bootfs_bogus_rootfs'
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         self.assertRaises(
@@ -628,11 +629,11 @@ class TestSetMetadata(TestCaseWithFixtures):
             self.MockHardwarepackHandler))
         field_to_test = 'bootloader_copy_files'
         data_to_set = {'package':
-                           [{"source1": "dest1"},
-                            {"source2": "dest2"}]}
+                       [{"source1": "dest1"},
+                        {"source2": "dest2"}]}
         self.MockHardwarepackHandler.metadata_dict = {
             field_to_test: data_to_set,
-            }
+        }
 
         board_conf = BoardConfig()
         board_conf.set_metadata('ahwpack.tar.gz')
@@ -867,14 +868,14 @@ class TestCreateToc(TestCaseWithFixtures):
         #Create the test's input data structures
         zero = '\x00\x00\x00\x00'
         line1 = zero + zero + zero + zero + zero + 'b' + zero + zero + \
-                 '\x00\x00\x00'
+          '\x00\x00\x00'
         maxint = '\xFF\xFF\xFF\x7F'
         minint = '\xFF\xFF\xFF\xFF'
         line2 = maxint + maxint + zero + minint + minint + \
                  'hello' + zero + '\x00\x00\x00'
         line3 = '\x01\x00\x00\x00' '\x64\x00\x00\x00' + zero + \
-                 '\x05\x00\x00\x00' '\x05\x00\x00\x00' \
-                 'hello' + zero + '\x00\x00\x00'
+            '\x05\x00\x00\x00' '\x05\x00\x00\x00' \
+            'hello' + zero + '\x00\x00\x00'
         self.expected = line1 + line2 + line3
         self.board_conf = boards.SnowballEmmcConfig()
 
@@ -884,11 +885,11 @@ class TestCreateToc(TestCaseWithFixtures):
         files = []
         for line in src_data:
             files.append({'section_name': line[5],
-                  'filename': 'N/A',
-                  'align': line[3],
-                  'offset': line[0],
-                  'size': line[1],
-                  'load_adress': 'N/A'})
+                          'filename': 'N/A',
+                          'align': line[3],
+                          'offset': line[0],
+                          'size': line[1],
+                          'load_adress': 'N/A'})
         return files
 
     def test_create_toc_normal_case(self):
@@ -905,7 +906,8 @@ class TestCreateToc(TestCaseWithFixtures):
             actual = f.read()
         self.assertEquals(96, len(actual))
         for i in range(len(actual)):
-            self.assertEquals(self.expected[i], actual[i], 'Mismatch at ix'
+            self.assertEquals(
+                self.expected[i], actual[i], 'Mismatch at ix'
                 ' %d, ref=%c, actual=%c' % (i, self.expected[i], actual[i]))
 
     def test_create_toc_error_too_large_section_name(self):
@@ -1006,8 +1008,9 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
 
     def test_get_file_info_relative_path(self):
         # Create a config file
-        cfg_file = os.path.join(self.temp_bootdir_path,
-                      self.snowball_config.snowball_startup_files_config)
+        cfg_file = os.path.join(
+            self.temp_bootdir_path,
+            self.snowball_config.snowball_startup_files_config)
         uboot_file = 'u-boot.bin'
         with open(cfg_file, 'w') as f:
                 f.write('%s %s %i %#x %s\n' % ('NORMAL', uboot_file, 0,
@@ -1020,8 +1023,9 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
 
     def test_get_file_info_abs_path(self):
         # Create a config file
-        cfg_file = os.path.join(self.temp_bootdir_path,
-                      self.snowball_config.snowball_startup_files_config)
+        cfg_file = os.path.join(
+            self.temp_bootdir_path,
+            self.snowball_config.snowball_startup_files_config)
         uboot_dir = tempfile.mkdtemp(dir=self.tempdir)
         uboot_file = os.path.join(uboot_dir, 'u-boot.bin')
         uboot_relative_file = uboot_file.replace(self.tempdir, '')
@@ -1035,8 +1039,9 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
 
     def test_get_file_info_raises(self):
         # Create a config file
-        cfg_file = os.path.join(self.temp_bootdir_path,
-                      self.snowball_config.snowball_startup_files_config)
+        cfg_file = os.path.join(
+            self.temp_bootdir_path,
+            self.snowball_config.snowball_startup_files_config)
         with open(cfg_file, 'w') as f:
                 f.write('%s %s %i %#x %s\n' % ('NORMAL', 'u-boot.bin', 0,
                                                0xBA0000, '9'))
@@ -1055,7 +1060,8 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
             tmpfile.write(filedata)
         tmpfile.close()
         files = self.setupFiles()
-        self.assertRaises(AssertionError,
+        self.assertRaises(
+            AssertionError,
             self.snowball_config.install_snowball_boot_loader,
             toc_filename, files, "boot_device_or_file",
             self.snowball_config.SNOWBALL_LOADER_START_S)
@@ -1064,7 +1070,8 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         toc_filename = self.createTempFileAsFixture()
         files = self.setupFiles()
-        self.snowball_config.install_snowball_boot_loader(toc_filename,
+        self.snowball_config.install_snowball_boot_loader(
+            toc_filename,
             files, "boot_device_or_file",
             self.snowball_config.SNOWBALL_LOADER_START_S)
         expected = [
@@ -1091,7 +1098,8 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         toc_filename = self.createTempFileAsFixture()
         files = self.setupFiles()
-        self.snowball_config.install_snowball_boot_loader(toc_filename,
+        self.snowball_config.install_snowball_boot_loader(
+            toc_filename,
             files, "boot_device_or_file",
             self.snowball_config.SNOWBALL_LOADER_START_S, True)
         expected = [
@@ -1153,8 +1161,10 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
 
     def test_snowball_make_boot_files(self):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
-        self.useFixture(MockSomethingFixture(tempfile, 'mkstemp',
-            lambda: (-1, '/tmp/temp_snowball_make_boot_files')))
+        self.useFixture(
+            MockSomethingFixture(tempfile, 'mkstemp',
+                                 lambda:
+                                 (-1, '/tmp/temp_snowball_make_boot_files')))
         self.setupFiles()
         k_img_file = os.path.join(self.tempdir, 'vmlinuz-1-ux500')
         i_img_file = os.path.join(self.tempdir, 'initrd.img-1-ux500')
@@ -1164,8 +1174,9 @@ class TestSnowballBootFiles(TestCaseWithFixtures):
             rootfs_id="UUID=test_boot_env_uuid",
             i_img_data=None, d_img_data=None)
         self.snowball_config._make_boot_files(boot_env, self.tempdir,
-            self.temp_bootdir_path, 'boot_device_or_file', k_img_file,
-            i_img_file, None)
+                                              self.temp_bootdir_path,
+                                              'boot_device_or_file',
+                                              k_img_file, i_img_file, None)
         expected = [
             '%s mkimage -A arm -O linux -T kernel -C none -a 0x00008000 -e'
             ' 0x00008000 -n Linux -d %s %s/boot/uImage' % (sudo_args,

@@ -28,7 +28,7 @@ from linaro_image_tools.hwpack.packages import (
     FetchedPackage,
     get_packages_file,
     PackageMaker,
-    )
+)
 from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
 )
@@ -238,11 +238,11 @@ class Metadata(object):
                 spl_in_boot_part=config.spl_in_boot_part,
                 uboot_dd=config.bootloader_dd,
                 bootloader_file_in_boot_part=config.
-                    bootloader_file_in_boot_part,
+                bootloader_file_in_boot_part,
                 vmlinuz=config.vmlinuz,
                 wired_interfaces=config.wired_interfaces,
                 wireless_interfaces=config.wireless_interfaces,
-                )
+        )
         if config.format.format_as_string == '3.0':
             metadata.add_v3_config(boards=config.boards,
                                    bootloaders=config.bootloaders,
@@ -327,11 +327,11 @@ class Metadata(object):
             else:
                 extra_serial_options = self.extra_serial_options
             metadata += dump({
-                            EXTRA_SERIAL_OPTIONS_FIELD:
-                            extra_serial_options})
+                EXTRA_SERIAL_OPTIONS_FIELD:
+                extra_serial_options})
         if self.snowball_startup_files_config is not None:
             metadata += dump({SNOWBALL_STARTUP_FILES_CONFIG_FIELD:
-                                self.snowball_startup_files_config})
+                              self.snowball_startup_files_config})
         if self.samsung_bl1_start is not None:
             metadata += dump({SAMSUNG_BL1_START_FIELD: self.samsung_bl1_start})
         if self.samsung_bl1_len is not None:

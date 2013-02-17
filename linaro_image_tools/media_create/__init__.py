@@ -98,7 +98,7 @@ def get_args_parser():
     parser.add_argument(
         '--read-hwpack', dest='readhwpack', action='store_true',
         help=('Read the hardware pack and print information about the '
-                'supported boards and bootloaders.'))
+              'supported boards and bootloaders.'))
     parser.add_argument(
         '--dev', dest='dev', choices=KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')

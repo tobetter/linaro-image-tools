@@ -95,9 +95,9 @@ class Hwpack(object):
         equal = False
         if isinstance(other, Hwpack):
             equal = (self.name == other.name and
-                        self.boards == other.boards and
-                        self.hwpack == other.hwpack and
-                        self.bootloaders == other.bootloaders)
+                     self.boards == other.boards and
+                     self.hwpack == other.hwpack and
+                     self.bootloaders == other.bootloaders)
         return equal
 
     def __hash__(self):
@@ -123,20 +123,20 @@ class Hwpack(object):
                     supported_bootloaders = bootloaders.keys()
                 else:
                     supported_bootloaders = self.bootloaders.keys()
-                string += ELEMENT_FORMAT.format(key,
-                            ",".join(supported_bootloaders))
+                string += ELEMENT_FORMAT.format(
+                    key, ",".join(supported_bootloaders))
                 string += LINE_SEP
         else:
             # If we pass a converted file with just a single board, we do not
             # have the boards section, and we default to the name of the hwpack
             if self.bootloaders:
                 supported_bootloaders = self.bootloaders.keys()
-                string += ELEMENT_FORMAT.format(self.name,
-                            ",".join(supported_bootloaders))
+                string += ELEMENT_FORMAT.format(
+                    self.name, ",".join(supported_bootloaders))
                 string += LINE_SEP
             else:
                 string += CENTER_ALIGN.format("No supported boards and "
-                                                "bootloaders")
+                                              "bootloaders")
                 string += LINE_SEP
         string += FORMAT.format(SEPARATOR)
         return string + LINE_SEP
@@ -169,7 +169,7 @@ class HwpackReader(object):
                     local_hwpack.setname(handler.get_field(NAME_FIELD)[0])
                     local_hwpack.setboards(handler.get_field(BOARDS_FIELD)[0])
                     local_hwpack.setbootloaders(
-                            handler.get_field(BOOTLOADERS_FIELD)[0])
+                        handler.get_field(BOOTLOADERS_FIELD)[0])
                     self.supported_elements.append(local_hwpack)
                 else:
                     raise HwpackReaderError("Hardwarepack '%s' cannot be "

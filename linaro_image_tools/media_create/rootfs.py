@@ -65,7 +65,7 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
 
         mount_options = rootfs_mount_options(rootfs_type)
         fstab_additions = ["%s / %s  %s 0 1" % (
-                rootfs_id, rootfs_type, mount_options)]
+            rootfs_id, rootfs_type, mount_options)]
         if should_create_swap:
             print "\nCreating SWAP File\n"
             if has_space_left_for_swap(root_disk, swap_size):
@@ -88,7 +88,7 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
 
         print "\nCreating /etc/flash-kernel.conf\n"
         create_flash_kernel_config(
-                root_disk, mmc_device_id, 1 + partition_offset)
+            root_disk, mmc_device_id, 1 + partition_offset)
 
         if board_config is not None:
             print "\nUpdating /etc/network/interfaces\n"
@@ -123,7 +123,7 @@ def create_flash_kernel_config(root_disk, mmc_device_id,
     Uses the given partition number to figure out the boot partition.
     """
     target_boot_dev = '/dev/mmcblk%dp%s' % (
-            mmc_device_id, boot_partition_number)
+        mmc_device_id, boot_partition_number)
     flash_kernel = os.path.join(root_disk, 'etc', 'flash-kernel.conf')
     write_data_to_protected_file(
         flash_kernel, "UBOOT_PART=%s\n" % target_boot_dev)

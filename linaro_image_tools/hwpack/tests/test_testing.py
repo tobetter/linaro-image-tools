@@ -30,7 +30,7 @@ from testtools.matchers import (
     Equals,
     Mismatch,
     NotEquals,
-    )
+)
 from linaro_image_tools.hwpack.testing import (
     DummyFetchedPackage,
     EachOf,
@@ -40,10 +40,10 @@ from linaro_image_tools.hwpack.testing import (
     MatchesStructure,
     MatchesSetwise,
     parse_packages_file_content,
-    )
+)
 from linaro_image_tools.hwpack.packages import (
     get_packages_file,
-    )
+)
 
 
 def run_doctest(obj, name):
@@ -117,7 +117,7 @@ class TestMatchesPackage(TestCase):
         observed = DummyFetchedPackage("foo", "1.1", depends="bar")
         expected = DummyFetchedPackage("foo", "1.1", depends="baz")
         self.assertRaises(AssertionError, self.assertThat, observed,
-            MatchesPackage(expected))
+                          MatchesPackage(expected))
 
     def test_skip_one_attribute(self):
         observed = DummyFetchedPackage("foo", "1.1", depends="bar")

@@ -30,7 +30,7 @@ from linaro_image_tools.hwpack.testing import (
     ConfigFileFixture,
     DummyFetchedPackage,
     IsHardwarePack,
-    )
+)
 from linaro_image_tools.hwpack.config import Config
 from linaro_image_tools.testing import TestCaseWithFixtures
 from linaro_image_tools.utils import find_command

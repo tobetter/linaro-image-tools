@@ -36,12 +36,12 @@ from linaro_image_tools.hwpack.testing import (
     MatchesPackageRelationshipList,
     MatchesStructure,
     Not,
-    )
+)
 from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
     HardwarePackFormatV2,
     HardwarePackFormatV3,
-    )
+)
 
 
 class MetadataTests(TestCase):
@@ -287,7 +287,7 @@ class NewMetadataTests(TestCase):
 
     def test_format(self):
         metadata = Metadata("ahwpack", "4", "armel",
-                                    format=HardwarePackFormatV3())
+                            format=HardwarePackFormatV3())
         # Need to call also this one!
         metadata.add_v2_config()
         metadata.add_v3_config(bootloaders=None)
@@ -298,7 +298,7 @@ class NewMetadataTests(TestCase):
     def test_section_bootloaders(self):
         bootloaders = {'u_boot': {'file': 'a_file'}}
         metadata = Metadata("ahwpack", "4", "armel",
-                                    format=HardwarePackFormatV3())
+                            format=HardwarePackFormatV3())
         # Need to call also this one!
         metadata.add_v2_config()
         metadata.add_v3_config(bootloaders=bootloaders)
@@ -309,7 +309,7 @@ class NewMetadataTests(TestCase):
 
     def test_section_wireless(self):
         metadata = Metadata("ahwpack", "4", "armel",
-                                    format=HardwarePackFormatV3())
+                            format=HardwarePackFormatV3())
         wireless_list = ['wlan0', 'wl0']
         # Need to call also this one!
         metadata.add_v2_config(wireless_interfaces=wireless_list)
@@ -321,7 +321,7 @@ class NewMetadataTests(TestCase):
 
     def test_section_wired(self):
         metadata = Metadata("ahwpack", "4", "armel",
-                                    format=HardwarePackFormatV3())
+                            format=HardwarePackFormatV3())
         wired_list = ['eth0', 'usb0']
         # Need to call also this one!
         metadata.add_v2_config(wired_interfaces=wired_list)
@@ -332,7 +332,7 @@ class NewMetadataTests(TestCase):
 
     def test_section_extra_serial_options(self):
         metadata = Metadata("ahwpack", "4", "armel",
-                                    format=HardwarePackFormatV3())
+                            format=HardwarePackFormatV3())
         options = ['option1', 'option2,option3']
         # Need to call also this one!
         metadata.add_v2_config(extra_serial_options=options)
@@ -388,7 +388,7 @@ class HardwarePackTests(TestCase):
         self.assertThat(
             tf,
             HardwarePackHasFile("FORMAT",
-                content=hwpack.format.__str__() + "\n"))
+                                content=hwpack.format.__str__() + "\n"))
 
     def test_creates_metadata_file(self):
         metadata = Metadata(
@@ -432,7 +432,7 @@ class HardwarePackTests(TestCase):
         self.assertThat(
             tf,
             HardwarePackHasFile("pkgs/%s" % package.filename,
-                content=package.content.read()))
+                                content=package.content.read()))
 
     def test_adds_multiple_packages_at_once(self):
         package1 = DummyFetchedPackage("foo", "1.1")
@@ -443,11 +443,11 @@ class HardwarePackTests(TestCase):
         self.assertThat(
             tf,
             HardwarePackHasFile("pkgs/%s" % package1.filename,
-                content=package1.content.read()))
+            content=package1.content.read()))
         self.assertThat(
             tf,
             HardwarePackHasFile("pkgs/%s" % package2.filename,
-                content=package2.content.read()))
+                                content=package2.content.read()))
 
     def test_adds_multiple_in_multiple_steps(self):
         package1 = DummyFetchedPackage("foo", "1.1")
@@ -459,11 +459,11 @@ class HardwarePackTests(TestCase):
         self.assertThat(
             tf,
             HardwarePackHasFile("pkgs/%s" % package1.filename,
-                content=package1.content.read()))
+                                content=package1.content.read()))
         self.assertThat(
             tf,
             HardwarePackHasFile("pkgs/%s" % package2.filename,
-                content=package2.content.read()))
+                                content=package2.content.read()))
 
     def test_add_packages_without_content_leaves_out_debs(self):
         package1 = DummyFetchedPackage("foo", "1.1", no_content=True)
@@ -582,7 +582,7 @@ class HardwarePackTests(TestCase):
         tf = self.get_tarfile(hwpack)
         self.assertThat(
             tf, HardwarePackHasFile("sources.list.d/ubuntu.list",
-                content="deb " + source + "\n"))
+                                    content="deb " + source + "\n"))
 
     def test_adds_multiple_sources_list_files(self):
         hwpack = HardwarePack(self.metadata)
@@ -592,10 +592,10 @@ class HardwarePackTests(TestCase):
         tf = self.get_tarfile(hwpack)
         self.assertThat(
             tf, HardwarePackHasFile("sources.list.d/ubuntu.list",
-                content="deb " + source1 + "\n"))
+                                    content="deb " + source1 + "\n"))
         self.assertThat(
             tf, HardwarePackHasFile("sources.list.d/linaro.list",
-                content="deb " + source2 + "\n"))
+                                    content="deb " + source2 + "\n"))
 
     def test_overwrites_sources_list_file(self):
         hwpack = HardwarePack(self.metadata)
@@ -606,7 +606,7 @@ class HardwarePackTests(TestCase):
         tf = self.get_tarfile(hwpack)
         self.assertThat(
             tf, HardwarePackHasFile("sources.list.d/ubuntu.list",
-                content="deb " + new_source + "\n"))
+                                    content="deb " + new_source + "\n"))
 
     def test_creates_sources_list_gpg_dir(self):
         hwpack = HardwarePack(self.metadata)

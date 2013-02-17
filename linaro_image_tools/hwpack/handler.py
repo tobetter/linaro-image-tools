@@ -237,7 +237,7 @@ class HardwarepackHandler(object):
             if revision is not None and str(revision) != pkg_revision:
                 continue
             if (architecture is not None and
-                str(architecture) != pkg_architecture):
+            str(architecture) != pkg_architecture):
                 continue
 
             # Got a matching package - return its path inside the tarball

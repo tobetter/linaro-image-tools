@@ -149,9 +149,8 @@ class TarfileHasFile(Matcher):
         if self.path not in tarball.getnames():
             return TarfileMissingPathMismatch(tarball, self.path)
         info = tarball.getmember(self.path)
-        for attr in (
-            "type", "size", "mode", "linkname", "uid", "gid",
-            "uname", "gname"):
+        for attr in ("type", "size", "mode", "linkname",
+                     "uid", "gid", "uname", "gname"):
             expected = getattr(self, attr, None)
             if expected is not None:
                 actual = getattr(info, attr)
@@ -170,7 +169,7 @@ class TarfileHasFile(Matcher):
                 for name in tarball.getnames():
                     name_frags = name.split('/')
                     if (len(name_frags) == len(path_frags) + 1 and
-                        name_frags[:-1] == path_frags):
+                    name_frags[:-1] == path_frags):
                         contents.append(name_frags[-1])
                 content_mismatch = self.content_matcher.match(contents)
                 if content_mismatch:

@@ -32,7 +32,7 @@ from parted import (
     Disk,
     PARTITION_NORMAL,
     PARTITION_EXTENDED,
-    )
+)
 
 from linaro_image_tools import cmd_runner
 
@@ -54,7 +54,8 @@ MIN_IMAGE_SIZE = ROUND_IMAGE_TO
 
 
 def setup_android_partitions(board_config, media, image_size, bootfs_label,
-                     should_create_partitions, should_align_boot_part=False):
+                             should_create_partitions,
+                             should_align_boot_part=False):
     cylinders = None
     if not media.is_block_device:
         image_size_in_bytes = get_partition_size_in_bytes(image_size)
@@ -304,7 +305,7 @@ def calculate_partition_size_and_offset(image_file):
     for partition in disk.partitions:
         assert partition.type == PARTITION_NORMAL, (
             "Parted should only return normal partitions but got type %i" %
-                partition.type)
+            partition.type)
         if 'boot' in partition.getFlagsAsString():
             geometry = partition.geometry
             vfat_offset = geometry.start * SECTOR_SIZE

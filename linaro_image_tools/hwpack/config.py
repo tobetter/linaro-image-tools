@@ -30,7 +30,7 @@ from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
     HardwarePackFormatV2,
     HardwarePackFormatV3,
-    )
+)
 
 from hwpack_fields import (
     ARCHITECTURES_FIELD,
@@ -180,7 +180,7 @@ class Config(object):
                 self.parser = yaml.safe_load(fp)
             except yaml.YAMLError, e:
                 obfuscated_yaml_e = re.sub(r"([^ ]https://).+?(@)",
-                                      r"\1***\2", str(e))
+                                           r"\1***\2", str(e))
             else:
                 # If YAML parsed OK, we don't have an error.
                 obfuscated_e = None
@@ -333,7 +333,7 @@ class Config(object):
             return HardwarePackFormatV3()
         else:
             raise HwpackConfigError("Format version '%s' is not supported." %
-                                        format_string)
+                                    format_string)
 
     @property
     def name(self):
@@ -419,7 +419,7 @@ class Config(object):
                 else:
                     if len(value.keys()) > 1:
                         raise HwpackConfigError("copy_files entry found with"
-                            "more than one destination")
+                                                "more than one destination")
                     source_path = value.keys()[0]
                     dest_path = value[source_path]
 
@@ -427,7 +427,8 @@ class Config(object):
                     # Target path should be relative, or start with /boot - we
                     # don't support to copying to anywhere other than /boot.
                     if dest_path[0] == "/":
-                        raise HwpackConfigError("copy_files destinations must"
+                        raise HwpackConfigError(
+                            "copy_files destinations must"
                             "be relative to /boot or start with /boot.")
                     dest_path = os.path.join("/boot", dest_path)
 
@@ -952,7 +953,7 @@ class Config(object):
             raise HwpackConfigError("Empty value for format")
         if not format.is_supported:
             raise HwpackConfigError("Format version '%s' is not supported." %
-                                        format)
+                                    format)
 
     def _assert_matches_pattern(self, regex, config_item, error_message):
             if re.match(regex, config_item) is None:
@@ -1110,7 +1111,7 @@ class Config(object):
         if not mmc_id:
             raise HwpackConfigError(
                 "No mmc_id in the [%s] section" %
-                    self.MAIN_SECTION)
+                self.MAIN_SECTION)
         else:
             self._assert_matches_pattern(
                 r"[0-9]:[0-9]", mmc_id, "Invalid mmc_id %s" % mmc_id)

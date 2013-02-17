@@ -38,7 +38,7 @@ from linaro_image_tools.hwpack.packages import (
     FetchedPackage,
     LocalArchiveMaker,
     PackageFetcher,
-    )
+)
 
 from linaro_image_tools.hwpack.hwpack_fields import (
     PACKAGE_FIELD,
@@ -125,7 +125,7 @@ class HardwarePackBuilder(object):
                 break
         else:
             raise AssertionError("Package '%s' was not fetched." %
-                                wanted_package_name)
+                                 wanted_package_name)
         return wanted_package
 
     def add_file_to_hwpack(self, package, wanted_file, target_path):
@@ -167,8 +167,8 @@ class HardwarePackBuilder(object):
         base_dest_path = os.path.join(base_dest_path, self.config.bootloader)
         # Extract bootloader file
         if self.config.bootloader_package and self.config.bootloader_file:
-            dest_path = os.path.join(base_dest_path,
-                            os.path.dirname(self.config.bootloader_file))
+            dest_path = os.path.join(
+                base_dest_path, os.path.dirname(self.config.bootloader_file))
             self.do_extract_file(self.config.bootloader_package,
                                  self.config.bootloader_file,
                                  dest_path)
@@ -176,7 +176,7 @@ class HardwarePackBuilder(object):
         # Extract SPL file
         if self.config.spl_package and self.config.spl_file:
             dest_path = os.path.join(base_dest_path,
-                            os.path.dirname(self.config.spl_file))
+                                     os.path.dirname(self.config.spl_file))
             self.do_extract_file(self.config.spl_package,
                                  self.config.spl_file,
                                  dest_path)
@@ -241,10 +241,10 @@ class HardwarePackBuilder(object):
                 if self.format.format_as_string == '3.0':
                     if self.config.bootloaders is not None:
                         self.packages.extend(self.find_bootloader_packages(
-                                                self.config.bootloaders))
+                            self.config.bootloaders))
                     if self.config.boards is not None:
                         self.packages.extend(self.find_bootloader_packages(
-                                                self.config.boards))
+                            self.config.boards))
 
                     self.packages.extend(self.find_copy_files_packages())
                 else:
@@ -316,12 +316,12 @@ class HardwarePackBuilder(object):
         if self.config.bootloader_file is not None:
             assert(self.config.bootloader_package is not None)
             bootloader_package = self.find_fetched_package(
-                            self.packages,
-                            self.config.bootloader_package)
+                self.packages,
+                self.config.bootloader_package)
             self.hwpack.metadata.u_boot = self.add_file_to_hwpack(
-                                    bootloader_package,
-                                    self.config.bootloader_file,
-                                    self.hwpack.U_BOOT_DIR)
+                bootloader_package,
+                self.config.bootloader_file,
+                self.hwpack.U_BOOT_DIR)
 
         spl_package = None
         if self.config.spl_file is not None:
@@ -329,13 +329,13 @@ class HardwarePackBuilder(object):
             spl_package = self.find_fetched_package(self.packages,
                                                     self.config.spl_package)
             self.hwpack.metadata.spl = self.add_file_to_hwpack(
-                                    spl_package,
-                                    self.config.spl_file,
-                                    self.hwpack.SPL_DIR)
+                spl_package,
+                self.config.spl_file,
+                self.hwpack.SPL_DIR)
 
         # bootloader_package and spl_package can be identical
         if (bootloader_package is not None and
-            bootloader_package in self.packages):
+        bootloader_package in self.packages):
             self.packages.remove(bootloader_package)
         if (spl_package is not None and spl_package in self.packages):
             self.packages.remove(spl_package)
@@ -351,7 +351,7 @@ class HardwarePackBuilder(object):
         for local_package in local_packages:
             if local_package not in self.packages:
                 logger.warning("Local package '%s' not included",
-                                local_package.name)
+                               local_package.name)
         self.hwpack.add_dependency_package(self.config.packages)
 
     def _extract_build_info(self, cache_dir, out_name, manifest_name):

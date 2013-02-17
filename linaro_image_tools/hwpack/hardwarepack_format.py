@@ -37,8 +37,8 @@ class HardwarePackFormat(object):
             raise NotImplementedError()
         if self.is_deprecated:
             logger.warning("The format '%s' is deprecated, please update "
-                               "your hardware pack configuration." %
-                               self.format_as_string)
+                           "your hardware pack configuration." %
+                           self.format_as_string)
         return self.format_as_string
 
 

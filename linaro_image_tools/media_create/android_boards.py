@@ -51,7 +51,7 @@ from linaro_image_tools.media_create.boards import (
     align_up,
     install_mx5_boot_loader,
     make_boot_script,
-    )
+)
 from linaro_image_tools.utils import DEFAULT_LOGGER_NAME
 
 logger = logging.getLogger(DEFAULT_LOGGER_NAME)
@@ -108,7 +108,7 @@ class AndroidBoardConfig(BoardConfig):
         self._extra_serial_options = value
 
     extra_serial_options = property(_get_extra_serial_options,
-                                 _set_extra_serial_options)
+                                    _set_extra_serial_options)
 
     def _get_live_serial_options(self):
         serial_options = self._live_serial_options
@@ -180,7 +180,7 @@ class AndroidBoardConfig(BoardConfig):
         return (
             "%(serial_options)s "
             "%(boot_args_options)s"
-             % replacements)
+            % replacements)
 
     def _get_boot_env(self, consoles):
         """Get the boot environment for this board.
@@ -205,7 +205,7 @@ class AndroidBoardConfig(BoardConfig):
         # TODO: Use partition_mounted() here to make sure the partition is
         # always umounted after we're done.
         cmd_runner.run(['mount', boot_partition, boot_disk],
-            as_root=True).wait()
+                       as_root=True).wait()
 
         boot_env = self._get_boot_env(consoles)
         cmdline_filepath = os.path.join(boot_disk, "cmdline")
@@ -264,9 +264,9 @@ class AndroidBoardConfig(BoardConfig):
             assert start_addr > 0, ("Not possible to add extra partition"
                                     "when boot partition starts at '0'")
             return '%s,%s,%s,*\n%s,%s,L\n%s,-,E\n%s,%s,L\n%s,%s,L\n%s,,,-' % (
-            boot_start, boot_len, partition_type, system_start, _system_len,
-            cache_start, cache_start, _cache_len, userdata_start,
-            _userdata_len, sdcard_start)
+                boot_start, boot_len, partition_type, system_start,
+                _system_len, cache_start, cache_start, _cache_len,
+                userdata_start, _userdata_len, sdcard_start)
 
         return '%s,%s,%s,*\n%s,%s,L\n%s,%s,L\n%s,-,E\n%s,%s,L\n%s,,,-' % (
             boot_start, boot_len, partition_type, system_start, _system_len,
@@ -403,7 +403,7 @@ class AndroidMx53LoCoConfig(AndroidBoardConfig, Mx53LoCoConfig):
         self._extra_serial_options = value
 
     extra_serial_options = property(_get_extra_serial_options,
-                                 _set_extra_serial_options)
+                                    _set_extra_serial_options)
 
     def _get_android_specific_args(self):
         android_args = self._android_specific_args
@@ -452,7 +452,7 @@ class AndroidMx6QSabreliteConfig(AndroidMx53LoCoConfig):
 class AndroidSamsungConfig(AndroidBoardConfig):
     def get_sfdisk_cmd(self, should_align_boot_part=False):
         loaders_min_len = (self.samsung_bl1_start + self.samsung_bl1_len +
-            self.samsung_bl2_len + self.samsung_env_len)
+                           self.samsung_bl2_len + self.samsung_env_len)
 
         loader_start, loader_end, loader_len = align_partition(
             1, loaders_min_len, 1, PART_ALIGN_S)
@@ -515,7 +515,7 @@ android_board_configs = {
     'snowball_sd': AndroidSnowballSdConfig,
     'vexpress': AndroidVexpressConfig,
     'vexpress-a9': AndroidVexpressConfig,
-    }
+}
 
 
 def get_board_config(board):

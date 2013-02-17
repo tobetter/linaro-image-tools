@@ -96,7 +96,7 @@ DEFINED_PARTITION_LAYOUTS = [
     BOOTFS16,
     BOOTFS,
     RESERVED_BOOTFS,
-    ]
+]
 
 # Supported bootloaders
 U_BOOT = 'u_boot'
@@ -150,7 +150,8 @@ hwpack_v3_layout = {
     SNOWBALL_STARTUP_FILES_CONFIG_FIELD: None,
     SOURCES_FIELD: None,
     BOOTLOADERS_FIELD: {
-        "*": {
+        "*":
+        {
             PACKAGE_FIELD: None,
             FILE_FIELD: None,
             IN_BOOT_PART_FIELD: None,
@@ -162,7 +163,7 @@ hwpack_v3_layout = {
             SPL_IN_BOOT_PART_FIELD: None,
             SPL_DD_FIELD: None,
             ENV_DD_FIELD: None,
-            }
+        }
     },
     BOARDS_FIELD: "root",
 }
