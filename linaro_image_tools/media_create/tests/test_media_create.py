@@ -3371,8 +3371,8 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.config.hardwarepack_handler = \
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz')
         self.config.hardwarepack_handler.get_format = lambda: '3.0'
-        self.config.hardwarepack_handler.get_file = lambda file_alias:
-        ['file1', 'file2']
+        self.config.hardwarepack_handler.get_file = \
+            lambda file_alias: ['file1', 'file2']
         self.config.hardwarepack_handler.get_file_from_package = \
             self.get_file_from_package
         self.config.bootloader_copy_files = {
