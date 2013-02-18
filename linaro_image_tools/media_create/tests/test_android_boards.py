@@ -156,9 +156,10 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
     def test_extra_boot_args_options(self):
         """The field extra_boot_args_options should be a concatenated string.
         Testing presence of a field defined in the parent class."""
-        values = {'dtb_name': 'a_name',
-                  'extra_boot_args_options': ['earlyprintk', 'mem=128M@0',
-                                              'mali.mali_mem=64M@128M']
+        values = {
+            'dtb_name': 'a_name',
+            'extra_boot_args_options': ['earlyprintk', 'mem=128M@0',
+                                        'mali.mali_mem=64M@128M']
         }
         yaml_conf = self.android_hwpack_extra_boot % values
         name = self._get_tmp_file_name(yaml_conf)
@@ -463,8 +464,8 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
         config = ((self.hwpack_format + self.hwpack_extra_boot +
-                    self.hwpack_extra_serial + self.hwpack_android_args) %
-                    values)
+                   self.hwpack_extra_serial + self.hwpack_android_args) %
+                   values)
         self.assertBootEnv(expected, config=config, board='mx53loco')
 
     def test_android_mx5_old(self):

@@ -133,7 +133,7 @@ def verify_file_integrity(sig_file_list):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 cwd=sha_cwd
-                ).communicate()
+            ).communicate()
         except cmd_runner.SubcommandNonZeroReturnValue as inst:
             sha1sums_out = inst.stdout
 

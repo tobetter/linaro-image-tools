@@ -71,8 +71,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
     def test_basic_parse(self):
         ini_format = '[hwpack]\nformat=2.0\nsupport=supported'
         output_format = "format: '3.0'\nsupport: supported\n"
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-          get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -84,8 +84,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
         """
         ini_format = '[hwpack]\nformat=2.0\narchitectures=armhf armel'
         output_format = "format: '3.0'\narchitectures:\n- armhf\n- armel\n"
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-          get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -99,8 +99,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
         out_format = ("format: '3.0'\nbootloaders:\n  u_boot:\n    dd: '33'"
                       "\n    file: a_file\n    in_boot_part: true\n"
                       "    package: a_package\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-          get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -113,8 +113,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
         out_format = ("format: '3.0'\nbootloaders:\n  u_boot:\n "
                       "   extra_boot_options:\n    - opt1\n    "
                       "- opt2\n    package: a_package\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-          get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -124,8 +124,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
         """Tests the correct creation of the extra_serial_options part."""
         ini_format = ("[hwpack]\nformat=2.0\nextra_serial_options=opt1 opt2")
         out_format = ("format: '3.0'\nextra_serial_options:\n- opt1\n- opt2\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-          get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -137,8 +137,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
                       "install2")
         out_format = ("format: '3.0'\nassume_installed:\n- install1\n- "
                       "install2\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-          get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -148,8 +148,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
         """Tests the correct creation of the extra_serial_options part."""
         ini_format = ("[hwpack]\nformat=2.0\ninclude-debs=yes")
         out_format = ("format: '3.0'\ninclude_debs: true\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-          get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -160,8 +160,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
         ini_format = ("[hwpack]\nformat=2.0\ndtb_file=boot/a-*-path/file.dtb")
         out_format = ("format: '3.0'\ndtb_files:\n- board.dtb: "
                       "boot/a-*-path/file.dtb\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-          get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -175,8 +175,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
         not a string."""
         ini_format = ("[hwpack]\nformat=2.0\nmmc_id=1:1")
         out_format = ("format: '3.0'\nmmc_id: '1:1'\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-          get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()

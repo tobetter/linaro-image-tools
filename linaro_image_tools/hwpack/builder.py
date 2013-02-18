@@ -334,8 +334,7 @@ class HardwarePackBuilder(object):
                 self.hwpack.SPL_DIR)
 
         # bootloader_package and spl_package can be identical
-        if (bootloader_package is not None and
-        bootloader_package in self.packages):
+        if (bootloader_package is not None and bootloader_package in self.packages):
             self.packages.remove(bootloader_package)
         if (spl_package is not None and spl_package in self.packages):
             self.packages.remove(spl_package)

@@ -34,8 +34,8 @@ class TestPep8(TestCase):
              '--repeat',
              '--ignore=%s' % ','.join(ignore),
              '.'],
-             stdout=subprocess.PIPE,
-             stderr=subprocess.PIPE)
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
         (stdout, stderr) = proc.communicate()
         self.assertEquals('', stdout)
         self.assertEquals('', stderr)

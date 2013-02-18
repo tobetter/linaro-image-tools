@@ -872,10 +872,10 @@ class TestCreateToc(TestCaseWithFixtures):
         maxint = '\xFF\xFF\xFF\x7F'
         minint = '\xFF\xFF\xFF\xFF'
         line2 = maxint + maxint + zero + minint + minint + \
-                 'hello' + zero + '\x00\x00\x00'
+          'hello' + zero + '\x00\x00\x00'
         line3 = '\x01\x00\x00\x00' '\x64\x00\x00\x00' + zero + \
-            '\x05\x00\x00\x00' '\x05\x00\x00\x00' \
-            'hello' + zero + '\x00\x00\x00'
+          '\x05\x00\x00\x00' '\x05\x00\x00\x00' \
+          'hello' + zero + '\x00\x00\x00'
         self.expected = line1 + line2 + line3
         self.board_conf = boards.SnowballEmmcConfig()
 
@@ -1358,7 +1358,7 @@ class TestBootSteps(TestCaseWithFixtures):
             self.funcs_calls.append('install_samsung_boot_loader')
 
         self.useFixture(MockSomethingFixture(os.path, 'exists',
-            lambda file: True))
+                                             lambda file: True))
         board_conf.hardwarepack_handler = (
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz'))
         board_conf.hardwarepack_handler.get_format = (
@@ -2001,10 +2001,10 @@ class TestGetBootCmd(TestCase):
             rootfs_id="UUID=deadbeef", i_img_data="initrd", d_img_data=None)
         expected = {
             'bootargs': 'console=ttySAC1,115200n8  root=UUID=deadbeef '
-                        'rootwait ro',
+            'rootwait ro',
             'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
-                        'fatload mmc 0:2 0x42000000 uInitrd; '
-                        'bootm 0x40007000 0x42000000',
+            'fatload mmc 0:2 0x42000000 uInitrd; '
+            'bootm 0x40007000 0x42000000',
             'ethact': 'smc911x-0',
             'ethaddr': '00:40:5c:26:0a:5b',
             'fdt_high': '0xffffffff',
@@ -2018,10 +2018,10 @@ class TestGetBootCmd(TestCase):
             rootfs_id="UUID=deadbeef", i_img_data="initrd", d_img_data=None)
         expected = {
             'bootargs': 'console=ttySAC2,115200n8  root=UUID=deadbeef '
-                        'rootwait ro',
+            'rootwait ro',
             'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
-                        'fatload mmc 0:2 0x42000000 uInitrd; '
-                        'bootm 0x40007000 0x42000000',
+            'fatload mmc 0:2 0x42000000 uInitrd; '
+            'bootm 0x40007000 0x42000000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
@@ -2035,8 +2035,8 @@ class TestGetBootCmd(TestCase):
             'bootargs': 'console=ttySAC2,115200n8  root=UUID=deadbeef '
                         'rootwait ro',
             'bootcmd': 'fatload mmc 0:2 0x40007000 uImage; '
-                        'fatload mmc 0:2 0x42000000 uInitrd; '
-                        'bootm 0x40007000 0x42000000',
+            'fatload mmc 0:2 0x42000000 uInitrd; '
+            'bootm 0x40007000 0x42000000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)
@@ -2372,7 +2372,8 @@ class TestBoards(TestCaseWithFixtures):
         self.useFixture(MockSomethingFixture(
             os.path, "getsize",
             lambda s: (BoardConfig.LOADER_MIN_SIZE_S - 1) * SECTOR_SIZE + 1))
-        self.assertRaises(AssertionError,
+        self.assertRaises(
+            AssertionError,
             install_mx5_boot_loader, "imx_file", "boot_device_or_file",
             BoardConfig.LOADER_MIN_SIZE_S)
 
@@ -3370,8 +3371,8 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.config.hardwarepack_handler = \
             TestSetMetadata.MockHardwarepackHandler('ahwpack.tar.gz')
         self.config.hardwarepack_handler.get_format = lambda: '3.0'
-        self.config.hardwarepack_handler.get_file = \
-          lambda file_alias: ['file1', 'file2']
+        self.config.hardwarepack_handler.get_file = lambda file_alias:
+        ['file1', 'file2']
         self.config.hardwarepack_handler.get_file_from_package = \
             self.get_file_from_package
         self.config.bootloader_copy_files = {
@@ -3417,7 +3418,8 @@ class TestPopulateBoot(TestCaseWithFixtures):
         self.config.bootloader = "u_boot"
         self.call_populate_boot(self.config)
         expected_calls = self.expected_calls[:]
-        expected_calls.insert(2,
+        expected_calls.insert(
+            2,
             '%s cp -v chroot_dir/usr/lib/u-boot/bootloader_flavor/u-boot.bin '
             'boot_disk' % sudo_args)
         self.assertEquals(
@@ -3809,7 +3811,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
             "version: " + version,
             "architecture: " + architecture,
             "format: 3.0"
-            ])
+        ])
         print metadata
         tar_file = tarfile.open(location, mode='w:gz')
         tarinfo = tarfile.TarInfo("metadata")

@@ -202,7 +202,7 @@ class ConfigTests(TestCase):
 
     def test_validate_invalid_u_boot_package_name(self):
         config = self.get_config(
-                self.valid_start_v2 + "u_boot_package = ~~\n")
+            self.valid_start_v2 + "u_boot_package = ~~\n")
         self.assertValidationError(
             "Invalid value in u_boot_package in the [hwpack] section: ~~",
             config)
