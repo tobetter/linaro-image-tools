@@ -868,14 +868,14 @@ class TestCreateToc(TestCaseWithFixtures):
         #Create the test's input data structures
         zero = '\x00\x00\x00\x00'
         line1 = zero + zero + zero + zero + zero + 'b' + zero + zero + \
-          '\x00\x00\x00'
+            '\x00\x00\x00'
         maxint = '\xFF\xFF\xFF\x7F'
         minint = '\xFF\xFF\xFF\xFF'
         line2 = maxint + maxint + zero + minint + minint + \
-          'hello' + zero + '\x00\x00\x00'
+            'hello' + zero + '\x00\x00\x00'
         line3 = '\x01\x00\x00\x00' '\x64\x00\x00\x00' + zero + \
-          '\x05\x00\x00\x00' '\x05\x00\x00\x00' \
-          'hello' + zero + '\x00\x00\x00'
+            '\x05\x00\x00\x00' '\x05\x00\x00\x00' \
+            'hello' + zero + '\x00\x00\x00'
         self.expected = line1 + line2 + line3
         self.board_conf = boards.SnowballEmmcConfig()
 
@@ -3159,17 +3159,17 @@ class TestPartitionSetup(TestCaseWithFixtures):
             board_conf, Media(tmpfile), '2G', 'boot',
             'root', 'ext3', True, True, True)
         self.assertEqual(
-        # This is the call that would create a 2 GiB image file.
-        ['dd of=%s bs=1 seek=2147483648 count=0' % tmpfile,
-        '%s sfdisk -l %s' % (sudo_args, tmpfile),
-        # This call would partition the image file.
-        '%s sfdisk --force -D -uS -H %s -S %s -C 1024 %s' % (
-            sudo_args, HEADS, SECTORS, tmpfile),
-        # Make sure changes are written to disk.
-            'sync',
-            '%s sfdisk -l %s' % (sudo_args, tmpfile),
-            '%s mkfs.vfat -F 32 %s -n boot' % (sudo_args, bootfs_dev),
-            '%s mkfs.ext3 %s -L root' % (sudo_args, rootfs_dev)],
+            # This is the call that would create a 2 GiB image file.
+            ['dd of=%s bs=1 seek=2147483648 count=0' % tmpfile,
+             '%s sfdisk -l %s' % (sudo_args, tmpfile),
+             # This call would partition the image file.
+             '%s sfdisk --force -D -uS -H %s -S %s -C 1024 %s' % (
+                 sudo_args, HEADS, SECTORS, tmpfile),
+             # Make sure changes are written to disk.
+             'sync',
+             '%s sfdisk -l %s' % (sudo_args, tmpfile),
+             '%s mkfs.vfat -F 32 %s -n boot' % (sudo_args, bootfs_dev),
+             '%s mkfs.ext3 %s -L root' % (sudo_args, rootfs_dev)],
             popen_fixture.mock.commands_executed)
 
     def test_setup_partitions_for_block_device(self):

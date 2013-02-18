@@ -242,7 +242,7 @@ class Metadata(object):
                 vmlinuz=config.vmlinuz,
                 wired_interfaces=config.wired_interfaces,
                 wireless_interfaces=config.wireless_interfaces,
-                )
+            )
         if config.format.format_as_string == '3.0':
             metadata.add_v3_config(boards=config.boards,
                                    bootloaders=config.bootloaders,

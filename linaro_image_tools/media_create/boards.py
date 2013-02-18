@@ -499,7 +499,7 @@ class BoardConfig(object):
 
     def get_sfdisk_cmd(self, should_align_boot_part=False):
         if (self.partition_layout in ['bootfs_rootfs', 'bootfs16_rootfs'] or
-        self.board == 'snowball_sd'):
+                self.board == 'snowball_sd'):
             return self.get_normal_sfdisk_cmd(should_align_boot_part)
         elif self.partition_layout in ['reserved_bootfs_rootfs']:
             return self.get_reserved_sfdisk_cmd(should_align_boot_part)
@@ -716,7 +716,7 @@ class BoardConfig(object):
             make_boot_ini(boot_script_path, boot_dir)
 
         if (self.snowball_startup_files_config is not None and
-        self.board != 'snowball_sd'):
+                self.board != 'snowball_sd'):
             self.populate_raw_partition(boot_device_or_file, chroot_dir)
 
         if self.env_dd:
@@ -1688,7 +1688,7 @@ class I386Config(BoardConfig):
         cmd_runner.run([self.BOOTLOADER_CMD,
                         '--boot-directory=%s' % boot_dir,
                         '--modules', 'part_msdos', img_loop],
-                        as_root=True).wait()
+                       as_root=True).wait()
 
         # generate loader config file
         loader_config = self.BOOTLOADER_CFG % (os.path.basename(k_img_data),

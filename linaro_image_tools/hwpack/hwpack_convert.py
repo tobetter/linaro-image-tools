@@ -284,7 +284,7 @@ class HwpackConverter(object):
                     nested_value[key] = value
             if self.extra_boot_options:
                 nested_value[EXTRA_BOOT_OPTIONS_FIELD] = \
-                  self.extra_boot_options
+                    self.extra_boot_options
             if self.spl:
                 for key, value in self.spl.iteritems():
                     nested_value[key] = value

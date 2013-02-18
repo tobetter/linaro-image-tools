@@ -65,12 +65,10 @@ class GetPackagesFileTests(TestCase):
             Size: %(size)d
             Architecture: armel
             MD5sum: %(md5)s
-            \n""" %
-            {
-                'filename': package.filename,
-                'size': package.size,
-                'md5': package.md5,
-            }), get_packages_file([package]))
+            \n""" % {'filename': package.filename,
+                     'size': package.size,
+                     'md5': package.md5,
+                     }), get_packages_file([package]))
 
     def test_two_stanzas(self):
         package1 = DummyFetchedPackage("foo", "1.1")
@@ -146,12 +144,11 @@ class GetPackagesFileTests(TestCase):
             Size: %(size)d
             Architecture: all
             MD5sum: %(md5)s
-            \n""" %
-            {
-                'filename': package.filename,
-                'size': package.size,
-                'md5': package.md5,
-            }), get_packages_file([package], extra_text="Status: bar"))
+            \n""" % {'filename': package.filename,
+                     'size': package.size,
+                     'md5': package.md5,
+                     }), get_packages_file([package],
+                                           extra_text="Status: bar"))
 
 
 class StringifyRelationshipTests(TestCaseWithFixtures):

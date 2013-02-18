@@ -169,7 +169,7 @@ class TarfileHasFile(Matcher):
                 for name in tarball.getnames():
                     name_frags = name.split('/')
                     if (len(name_frags) == len(path_frags) + 1 and
-                    name_frags[:-1] == path_frags):
+                            name_frags[:-1] == path_frags):
                         contents.append(name_frags[-1])
                 content_mismatch = self.content_matcher.match(contents)
                 if content_mismatch:

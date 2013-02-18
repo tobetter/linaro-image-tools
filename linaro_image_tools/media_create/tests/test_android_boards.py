@@ -465,7 +465,7 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
             'initrd_high': '0xffffffff'}
         config = ((self.hwpack_format + self.hwpack_extra_boot +
                    self.hwpack_extra_serial + self.hwpack_android_args) %
-                   values)
+                  values)
         self.assertBootEnv(expected, config=config, board='mx53loco')
 
     def test_android_mx5_old(self):

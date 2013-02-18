@@ -110,5 +110,5 @@ class HwpackReaderTests(TestCaseWithFixtures):
         reader._read_hwpacks_metadata()
         self.hwpack.sethwpack(tarball)
         self.hwpack.setboards({'panda': {'support': 'supported', 'bootloaders':
-                                {'u_boot': {'file': 'a_file'}}}})
+                                            {'u_boot': {'file': 'a_file'}}}})
         self.assertEqual(self.hwpack, reader.supported_elements[0])
