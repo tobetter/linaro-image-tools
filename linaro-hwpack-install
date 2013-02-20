@@ -173,8 +173,16 @@ setup_apt_sources() {
     FORCE_OPTIONS=""
   fi
 
+  # Do two updates. The first doesn't try to download package lists:
+  # * First update doesn't access net
+  #   - not allowed to fail. Image file + hwpack should contain all packages
+  #     needed to create image. If this update fails we have problems.
+  # * Second update may fail
+  #   - If can't download package updates (the only difference between the two
+  #     commands), we should still be OK.
   echo "Updating apt package lists ..."
-  $sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" update -q
+  $sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" update -q --no-download
+  $sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" update -q || true
 }
 
 setup_ubuntu_rootfs() {
@@ -282,7 +290,15 @@ cleanup() {
     if [ -x /sbin/initctl.REAL ]; then
       mv -f /sbin/initctl.REAL /sbin/initctl
     fi
-    $sudo apt-get update -qq
+    # Do two updates. The first doesn't try to download package lists:
+    # * First update doesn't access net
+    #   - not allowed to fail. Image file + hwpack should contain all packages
+    #     needed to create image. If this update fails we have problems.
+    # * Second update may fail
+    #   - If can't download package updates (the only difference between the two
+    #     commands), we should still be OK.
+    $sudo apt-get update -qq --no-download
+    $sudo apt-get update -qq || true
   fi
   echo "Done"
 }

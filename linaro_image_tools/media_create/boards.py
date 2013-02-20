@@ -257,6 +257,7 @@ class BoardConfig(object):
         with self.hardwarepack_handler:
             self.hwpack_format = self.hardwarepack_handler.get_format()
             if (self.hwpack_format == self.hardwarepack_handler.FORMAT_1):
+                self.bootloader_copy_files = None
                 return
 
             if (self.hwpack_format != self.hardwarepack_handler.FORMAT_1):
