@@ -181,7 +181,7 @@ setup_apt_sources() {
   #   - If can't download package updates (the only difference between the two
   #     commands), we should still be OK.
   echo "Updating apt package lists ..."
-  $sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" update -q --no-download
+  $sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" update -q --no-download --ignore-missing
   $sudo apt-get $FORCE_OPTIONS -o "$APT_GET_OPTIONS" update -q || true
 }
 
@@ -297,7 +297,7 @@ cleanup() {
     # * Second update may fail
     #   - If can't download package updates (the only difference between the two
     #     commands), we should still be OK.
-    $sudo apt-get update -qq --no-download
+    $sudo apt-get update -qq --no-download --ignore-missing
     $sudo apt-get update -qq || true
   fi
   echo "Done"
