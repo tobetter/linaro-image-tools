@@ -29,10 +29,11 @@ class TestPep8(TestCase):
         # can be re-enabled once we drop support for natty.
         ignore = ['E202']
         # Ignore return code.
-        proc = subprocess.Popen(['pep8',
-            '--repeat',
-            '--ignore=%s' % ','.join(ignore),
-            '.'],
+        proc = subprocess.Popen(
+            ['pep8',
+             '--repeat',
+             '--ignore=%s' % ','.join(ignore),
+             '.'],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         (stdout, stderr) = proc.communicate()

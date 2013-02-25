@@ -42,7 +42,7 @@ from linaro_image_tools.media_create.partitions import (
     SECTOR_SIZE,
     partition_mounted,
     register_loopback,
-    )
+)
 
 from linaro_image_tools.hwpack.hwpack_fields import (
     BOOTFS,
@@ -76,7 +76,7 @@ from linaro_image_tools.hwpack.hwpack_fields import (
     SPL_IN_BOOT_PART_FIELD,
     WIRED_INTERFACES_FIELD,
     WIRELESS_INTERFACES_FIELD,
-    )
+)
 
 logger = logging.getLogger(__name__)
 
@@ -253,7 +253,7 @@ class BoardConfig(object):
 
     def set_metadata(self, hwpacks, bootloader=None, board=None):
         self.hardwarepack_handler = HardwarepackHandler(hwpacks, bootloader,
-                                                       board)
+                                                        board)
         with self.hardwarepack_handler:
             self.hwpack_format = self.hardwarepack_handler.get_format()
             if (self.hwpack_format == self.hardwarepack_handler.FORMAT_1):
@@ -318,8 +318,8 @@ class BoardConfig(object):
             elif self.partition_layout == BOOTFS16:
                 self.fat_size = 16
             else:
-                raise AssertionError("Unknown partition layout '%s'." % \
-                                         self.partition_layout)
+                raise AssertionError("Unknown partition layout '%s'." %
+                                     self.partition_layout)
 
             self.mmc_option = self.get_metadata_field(MMC_ID_FIELD)
             if self.mmc_option:
@@ -330,11 +330,11 @@ class BoardConfig(object):
             boot_min_size = self.get_metadata_field(BOOT_MIN_SIZE_FIELD)
             if boot_min_size:
                 self.BOOT_MIN_SIZE_S = align_up(int(boot_min_size) * 1024 ** 2,
-                                               SECTOR_SIZE) / SECTOR_SIZE
+                                                SECTOR_SIZE) / SECTOR_SIZE
             root_min_size = self.get_metadata_field(ROOT_MIN_SIZE_FIELD)
             if root_min_size:
                 self.ROOT_MIN_SIZE_S = align_up(int(root_min_size) * 1024 ** 2,
-                                               SECTOR_SIZE) / SECTOR_SIZE
+                                                SECTOR_SIZE) / SECTOR_SIZE
             loader_min_size = self.get_metadata_field(LOADER_MIN_SIZE_FIELD)
             if loader_min_size:
                 self.LOADER_MIN_SIZE_S = (
@@ -496,11 +496,11 @@ class BoardConfig(object):
             boot_end + 1, self.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
         return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
-        loader_start, loader_len, boot_start, boot_len, root_start)
+            loader_start, loader_len, boot_start, boot_len, root_start)
 
     def get_sfdisk_cmd(self, should_align_boot_part=False):
         if (self.partition_layout in ['bootfs_rootfs', 'bootfs16_rootfs'] or
-            self.board == 'snowball_sd'):
+                self.board == 'snowball_sd'):
             return self.get_normal_sfdisk_cmd(should_align_boot_part)
         elif self.partition_layout in ['reserved_bootfs_rootfs']:
             return self.get_reserved_sfdisk_cmd(should_align_boot_part)
@@ -524,8 +524,8 @@ class BoardConfig(object):
              "%(uimage_path)suImage; ")) % replacements
         if i_img_data is not None:
             boot_script += (
-            ("%(fatload_command)s mmc %(mmc_option)s %(initrd_addr)s " +
-             "%(uimage_path)suInitrd; ")) % replacements
+                ("%(fatload_command)s mmc %(mmc_option)s %(initrd_addr)s " +
+                 "%(uimage_path)suInitrd; ")) % replacements
             if d_img_data is not None:
                 assert self.dtb_addr is not None, (
                     "Need a dtb_addr when passing d_img_data")
@@ -605,7 +605,7 @@ class BoardConfig(object):
         (k_img_data, i_img_data, d_img_data) = self._get_kflavor_files(
             parts_dir)
         boot_env = self._get_boot_env(is_live, is_lowmem, consoles, rootfs_id,
-                                     i_img_data, d_img_data)
+                                      i_img_data, d_img_data)
 
         if self.hwpack_format == HardwarepackHandler.FORMAT_1:
             self._make_boot_files(
@@ -665,22 +665,22 @@ class BoardConfig(object):
         assert from_file is not None, "No source file name given."
         if max_size is not None:
             assert os.path.getsize(from_file) <= max_size, (
-                    "'%s' is larger than %s" % (from_file, max_size))
+                "'%s' is larger than %s" % (from_file, max_size))
         logger.info("Writing '%s' to '%s' at %s." % (from_file, to_file, seek))
         _dd(from_file, to_file, seek=seek)
 
     def install_samsung_boot_loader(self, samsung_spl_file, bootloader_file,
                                     boot_device_or_file):
                 self._dd_file(samsung_spl_file, boot_device_or_file,
-                             self.samsung_bl1_start,
-                             self.samsung_bl1_len * SECTOR_SIZE)
+                              self.samsung_bl1_start,
+                              self.samsung_bl1_len * SECTOR_SIZE)
                 self._dd_file(bootloader_file, boot_device_or_file,
-                             self.samsung_bl2_start,
-                             self.samsung_bl2_len * SECTOR_SIZE)
+                              self.samsung_bl2_start,
+                              self.samsung_bl2_len * SECTOR_SIZE)
 
     def _make_boot_files_v2(self, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data,
-                         d_img_data):
+                            boot_device_or_file, k_img_data, i_img_data,
+                            d_img_data):
         with self.hardwarepack_handler:
             spl_file = self.get_file('spl_file')
             if self.spl_in_boot_part:
@@ -699,7 +699,7 @@ class BoardConfig(object):
             bootloader_file = self.get_file('bootloader_file')
             if self.bootloader_dd:
                 self._dd_file(bootloader_file, boot_device_or_file,
-                             self.bootloader_dd)
+                              self.bootloader_dd)
 
         make_uImage(self.load_addr, k_img_data, boot_dir)
 
@@ -717,7 +717,7 @@ class BoardConfig(object):
             make_boot_ini(boot_script_path, boot_dir)
 
         if (self.snowball_startup_files_config is not None and
-            self.board != 'snowball_sd'):
+                self.board != 'snowball_sd'):
             self.populate_raw_partition(boot_device_or_file, chroot_dir)
 
         if self.env_dd:
@@ -728,7 +728,7 @@ class BoardConfig(object):
             env_size = self.samsung_env_len * SECTOR_SIZE
             env_file = make_flashable_env(boot_env, env_size)
             self._dd_file(env_file, boot_device_or_file,
-                         self.samsung_env_start)
+                          self.samsung_env_start)
 
     def _make_boot_files(self, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
@@ -857,8 +857,8 @@ class BoardConfig(object):
         if not self.dtb_file or not dtb:
             logger.warn("Could not find a valid dtb file, skipping it.")
 
-        logger.info("Will use kernel=%s, initrd=%s, dtb=%s." % \
-                             (kernel, initrd, dtb))
+        logger.info("Will use kernel=%s, initrd=%s, dtb=%s." %
+                    (kernel, initrd, dtb))
         return (kernel, initrd, dtb)
 
     def populate_raw_partition(self, media, boot_dir):
@@ -1117,7 +1117,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
             boot_end + 1, self.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
         return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
-        loader_start, loader_len, boot_start, boot_len, root_start)
+            loader_start, loader_len, boot_start, boot_len, root_start)
 
     def _make_boot_files(self, boot_env, chroot_dir, boot_dir,
                          boot_device_or_file, k_img_data, i_img_data,
@@ -1137,9 +1137,9 @@ class SnowballEmmcConfig(SnowballSdConfig):
         with open(toc_filename, 'wb') as toc:
             self.create_toc(toc, new_files)
         self.install_snowball_boot_loader(toc_filename, new_files,
-                                         boot_device_or_file,
-                                         self.SNOWBALL_LOADER_START_S,
-                                         self.delete_startupfiles)
+                                          boot_device_or_file,
+                                          self.SNOWBALL_LOADER_START_S,
+                                          self.delete_startupfiles)
         self.delete_file(toc_filename)
         if self.delete_startupfiles:
             self.delete_file(os.path.join(config_files_dir,
@@ -1286,7 +1286,8 @@ class Mx5Config(BoardConfig):
         # XXX: delete this method when hwpacks V1 can die
         assert self.hwpack_format == HardwarepackHandler.FORMAT_1
         with self.hardwarepack_handler:
-            bootloader_file = self.get_file('bootloader_file',
+            bootloader_file = self.get_file(
+                'bootloader_file',
                 default=os.path.join(
                     chroot_dir, 'usr', 'lib', 'u-boot', self.bootloader_flavor,
                     'u-boot.imx'))
@@ -1392,18 +1393,18 @@ class FastModelConfig(BoardConfig):
         return ""
 
     def _make_boot_files_v2(self, boot_env, chroot_dir, boot_dir,
-                         boot_device_or_file, k_img_data, i_img_data,
-                         d_img_data):
+                            boot_device_or_file, k_img_data, i_img_data,
+                            d_img_data):
         output_dir = os.path.dirname(boot_device_or_file)
 
         # There are 2 kinds of models now, VE and Foundation
         bw_ve = _get_file_matching("%s/boot/img.axf" % chroot_dir)
         bw_foundation = _get_file_matching("%s/boot/img-foundation.axf" %
-                                chroot_dir)
+                                           chroot_dir)
 
         for filename in (bw_ve, bw_foundation, k_img_data,
                          i_img_data, d_img_data):
-            if filename != None:
+            if filename is not None:
                 copy_drop(filename, output_dir)
 
 
@@ -1415,7 +1416,7 @@ class SamsungConfig(BoardConfig):
     def get_v1_sfdisk_cmd(self, should_align_boot_part=False):
         # bootloaders partition needs to hold BL1, U-Boot environment, and BL2
         loaders_min_len = (self.samsung_bl1_start + self.samsung_bl1_len +
-            self.samsung_bl2_len + self.samsung_env_len)
+                           self.samsung_bl2_len + self.samsung_env_len)
 
         # bootloaders partition
         loaders_start, loaders_end, loaders_len = align_partition(
@@ -1440,7 +1441,8 @@ class SamsungConfig(BoardConfig):
                          d_img_data):
         # XXX: delete this method when hwpacks V1 can die
         assert self.hwpack_format == HardwarepackHandler.FORMAT_1
-        self.install_samsung_boot_loader(self._get_samsung_spl(chroot_dir),
+        self.install_samsung_boot_loader(
+            self._get_samsung_spl(chroot_dir),
             self._get_samsung_bootloader(chroot_dir), boot_device_or_file)
         env_size = self.samsung_env_len * SECTOR_SIZE
         env_file = make_flashable_env(boot_env, env_size)
@@ -1504,12 +1506,12 @@ class SamsungConfig(BoardConfig):
         spl_file = os.path.join(chroot_dir, 'boot', 'u-boot-mmc-spl.bin')
         assert os.path.getsize(spl_file) <= (
             self.samsung_bl1_len * SECTOR_SIZE), (
-            "%s is larger than Samsung BL1 size" % spl_file)
+                "%s is larger than Samsung BL1 size" % spl_file)
         _dd(spl_file, boot_device_or_file, seek=self.samsung_bl1_start)
         uboot_file = os.path.join(chroot_dir, 'boot', 'u-boot.bin')
         assert os.path.getsize(uboot_file) <= (
             self.samsung_bl2_len * SECTOR_SIZE), (
-            "%s is larger than Samsung BL2 size" % uboot_file)
+                "%s is larger than Samsung BL2 size" % uboot_file)
         _dd(uboot_file, boot_device_or_file, seek=self.samsung_bl2_start)
 
 
@@ -1684,21 +1686,25 @@ class I386Config(BoardConfig):
         img_loop = register_loopback(boot_device_or_file, 0, img_size)
 
         # install bootloader
-        cmd_runner.run([self.BOOTLOADER_CMD, '--boot-directory=%s' % boot_dir,
-            '--modules', 'part_msdos', img_loop],
-            as_root=True).wait()
+        cmd_runner.run([self.BOOTLOADER_CMD,
+                        '--boot-directory=%s' % boot_dir,
+                        '--modules', 'part_msdos', img_loop],
+                       as_root=True).wait()
 
         # generate loader config file
         loader_config = self.BOOTLOADER_CFG % (os.path.basename(k_img_data),
-            self.extra_serial_options, os.path.basename(i_img_data))
+                                               self.extra_serial_options,
+                                               os.path.basename(i_img_data))
 
         _, tmpfile = tempfile.mkstemp()
         atexit.register(os.unlink, tmpfile)
         with open(tmpfile, 'w') as fd:
             fd.write(loader_config)
 
-        cmd_runner.run(['cp', tmpfile, os.path.join(boot_dir,
-            self.BOOTLOADER_CFG_FILE)], as_root=True).wait()
+        cmd_runner.run(['cp', tmpfile,
+                        os.path.join(
+                            boot_dir,
+                            self.BOOTLOADER_CFG_FILE)], as_root=True).wait()
 
     def _make_boot_files_v2(self, boot_env, chroot_dir, boot_dir,
                             boot_device_or_file, k_img_data, i_img_data,
@@ -1734,7 +1740,7 @@ board_configs = {
     'ux500': Ux500Config,
     'vexpress': VexpressConfig,
     'vexpress-a9': VexpressA9Config,
-    }
+}
 
 
 def get_board_config(board):

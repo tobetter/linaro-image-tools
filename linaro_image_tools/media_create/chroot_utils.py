@@ -24,7 +24,7 @@ from linaro_image_tools import cmd_runner
 from linaro_image_tools.utils import (
     is_arm_host,
     find_command,
-    )
+)
 from linaro_image_tools.hwpack.handler import HardwarepackHandler
 
 # It'd be nice if we could use atexit here, but all the things we need to undo
@@ -45,8 +45,8 @@ def prepare_chroot(chroot_dir, tmp_dir):
 
 
 def install_hwpacks(
-    rootfs_dir, tmp_dir, tools_dir, hwpack_force_yes, verified_files,
-    extract_kpkgs=False, *hwpack_files):
+        rootfs_dir, tmp_dir, tools_dir, hwpack_force_yes, verified_files,
+        extract_kpkgs=False, *hwpack_files):
     """Install the given hwpacks onto the given rootfs."""
 
     # In case we just want to extract the kernel packages, don't force qemu

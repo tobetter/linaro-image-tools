@@ -32,7 +32,7 @@ from linaro_image_tools.tests.fixtures import (
     CreateTempDirFixture,
     MockCmdRunnerPopenFixture,
     MockSomethingFixture,
-    )
+)
 from linaro_image_tools.utils import (
     IncompatibleOptions,
     InvalidHwpackFile,
@@ -48,7 +48,7 @@ from linaro_image_tools.utils import (
     preferred_tools_dir,
     prep_media_path,
     verify_file_integrity,
-    )
+)
 
 
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)
@@ -154,9 +154,9 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
         hash_filename = "dummy-file.txt"
         signature_filename = hash_filename + ".asc"
         result, verified_files = check_file_integrity_and_log_errors(
-                                                [signature_filename],
-                                                self.filenames_in_shafile[0],
-                                                [self.filenames_in_shafile[1]])
+            [signature_filename],
+            self.filenames_in_shafile[0],
+            [self.filenames_in_shafile[1]])
         self.assertEqual(self.filenames_in_shafile, verified_files)
 
         # The sha1sums are faked as passing and all commands return 0, so
@@ -165,14 +165,14 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
 
     def test_check_file_integrity_and_print_errors_fail_sha1sum(self):
         logging.getLogger().setLevel(100)  # Disable logging messages to screen
-        self.useFixture(MockSomethingFixture(cmd_runner, 'Popen',
-                                    self.MockCmdRunnerPopen_sha1sum_fail()))
+        self.useFixture(MockSomethingFixture(
+            cmd_runner, 'Popen', self.MockCmdRunnerPopen_sha1sum_fail()))
         hash_filename = "dummy-file.txt"
         signature_filename = hash_filename + ".asc"
         result, verified_files = check_file_integrity_and_log_errors(
-                                                [signature_filename],
-                                                self.filenames_in_shafile[0],
-                                                [self.filenames_in_shafile[1]])
+            [signature_filename],
+            self.filenames_in_shafile[0],
+            [self.filenames_in_shafile[1]])
         self.assertEqual([], verified_files)
 
         # The sha1sums are faked as failing and all commands return 0, so
@@ -182,14 +182,14 @@ class TestVerifyFileIntegrity(TestCaseWithFixtures):
 
     def test_check_file_integrity_and_print_errors_fail_gpg(self):
         logging.getLogger().setLevel(100)  # Disable logging messages to screen
-        self.useFixture(MockSomethingFixture(cmd_runner, 'Popen',
-                                    self.MockCmdRunnerPopen_wait_fails()))
+        self.useFixture(MockSomethingFixture(
+            cmd_runner, 'Popen', self.MockCmdRunnerPopen_wait_fails()))
         hash_filename = "dummy-file.txt"
         signature_filename = hash_filename + ".asc"
         result, verified_files = check_file_integrity_and_log_errors(
-                                                [signature_filename],
-                                                self.filenames_in_shafile[0],
-                                                [self.filenames_in_shafile[1]])
+            [signature_filename],
+            self.filenames_in_shafile[0],
+            [self.filenames_in_shafile[1]])
         self.assertEqual([], verified_files)
 
         # The sha1sums are faked as passing and all commands return 1, so
@@ -272,10 +272,9 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
             MockCmdRunnerPopenFixture(self.output_string))
         install_package_providing('mkfs.vfat')
         self.assertEqual(
-                         ['apt-get -s install dosfstools',
-                          '%s apt-get --yes install dosfstools' %
-                          sudo_args],
-                         fixture.mock.commands_executed)
+            ['apt-get -s install dosfstools',
+             '%s apt-get --yes install dosfstools' % sudo_args],
+            fixture.mock.commands_executed)
 
     def test_package_installation_refused(self):
         self.useFixture(MockSomethingFixture(sys,

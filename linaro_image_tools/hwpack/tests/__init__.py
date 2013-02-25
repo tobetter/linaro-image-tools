@@ -35,7 +35,7 @@ def test_suite():
         'linaro_image_tools.hwpack.tests.test_script',
         'linaro_image_tools.hwpack.tests.test_tarfile_matchers',
         'linaro_image_tools.hwpack.tests.test_testing',
-        ]
+    ]
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromNames(module_names)
     return suite

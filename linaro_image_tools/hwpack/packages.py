@@ -241,7 +241,7 @@ Description: Dummy package to install a hwpack
             name=name,
             relationships=''.join(relationship_strs),
             version=version,
-            )
+        )
         control_file_text = self.control_file_template.safe_substitute(
             subst_vars)
 
@@ -253,7 +253,7 @@ Description: Dummy package to install a hwpack
                 new_file.write(name + " " + file_path)
 
         with open(os.path.join(
-            packaging_dir, 'DEBIAN', 'control'), 'w') as control_file:
+                packaging_dir, 'DEBIAN', 'control'), 'w') as control_file:
             control_file.write(control_file_text)
         env = os.environ
         env['LC_ALL'] = 'C'
@@ -494,7 +494,7 @@ class IsolatedAptCache(object):
                 "etc/apt/sources.list.d",
                 "var/cache/apt/archives/partial",
                 "var/lib/apt/lists/partial",
-               ]
+                ]
         for d in dirs:
             os.makedirs(os.path.join(self.tempdir, d))
         self.set_installed_packages([], reopen=False)
@@ -575,7 +575,7 @@ class IsolatedAptCache(object):
             is reopened.
         """
         with open(
-            os.path.join(self.tempdir, "var/lib/dpkg/status"), "w") as f:
+                os.path.join(self.tempdir, "var/lib/dpkg/status"), "w") as f:
             f.write(
                 get_packages_file(
                     packages, extra_text="Status: install ok installed"))
@@ -658,7 +658,7 @@ class PackageFetcher(object):
                 raise DependencyNotSatisfied(
                     "Unable to satisfy dependencies of %s" %
                     ", ".join([p.name for p in self.cache.cache
-                        if p.is_inst_broken]))
+                               if p.is_inst_broken]))
         installed = []
         for package in self.cache.cache.get_changes():
             candidate = package.candidate
@@ -673,7 +673,7 @@ class PackageFetcher(object):
             logger.debug("Ignored %s" % package.name)
         self.cache.set_installed_packages(installed)
         broken = [p.name for p in self.cache.cache
-                if p.is_inst_broken or p.is_now_broken]
+                  if p.is_inst_broken or p.is_now_broken]
         if broken:
             # If this happens then there is a bug, as we should have
             # caught this problem earlier
@@ -728,7 +728,7 @@ class PackageFetcher(object):
                 raise DependencyNotSatisfied(
                     "Unable to satisfy dependencies of %s" %
                     ", ".join([p.name for p in self.cache.cache
-                        if p.is_inst_broken]))
+                               if p.is_inst_broken]))
 
         for package in packages:
             try:
@@ -750,7 +750,7 @@ class PackageFetcher(object):
         acqfiles = []
         # re to remove the repo private key
         deb_url_auth_re = re.compile(
-                    r"(?P<transport>.*://)(?P<user>.*):.*@(?P<path>.*$)")
+            r"(?P<transport>.*://)(?P<user>.*):.*@(?P<path>.*$)")
         for package in self.cache.cache.get_changes():
             if (package.marked_delete or package.marked_keep):
                 continue

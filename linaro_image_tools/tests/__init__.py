@@ -21,7 +21,7 @@ import unittest
 from linaro_image_tools.hwpack.tests import test_suite as hwpack_suite
 from linaro_image_tools.media_create.tests import (
     test_suite as media_create_suite,
-    )
+)
 from linaro_image_tools.utils import has_command
 
 
@@ -29,7 +29,7 @@ def test_suite():
     module_names = [
         'linaro_image_tools.tests.test_cmd_runner',
         'linaro_image_tools.tests.test_utils',
-        ]
+    ]
     # if pyflakes is installed and we're running from a bzr checkout...
     if has_command('pyflakes') and not os.path.isabs(__file__):
         # ...also run the pyflakes test

@@ -30,7 +30,7 @@ from linaro_image_tools.hwpack.hardwarepack_format import (
     HardwarePackFormatV1,
     HardwarePackFormatV2,
     HardwarePackFormatV3,
-    )
+)
 
 from hwpack_fields import (
     ARCHITECTURES_FIELD,
@@ -180,7 +180,7 @@ class Config(object):
                 self.parser = yaml.safe_load(fp)
             except yaml.YAMLError, e:
                 obfuscated_yaml_e = re.sub(r"([^ ]https://).+?(@)",
-                                      r"\1***\2", str(e))
+                                           r"\1***\2", str(e))
             else:
                 # If YAML parsed OK, we don't have an error.
                 obfuscated_e = None
@@ -333,7 +333,7 @@ class Config(object):
             return HardwarePackFormatV3()
         else:
             raise HwpackConfigError("Format version '%s' is not supported." %
-                                        format_string)
+                                    format_string)
 
     @property
     def name(self):
@@ -348,7 +348,7 @@ class Config(object):
     def include_debs(self):
         """Whether the hardware pack should contain .debs. A bool."""
         try:
-            if self._get_option(self.INCLUDE_DEBS_KEY) == None:
+            if self._get_option(self.INCLUDE_DEBS_KEY) is None:
                 return True
             try:
                 return self._get_option_bool(self.INCLUDE_DEBS_KEY)
@@ -419,7 +419,7 @@ class Config(object):
                 else:
                     if len(value.keys()) > 1:
                         raise HwpackConfigError("copy_files entry found with"
-                            "more than one destination")
+                                                "more than one destination")
                     source_path = value.keys()[0]
                     dest_path = value[source_path]
 
@@ -427,7 +427,8 @@ class Config(object):
                     # Target path should be relative, or start with /boot - we
                     # don't support to copying to anywhere other than /boot.
                     if dest_path[0] == "/":
-                        raise HwpackConfigError("copy_files destinations must"
+                        raise HwpackConfigError(
+                            "copy_files destinations must"
                             "be relative to /boot or start with /boot.")
                     dest_path = os.path.join("/boot", dest_path)
 
@@ -553,11 +554,11 @@ class Config(object):
                 result = self._get_v3_option([BOARDS_FIELD, self.board] + keys)
 
             # If a board specific value isn't found, look for a global one
-            if result == None:
+            if result is None:
                 result = self._get_v3_option(keys)
 
             # If no value is found, bail early (return None)
-            if result == None:
+            if result is None:
                 return None
 
             # <v3 compatibility: Lists of items can be converted to strings
@@ -951,8 +952,8 @@ class Config(object):
         if not format:
             raise HwpackConfigError("Empty value for format")
         if not format.is_supported:
-            raise HwpackConfigError("Format version '%s' is not supported." % \
-                                        format)
+            raise HwpackConfigError("Format version '%s' is not supported." %
+                                    format)
 
     def _assert_matches_pattern(self, regex, config_item, error_message):
             if re.match(regex, config_item) is None:
@@ -1066,7 +1067,7 @@ class Config(object):
             raise HwpackConfigError("Invalid %s address: %s" %
                                     (name, self._get_option(key)))
 
-        if addr == None:
+        if addr is None:
             return
 
         if not re.match(r"^0x[a-fA-F0-9]{8}$", addr):
@@ -1109,8 +1110,8 @@ class Config(object):
         mmc_id = self.mmc_id
         if not mmc_id:
             raise HwpackConfigError(
-                "No mmc_id in the [%s] section" % \
-                    self.MAIN_SECTION)
+                "No mmc_id in the [%s] section" %
+                self.MAIN_SECTION)
         else:
             self._assert_matches_pattern(
                 r"[0-9]:[0-9]", mmc_id, "Invalid mmc_id %s" % mmc_id)

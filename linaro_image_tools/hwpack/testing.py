@@ -39,7 +39,7 @@ from linaro_image_tools.hwpack.tarfile_matchers import TarfileHasFile
 from linaro_image_tools.hwpack.packages import (
     get_packages_file,
     FetchedPackage,
-    )
+)
 
 
 @contextmanager
@@ -150,8 +150,7 @@ class AptSourceFixture(object):
     def setUp(self):
         self.rootdir = tempfile.mkdtemp(prefix="hwpack-apt-source-")
         for package in self.packages:
-            with open(
-                os.path.join(self.rootdir, package.filename), 'wb') as f:
+            with open(os.path.join(self.rootdir, package.filename), 'wb') as f:
                 f.write(package.content.read())
         with open(os.path.join(self.rootdir, "Packages"), 'wb') as f:
             f.write(get_packages_file(self.packages))
@@ -365,13 +364,13 @@ class IsHardwarePack(Matcher):
                         MatchesSetwise(*map(Equals, manifest_lines)))))
             matchers.append(HardwarePackHasFile("pkgs", type=tarfile.DIRTYPE))
             packages_with_content = [p for p in self.packages
-                if p not in self.packages_without_content]
+                                     if p not in self.packages_without_content]
             for package in packages_with_content:
                 matchers.append(HardwarePackHasFile(
                     "pkgs/%s" % package.filename,
                     content=package.content.read()))
             package_matchers = [
-                MatchesPackage(p) for p in  packages_with_content]
+                MatchesPackage(p) for p in packages_with_content]
             dep_package_matcher = MatchesStructure(
                 name=Equals('hwpack-' + self.metadata.name),
                 version=Equals(self.metadata.version),
@@ -548,7 +547,7 @@ class MatchesSetwise(object):
                     msg += ': ' + str(extra_values)
                 return Annotate(
                     msg, EachOf(remaining_matchers[:common_length])
-                    ).match(not_matched[:common_length])
+                ).match(not_matched[:common_length])
 
 
 def parse_packages_file_content(file_content):

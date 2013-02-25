@@ -24,7 +24,7 @@ from linaro_image_tools.testing import TestCaseWithFixtures
 from linaro_image_tools.tests.fixtures import (
     MockCmdRunnerPopenFixture,
     MockSomethingFixture,
-    )
+)
 
 
 sudo_args = " ".join(cmd_runner.SUDO_ARGS)

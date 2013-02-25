@@ -27,7 +27,7 @@ from linaro_image_tools.hwpack.tarfile_matchers import (
     TarfileHasFile,
     TarfileMissingPathMismatch,
     TarfileWrongValueMismatch,
-    )
+)
 from linaro_image_tools.hwpack.testing import test_tarfile
 
 
@@ -182,7 +182,7 @@ class TarfileHasFileTests(TestCase):
 
     def test_mismatches_wrong_uname(self):
         with test_tarfile(
-            contents=[("foo", "")], default_uname="someuser") as tf:
+                contents=[("foo", "")], default_uname="someuser") as tf:
             matcher = TarfileHasFile("foo", uname="otheruser")
             mismatch = matcher.match(tf)
             self.assertValueMismatch(
@@ -190,7 +190,7 @@ class TarfileHasFileTests(TestCase):
 
     def test_mismatches_wrong_gname(self):
         with test_tarfile(
-            contents=[("foo", "")], default_gname="somegroup") as tf:
+                contents=[("foo", "")], default_gname="somegroup") as tf:
             matcher = TarfileHasFile("foo", gname="othergroup")
             mismatch = matcher.match(tf)
             self.assertValueMismatch(

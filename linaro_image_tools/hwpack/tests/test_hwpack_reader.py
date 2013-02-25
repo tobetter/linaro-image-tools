@@ -22,17 +22,17 @@ from StringIO import StringIO
 from linaro_image_tools.testing import TestCaseWithFixtures
 from linaro_image_tools.tests.fixtures import (
     CreateTempDirFixture,
-    )
+)
 
 from linaro_image_tools.media_create.tests.fixtures import (
     CreateTarballFixture,
-    )
+)
 
 from linaro_image_tools.hwpack.hwpack_reader import (
     Hwpack,
     HwpackReader,
     HwpackReaderError,
-    )
+)
 
 
 class HwpackReaderTests(TestCaseWithFixtures):
@@ -41,13 +41,13 @@ class HwpackReaderTests(TestCaseWithFixtures):
     def setUp(self):
         super(HwpackReaderTests, self).setUp()
         self.metadata = ("format: 3.0\nversion: '1'\nname: test-hwpack\n"
-                            "architecture: armel\norigin: Linaro")
+                         "architecture: armel\norigin: Linaro")
         self.hwpack = Hwpack()
         self.hwpack.setname('test-hwpack')
         self.tar_dir_fixture = CreateTempDirFixture()
         self.useFixture(self.tar_dir_fixture)
         self.tarball_fixture = CreateTarballFixture(
-                                self.tar_dir_fixture.get_temp_dir())
+            self.tar_dir_fixture.get_temp_dir())
         self.useFixture(self.tarball_fixture)
 
     def tearDown(self):
@@ -104,11 +104,11 @@ class HwpackReaderTests(TestCaseWithFixtures):
 
     def test_hwpack_metadata_read_with_bootloaders(self):
         self.metadata += ("\nboards:\n panda:\n  support: supported\n  "
-                            "bootloaders:\n   u_boot:\n    file: a_file\n")
+                          "bootloaders:\n   u_boot:\n    file: a_file\n")
         tarball = self.add_to_tarball([('metadata', self.metadata)])
         reader = HwpackReader([tarball])
         reader._read_hwpacks_metadata()
         self.hwpack.sethwpack(tarball)
         self.hwpack.setboards({'panda': {'support': 'supported', 'bootloaders':
-                                {'u_boot': {'file': 'a_file'}}}})
+                              {'u_boot': {'file': 'a_file'}}}})
         self.assertEqual(self.hwpack, reader.supported_elements[0])

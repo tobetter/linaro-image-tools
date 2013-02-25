@@ -21,12 +21,12 @@ from testtools import TestCase
 
 from linaro_image_tools.media_create.boards import (
     BoardConfigException,
-    )
+)
 
 from linaro_image_tools.media_create.android_boards import (
     AndroidBeagleConfig,
     get_board_config,
-    )
+)
 
 from linaro_image_tools.testing import TestCaseWithFixtures
 from linaro_image_tools.tests.fixtures import CreateTempFileFixture
@@ -80,18 +80,18 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
         hwpack_format + hwpack_android_args + hwpack_bootloader_flavor +
         hwpack_dtb_addr + hwpack_dtb_name + hwpack_extra_boot +
         hwpack_extra_serial
-        )
+    )
 
     android_hwpack_mx6 = (
         android_hwpack_panda + hwpack_initrd_addr + hwpack_kernel_addr +
         hwpack_load_addr
-        )
+    )
 
     android_hwpack_snowball_sd = (
         hwpack_android_args + hwpack_boot_script + hwpack_dtb_addr +
         hwpack_dtb_name + hwpack_extra_boot + hwpack_extra_serial +
         hwpack_fdt_high + hwpack_format + hwpack_initrd_addr
-        )
+    )
 
     android_hwpack_snowball_emmc = (
         android_hwpack_snowball_sd + hwpack_initrd_high + hwpack_mmc_option)
@@ -156,10 +156,11 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
     def test_extra_boot_args_options(self):
         """The field extra_boot_args_options should be a concatenated string.
         Testing presence of a field defined in the parent class."""
-        values = {'dtb_name': 'a_name',
-                  'extra_boot_args_options': ['earlyprintk', 'mem=128M@0',
-                                              'mali.mali_mem=64M@128M']
-            }
+        values = {
+            'dtb_name': 'a_name',
+            'extra_boot_args_options': ['earlyprintk', 'mem=128M@0',
+                                        'mali.mali_mem=64M@128M']
+        }
         yaml_conf = self.android_hwpack_extra_boot % values
         name = self._get_tmp_file_name(yaml_conf)
         self.config.from_file(name)
@@ -179,7 +180,7 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
             "initrd_addr": '0x12000000',
             "kernel_addr": '0x10000000',
             "load_addr": '0x10008000',
-            }
+        }
         expected = {
             'bootargs': 'console=ttymxc0,115200n8 '
                         'rootwait ro earlyprintk rootdelay=1 fixrtc '
@@ -222,7 +223,7 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
                                         "mem=456M@0x80000000",
                                         "mem=512M@0xA0000000"],
             "extra_serial_options": ["console=ttyO2,115200n8"],
-            }
+        }
         expected = {
             'bootargs': 'console=ttyO2,115200n8 '
                         'rootwait ro earlyprintk fixrtc '
@@ -270,7 +271,7 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
             "fdt_high": '0x05000000',
             "initrd_addr": '0x05000000',
             "initrd_high": '0x06000000',
-            }
+        }
         expected = {
             'bootargs': 'console=ttyAMA2,115200n8 '
                         'rootwait ro earlyprintk '
@@ -319,7 +320,7 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
             "initrd_addr": '0x05000000',
             "initrd_high": '0x06000000',
             "mmc_option": '0:2'
-            }
+        }
         expected = {
             'bootargs': 'console=ttyAMA2,115200n8 '
                         'rootwait ro earlyprintk '
@@ -353,8 +354,10 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
 
     def test_android_origen(self):
         values = {
-        "extra_serial_options": ["console=tty0", "console=ttySAC2,115200n8"],
-        "android_specific_args": ["init=/init", "androidboot.console=ttySAC2"]
+            "extra_serial_options": ["console=tty0",
+                                     "console=ttySAC2,115200n8"],
+            "android_specific_args": ["init=/init",
+                                      "androidboot.console=ttySAC2"]
         }
         expected = {
             'bootargs': 'console=tty0 console=ttySAC2,115200n8 '
@@ -462,7 +465,7 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
             'initrd_high': '0xffffffff'}
         config = ((self.hwpack_format + self.hwpack_extra_boot +
                    self.hwpack_extra_serial + self.hwpack_android_args) %
-                   values)
+                  values)
         self.assertBootEnv(expected, config=config, board='mx53loco')
 
     def test_android_mx5_old(self):

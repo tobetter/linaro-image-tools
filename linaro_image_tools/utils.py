@@ -129,11 +129,11 @@ def verify_file_integrity(sig_file_list):
 
         try:
             sha1sums_out, _ = cmd_runner.Popen(
-                                            ['sha1sum', '-c', hash_file],
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.STDOUT,
-                                            cwd=sha_cwd
-                                            ).communicate()
+                ['sha1sum', '-c', hash_file],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                cwd=sha_cwd
+            ).communicate()
         except cmd_runner.SubcommandNonZeroReturnValue as inst:
             sha1sums_out = inst.stdout
 
@@ -171,7 +171,7 @@ def check_file_integrity_and_log_errors(sig_file_list, binary, hwpacks):
 
         for verified_file in verified_files:
             logger.info('Hash verification of file {0} OK.'.format(
-                                                                verified_file))
+                verified_file))
     return True, verified_files
 
 
@@ -214,15 +214,15 @@ def install_package_providing(command):
             print "Package installation is necessary to continue. Exiting."
             sys.exit(1)
         print ("Installing required command '%s' from package '%s'..."
-                % (command, package))
+               % (command, package))
         cmd_runner.run(['apt-get', '--yes', 'install', package],
-                        as_root=True).wait()
+                       as_root=True).wait()
     except EOFError:
         raise PackageInstallationRefused(
-                            "Package installation interrupted: input error.")
+            "Package installation interrupted: input error.")
     except KeyboardInterrupt:
         raise PackageInstallationRefused(
-                            "Package installation interrupted by the user.")
+            "Package installation interrupted by the user.")
 
 
 def has_command(command):

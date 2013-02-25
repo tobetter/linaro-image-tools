@@ -87,54 +87,54 @@ class ConfigTests(TestCase):
 
     def test_validate_invalid_include_debs(self):
         config = self.get_config(
-                "[hwpack]\nname = ahwpack\n"
-                "include-debs = if you don't mind\n")
+            "[hwpack]\nname = ahwpack\n"
+            "include-debs = if you don't mind\n")
         self.assertValidationError(
             "Invalid value for include-debs: Not a boolean: if you don't mind",
             config)
 
     def test_validate_invalid_supported(self):
         config = self.get_config(
-                "[hwpack]\nname = ahwpack\nsupport = if you pay us\n")
+            "[hwpack]\nname = ahwpack\nsupport = if you pay us\n")
         self.assertValidationError(
             "Invalid value for support: if you pay us", config)
 
     def test_validate_no_packages(self):
         config = self.get_config(
-                "[hwpack]\nname = ahwpack\n\n")
+            "[hwpack]\nname = ahwpack\n\n")
         self.assertValidationError(
             "No packages in the [hwpack] section", config)
 
     def test_validate_empty_packages(self):
         config = self.get_config(
-                "[hwpack]\nname = ahwpack\npackages =  \n")
+            "[hwpack]\nname = ahwpack\npackages =  \n")
         self.assertValidationError(
             "No packages in the [hwpack] section", config)
 
     def test_validate_invalid_package_name(self):
         config = self.get_config(
-                "[hwpack]\nname = ahwpack\npackages = foo  ~~ bar\n")
+            "[hwpack]\nname = ahwpack\npackages = foo  ~~ bar\n")
         self.assertValidationError(
             "Invalid value in packages in the [hwpack] section: ~~",
             config)
 
     def test_validate_no_architectures(self):
         config = self.get_config(
-                "[hwpack]\nname = ahwpack\npackages = foo\n")
+            "[hwpack]\nname = ahwpack\npackages = foo\n")
         self.assertValidationError(
             "No architectures in the [hwpack] section", config)
 
     def test_validate_empty_architectures(self):
         config = self.get_config(
-                "[hwpack]\nname = ahwpack\npackages = foo\n"
-                "architectures = \n")
+            "[hwpack]\nname = ahwpack\npackages = foo\n"
+            "architectures = \n")
         self.assertValidationError(
             "No architectures in the [hwpack] section", config)
 
     def test_validate_invalid_package_name_in_assume_installed(self):
         config = self.get_config(
-                "[hwpack]\nname = ahwpack\npackages = foo\n"
-                "architectures = armel\nassume-installed = bar ~~\n")
+            "[hwpack]\nname = ahwpack\npackages = foo\n"
+            "architectures = armel\nassume-installed = bar ~~\n")
         self.assertValidationError(
             "Invalid value in assume-installed in the [hwpack] section: ~~",
             config)
@@ -151,48 +151,48 @@ class ConfigTests(TestCase):
 
     def test_validate_other_section_empty_sources_entry(self):
         config = self.get_config(
-                self.valid_start + "\n[ubuntu]\nsources-entry =  \n")
+            self.valid_start + "\n[ubuntu]\nsources-entry =  \n")
         self.assertValidationError(
             "The sources-entry in the [ubuntu] section is missing the URI",
             config)
 
     def test_validate_other_section_only_uri_in_sources_entry(self):
         config = self.get_config(
-                self.valid_start + "\n[ubuntu]\nsources-entry =  foo\n")
+            self.valid_start + "\n[ubuntu]\nsources-entry =  foo\n")
         self.assertValidationError(
             "The sources-entry in the [ubuntu] section is missing the "
             "distribution", config)
 
     def test_validate_other_section_sources_entry_starting_with_deb(self):
         config = self.get_config(
-                self.valid_start
-                + "\n[ubuntu]\nsources-entry =  deb http://example.org/ "
-                "foo main\n")
+            self.valid_start
+            + "\n[ubuntu]\nsources-entry =  deb http://example.org/ "
+            "foo main\n")
         self.assertValidationError(
             "The sources-entry in the [ubuntu] section shouldn't start "
             "with 'deb'", config)
 
     def test_validate_other_section_sources_entry_starting_with_deb_src(self):
         config = self.get_config(
-                self.valid_start
-                + "\n[ubuntu]\nsources-entry =  deb-src http://example.org/ "
-                "foo main\n")
+            self.valid_start
+            + "\n[ubuntu]\nsources-entry =  deb-src http://example.org/ "
+            "foo main\n")
         self.assertValidationError(
             "The sources-entry in the [ubuntu] section shouldn't start "
             "with 'deb'", config)
 
     def test_validate_valid_config(self):
         config = self.get_config(
-                self.valid_start
-                + "\n[ubuntu]\nsources-entry = foo bar\n")
+            self.valid_start
+            + "\n[ubuntu]\nsources-entry = foo bar\n")
         self.assertEqual(None, config.validate())
 
     def test_validate_valid_config_with_dash_in_package_name(self):
         config = self.get_config(
-                "[hwpack]\nname = ahwpack\n"
-                "packages = u-boot\n"
-                "architectures = armel\n\n"
-                "[ubuntu]\nsources-entry = foo bar\n")
+            "[hwpack]\nname = ahwpack\n"
+            "packages = u-boot\n"
+            "architectures = armel\n\n"
+            "[ubuntu]\nsources-entry = foo bar\n")
         self.assertEqual(None, config.validate())
 
     def test_validate_supported_format(self):
@@ -202,91 +202,91 @@ class ConfigTests(TestCase):
 
     def test_validate_invalid_u_boot_package_name(self):
         config = self.get_config(
-                self.valid_start_v2 + "u_boot_package = ~~\n")
+            self.valid_start_v2 + "u_boot_package = ~~\n")
         self.assertValidationError(
             "Invalid value in u_boot_package in the [hwpack] section: ~~",
             config)
 
     def test_validate_invalid_u_boot_file(self):
         config = self.get_config(self.valid_start_v2 +
-                                 "u_boot_package = u-boot-linaro-s5pv310\n" \
-                                     "u_boot_file = ~~\n")
+                                 "u_boot_package = u-boot-linaro-s5pv310\n"
+                                 "u_boot_file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
     def test_validate_invalid_kernel_file(self):
         config = self.get_config(self.valid_start_v2 +
-                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
-                                     "u-boot-file = u-boot.bin\n" \
-                                     "partition_layout = bootfs_rootfs\n"\
-                                     "kernel_file = ~~\n")
+                                 "u-boot-package = u-boot-linaro-s5pv310\n"
+                                 "u-boot-file = u-boot.bin\n"
+                                 "partition_layout = bootfs_rootfs\n"
+                                 "kernel_file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config,
                                    "_validate_vmlinuz")
 
     def test_validate_empty_kernel_file(self):
         config = self.get_config(self.valid_start_v2 +
-                                 "u-boot-package = u-boot-linaro-s5pv310\n" \
-                                     "u-boot-file = u-boot.bin\n"
-                                     "partition_layout = bootfs_rootfs\n"\
-                                     "kernel_file = \n")
+                                 "u-boot-package = u-boot-linaro-s5pv310\n"
+                                 "u-boot-file = u-boot.bin\n"
+                                 "partition_layout = bootfs_rootfs\n"
+                                 "kernel_file = \n")
         self.assertValidationError("No kernel_file in the [hwpack] section",
                                    config, "_validate_vmlinuz")
 
     def test_validate_invalid_initrd_file(self):
         config = self.get_config(
             self.valid_start_v2 +
-            "u-boot-package = u-boot-linaro-s5pv310\n" \
-                "u-boot-file = u-boot.bin\n" \
-                "partition_layout = bootfs_rootfs\n"\
-                "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
-                "initrd_file = ~~\n")
+            "u-boot-package = u-boot-linaro-s5pv310\n"
+            "u-boot-file = u-boot.bin\n"
+            "partition_layout = bootfs_rootfs\n"
+            "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"
+            "initrd_file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config,
                                    "_validate_initrd")
 
     def test_validate_empty_initrd_file(self):
         config = self.get_config(
             self.valid_start_v2 +
-            "u-boot-package = u-boot-linaro-s5pv310\n" \
-                "u-boot-file = u-boot.bin\n"
-            "partition_layout = bootfs_rootfs\n"\
-                "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
-                "initrd_file = \n")
+            "u-boot-package = u-boot-linaro-s5pv310\n"
+            "u-boot-file = u-boot.bin\n"
+            "partition_layout = bootfs_rootfs\n"
+            "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"
+            "initrd_file = \n")
         self.assertValidationError("No initrd_file in the [hwpack] section",
                                    config, "_validate_initrd")
 
     def test_validate_invalid_boot_script(self):
         config = self.get_config(
             self.valid_start_v2 +
-            "u-boot-package = u-boot-linaro-s5pv310\n" \
-                "mmc_id = 0:1\n"\
-                "u-boot-file = u-boot.bin\n" \
-                "partition_layout = bootfs_rootfs\n"\
-                "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
-                "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
-                "u_boot_in_boot_part = No\n"\
-                "boot_script = ~~\n")
+            "u-boot-package = u-boot-linaro-s5pv310\n"
+            "mmc_id = 0:1\n"
+            "u-boot-file = u-boot.bin\n"
+            "partition_layout = bootfs_rootfs\n"
+            "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"
+            "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"
+            "u_boot_in_boot_part = No\n"
+            "boot_script = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
     def test_validate_invalid_dtb_file(self):
         config = self.get_config(
             self.valid_start_v2 +
-            "u-boot-package = u-boot-linaro-s5pv310\n" \
-                "u-boot-file = u-boot.bin\n" \
-                "partition_layout = bootfs_rootfs\n"\
-                "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
-                "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
-                "boot_script = boot.scr\n"\
-                "u_boot_in_boot_part = No\n"\
-                "mmc_id = 0:1\n"\
-                "dtb_file = ~~\n")
+            "u-boot-package = u-boot-linaro-s5pv310\n"
+            "u-boot-file = u-boot.bin\n"
+            "partition_layout = bootfs_rootfs\n"
+            "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"
+            "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"
+            "boot_script = boot.scr\n"
+            "u_boot_in_boot_part = No\n"
+            "mmc_id = 0:1\n"
+            "dtb_file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
     def test_validate_invalid_spl_package_name(self):
         config = self.get_config(
-            self.valid_start_v2 + "u-boot-package = u-boot-linaro-s5pv310\n" \
-                "u-boot-file = usr/bin/version/MLO\n" \
-                "partition_layout = bootfs_rootfs\n"\
-                "mmc_id = 0:1\n"\
-                "spl_package = ~~\n")
+            self.valid_start_v2 + "u-boot-package = u-boot-linaro-s5pv310\n"
+            "u-boot-file = usr/bin/version/MLO\n"
+            "partition_layout = bootfs_rootfs\n"
+            "mmc_id = 0:1\n"
+            "spl_package = ~~\n")
         self.assertValidationError(
             "Invalid value in spl_package in the [hwpack] section: ~~",
             config)
@@ -294,18 +294,18 @@ class ConfigTests(TestCase):
     def test_validate_invalid_spl_file(self):
         config = self.get_config(
             self.valid_start_v2 +
-            "u-boot-package = u-boot-linaro-s5pv310\n" \
-                "u-boot-file = usr/bin/version/MLO\n" \
-                "partition_layout = bootfs_rootfs\n" \
-                "spl_package = x-loader--linaro-s5pv310\n" \
-                "spl_file = ~~\n")
+            "u-boot-package = u-boot-linaro-s5pv310\n"
+            "u-boot-file = usr/bin/version/MLO\n"
+            "partition_layout = bootfs_rootfs\n"
+            "spl_package = x-loader--linaro-s5pv310\n"
+            "spl_file = ~~\n")
         self.assertValidationError("Invalid path: ~~", config)
 
     def test_validate_partition_layout(self):
         partition_layout = 'apafs_bananfs'
-        config = self.get_config(self.valid_start_v2 + "u_boot_package = " \
-                                     "u-boot-linaro-s5pv310\nu_boot_file = " \
-                                     "u-boot.bin\npartition_layout = %s\n" % \
+        config = self.get_config(self.valid_start_v2 + "u_boot_package = "
+                                     "u-boot-linaro-s5pv310\nu_boot_file = "
+                                     "u-boot.bin\npartition_layout = %s\n" %
                                      partition_layout)
         self.assertValidationError(
             "Undefined partition layout %s in the [%s] section. "
@@ -323,43 +323,43 @@ class ConfigTests(TestCase):
     def test_validate_u_boot_in_boot_part(self):
         config = self.get_config(
             self.valid_start_v2 +
-            "u-boot-package = u-boot-linaro-s5pv310\n" \
-                "u-boot-file = u-boot.bin\n" \
-                "partition_layout = bootfs_rootfs\n"\
-                "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
-                "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
-                "boot_script = boot.scr\n"\
-                "mmc_id = 0:1\n"\
-                "u_boot_in_boot_part = Nope\n")
+            "u-boot-package = u-boot-linaro-s5pv310\n"
+            "u-boot-file = u-boot.bin\n"
+            "partition_layout = bootfs_rootfs\n"
+            "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"
+            "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"
+            "boot_script = boot.scr\n"
+            "mmc_id = 0:1\n"
+            "u_boot_in_boot_part = Nope\n")
         self.assertValidationError(
             "Invalid value for u_boot_in_boot_part: Nope", config)
 
     def test_validate_u_boot_in_boot_part_bool(self):
         config = self.get_config(
             self.valid_start_v2 +
-            "u-boot-package = u-boot-linaro-s5pv310\n" \
-                "u-boot-file = u-boot.bin\n" \
-                "partition_layout = bootfs_rootfs\n"\
-                "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"\
-                "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"\
-                "boot_script = boot.scr\n"\
-                "mmc_id = 0:1\n"\
-                "u_boot_in_boot_part = True\n")
+            "u-boot-package = u-boot-linaro-s5pv310\n"
+            "u-boot-file = u-boot.bin\n"
+            "partition_layout = bootfs_rootfs\n"
+            "kernel_file = boot/vmlinuz-3.0.0-1002-linaro-omap\n"
+            "initrd_file = boot/initrd.img-3.0.0-1002-linaro-omap\n"
+            "boot_script = boot.scr\n"
+            "mmc_id = 0:1\n"
+            "u_boot_in_boot_part = True\n")
         self.assertValidationError(
             "Invalid value for u_boot_in_boot_part: True", config)
 
     def test_validate_serial_tty(self):
         config = self.get_config(
             self.valid_start_v2 +
-            "u_boot_package = u-boot-linaro-s5pv310\n" \
-                "u_boot_file = u-boot.bin\nserial_tty=tty\n")
+            "u_boot_package = u-boot-linaro-s5pv310\n"
+            "u_boot_file = u-boot.bin\nserial_tty=tty\n")
         self.assertValidationError("Invalid serial tty: tty", config,
                                    "_validate_serial_tty")
         config = self.get_config(
             self.valid_start_v2 +
-            "u_boot_package = u-boot-linaro-s5pv310\n" \
-                "u_boot_file = u-boot.bin\n" \
-                "serial_tty=ttxSAC1\n")
+            "u_boot_package = u-boot-linaro-s5pv310\n"
+            "u_boot_file = u-boot.bin\n"
+            "serial_tty=ttxSAC1\n")
         self.assertValidationError("Invalid serial tty: ttxSAC1", config,
                                    "_validate_serial_tty")
 

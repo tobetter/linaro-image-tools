@@ -24,13 +24,13 @@ from linaro_image_tools.testing import TestCaseWithFixtures
 from linaro_image_tools.tests.fixtures import (
     CreateTempDirFixture,
     CreateTempFileFixture,
-    )
+)
 
 from linaro_image_tools.hwpack.hwpack_convert import (
     HwpackConverter,
     HwpackConverterException,
     check_and_validate_args,
-    )
+)
 
 
 class Args():
@@ -71,8 +71,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
     def test_basic_parse(self):
         ini_format = '[hwpack]\nformat=2.0\nsupport=supported'
         output_format = "format: '3.0'\nsupport: supported\n"
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-                                                                get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -84,8 +84,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
         """
         ini_format = '[hwpack]\nformat=2.0\narchitectures=armhf armel'
         output_format = "format: '3.0'\narchitectures:\n- armhf\n- armel\n"
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-                                                                get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -94,13 +94,13 @@ class HwpackConverterTests(TestCaseWithFixtures):
     def test_bootloaders(self):
         """Tests the correct creation of the bootloaders part."""
         ini_format = ("[hwpack]\nformat=2.0\nu_boot_package=a_package\n"
-                        "u_boot_file=a_file\nu_boot_in_boot_part=Yes\n"
-                        "u_boot_dd=33")
+                      "u_boot_file=a_file\nu_boot_in_boot_part=Yes\n"
+                      "u_boot_dd=33")
         out_format = ("format: '3.0'\nbootloaders:\n  u_boot:\n    dd: '33'"
-                        "\n    file: a_file\n    in_boot_part: true\n"
-                        "    package: a_package\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-                                                                get_file_name()
+                      "\n    file: a_file\n    in_boot_part: true\n"
+                      "    package: a_package\n")
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -109,12 +109,12 @@ class HwpackConverterTests(TestCaseWithFixtures):
     def test_extra_boot_options(self):
         """Tests the correct creation of the extra_boot_options part."""
         ini_format = ("[hwpack]\nformat=2.0\nu_boot_package=a_package\n"
-                        "extra_boot_options=opt1 opt2")
+                      "extra_boot_options=opt1 opt2")
         out_format = ("format: '3.0'\nbootloaders:\n  u_boot:\n "
-                        "   extra_boot_options:\n    - opt1\n    "
-                        "- opt2\n    package: a_package\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-                                                                get_file_name()
+                      "   extra_boot_options:\n    - opt1\n    "
+                      "- opt2\n    package: a_package\n")
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -124,8 +124,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
         """Tests the correct creation of the extra_serial_options part."""
         ini_format = ("[hwpack]\nformat=2.0\nextra_serial_options=opt1 opt2")
         out_format = ("format: '3.0'\nextra_serial_options:\n- opt1\n- opt2\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-                                                                get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -134,11 +134,11 @@ class HwpackConverterTests(TestCaseWithFixtures):
     def test_assume_installed(self):
         """Tests the correct creation of the extra_serial_options part."""
         ini_format = ("[hwpack]\nformat=2.0\nassume-installed=install1 "
-                        "install2")
+                      "install2")
         out_format = ("format: '3.0'\nassume_installed:\n- install1\n- "
-                        "install2\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-                                                                get_file_name()
+                      "install2\n")
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -148,8 +148,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
         """Tests the correct creation of the extra_serial_options part."""
         ini_format = ("[hwpack]\nformat=2.0\ninclude-debs=yes")
         out_format = ("format: '3.0'\ninclude_debs: true\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-                                                                get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -160,8 +160,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
         ini_format = ("[hwpack]\nformat=2.0\ndtb_file=boot/a-*-path/file.dtb")
         out_format = ("format: '3.0'\ndtb_files:\n- board.dtb: "
                       "boot/a-*-path/file.dtb\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-                                                                get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()
@@ -175,8 +175,8 @@ class HwpackConverterTests(TestCaseWithFixtures):
         not a string."""
         ini_format = ("[hwpack]\nformat=2.0\nmmc_id=1:1")
         out_format = ("format: '3.0'\nmmc_id: '1:1'\n")
-        input_file = self.useFixture(CreateTempFileFixture(ini_format)).\
-                                                                get_file_name()
+        input_file = self.useFixture(
+            CreateTempFileFixture(ini_format)).get_file_name()
         output_file = self.useFixture(CreateTempFileFixture()).get_file_name()
         converter = HwpackConverter(input_file, output_file)
         converter._parse()

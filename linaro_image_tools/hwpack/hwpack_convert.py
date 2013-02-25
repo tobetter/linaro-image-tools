@@ -69,7 +69,7 @@ UBOOT_IN_BOOT_PART_KEY = 'u_boot_in_boot_part'
 UBOOT_DD_KEY = 'u_boot_dd'
 # All the u_boot defined keys in a list.
 UBOOT_KEYS = [UBOOT_PACKAGE_KEY, UBOOT_FILE_KEY, UBOOT_IN_BOOT_PART_KEY,
-                UBOOT_DD_KEY]
+              UBOOT_DD_KEY]
 
 # Old field, the only one with a dash: since the format is new, convert it.
 ASSUME_INSTALLED_OLD = 'assume-installed'
@@ -150,26 +150,28 @@ class HwpackConverter(object):
                             elif re.match("[Nn]o", value):
                                 value = False
                             if key == ARCHITECTURES_FIELD:
-                                self.parse_list_string(self.architectures,
-                                                        value)
+                                self.parse_list_string(
+                                    self.architectures,
+                                    value)
                                 continue
                             elif key == EXTRA_BOOT_OPTIONS_FIELD:
-                                self.parse_list_string(self.extra_boot_options,
-                                                        value)
+                                self.parse_list_string(
+                                    self.extra_boot_options,
+                                    value)
                                 continue
                             elif key == EXTRA_SERIAL_OPTIONS_FIELD:
                                 self.parse_list_string(
-                                                    self.extra_serial_options,
-                                                    value)
+                                    self.extra_serial_options,
+                                    value)
                                 continue
                             elif key == WIRED_INTERFACES_FIELD:
                                 self.parse_list_string(self.wired_interfaces,
-                                                        value)
+                                                       value)
                                 continue
                             elif key == WIRELESS_INTERFACES_FIELD:
                                 self.parse_list_string(
-                                                    self.wireless_interfaces,
-                                                    value)
+                                    self.wireless_interfaces,
+                                    value)
                                 continue
                             elif key in SPL_KEYS:
                                 self.spl[key] = value
@@ -185,8 +187,8 @@ class HwpackConverter(object):
                             # Create list.
                             elif key == ASSUME_INSTALLED_OLD:
                                 self.parse_list_string(
-                                                    self.assume_installed,
-                                                    value)
+                                    self.assume_installed,
+                                    value)
                                 continue
                             elif key == DTB_FILE_FIELD:
                                 self.dtb_files.append({DEFAULT_DTB_NAME:
@@ -226,7 +228,7 @@ class HwpackConverter(object):
         """
         if not isinstance(store, list):
             raise HwpackConverterException("Can use this method only with "
-                                            "list.")
+                                           "list.")
         store.extend(string.split(" "))
 
     def _to_file(self):
@@ -256,7 +258,7 @@ class HwpackConverter(object):
             converted += dump(installed)
         if self.extra_serial_options:
             serial_options = {EXTRA_SERIAL_OPTIONS_FIELD:
-                                self.extra_serial_options}
+                              self.extra_serial_options}
             converted += dump(serial_options)
         if self.packages:
             packages = {PACKAGES_FIELD: self.packages}
@@ -282,7 +284,7 @@ class HwpackConverter(object):
                     nested_value[key] = value
             if self.extra_boot_options:
                 nested_value[EXTRA_BOOT_OPTIONS_FIELD] = \
-                                                    self.extra_boot_options
+                    self.extra_boot_options
             if self.spl:
                 for key, value in self.spl.iteritems():
                     nested_value[key] = value
@@ -309,12 +311,12 @@ def check_and_validate_args(args):
     output_file = args.out
     if not os.path.exists(input_file) or not os.path.isfile(input_file):
         raise HwpackConverterException("The configuration file '%s' is not a "
-                                        "regular file." % input_file)
+                                       "regular file." % input_file)
     if output_file is not None:
         if os.path.exists(output_file) or os.path.isdir(output_file):
             raise HwpackConverterException("The output file name provided "
-                                            "'%s' already exists, or is a "
-                                            "directory." % output_file)
+                                           "'%s' already exists, or is a "
+                                           "directory." % output_file)
         elif not os.path.isabs(output_file):
             # If we output file is just a name, write it in the current dir.
             output_file = os.path.join(os.getcwd(), output_file)
