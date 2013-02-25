@@ -47,6 +47,7 @@ from linaro_image_tools.utils import (
     path_in_tarfile_exists,
     preferred_tools_dir,
     prep_media_path,
+    try_import,
     verify_file_integrity,
 )
 
@@ -270,11 +271,17 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
                                              StringIO('Y')))
         fixture = self.useFixture(
             MockCmdRunnerPopenFixture(self.output_string))
-        install_package_providing('mkfs.vfat')
-        self.assertEqual(
-            ['apt-get -s install dosfstools',
-             '%s apt-get --yes install dosfstools' % sudo_args],
-            fixture.mock.commands_executed)
+
+        try:
+            install_package_providing('mkfs.vfat')
+        except UnableToFindPackageProvidingCommand as inst:
+            self.assertEqual("CommandNotFound python module does not exist.",
+                             inst.args)
+        else:
+            self.assertEqual(
+                ['apt-get -s install dosfstools',
+                 '%s apt-get --yes install dosfstools' % sudo_args],
+                 fixture.mock.commands_executed)
 
     def test_package_installation_refused(self):
         self.useFixture(MockSomethingFixture(sys,
@@ -286,7 +293,15 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
                                              'stdin',
                                              StringIO('n')))
         self.useFixture(MockCmdRunnerPopenFixture(self.output_string))
-        self.assertRaises(SystemExit, install_package_providing, 'mkfs.vfat')
+
+        CommandNotFound = try_import('CommandNotFound.CommandNotFound')
+
+        if CommandNotFound is None:
+            self.assertRaises(UnableToFindPackageProvidingCommand,
+                              install_package_providing, 'mkfs.vfat')
+        else:
+            self.assertRaises(SystemExit, install_package_providing,
+                              'mkfs.vfat')
 
     def test_not_found_package(self):
         self.assertRaises(UnableToFindPackageProvidingCommand,

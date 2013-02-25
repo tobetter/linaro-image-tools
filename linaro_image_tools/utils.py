@@ -186,7 +186,7 @@ def install_package_providing(command):
 
     if CommandNotFound is None:
         raise UnableToFindPackageProvidingCommand(
-            "Cannot lookup a package which provides %s" % command)
+            "CommandNotFound python module does not exist.")
 
     packages = CommandNotFound().getPackages(command)
     if len(packages) == 0:
