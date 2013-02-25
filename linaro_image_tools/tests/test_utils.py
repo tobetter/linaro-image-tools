@@ -280,8 +280,8 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
         else:
             self.assertEqual(
                 ['apt-get -s install dosfstools',
-                 '%s apt-get --yes install dosfstools' % sudo_args],
-                 fixture.mock.commands_executed)
+                '%s apt-get --yes install dosfstools' % sudo_args],
+                fixture.mock.commands_executed)
 
     def test_package_installation_refused(self):
         self.useFixture(MockSomethingFixture(sys,
