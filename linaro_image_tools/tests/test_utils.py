@@ -276,7 +276,7 @@ class TestInstallPackageProviding(TestCaseWithFixtures):
             install_package_providing('mkfs.vfat')
         except UnableToFindPackageProvidingCommand as inst:
             self.assertEqual("CommandNotFound python module does not exist.",
-                             inst.args)
+                             inst.args[0])
         else:
             self.assertEqual(
                 ['apt-get -s install dosfstools',
