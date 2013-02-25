@@ -36,6 +36,7 @@ Before running any tests you need to install the following packages:
   - apt-utils
   - pep8
   - python-mock
+  - python-commandnotfound (as of Ubuntu 12.10)
 
 Also consider installing pyflakes, which is optional but will enable more
 tests.
@@ -50,7 +51,8 @@ command:
 
   $ sudo apt-get install testrepository python-testtools python-debian \
         python-argparse dpkg-dev python-parted dbus udisks python-dbus \
-        python-apt qemu-kvm util-linux apt-utils pep8 pyflakes
+        python-apt qemu-kvm util-linux apt-utils pep8 pyflakes \
+        python-commandnotfound
 
 To initialized testsuite, run the following command:
 
