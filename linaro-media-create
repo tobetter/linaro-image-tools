@@ -98,8 +98,13 @@ def ensure_required_commands(args):
         required_commands.append('mkfs.%s' % args.rootfs)
     else:
         raise AssertionError('Unsupported rootfs type %s' % args.rootfs)
+
     for command in required_commands:
-        ensure_command(command)
+        try:
+            ensure_command(command)
+        except UnableToFindPackageProvidingCommand:
+            logger.error("Could not look up command %s. Please ensure that command %s is installed." % (command, command))
+            raise
 
 
 if __name__ == '__main__':
@@ -177,7 +182,10 @@ if __name__ == '__main__':
 
     ROOTFS_DIR = os.path.join(BIN_DIR, filesystem_dir)
 
-    ensure_required_commands(args)
+    try:
+        ensure_required_commands(args)
+    except UnableToFindPackageProvidingCommand:
+        sys.exit(1)
 
     sig_file_list = args.hwpacksigs[:]
     if args.binarysig is not None:
