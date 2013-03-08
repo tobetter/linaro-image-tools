@@ -1740,6 +1740,22 @@ class OrigenQuadConfig(SamsungConfig):
                     "File '%s' does not exists. Cannot proceed." % name)
             _dd(file_path, boot_device_or_file, seek=boot_bin['seek'])
 
+class OdroidXConfig(SamsungConfig):
+    def __init__(self):
+        super(OdroidXConfig, self).__init__()
+        self.boot_script = 'boot.scr'
+        self.bootloader_flavor = 'odroidx'
+        self.initrd_addr = '0x42000000'
+        self.kernel_addr = '0x40007000'
+        self.kernel_flavors = ['odroidx']
+        self.load_addr = '0x40008000'
+        self.mmc_option = '0:2'
+        self.mmc_part_offset = 1
+        self.samsung_bl1_len = 48
+        self.samsung_bl2_start = 49
+        self.samsung_env_start = 1073
+        self.serial_tty = 'ttySAC1'
+        self._extra_serial_options = 'console=%s,115200n8'
 
 class ArndaleConfig(SamsungConfig):
     def __init__(self):
@@ -2018,6 +2034,7 @@ board_configs = {
     'mx51evk': Mx51evkConfig,
     'mx53loco': Mx53LoCoConfig,
     'mx6qsabrelite': BoardConfig,
+    'odroidx': OdroidXConfig,
     'origen': OrigenConfig,
     'origen_quad': OrigenQuadConfig,
     'overo': OveroConfig,
