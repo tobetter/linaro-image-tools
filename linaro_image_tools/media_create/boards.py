@@ -1541,7 +1541,6 @@ class SMDKV310Config(SamsungConfig):
 
 
 class OrigenConfig(SamsungConfig):
-    # TODO test
     def __init__(self):
         super(OrigenConfig, self).__init__()
         self.boot_script = 'boot.scr'
@@ -1572,6 +1571,29 @@ class OrigenQuadConfig(SamsungConfig):
         self.samsung_env_start = 1073
         self.serial_tty = 'ttySAC2'
         self._extra_serial_options = 'console=%s,115200n8'
+
+    def populate_raw_partition(self, boot_device_or_file, chroot_dir):
+        # Overridden method for Origen Quad board, since the bootloader
+        # is now composed of 4 binaries.
+        boot_bin_0 = {'name': 'origen_quad.bl1.bin', 'seek': 1}
+        boot_bin_1 = {'name': 'origen_quad-spl.bin.signed', 'seek': 31}
+        boot_bin_2 = {'name': 'u-boot.bin', 'seek': 63}
+        boot_bin_3 = {'name': 'exynos4x12.tzsw.signed.img', 'seek': 761}
+        boot_bins = [boot_bin_0, boot_bin_1, boot_bin_2, boot_bin_3]
+
+        boot_partition = 'boot'
+
+        # Zero the env so that the boot_script will get loaded
+        _dd("/dev/zero", boot_device_or_file, count=self.samsung_env_len,
+            seek=self.samsung_env_start)
+
+        for boot_bin in boot_bins:
+            name = boot_bin['name']
+            file_path = os.path.join(chroot_dir, boot_partition, name)
+            if not os.path.exists(file_path):
+                raise Exception("File '%s' does not exists. Cannot proceed."
+                        % name)
+            _dd(file_path, boot_device_or_file, seek=boot_bin['seek'])
 
 
 class ArndaleConfig(SamsungConfig):
