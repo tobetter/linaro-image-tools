@@ -137,6 +137,10 @@ def copy_drop(src, dest_dir):
     cmd_runner.run(cmd, as_root=True).wait()
 
 
+class BoardException(Exception):
+    """Class for board related exceptions."""
+
+
 class BoardConfig(object):
     """The configuration used when building an image for a board."""
 
@@ -1591,8 +1595,8 @@ class OrigenQuadConfig(SamsungConfig):
             name = boot_bin['name']
             file_path = os.path.join(chroot_dir, boot_partition, name)
             if not os.path.exists(file_path):
-                raise Exception("File '%s' does not exists. Cannot proceed."
-                        % name)
+                raise BoardException("File '%s' does not exists. Cannot "
+                        "proceed." % name)
             _dd(file_path, boot_device_or_file, seek=boot_bin['seek'])
 
 
