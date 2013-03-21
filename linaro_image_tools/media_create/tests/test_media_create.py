@@ -1649,7 +1649,7 @@ class TestPopulateRawPartitionAndroid(TestCaseWithFixtures):
         self.useFixture(fixture)
         expected_commands = [
                 ('sudo -E dd if=/dev/zero of= bs=512 conv=notrunc count=32 '
-                 'seek=1599'),
+                 'seek=1601'),
                 ('sudo -E dd if=boot/origen_quad.bl1.bin of= bs=512 '
                  'conv=notrunc seek=1'),
                 ('sudo -E dd if=boot/origen_quad-spl.bin.signed of= bs=512 '

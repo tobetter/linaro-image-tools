@@ -1572,7 +1572,7 @@ class OrigenQuadConfig(SamsungConfig):
         self.mmc_part_offset = 1
         self.samsung_bl1_len = 48
         self.samsung_bl2_start = 49
-        self.samsung_env_start = 1599
+        self.samsung_env_start = 1601
         self.serial_tty = 'ttySAC2'
         self._extra_serial_options = 'console=%s,115200n8'
 
