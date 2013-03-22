@@ -1680,6 +1680,18 @@ class ArndaleConfig(SamsungConfig):
         return bl0_file
 
 
+class HighBankConfig(BoardConfig):
+    def __init__(self):
+        super(HighBankConfig, self).__init__()
+        self.boot_script = 'boot.scr'
+        self.bootloader_flavor = 'highbank'
+        self.kernel_flavors = ['highbank']
+        self.serial_tty = 'ttyAMA0'
+        self.dtb_addr = '0x00001000'
+        self.initrd_addr = '0x01000000'
+        self.kernel_addr = '0x00800000'
+        self.load_addr = '0x00000000'
+
 class I386Config(BoardConfig):
     # define bootloader
     BOOTLOADER_CMD = 'grub-install'
@@ -1751,6 +1763,7 @@ board_configs = {
     'efikamx': EfikamxConfig,
     'efikasb': EfikasbConfig,
     'fastmodel': FastModelConfig,
+    'highbank': HighBankConfig,
     'i386': I386Config,
     'igep': IgepConfig,
     'mx51evk': Mx51evkConfig,
