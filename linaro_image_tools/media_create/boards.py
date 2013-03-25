@@ -169,6 +169,8 @@ class BoardConfig(object):
         self.extra_boot_args_options = None
         self.fat_size = 32
         self.fatload_command = 'fatload'
+        self.load_interface = 'mmc'
+        self.bootfs_type = 'vfat'
         self.fdt_high = '0xffffffff'
         self.hardwarepack_handler = None
         self.hwpack_format = None
@@ -448,13 +450,17 @@ class BoardConfig(object):
 
         :param should_align_boot_part: Whether to align the boot partition too.
 
-        This returns a boot vfat partition of type FAT16
-        or FAT32, followed by a root partition.
+        This returns a boot partition of type FAT16 or FAT32 or Linux,
+        followed by a root partition.
         """
-        if self.fat_size == 32:
-            partition_type = '0x0C'
+
+        if self.bootfs_type == 'vfat':
+            if self.fat_size == 32:
+                partition_type = '0x0C'
+            else:
+                partition_type = '0x0E'
         else:
-            partition_type = '0x0E'
+            partition_type = '0x83'
 
         # align on sector 63 for compatibility with broken versions of x-loader
         # unless align_boot_part is set
@@ -522,20 +528,22 @@ class BoardConfig(object):
         replacements = dict(
             fatload_command=self.fatload_command, uimage_path=self.uimage_path,
             mmc_option=self.mmc_option, kernel_addr=self.kernel_addr,
-            initrd_addr=self.initrd_addr, dtb_addr=self.dtb_addr)
+            initrd_addr=self.initrd_addr, dtb_addr=self.dtb_addr,
+            load_interface=self.load_interface)
+
         boot_script = (
-            ("%(fatload_command)s mmc %(mmc_option)s %(kernel_addr)s " +
-             "%(uimage_path)suImage; ")) % replacements
+            ("%(fatload_command)s %(load_interface)s %(mmc_option)s "
+             "%(kernel_addr)s %(uimage_path)suImage; ")) % replacements
         if i_img_data is not None:
             boot_script += (
-                ("%(fatload_command)s mmc %(mmc_option)s %(initrd_addr)s " +
-                 "%(uimage_path)suInitrd; ")) % replacements
+                ("%(fatload_command)s %(load_interface)s %(mmc_option)s " +
+                 "%(initrd_addr)s %(uimage_path)suInitrd; ")) % replacements
             if d_img_data is not None:
                 assert self.dtb_addr is not None, (
                     "Need a dtb_addr when passing d_img_data")
                 boot_script += (
-                    ("%(fatload_command)s mmc %(mmc_option)s %(dtb_addr)s " +
-                     "board.dtb; ")) % replacements
+                    ("%(fatload_command)s %(load_interface)s %(mmc_option)s " +
+                     "%(dtb_addr)s board.dtb; ")) % replacements
         boot_script += (("bootm %(kernel_addr)s")) % replacements
         if i_img_data is not None:
             boot_script += ((" %(initrd_addr)s")) % replacements
@@ -1688,87 +1696,12 @@ class HighBankConfig(BoardConfig):
         self.kernel_flavors = ['highbank']
         self.serial_tty = 'ttyAMA0'
         self.fatload_command = 'ext2load'
+        self.load_interface = 'scsi'
+        self.bootfs_type = 'ext2'
         self.dtb_addr = '0x00001000'
         self.initrd_addr = '0x01000000'
         self.kernel_addr = '0x00800000'
         self.load_addr = '0x00000000'
-
-    def get_sfdisk_cmd(self, should_align_boot_part=False):
-        """Return the sfdisk command to partition the media.
-
-        :param should_align_boot_part: Whether to align the boot partition too.
-
-        This returns a boot partition of type ext2 followed by a root partition.
-        """
-        partition_type = '0x83'
-
-        # align on sector 63 for compatibility with broken versions of x-loader
-        # unless align_boot_part is set
-        # XXX OMAP specific, might break other boards?
-        boot_align = 63
-        if should_align_boot_part:
-            boot_align = PART_ALIGN_S
-
-        # can only start on sector 1 (sector 0 is MBR / partition table)
-        boot_start, boot_end, boot_len = align_partition(
-            1, self.BOOT_MIN_SIZE_S, boot_align, PART_ALIGN_S)
-        # apparently OMAP3 ROMs require the vfat length to be an even number
-        # of sectors (multiple of 1 KiB); decrease the length if it's odd,
-        # there should still be enough room
-        # XXX OMAP specific, might break other boards?
-        boot_len = boot_len - boot_len % 2
-        boot_end = boot_start + boot_len - 1
-
-        # we ignore _root_end / _root_len and return a sfdisk command to
-        # instruct the use of all remaining space; XXX we now have root size
-        # config, so we can do something more sensible
-        root_start, _root_end, _root_len = align_partition(
-            boot_end + 1, self.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
-
-        return '%s,%s,%s,*\n%s,,,-' % (
-            boot_start, boot_len, partition_type, root_start)
-
-    def _get_bootcmd(self, i_img_data, d_img_data):
-        replacements = dict(
-            ext2load_command=self.fatload_command, uimage_path=self.uimage_path,
-            scsi_option=self.mmc_option, kernel_addr=self.kernel_addr,
-            initrd_addr=self.initrd_addr, dtb_addr=self.dtb_addr)
-
-        bootcmd = (
-            ("%(ext2load_command)s scsi %(scsi_option)s %(kernel_addr)s " +
-             "%(uimage_path)suImage; ")) % replacements
-
-        if i_img_data is not None:
-            bootcmd += (
-                ("%(ext2load_command)s scsi %(scsi_option)s %(initrd_addr)s " +
-                 "%(uimage_path)suInitrd; ")) % replacements
-            if d_img_data is not None:
-                assert self.dtb_addr is not None, (
-                    "Need a dtb_addr when passing d_img_data")
-                bootcmd += (
-                    ("%(ext2load_command)s scsi %(scsi_option)s %(dtb_addr)s " +
-                     "board.dtb; ")) % replacements
-        bootcmd += (("bootm %(kernel_addr)s")) % replacements
-        if i_img_data is not None:
-            bootcmd += ((" %(initrd_addr)s")) % replacements
-            if d_img_data is not None:
-                bootcmd += ((" %(dtb_addr)s")) % replacements
-
-        return bootcmd
-
-    def _get_boot_env(self, is_live, is_lowmem, consoles, rootfs_id,
-                      i_img_data, d_img_data):
-        boot_env = {}
-
-        boot_env["bootargs"] = self._get_bootargs(is_live,
-                                                  is_lowmem,
-                                                  consoles,
-                                                  rootfs_id)
-        boot_env["bootcmd"] = self._get_bootcmd(i_img_data, d_img_data)
-        boot_env["initrd_high"] = self.initrd_high
-        boot_env["fdt_high"] = self.fdt_high
-
-        return boot_env
 
 
 class I386Config(BoardConfig):
