@@ -500,10 +500,19 @@ class AndroidVexpressConfig(AndroidBoardConfig, VexpressConfig):
 
 
 class AndroidArndaleConfig(AndroidSamsungConfig, ArndaleConfig):
-    """Placeholder class for Arndale configuration."""
+    """Placeholder class for Arndale configuration inheritance."""
     def __init__(self):
         super(AndroidArndaleConfig, self).__init__()
-        self._android_specifi_args = 'init=/init androidboot.console=ttySAC2'
+        self.mmc_option = '0:1'
+        self.kernel_addr = '0x40007000'
+        self.initrd_addr = '0x41000000'
+        self.dtb_addr = '0x41f00000'
+        self.dtb_name = 'exynos5250-arndale.dtb'
+        self._android_specific_args = ('init=/init '
+                'androidboot.console=ttySAC2 console=ttySAC2 '
+                'initrd=%s' % self.initrd_addr)
+        self._extra_serial_options = 'ttySAC2,115200n8'
+        self._extra_boot_args_options = 'rootdelay=3'
 
     def populate_raw_partition(self, boot_device_or_file, chroot_dir):
         boot_bin_0 = {'name': 'arndale-bl1.bin', 'seek': 1}
