@@ -35,6 +35,7 @@ from linaro_image_tools import cmd_runner
 from linaro_image_tools.hwpack.hwpack_fields import FORMAT_FIELD
 from linaro_image_tools.media_create.partitions import SECTOR_SIZE
 from linaro_image_tools.media_create.boards import (
+    ArndaleConfig,
     BeagleConfig,
     BoardConfig,
     BoardConfigException,
@@ -51,6 +52,8 @@ from linaro_image_tools.media_create.boards import (
     align_up,
     install_mx5_boot_loader,
     make_boot_script,
+    _dd,
+    BoardException,
 )
 from linaro_image_tools.utils import DEFAULT_LOGGER_NAME
 
@@ -496,6 +499,42 @@ class AndroidVexpressConfig(AndroidBoardConfig, VexpressConfig):
         self._android_specific_args = 'init=/init androidboot.console=ttyAMA0'
 
 
+class AndroidArndaleConfig(AndroidSamsungConfig, ArndaleConfig):
+    """Placeholder class for Arndale configuration inheritance."""
+    def __init__(self):
+        super(AndroidArndaleConfig, self).__init__()
+        self.mmc_option = '0:1'
+        self.kernel_addr = '0x40007000'
+        self.initrd_addr = '0x41000000'
+        self.dtb_addr = '0x41f00000'
+        self.dtb_name = 'exynos5250-arndale.dtb'
+        self._android_specific_args = ('init=/init '
+                'androidboot.console=ttySAC2 console=ttySAC2 '
+                'initrd=%s' % self.initrd_addr)
+        self._extra_serial_options = 'ttySAC2,115200n8'
+        self._extra_boot_args_options = 'rootdelay=3'
+
+    def populate_raw_partition(self, boot_device_or_file, chroot_dir):
+        boot_bin_0 = {'name': 'arndale-bl1.bin', 'seek': 1}
+        boot_bin_1 = {'name': 'u-boot-mmc-spl.bin', 'seek': 17}
+        boot_bin_2 = {'name': 'u-boot.bin', 'seek': 49}
+        boot_bins = [boot_bin_0, boot_bin_1, boot_bin_2]
+
+        boot_partition = 'boot'
+
+        # Zero the env so that the boot_script will get loaded
+        _dd("/dev/zero", boot_device_or_file, count=self.samsung_env_len,
+            seek=self.samsung_env_start)
+
+        for boot_bin in boot_bins:
+            name = boot_bin['name']
+            file_path = os.path.join(chroot_dir, boot_partition, name)
+            if not os.path.exists(file_path):
+                raise BoardException("File '%s' does not exists. Cannot "
+                        "proceed." % name)
+            _dd(file_path, boot_device_or_file, seek=boot_bin['seek'])
+
+
 # This dictionary is composed as follows:
 # <device_name>: <class>
 # The <device_name> is the command line argument passed to l-a-m-c, the
@@ -503,6 +542,7 @@ class AndroidVexpressConfig(AndroidBoardConfig, VexpressConfig):
 # If a new device does not have special needs, it is possible to use the
 # general AndroidBoardConfig class.
 android_board_configs = {
+    'arndale': AndroidArndaleConfig,
     'beagle': AndroidBeagleConfig,
     'iMX53': AndroidMx53LoCoConfig,
     'mx53loco': AndroidMx53LoCoConfig,

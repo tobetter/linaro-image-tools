@@ -2002,7 +2002,7 @@ class TestGetBootCmd(TestCase):
                         'root=UUID=deadbeef rootwait ro',
             'bootcmd': 'fatload mmc 0:2 0x90000000 uImage; '
                        'fatload mmc 0:2 0x92000000 uInitrd; '
-                       'fatload mmc 0:2 0x91ff0000 board.dtb; '
+                       'fatload mmc 0:2 0x91ff0000 mx51.dtb; '
                        'bootm 0x90000000 0x92000000 0x91ff0000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
@@ -2126,7 +2126,7 @@ class TestGetBootCmd(TestCase):
                         'mem=456M@0x80000000 mem=512M@0xA0000000',
             'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
-                       'fatload mmc 0:1 0x815f0000 board.dtb; '
+                       'fatload mmc 0:1 0x815f0000 panda.dtb; '
                        'bootm 0x80200000 0x81600000 0x815f0000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
@@ -2149,7 +2149,7 @@ class TestGetBootCmd(TestCase):
                         'omapfb.mode=dvi:1280x720MR-16@60 mpurate=${mpurate}',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
-                       'fatload mmc 0:1 0x815f0000 board.dtb; '
+                       'fatload mmc 0:1 0x815f0000 beagle.dtb; '
                        'bootm 0x80000000 0x81600000 0x815f0000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
@@ -2172,7 +2172,7 @@ class TestGetBootCmd(TestCase):
                         'omapfb.mode=dvi:1280x720MR-16@60 mpurate=${mpurate}',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
-                       'fatload mmc 0:1 0x815f0000 board.dtb; '
+                       'fatload mmc 0:1 0x815f0000 igep.dtb; '
                        'bootm 0x80000000 0x81600000 0x815f0000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
@@ -2196,7 +2196,7 @@ class TestGetBootCmd(TestCase):
                         'omapfb.mode=dvi:${dvimode}',
             'bootcmd': 'fatload mmc 0:1 0x80000000 uImage; '
                        'fatload mmc 0:1 0x81600000 uInitrd; '
-                       'fatload mmc 0:1 0x815f0000 board.dtb; '
+                       'fatload mmc 0:1 0x815f0000 overo.dtb; '
                        'bootm 0x80000000 0x81600000 0x815f0000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
