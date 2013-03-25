@@ -541,9 +541,9 @@ class BoardConfig(object):
             if d_img_data is not None:
                 assert self.dtb_addr is not None, (
                     "Need a dtb_addr when passing d_img_data")
-                boot_script += (("%(fatload_command)s %(load_interface)s "
-                    "%(mmc_option)s %(dtb_addr)s ")) % replacements
-                boot_script += "%s; " % d_img_data
+                boot_script += (
+                    ("%(fatload_command)s %(load_interface)s %(mmc_option)s "
+                     "%(dtb_addr)s board.dtb; ")) % replacements
         boot_script += (("bootm %(kernel_addr)s")) % replacements
         if i_img_data is not None:
             boot_script += ((" %(initrd_addr)s")) % replacements
