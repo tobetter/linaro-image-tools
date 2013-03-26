@@ -514,6 +514,35 @@ class AndroidArndaleConfig(AndroidSamsungConfig, ArndaleConfig):
         self._extra_serial_options = 'ttySAC2,115200n8'
         self._extra_boot_args_options = 'rootdelay=3'
 
+    def _get_bootcmd(self, i_img_data, d_img_data):
+        """Get the bootcmd for this board.
+
+        In general subclasses should not have to override this.
+        """
+        replacements = dict(
+            fatload_command=self.fatload_command, uimage_path=self.uimage_path,
+            mmc_option=self.mmc_option, kernel_addr=self.kernel_addr,
+            initrd_addr=self.initrd_addr, dtb_addr=self.dtb_addr)
+        boot_script = (
+            ("%(fatload_command)s mmc %(mmc_option)s %(kernel_addr)s " +
+             "%(uimage_path)suImage; ")) % replacements
+        if i_img_data is not None:
+            boot_script += (
+                ("%(fatload_command)s mmc %(mmc_option)s %(initrd_addr)s " +
+                 "%(uimage_path)suInitrd; ")) % replacements
+            if d_img_data is not None:
+                assert self.dtb_addr is not None, (
+                    "Need a dtb_addr when passing d_img_data")
+                boot_script += (("%(fatload_command)s mmc %(mmc_option)s "
+                    "%(dtb_addr)s ")) % replacements
+                boot_script += "%s; " % d_img_data
+        boot_script += (("bootm %(kernel_addr)s")) % replacements
+        if i_img_data is not None:
+            boot_script += ((" %(initrd_addr)s")) % replacements
+            if d_img_data is not None:
+                boot_script += ((" %(dtb_addr)s")) % replacements
+        return boot_script
+
     def populate_raw_partition(self, boot_device_or_file, chroot_dir):
         boot_bin_0 = {'name': 'arndale-bl1.bin', 'seek': 1}
         boot_bin_1 = {'name': 'u-boot-mmc-spl.bin', 'seek': 17}
