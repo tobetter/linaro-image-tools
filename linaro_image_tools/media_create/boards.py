@@ -547,7 +547,7 @@ class BoardConfig(object):
         boot_script += (("bootm %(kernel_addr)s")) % replacements
         if i_img_data is not None:
             boot_script += ((" %(initrd_addr)s")) % replacements
-            if d_img_data is not None:
+            if self.dtb_addr is not None:
                 boot_script += ((" %(dtb_addr)s")) % replacements
         return boot_script
 
@@ -1325,7 +1325,8 @@ class Mx51Config(Mx5Config):
 class Mx53Config(Mx5Config):
     def __init__(self):
         super(Mx53Config, self).__init__()
-        self.dtb_addr = '0x71ff0000'
+        # XXX: Is dtb_addr really needed?
+        #self.dtb_addr = '0x71ff0000'
         self.initrd_addr = '0x72000000'
         self.kernel_addr = '0x70000000'
         self.kernel_flavors = ['linaro-lt-mx53', 'linaro-lt-mx5']
