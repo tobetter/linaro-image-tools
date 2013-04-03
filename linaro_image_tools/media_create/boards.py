@@ -533,8 +533,8 @@ class BoardConfig(object):
             if d_img_data is not None:
                 assert self.dtb_addr is not None, (
                     "Need a dtb_addr when passing d_img_data")
-                boot_script += (("%(fatload_command)s mmc %(mmc_option)s "
-                    "%(dtb_addr)s board.dtb; ")) % replacements
+                boot_script += ("%(fatload_command)s mmc %(mmc_option)s "
+                                "%(dtb_addr)s board.dtb; " % replacements)
         boot_script += (("bootm %(kernel_addr)s")) % replacements
         if i_img_data is not None:
             boot_script += ((" %(initrd_addr)s")) % replacements
@@ -1594,8 +1594,8 @@ class OrigenQuadConfig(SamsungConfig):
             name = boot_bin['name']
             file_path = os.path.join(chroot_dir, boot_partition, name)
             if not os.path.exists(file_path):
-                raise BoardException("File '%s' does not exists. Cannot "
-                        "proceed." % name)
+                raise BoardException(
+                    "File '%s' does not exists. Cannot proceed." % name)
             _dd(file_path, boot_device_or_file, seek=boot_bin['seek'])
 
 
