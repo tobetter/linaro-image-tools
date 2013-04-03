@@ -57,6 +57,9 @@ from linaro_image_tools.utils import (
     path_in_tarfile_exists,
     prep_media_path,
     get_logger,
+    UnableToFindPackageProvidingCommand,
+    disable_automount,
+    enable_automount,
     )
 
 # Just define the global variables
@@ -135,6 +138,10 @@ if __name__ == '__main__':
         parser.print_help()
         logger.error(e.value)
         sys.exit(1)
+
+    # Do this by default, disable automount options and re-enable them at exit.
+    disable_automount()
+    atexit.register(enable_automount)
 
     board_config = get_board_config(args.dev)
     board_config.set_metadata(args.hwpacks, args.bootloader, args.dev)
