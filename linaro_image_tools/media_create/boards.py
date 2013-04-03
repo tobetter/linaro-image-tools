@@ -1089,6 +1089,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
         # puts the MBR, so the boot loader skips that address.
         self.supports_writing_to_mmc = False
         self.snowball_startup_files_config = 'startfiles.cfg'
+        self.mmc_option = '0:2'
 
     def get_v1_sfdisk_cmd(self, should_align_boot_part=None):
         """Return the sfdisk command to partition the media.
