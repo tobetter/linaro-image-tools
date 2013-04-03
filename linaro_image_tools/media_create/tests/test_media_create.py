@@ -2102,8 +2102,8 @@ class TestGetBootCmd(TestCase):
                         'mem_modem=32M@96M mem=44M@128M pmem=22M@172M '
                         'mem=30M@194M mem_mali=32M@224M pmem_hwb=54M@256M '
                         'hwmem=48M@302M mem=152M@360M',
-            'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
-                       'fatload mmc 1:1 0x08000000 uInitrd; '
+            'bootcmd': 'fatload mmc 0:2 0x00100000 uImage; '
+                       'fatload mmc 0:2 0x08000000 uInitrd; '
                        'bootm 0x00100000 0x08000000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
