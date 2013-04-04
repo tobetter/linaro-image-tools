@@ -164,10 +164,15 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
 
     if should_format_bootfs:
         print "\nFormating boot partition\n"
-        proc = cmd_runner.run(
-            ['mkfs.vfat', '-F', str(board_config.fat_size), bootfs, '-n',
-             bootfs_label],
-            as_root=True)
+        mkfs = 'mkfs.%s' % board_config.bootfs_type
+        if board_config.bootfs_type == 'vfat':
+            proc = cmd_runner.run(
+                [mkfs, '-F', str(board_config.fat_size), bootfs, '-n',
+                 bootfs_label],
+                as_root=True)
+        else:
+            proc = cmd_runner.run(
+                [mkfs, bootfs, '-L', bootfs_label], as_root=True)
         proc.wait()
 
     if should_format_rootfs:

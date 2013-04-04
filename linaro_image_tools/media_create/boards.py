@@ -169,6 +169,8 @@ class BoardConfig(object):
         self.extra_boot_args_options = None
         self.fat_size = 32
         self.fatload_command = 'fatload'
+        self.load_interface = 'mmc'
+        self.bootfs_type = 'vfat'
         self.fdt_high = '0xffffffff'
         self.hardwarepack_handler = None
         self.hwpack_format = None
@@ -448,13 +450,17 @@ class BoardConfig(object):
 
         :param should_align_boot_part: Whether to align the boot partition too.
 
-        This returns a boot vfat partition of type FAT16
-        or FAT32, followed by a root partition.
+        This returns a boot partition of type FAT16 or FAT32 or Linux,
+        followed by a root partition.
         """
-        if self.fat_size == 32:
-            partition_type = '0x0C'
+
+        if self.bootfs_type == 'vfat':
+            if self.fat_size == 32:
+                partition_type = '0x0C'
+            else:
+                partition_type = '0x0E'
         else:
-            partition_type = '0x0E'
+            partition_type = '0x83'
 
         # align on sector 63 for compatibility with broken versions of x-loader
         # unless align_boot_part is set
@@ -522,23 +528,26 @@ class BoardConfig(object):
         replacements = dict(
             fatload_command=self.fatload_command, uimage_path=self.uimage_path,
             mmc_option=self.mmc_option, kernel_addr=self.kernel_addr,
-            initrd_addr=self.initrd_addr, dtb_addr=self.dtb_addr)
+            initrd_addr=self.initrd_addr, dtb_addr=self.dtb_addr,
+            load_interface=self.load_interface)
+
         boot_script = (
-            ("%(fatload_command)s mmc %(mmc_option)s %(kernel_addr)s " +
-             "%(uimage_path)suImage; ")) % replacements
+            ("%(fatload_command)s %(load_interface)s %(mmc_option)s "
+             "%(kernel_addr)s %(uimage_path)suImage; ")) % replacements
         if i_img_data is not None:
             boot_script += (
-                ("%(fatload_command)s mmc %(mmc_option)s %(initrd_addr)s " +
-                 "%(uimage_path)suInitrd; ")) % replacements
+                ("%(fatload_command)s %(load_interface)s %(mmc_option)s "
+                 "%(initrd_addr)s %(uimage_path)suInitrd; ")) % replacements
             if d_img_data is not None:
                 assert self.dtb_addr is not None, (
                     "Need a dtb_addr when passing d_img_data")
-                boot_script += ("%(fatload_command)s mmc %(mmc_option)s "
-                                "%(dtb_addr)s board.dtb; " % replacements)
+                boot_script += (
+                    ("%(fatload_command)s %(load_interface)s %(mmc_option)s "
+                     "%(dtb_addr)s board.dtb; ")) % replacements
         boot_script += (("bootm %(kernel_addr)s")) % replacements
         if i_img_data is not None:
             boot_script += ((" %(initrd_addr)s")) % replacements
-            if d_img_data is not None:
+            if self.dtb_addr is not None:
                 boot_script += ((" %(dtb_addr)s")) % replacements
         return boot_script
 
@@ -1317,7 +1326,8 @@ class Mx51Config(Mx5Config):
 class Mx53Config(Mx5Config):
     def __init__(self):
         super(Mx53Config, self).__init__()
-        self.dtb_addr = '0x71ff0000'
+        # XXX: Is dtb_addr really needed?
+        #self.dtb_addr = '0x71ff0000'
         self.initrd_addr = '0x72000000'
         self.kernel_addr = '0x70000000'
         self.kernel_flavors = ['linaro-lt-mx53', 'linaro-lt-mx5']
@@ -1680,6 +1690,22 @@ class ArndaleConfig(SamsungConfig):
         return bl0_file
 
 
+class HighBankConfig(BoardConfig):
+    def __init__(self):
+        super(HighBankConfig, self).__init__()
+        self.boot_script = 'boot.scr'
+        self.bootloader_flavor = 'highbank'
+        self.kernel_flavors = ['highbank']
+        self.serial_tty = 'ttyAMA0'
+        self.fatload_command = 'ext2load'
+        self.load_interface = 'scsi'
+        self.bootfs_type = 'ext2'
+        self.dtb_addr = '0x00001000'
+        self.initrd_addr = '0x01000000'
+        self.kernel_addr = '0x00800000'
+        self.load_addr = '0x00000000'
+
+
 class I386Config(BoardConfig):
     # define bootloader
     BOOTLOADER_CMD = 'grub-install'
@@ -1751,6 +1777,7 @@ board_configs = {
     'efikamx': EfikamxConfig,
     'efikasb': EfikasbConfig,
     'fastmodel': FastModelConfig,
+    'highbank': HighBankConfig,
     'i386': I386Config,
     'igep': IgepConfig,
     'mx51evk': Mx51evkConfig,
