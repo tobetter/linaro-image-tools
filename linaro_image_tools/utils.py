@@ -35,6 +35,10 @@ BOOT_DIR_IN_TARBALL = "boot"
 # The name of the hwpack file found in the boot tarball.
 HWPACK_NAME = "config"
 
+# dconf keys to disable automount options.
+AUTOMOUNT_DCONF_KEY = '/org/gnome/desktop/media-handling/automount'
+AUTOMOUNT_OPEN_DCONF_KEYU = '/org/gnome/desktop/media-handling/automount-open'
+
 
 # try_import was copied from python-testtools 0.9.12 and was originally
 # licensed under a MIT-style license but relicensed under the GPL in Linaro
@@ -406,3 +410,42 @@ def get_logger(name=DEFAULT_LOGGER_NAME, debug=False):
 
     logger.addHandler(ch)
     return logger
+
+
+def disable_automount():
+    """Disables the desktop environment automount option.
+
+    This will work only under GNOME with dconf installed.
+    """
+    logger = logging.getLogger(DEFAULT_LOGGER_NAME)
+
+    if has_command('dconf'):
+        logger.info("Disabling desktop environment automount option.")
+        try:
+            cmd_runner.run(
+                ['dconf', 'write', AUTOMOUNT_DCONF_KEY, 'false'],
+                stdout=open('/dev/null', 'w')).wait()
+            cmd_runner.run(
+                ['dconf', 'write', AUTOMOUNT_OPEN_DCONF_KEYU, 'false'],
+                stdout=open('/dev/null', 'w')).wait()
+        except cmd_runner.SubcommandNonZeroReturnValue:
+            logger.error("Error disabling desktop environemnt automount.")
+
+
+def enable_automount():
+    """Re-enables back the desktop environment automount option.
+
+    This will work only under GNOME with dconf installed. It should be run
+    as an atexit function.
+    """
+    logger = logging.getLogger(DEFAULT_LOGGER_NAME)
+    if has_command('dconf'):
+        try:
+            cmd_runner.run(
+                ['dconf', 'write', AUTOMOUNT_DCONF_KEY, 'true'],
+                stdout=open('/dev/null', 'w')).wait()
+            cmd_runner.run(
+                ['dconf', 'write', AUTOMOUNT_OPEN_DCONF_KEYU, 'true'],
+                stdout=open('/dev/null', 'w')).wait()
+        except cmd_runner.SubcommandNonZeroReturnValue:
+            logger.error("Error enabling back desktop environemnt automount.")

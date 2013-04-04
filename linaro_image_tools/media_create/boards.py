@@ -1098,6 +1098,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
         # puts the MBR, so the boot loader skips that address.
         self.supports_writing_to_mmc = False
         self.snowball_startup_files_config = 'startfiles.cfg'
+        self.mmc_option = '0:2'
 
     def get_v1_sfdisk_cmd(self, should_align_boot_part=None):
         """Return the sfdisk command to partition the media.
@@ -1604,8 +1605,8 @@ class OrigenQuadConfig(SamsungConfig):
             name = boot_bin['name']
             file_path = os.path.join(chroot_dir, boot_partition, name)
             if not os.path.exists(file_path):
-                raise BoardException("File '%s' does not exists. Cannot "
-                        "proceed." % name)
+                raise BoardException(
+                    "File '%s' does not exists. Cannot proceed." % name)
             _dd(file_path, boot_device_or_file, seek=boot_bin['seek'])
 
 

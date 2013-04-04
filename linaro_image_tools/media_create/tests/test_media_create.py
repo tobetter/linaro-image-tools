@@ -1525,8 +1525,8 @@ class TestPopulateRawPartition(TestCaseWithFixtures):
     def test_origen_quad_raw(self):
         # Need to mock this since files do not exist here, and
         # an Exception is raised.
-        self.useFixture(MockSomethingFixture(os.path, 'exists',
-            lambda exists: True))
+        self.useFixture(
+            MockSomethingFixture(os.path, 'exists', lambda exists: True))
 
         self.populate_raw_partition(boards.OrigenQuadConfig())
         expected = ['_dd', '_dd', '_dd', '_dd', '_dd']
@@ -1534,8 +1534,8 @@ class TestPopulateRawPartition(TestCaseWithFixtures):
 
     def test_origen_quad_raises(self):
         board_conf = boards.OrigenQuadConfig()
-        self.assertRaises(boards.BoardException,
-                board_conf.populate_raw_partition, '', '')
+        self.assertRaises(
+            boards.BoardException, board_conf.populate_raw_partition, '', '')
 
     def test_arndale_raw(self):
         self.useFixture(MockSomethingFixture(os.path, 'getsize',
@@ -1659,20 +1659,20 @@ class TestPopulateRawPartitionAndroid(TestCaseWithFixtures):
         fixture = MockCmdRunnerPopenFixture()
         self.useFixture(fixture)
         expected_commands = [
-                ('sudo -E dd if=/dev/zero of= bs=512 conv=notrunc count=32 '
-                 'seek=1601'),
-                ('sudo -E dd if=boot/origen_quad.bl1.bin of= bs=512 '
-                 'conv=notrunc seek=1'),
-                ('sudo -E dd if=boot/origen_quad-spl.bin.signed of= bs=512 '
-                 'conv=notrunc seek=31'),
-                ('sudo -E dd if=boot/u-boot.bin of= bs=512 conv=notrunc '
-                 'seek=63'),
-                ('sudo -E dd if=boot/exynos4x12.tzsw.signed.img of= bs=512 '
-                 'conv=notrunc seek=761')
-                ]
+            ('sudo -E dd if=/dev/zero of= bs=512 conv=notrunc count=32 '
+             'seek=1601'),
+            ('sudo -E dd if=boot/origen_quad.bl1.bin of= bs=512 '
+             'conv=notrunc seek=1'),
+            ('sudo -E dd if=boot/origen_quad-spl.bin.signed of= bs=512 '
+             'conv=notrunc seek=31'),
+            ('sudo -E dd if=boot/u-boot.bin of= bs=512 conv=notrunc '
+             'seek=63'),
+            ('sudo -E dd if=boot/exynos4x12.tzsw.signed.img of= bs=512 '
+             'conv=notrunc seek=761')
+        ]
 
-        self.useFixture(MockSomethingFixture(os.path, 'exists',
-            lambda exists: True))
+        self.useFixture(
+            MockSomethingFixture(os.path, 'exists', lambda exists: True))
 
         self.populate_raw_partition(android_boards.AndroidOrigenQuadConfig())
         expected = []
@@ -2127,8 +2127,8 @@ class TestGetBootCmd(TestCase):
                         'mem_modem=32M@96M mem=44M@128M pmem=22M@172M '
                         'mem=30M@194M mem_mali=32M@224M pmem_hwb=54M@256M '
                         'hwmem=48M@302M mem=152M@360M',
-            'bootcmd': 'fatload mmc 1:1 0x00100000 uImage; '
-                       'fatload mmc 1:1 0x08000000 uInitrd; '
+            'bootcmd': 'fatload mmc 0:2 0x00100000 uImage; '
+                       'fatload mmc 0:2 0x08000000 uInitrd; '
                        'bootm 0x00100000 0x08000000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}

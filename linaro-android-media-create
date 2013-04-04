@@ -44,7 +44,9 @@ from linaro_image_tools.utils import (
     additional_android_option_checks,
     andorid_hwpack_in_boot_tarball,
     ensure_command,
-    get_logger
+    get_logger,
+    disable_automount,
+    enable_automount,
     )
 
 
@@ -116,6 +118,10 @@ if __name__ == '__main__':
                        "use mx53loco.")
 
     ensure_required_commands(args)
+
+    # Do this by default, disable automount options and re-enable them at exit.
+    disable_automount()
+    atexit.register(enable_automount)
 
     media = Media(args.device)
     if media.is_block_device:

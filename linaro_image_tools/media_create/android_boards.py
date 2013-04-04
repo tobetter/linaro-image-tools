@@ -508,9 +508,9 @@ class AndroidArndaleConfig(AndroidSamsungConfig, ArndaleConfig):
         self.initrd_addr = '0x41000000'
         self.dtb_addr = '0x41f00000'
         self.dtb_name = 'exynos5250-arndale.dtb'
-        self._android_specific_args = ('init=/init '
-                'androidboot.console=ttySAC2 console=ttySAC2 '
-                'initrd=%s' % self.initrd_addr)
+        self._android_specific_args = (
+            'init=/init androidboot.console=ttySAC2 console=ttySAC2 initrd=%s'
+            % self.initrd_addr)
         self._extra_serial_options = 'ttySAC2,115200n8'
         self._extra_boot_args_options = 'rootdelay=3'
 
@@ -533,8 +533,8 @@ class AndroidArndaleConfig(AndroidSamsungConfig, ArndaleConfig):
             if d_img_data is not None:
                 assert self.dtb_addr is not None, (
                     "Need a dtb_addr when passing d_img_data")
-                boot_script += (("%(fatload_command)s mmc %(mmc_option)s "
-                    "%(dtb_addr)s ")) % replacements
+                boot_script += ("%(fatload_command)s mmc %(mmc_option)s "
+                                "%(dtb_addr)s " % replacements)
                 boot_script += "%s; " % d_img_data
         boot_script += (("bootm %(kernel_addr)s")) % replacements
         if i_img_data is not None:
@@ -559,8 +559,8 @@ class AndroidArndaleConfig(AndroidSamsungConfig, ArndaleConfig):
             name = boot_bin['name']
             file_path = os.path.join(chroot_dir, boot_partition, name)
             if not os.path.exists(file_path):
-                raise BoardException("File '%s' does not exists. Cannot "
-                        "proceed." % name)
+                raise BoardException(
+                    "File '%s' does not exists. Cannot proceed." % name)
             _dd(file_path, boot_device_or_file, seek=boot_bin['seek'])
 
 

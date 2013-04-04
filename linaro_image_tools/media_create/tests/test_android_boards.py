@@ -489,10 +489,10 @@ class TestAndroidBoardsHwpack(TestCaseWithFixtures):
                         'init=/init androidboot.console=ttySAC2 '
                         'console=ttySAC2 initrd=0x41000000',
             'bootcmd': 'fatload mmc 0:1 0x40007000 uImage; fatload mmc 0:1 '
-                        '0x41000000 uInitrd; fatload mmc 0:1 0x41f00000 '
-                        'exynos5250-arndale.dtb; bootm 0x40007000 0x41000000 '
-                        '0x41f00000',
+                       '0x41000000 uInitrd; fatload mmc 0:1 0x41f00000 '
+                       'exynos5250-arndale.dtb; bootm 0x40007000 0x41000000 '
+                       '0x41f00000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff',
-            }
+        }
         self.assertBootEnv(expected, board='arndale')
