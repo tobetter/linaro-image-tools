@@ -786,6 +786,9 @@ class BoardConfig(object):
                 self.board != 'snowball_sd'):
             self.populate_raw_partition(boot_device_or_file, chroot_dir)
 
+	if (self.board == 'odroidx'):
+            self.populate_raw_partition(boot_device_or_file, chroot_dir)
+
         if self.env_dd:
             # Do we need to zero out the env before flashing it?
             _dd("/dev/zero", boot_device_or_file,
@@ -1756,6 +1759,27 @@ class OdroidXConfig(SamsungConfig):
         self.samsung_env_start = 1073
         self.serial_tty = 'ttySAC1'
         self._extra_serial_options = 'console=%s,115200n8'
+
+    def populate_raw_partition(self, boot_device_or_file, chroot_dir):
+        boot_bin_0 = {'name': 'BL1.bin', 'seek': 1}
+        boot_bin_1 = {'name': 'BL2.bin', 'seek': 31}
+        boot_bin_2 = {'name': 'u-boot.bin', 'seek': 63}
+        boot_bin_3 = {'name': 'TZSW.bin', 'seek': 2111}
+        boot_bins = [boot_bin_0, boot_bin_1, boot_bin_2, boot_bin_3]
+
+        boot_partition = 'boot'
+
+        # Zero the env so that the boot_script will get loaded
+        _dd("/dev/zero", boot_device_or_file, count=self.samsung_env_len,
+            seek=self.samsung_env_start)
+
+        for boot_bin in boot_bins:
+            name = boot_bin['name']
+            file_path = os.path.join(chroot_dir, boot_partition, name)
+            if not os.path.exists(file_path):
+                raise BoardException(
+                    "File '%s' does not exists. Cannot proceed." % name)
+            _dd(file_path, boot_device_or_file, seek=boot_bin['seek'])
 
 class ArndaleConfig(SamsungConfig):
     def __init__(self):
