@@ -1429,6 +1429,16 @@ class TestBootSteps(TestCaseWithFixtures):
         expected = []
         self.assertEqual(expected, self.funcs_calls)
 
+    def test_beaglbone_steps(self):
+        board_conf = boards.BeagleBoneConfig()
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
+        self.mock_set_appropriate_serial_tty(board_conf)
+        self.make_boot_files(board_conf)
+        expected = [
+            'install_omap_boot_loader', 'make_uImage', 'make_uInitrd',
+            'make_dtb', 'make_boot_script', 'make_boot_ini']
+        self.assertEqual(expected, self.funcs_calls)
+
 
 class TestPopulateRawPartition(TestCaseWithFixtures):
 
@@ -1552,6 +1562,11 @@ class TestPopulateRawPartition(TestCaseWithFixtures):
 
     def test_highbank_raw(self):
         self.populate_raw_partition(boards.HighBankConfig())
+        expected = []
+        self.assertEqual(expected, self.funcs_calls)
+
+    def test_beaglebone_raw(self):
+        self.populate_raw_partition(boards.BeagleBoneConfig())
         expected = []
         self.assertEqual(expected, self.funcs_calls)
 
@@ -1861,6 +1876,13 @@ class TestGetSfdiskCmd(TestCase):
             '63,106432,0x83,*\n106496,,,-',
             board_conf.get_sfdisk_cmd())
 
+    def test_beaglebone(self):
+        board_conf = get_board_config('highbank')
+        self.set_up_config(board_conf)
+        self.assertEquals(
+            '63,106432,0x83,*\n106496,,,-',
+            board_conf.get_sfdisk_cmd())
+
     def test_panda_android(self):
         self.assertEqual(
             '63,270272,0x0C,*\n270336,1048576,L\n1318912,524288,L\n'
@@ -1981,6 +2003,13 @@ class TestGetSfdiskCmdV2(TestCase):
         board_conf.partition_layout = 'bootfs_rootfs'
         self.assertEquals(
             '63,106432,0x83,*\n106496,,,-',
+            board_conf.get_sfdisk_cmd())
+
+    def test_beaglebone(self):
+        board_conf = get_board_config('beaglebone')
+        board_conf.partition_layout = 'bootfs_rootfs'
+        self.assertEquals(
+            '63,106432,0x0C,*\n106496,,,-',
             board_conf.get_sfdisk_cmd())
 
 
@@ -2237,6 +2266,24 @@ class TestGetBootCmd(TestCase):
             'bootcmd': 'ext2load scsi 0:1 0x00800000 uImage; '
             'ext2load scsi 0:1 0x01000000 uInitrd; '
             'bootm 0x00800000 0x01000000 0x00001000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
+        self.assertEqual(expected, boot_commands)
+
+    def test_beaglebone(self):
+        config = get_board_config('beaglebone')
+        config.serial_tty = config._serial_tty
+        boot_commands = config._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=[],
+            rootfs_id="UUID=deadbeef", i_img_data="initrd",
+            d_img_data="board.dtb")
+        expected = {
+            'bootargs': 'console=ttyO0,115200n8  '
+                        'root=UUID=deadbeef rootwait ro fixrtc',
+            'bootcmd': 'fatload mmc 0:1 0x80200000 uImage; '
+                       'fatload mmc 0:1 0x81600000 uInitrd; '
+                       'fatload mmc 0:1 0x815f0000 board.dtb; '
+                       'bootm 0x80200000 0x81600000 0x815f0000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)

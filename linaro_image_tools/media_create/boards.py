@@ -896,7 +896,6 @@ class BoardConfig(object):
 
 
 class OmapConfig(BoardConfig):
-
     def __init__(self):
         super(OmapConfig, self).__init__()
         self.kernel_flavors = ['linaro-omap4', 'linaro-lt-omap',
@@ -963,7 +962,6 @@ class OmapConfig(BoardConfig):
 
 
 class BeagleConfig(OmapConfig):
-
     def __init__(self):
         super(BeagleConfig, self).__init__()
         self.boot_script = 'boot.scr'
@@ -1014,6 +1012,21 @@ class PandaConfig(OmapConfig):
         self.load_addr = '0x80008000'
         self._extra_serial_options = 'console=tty0 console=%s,115200n8'
         self._live_serial_options = 'serialtty=%s'
+
+
+class BeagleBoneConfig(OmapConfig):
+    def __init__(self):
+        super(BeagleBoneConfig, self).__init__()
+        self.boot_script = 'boot.scr'
+        self.bootloader_flavor = 'am335x_evm'
+        self.kernel_flavors = ['am335x']
+        self._serial_tty = 'ttyO0'
+        self.dtb_addr = '0x815f0000'
+        self.initrd_addr = '0x81600000'
+        self.kernel_addr = '0x80200000'
+        self.load_addr = '0x80008000'
+        self.extra_boot_args_options = ('fixrtc')
+        self._extra_serial_options = 'console=ttyO0,115200n8'
 
 
 class IgepConfig(BeagleConfig):
@@ -1774,6 +1787,7 @@ class BoardConfigException(Exception):
 board_configs = {
     'arndale': ArndaleConfig,
     'beagle': BeagleConfig,
+    'beaglebone': BeagleBoneConfig,
     'efikamx': EfikamxConfig,
     'efikasb': EfikasbConfig,
     'fastmodel': FastModelConfig,
