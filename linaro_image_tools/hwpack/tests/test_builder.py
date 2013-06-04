@@ -27,10 +27,10 @@ from testtools.matchers import Equals
 
 from linaro_image_tools.hwpack.builder import (
     ConfigFileMissing,
-    PackageUnpacker,
     HardwarePackBuilder,
     logger as builder_logger,
 )
+from linaro_image_tools.hwpack.package_unpacker import PackageUnpacker
 from linaro_image_tools.hwpack.config import HwpackConfigError
 from linaro_image_tools.hwpack.hardwarepack import Metadata
 from linaro_image_tools.hwpack.packages import (

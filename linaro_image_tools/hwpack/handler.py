@@ -27,7 +27,7 @@ import tarfile
 import tempfile
 
 from linaro_image_tools.hwpack.config import Config
-from linaro_image_tools.hwpack.builder import PackageUnpacker
+from linaro_image_tools.hwpack.package_unpacker import PackageUnpacker
 from linaro_image_tools.utils import DEFAULT_LOGGER_NAME
 
 
