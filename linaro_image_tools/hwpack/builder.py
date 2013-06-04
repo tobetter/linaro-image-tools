@@ -22,7 +22,6 @@
 import logging
 import errno
 import subprocess
-import tempfile
 import os
 import shutil
 from glob import iglob
@@ -39,6 +38,7 @@ from linaro_image_tools.hwpack.packages import (
     LocalArchiveMaker,
     PackageFetcher,
 )
+from linaro_image_tools.hwpack.package_unpacker import PackageUnpacker
 
 from linaro_image_tools.hwpack.hwpack_fields import (
     PACKAGE_FIELD,
@@ -57,44 +57,6 @@ class ConfigFileMissing(Exception):
         self.filename = filename
         super(ConfigFileMissing, self).__init__(
             "No such config file: '%s'" % self.filename)
-
-
-class PackageUnpacker(object):
-    def __enter__(self):
-        self.tempdir = tempfile.mkdtemp()
-        return self
-
-    def __exit__(self, type, value, traceback):
-        if self.tempdir is not None and os.path.exists(self.tempdir):
-            shutil.rmtree(self.tempdir)
-
-    def get_path(self, package_file_name, file_name=''):
-        """Get package or file path in unpacker tmp dir."""
-        package_dir = os.path.basename(package_file_name)
-        return os.path.join(self.tempdir, package_dir, file_name)
-
-    def unpack_package(self, package_file_name):
-        # We could extract only a single file, but since dpkg will pipe
-        # the entire package through tar anyway we might as well extract all.
-        unpack_dir = self.get_path(package_file_name)
-        if not os.path.isdir(unpack_dir):
-            os.mkdir(unpack_dir)
-        p = cmd_runner.run(["tar", "-C", unpack_dir, "-xf", "-"],
-                           stdin=subprocess.PIPE)
-        cmd_runner.run(["dpkg", "--fsys-tarfile", package_file_name],
-                       stdout=p.stdin).communicate()
-        p.communicate()
-
-    def get_file(self, package, file):
-        # File path passed here must not be absolute, or file from
-        # real filesystem will be referenced.
-        assert file and file[0] != '/'
-        self.unpack_package(package)
-        logger.debug("Unpacked package %s." % package)
-        temp_file = self.get_path(package, file)
-        assert os.path.exists(temp_file), "The file '%s' was " \
-            "not found in the package '%s'." % (file, package)
-        return temp_file
 
 
 class HardwarePackBuilder(object):
