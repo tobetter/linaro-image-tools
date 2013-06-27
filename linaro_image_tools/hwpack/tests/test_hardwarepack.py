@@ -443,7 +443,7 @@ class HardwarePackTests(TestCase):
         self.assertThat(
             tf,
             HardwarePackHasFile("pkgs/%s" % package1.filename,
-            content=package1.content.read()))
+                                content=package1.content.read()))
         self.assertThat(
             tf,
             HardwarePackHasFile("pkgs/%s" % package2.filename,

@@ -2987,7 +2987,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.linux_offsets_and_sizes = [
             (16384 * SECTOR_SIZE, 15746 * SECTOR_SIZE),
             (32768 * SECTOR_SIZE, (self.linux_image_size -
-                                        32768 * SECTOR_SIZE))
+                                   32768 * SECTOR_SIZE))
         ]
         self.android_image_size = 256 * 1024 ** 2
         # Extended partition info takes 32 sectors from the first ext partition
