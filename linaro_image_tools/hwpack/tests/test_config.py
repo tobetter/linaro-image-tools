@@ -304,9 +304,9 @@ class ConfigTests(TestCase):
     def test_validate_partition_layout(self):
         partition_layout = 'apafs_bananfs'
         config = self.get_config(self.valid_start_v2 + "u_boot_package = "
-                                     "u-boot-linaro-s5pv310\nu_boot_file = "
-                                     "u-boot.bin\npartition_layout = %s\n" %
-                                     partition_layout)
+                                 "u-boot-linaro-s5pv310\nu_boot_file = "
+                                 "u-boot.bin\npartition_layout = %s\n" %
+                                 partition_layout)
         self.assertValidationError(
             "Undefined partition layout %s in the [%s] section. "
             "Valid partition layouts are %s."

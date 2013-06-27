@@ -1169,7 +1169,7 @@ class SnowballEmmcConfig(SnowballSdConfig):
         self.delete_file(toc_filename)
         if self.delete_startupfiles:
             self.delete_file(os.path.join(config_files_dir,
-                                         self.snowball_startup_files_config))
+                                          self.snowball_startup_files_config))
 
     def snowball_config(self, chroot_dir):
         # We will find the startupfiles in the target boot partition.
