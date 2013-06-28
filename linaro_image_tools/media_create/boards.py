@@ -1433,6 +1433,8 @@ class FastModelConfig(BoardConfig):
                          i_img_data, d_img_data):
             if filename is not None:
                 copy_drop(filename, output_dir)
+                cmd_runner.run(["cp", "-v", filename, boot_dir],
+                               as_root=True).wait()
 
 
 class SamsungConfig(BoardConfig):
