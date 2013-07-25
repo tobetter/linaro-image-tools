@@ -1533,14 +1533,14 @@ class SamsungConfig(BoardConfig):
             seek=self.samsung_env_start)
         # Populate created raw partition with BL1 and u-boot
         spl_file = os.path.join(chroot_dir, 'boot', 'u-boot-mmc-spl.bin')
-        assert os.path.getsize(spl_file) <= (
-            self.samsung_bl1_len * SECTOR_SIZE), (
-                "%s is larger than Samsung BL1 size" % spl_file)
+        assert os.path.getsize(spl_file) <= \
+            (self.samsung_bl1_len * SECTOR_SIZE), \
+            ("%s is larger than Samsung BL1 size" % spl_file)
         _dd(spl_file, boot_device_or_file, seek=self.samsung_bl1_start)
         uboot_file = os.path.join(chroot_dir, 'boot', 'u-boot.bin')
-        assert os.path.getsize(uboot_file) <= (
-            self.samsung_bl2_len * SECTOR_SIZE), (
-                "%s is larger than Samsung BL2 size" % uboot_file)
+        assert os.path.getsize(uboot_file) <= \
+            (self.samsung_bl2_len * SECTOR_SIZE), \
+            ("%s is larger than Samsung BL2 size" % uboot_file)
         _dd(uboot_file, boot_device_or_file, seek=self.samsung_bl2_start)
 
 
