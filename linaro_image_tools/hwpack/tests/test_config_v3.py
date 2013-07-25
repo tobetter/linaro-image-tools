@@ -853,7 +853,7 @@ class ConfigTests(TestCase):
                      ' - adest.dtb : boot/dt-*-linaro-omap/omap4-panda.dtb\n' +
                      ' - bdest.dtb : ' +
                      'boot/dt-*-linaro-omap2/omap4-panda2.dtb\n')
-        expected = [{'adest.dtb':'boot/dt-*-linaro-omap/omap4-panda.dtb'},
+        expected = [{'adest.dtb': 'boot/dt-*-linaro-omap/omap4-panda.dtb'},
                     {'bdest.dtb': 'boot/dt-*-linaro-omap2/omap4-panda2.dtb'}]
         config = self.get_config(self.valid_complete_v3 + dtb_files)
         config.validate()
