@@ -42,7 +42,7 @@ from linaro_image_tools.media_create.unpack_binary_tarball import (
 from linaro_image_tools.media_create import get_android_args_parser
 from linaro_image_tools.utils import (
     additional_android_option_checks,
-    andorid_hwpack_in_boot_tarball,
+    android_hwpack_in_boot_tarball,
     ensure_command,
     get_logger,
     disable_automount,
@@ -141,7 +141,7 @@ if __name__ == '__main__':
 
     board_config = get_board_config(args.dev)
 
-    hwpack_exists, config_file = andorid_hwpack_in_boot_tarball(BOOT_DIR)
+    hwpack_exists, config_file = android_hwpack_in_boot_tarball(BOOT_DIR)
     if not args.hwpack and not hwpack_exists:
         # No hwpack in the boot tarball nor provided on the command line.
         logger.warning("No hwpack found in the boot tarball nor passed on "

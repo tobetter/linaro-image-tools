@@ -39,7 +39,7 @@ from linaro_image_tools.utils import (
     UnableToFindPackageProvidingCommand,
     additional_android_option_checks,
     additional_option_checks,
-    andorid_hwpack_in_boot_tarball,
+    android_hwpack_in_boot_tarball,
     check_file_integrity_and_log_errors,
     ensure_command,
     find_command,
@@ -376,7 +376,7 @@ class TestAndroidOptionChecks(TestCaseWithFixtures):
             expected = (True, config_file)
             with open(config_file, "w"):
                 self.assertEqual(expected,
-                                 andorid_hwpack_in_boot_tarball(tmpdir))
+                                 android_hwpack_in_boot_tarball(tmpdir))
         finally:
             os.unlink(config_file)
             os.removedirs(boot_dir)
@@ -389,7 +389,7 @@ class TestAndroidOptionChecks(TestCaseWithFixtures):
             os.mkdir(boot_dir)
             config_file = os.path.join(boot_dir, "config")
             expected = (False, config_file)
-            self.assertEqual(expected, andorid_hwpack_in_boot_tarball(tmpdir))
+            self.assertEqual(expected, android_hwpack_in_boot_tarball(tmpdir))
         finally:
             os.removedirs(boot_dir)
 

@@ -363,7 +363,7 @@ def additional_android_option_checks(args):
                 "--hwpack argument (%s) is not a regular file" % args.hwpack)
 
 
-def andorid_hwpack_in_boot_tarball(boot_dir):
+def android_hwpack_in_boot_tarball(boot_dir):
     """Simple check for existence of a path.
 
     Needed to make cli command testable in some way.

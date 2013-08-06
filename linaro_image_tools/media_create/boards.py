@@ -862,7 +862,7 @@ class BoardConfig(object):
         if self.initrd:
             initrd = _get_file_matching(os.path.join(path, self.initrd))
         if not self.initrd or not initrd:
-            logger.warn("Could not find a valid initrd, skipping uInitd.")
+            logger.warn("Could not find a valid initrd, skipping uInitrd.")
 
         if self.dtb_file:
             dtb = _get_file_matching(os.path.join(path, self.dtb_file))
