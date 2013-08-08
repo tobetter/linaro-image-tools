@@ -89,11 +89,21 @@ CommandNotFound = try_import('CommandNotFound.CommandNotFound')
 def path_in_tarfile_exists(path, tar_file):
     exists = True
     try:
-        tarinfo = tarfile.open(tar_file, 'r:gz')
+        tarinfo = tarfile.open(tar_file, 'r:*')
         tarinfo.getmember(path)
         tarinfo.close()
     except KeyError:
         exists = False
+    except (tarfile.ReadError, tarfile.CompressionError):
+        exists = False
+        # Fallback to tar command
+        cmd = ['tar', '-tf', tar_file, '--wildcards', '*' + path]
+        proc = cmd_runner.run(cmd,
+                              stdout=open('/dev/null', 'w'),
+                              stderr=open('/dev/null', 'w'))
+        proc.wait()
+        if proc.returncode == 0:
+            exists = True
     finally:
         return exists
 
