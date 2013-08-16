@@ -2261,11 +2261,13 @@ class TestGetBootCmd(TestCase):
         board_conf = get_board_config('highbank')
         boot_commands = board_conf._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
-            rootfs_id="UUID=deadbeef", i_img_data="initrd", d_img_data=None)
+            rootfs_id="UUID=deadbeef", i_img_data="initrd",
+            d_img_data="board.dtb")
         expected = {
             'bootargs': 'root=UUID=deadbeef rootwait ro',
             'bootcmd': 'ext2load scsi 0:1 0x00800000 uImage; '
             'ext2load scsi 0:1 0x01000000 uInitrd; '
+            'ext2load scsi 0:1 0x00001000 board.dtb; '
             'bootm 0x00800000 0x01000000 0x00001000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
