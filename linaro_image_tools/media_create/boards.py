@@ -1721,6 +1721,20 @@ class HighBankConfig(BoardConfig):
         self.load_addr = '0x00000000'
 
 
+class Aa9Config(BoardConfig):
+    def __init__(self):
+        super(Aa9Config, self).__init__()
+        self.boot_script = 'boot.scr'
+        self.bootloader_flavor = 'mb8ac0300eb'
+        self.kernel_flavors = None
+        self._serial_tty = 'ttyS0'
+        self.dtb_addr = '0x41000000'
+        self.initrd_addr = '0x41100000'
+        self.kernel_addr = '0x40000000'
+        self.load_addr = '0x40008000'
+        self._extra_serial_options = 'console=ttyS0,115200n8'
+
+
 class I386Config(BoardConfig):
     # define bootloader
     BOOTLOADER_CMD = 'grub-install'
@@ -1787,6 +1801,7 @@ class BoardConfigException(Exception):
 
 
 board_configs = {
+    'aa9': Aa9Config,
     'arndale': ArndaleConfig,
     'beagle': BeagleConfig,
     'beaglebone': BeagleBoneConfig,
