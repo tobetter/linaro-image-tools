@@ -234,6 +234,17 @@ if __name__ == '__main__':
     # In case we're only extracting the kernel packages, avoid
     # using uuid because we don't have a working initrd
     if extract_kpkgs:
+        # XXX: workaround https://bugs.launchpad.net/bugs/1208815
+        # When we use OE, we don't have initrd/UUID and fallback to pass
+        # root=/dev/mmcblk0p3 to the kernel. It's based on mmc_option value
+        # provided by the hardware configuration (mmc_id: '0:2').
+        # At U-Boot stage, the value is correct and we load from mmc 0:2.
+        # At the kernel stage, the value becomes incorrect because Arndale
+        # has eMMC and rootfs can be found on /dev/mmcblk1p3.
+        # Since the boot commands are calculated based on the same mmc_id
+        # parameter, Arndale can't boot in this use case.
+        if board_config.board == 'arndale':
+            board_config.mmc_device_id = board_config.mmc_device_id + 1
         # XXX: this needs to be smarter as we can't always assume mmcblk devices
         rootfs_id = '/dev/mmcblk%dp%s' % (
                 board_config.mmc_device_id, 2 + board_config.mmc_part_offset)
