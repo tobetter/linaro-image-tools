@@ -1440,6 +1440,12 @@ class TestBootSteps(TestCaseWithFixtures):
             'make_dtb', 'make_boot_script', 'make_boot_ini']
         self.assertEqual(expected, self.funcs_calls)
 
+    def test_aa9_steps(self):
+        board_conf = boards.Aa9Config()
+        board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
+        expected = []
+        self.assertEqual(expected, self.funcs_calls)
+
 
 class TestPopulateRawPartition(TestCaseWithFixtures):
 
@@ -1568,6 +1574,11 @@ class TestPopulateRawPartition(TestCaseWithFixtures):
 
     def test_beaglebone_raw(self):
         self.populate_raw_partition(boards.BeagleBoneConfig())
+        expected = []
+        self.assertEqual(expected, self.funcs_calls)
+
+    def test_aa9_raw(self):
+        self.populate_raw_partition(boards.Aa9Config())
         expected = []
         self.assertEqual(expected, self.funcs_calls)
 
@@ -1878,10 +1889,17 @@ class TestGetSfdiskCmd(TestCase):
             board_conf.get_sfdisk_cmd())
 
     def test_beaglebone(self):
-        board_conf = get_board_config('highbank')
+        board_conf = get_board_config('beaglebone')
         self.set_up_config(board_conf)
         self.assertEquals(
-            '63,106432,0x83,*\n106496,,,-',
+            '63,106432,0x0C,*\n106496,,,-',
+            board_conf.get_sfdisk_cmd())
+
+    def test_aa9(self):
+        board_conf = get_board_config('aa9')
+        self.set_up_config(board_conf)
+        self.assertEquals(
+            '63,106432,0x0C,*\n106496,,,-',
             board_conf.get_sfdisk_cmd())
 
     def test_panda_android(self):
@@ -2008,6 +2026,13 @@ class TestGetSfdiskCmdV2(TestCase):
 
     def test_beaglebone(self):
         board_conf = get_board_config('beaglebone')
+        board_conf.partition_layout = 'bootfs_rootfs'
+        self.assertEquals(
+            '63,106432,0x0C,*\n106496,,,-',
+            board_conf.get_sfdisk_cmd())
+
+    def test_aa9(self):
+        board_conf = get_board_config('aa9')
         board_conf.partition_layout = 'bootfs_rootfs'
         self.assertEquals(
             '63,106432,0x0C,*\n106496,,,-',
@@ -2261,11 +2286,13 @@ class TestGetBootCmd(TestCase):
         board_conf = get_board_config('highbank')
         boot_commands = board_conf._get_boot_env(
             is_live=False, is_lowmem=False, consoles=[],
-            rootfs_id="UUID=deadbeef", i_img_data="initrd", d_img_data=None)
+            rootfs_id="UUID=deadbeef", i_img_data="initrd",
+            d_img_data="board.dtb")
         expected = {
             'bootargs': 'root=UUID=deadbeef rootwait ro',
             'bootcmd': 'ext2load scsi 0:1 0x00800000 uImage; '
             'ext2load scsi 0:1 0x01000000 uInitrd; '
+            'ext2load scsi 0:1 0x00001000 board.dtb; '
             'bootm 0x00800000 0x01000000 0x00001000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
@@ -2285,6 +2312,24 @@ class TestGetBootCmd(TestCase):
                        'fatload mmc 0:1 0x81600000 uInitrd; '
                        'fatload mmc 0:1 0x815f0000 board.dtb; '
                        'bootm 0x80200000 0x81600000 0x815f0000',
+            'fdt_high': '0xffffffff',
+            'initrd_high': '0xffffffff'}
+        self.assertEqual(expected, boot_commands)
+
+    def test_aa9(self):
+        config = get_board_config('aa9')
+        config.serial_tty = config._serial_tty
+        boot_commands = config._get_boot_env(
+            is_live=False, is_lowmem=False, consoles=[],
+            rootfs_id="UUID=deadbeef", i_img_data="initrd",
+            d_img_data="board.dtb")
+        expected = {
+            'bootargs': 'console=ttyS0,115200n8  '
+                        'root=UUID=deadbeef rootwait ro',
+            'bootcmd': 'fatload mmc 0:1 0x40000000 uImage; '
+                       'fatload mmc 0:1 0x41100000 uInitrd; '
+                       'fatload mmc 0:1 0x41000000 board.dtb; '
+                       'bootm 0x40000000 0x41100000 0x41000000',
             'fdt_high': '0xffffffff',
             'initrd_high': '0xffffffff'}
         self.assertEqual(expected, boot_commands)

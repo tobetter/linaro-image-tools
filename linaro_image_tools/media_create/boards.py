@@ -534,21 +534,27 @@ class BoardConfig(object):
         boot_script = (
             ("%(fatload_command)s %(load_interface)s %(mmc_option)s "
              "%(kernel_addr)s %(uimage_path)suImage; ")) % replacements
-        if i_img_data is not None:
+        boot_script_bootm = (("bootm %(kernel_addr)s")) % replacements
+        if i_img_data is not None and d_img_data is not None:
+            boot_script += (
+                ("%(fatload_command)s %(load_interface)s %(mmc_option)s "
+                 "%(initrd_addr)s %(uimage_path)suInitrd; "
+                 "%(fatload_command)s %(load_interface)s %(mmc_option)s "
+                 "%(dtb_addr)s board.dtb; ")) % replacements
+            boot_script_bootm += (
+                (" %(initrd_addr)s %(dtb_addr)s")) % replacements
+        elif i_img_data is None and d_img_data is not None:
+            boot_script += (
+                ("%(fatload_command)s %(load_interface)s %(mmc_option)s "
+                 "%(dtb_addr)s board.dtb; ")) % replacements
+            boot_script_bootm += ((" - %(dtb_addr)s")) % replacements
+        elif i_img_data is not None and d_img_data is None:
             boot_script += (
                 ("%(fatload_command)s %(load_interface)s %(mmc_option)s "
                  "%(initrd_addr)s %(uimage_path)suInitrd; ")) % replacements
-            if d_img_data is not None:
-                assert self.dtb_addr is not None, (
-                    "Need a dtb_addr when passing d_img_data")
-                boot_script += (
-                    ("%(fatload_command)s %(load_interface)s %(mmc_option)s "
-                     "%(dtb_addr)s board.dtb; ")) % replacements
-        boot_script += (("bootm %(kernel_addr)s")) % replacements
-        if i_img_data is not None:
-            boot_script += ((" %(initrd_addr)s")) % replacements
-            if self.dtb_addr is not None:
-                boot_script += ((" %(dtb_addr)s")) % replacements
+            boot_script_bootm += ((" %(initrd_addr)s")) % replacements
+
+        boot_script += boot_script_bootm
         return boot_script
 
     def add_boot_args(self, extra_args):
@@ -1721,6 +1727,20 @@ class HighBankConfig(BoardConfig):
         self.load_addr = '0x00000000'
 
 
+class Aa9Config(BoardConfig):
+    def __init__(self):
+        super(Aa9Config, self).__init__()
+        self.boot_script = 'boot.scr'
+        self.bootloader_flavor = 'mb8ac0300eb'
+        self.kernel_flavors = None
+        self._serial_tty = 'ttyS0'
+        self.dtb_addr = '0x41000000'
+        self.initrd_addr = '0x41100000'
+        self.kernel_addr = '0x40000000'
+        self.load_addr = '0x40008000'
+        self._extra_serial_options = 'console=ttyS0,115200n8'
+
+
 class I386Config(BoardConfig):
     # define bootloader
     BOOTLOADER_CMD = 'grub-install'
@@ -1787,6 +1807,7 @@ class BoardConfigException(Exception):
 
 
 board_configs = {
+    'aa9': Aa9Config,
     'arndale': ArndaleConfig,
     'beagle': BeagleConfig,
     'beaglebone': BeagleBoneConfig,
