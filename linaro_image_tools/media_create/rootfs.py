@@ -43,8 +43,7 @@ def rootfs_mount_options(rootfs_type):
 
 def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
                     rootfs_id, should_create_swap, swap_size,
-                    mmc_device_id, partition_offset, os_release_id,
-                    board_config=None):
+                    mmc_device_id, partition_offset, board_config=None):
     """Populate the rootfs and make the necessary tweaks to make it usable.
 
     This consists of:
@@ -87,14 +86,13 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
 
         append_to_fstab(root_disk, fstab_additions)
 
-        if os_release_id == 'debian' or os_release_id == 'ubuntu':
-            print "\nCreating /etc/flash-kernel.conf\n"
-            create_flash_kernel_config(
-                root_disk, mmc_device_id, 1 + partition_offset)
+        print "\nCreating /etc/flash-kernel.conf\n"
+        create_flash_kernel_config(
+            root_disk, mmc_device_id, 1 + partition_offset)
 
-            if board_config is not None:
-                print "\nUpdating /etc/network/interfaces\n"
-                update_network_interfaces(root_disk, board_config)
+        if board_config is not None:
+            print "\nUpdating /etc/network/interfaces\n"
+            update_network_interfaces(root_disk, board_config)
 
 
 def update_network_interfaces(root_disk, board_config):
@@ -138,8 +136,7 @@ def _list_files(directory):
     not be world-readable.
     """
     p = cmd_runner.run(
-        ['find', directory, '-maxdepth', '1', '-mindepth', '1',
-         '!', '-name', 'lost+found'],
+        ['find', directory, '-maxdepth', '1', '-mindepth', '1'],
         stdout=subprocess.PIPE, as_root=True)
     stdout, _ = p.communicate()
     return stdout.split()

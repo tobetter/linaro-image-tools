@@ -29,11 +29,8 @@ def unpack_android_binary_tarball(tarball, unpack_dir, as_root=True):
 
 
 def unpack_binary_tarball(tarball, unpack_dir, as_root=True):
-    extract_opt = '-xf'
-    if tarball.endswith('.xz'):
-        extract_opt = '-Jxf'
     proc = cmd_runner.run(
-        ['tar', '--numeric-owner', '-C', unpack_dir, extract_opt, tarball],
+        ['tar', '--numeric-owner', '-C', unpack_dir, '-xf', tarball],
         as_root=as_root)
     proc.wait()
     return proc.returncode

@@ -3673,8 +3673,7 @@ class TestPopulateRootFS(TestCaseWithFixtures):
         populate_rootfs(
             contents_dir, root_disk, partition='/dev/rootfs',
             rootfs_type='ext3', rootfs_id='UUID=uuid', should_create_swap=True,
-            swap_size=100, mmc_device_id=0, partition_offset=0,
-            os_release_id='ubuntu', board_config=None)
+            swap_size=100, mmc_device_id=0, partition_offset=0)
 
         self.assertEqual(
             ['UUID=uuid / ext3  errors=remount-ro 0 1',

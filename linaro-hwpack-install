@@ -1,7 +1,8 @@
 #!/bin/sh
 # linaro-hwpack-install - Install a Linaro Hardware Pack.
-#   This script is meant to run inside a chroot. It must not depend on anything
-#   that's not in there.
+#   This script is meant to run inside a chroot containing nothing other than
+#   ubuntu-minimal, so it must not depend on anything that's not in
+#   there.
 # TODO: When upgrading to a newer hwpack, make sure packages and apt sources
 # that are no longer needed are removed.
 
@@ -43,7 +44,6 @@ APT_GET_OPTIONS="Dir::Etc::SourceList=${SOURCES_LIST_FILE}"
 SUPPORTED_FORMATS="1.0 2.0 3.0"  # A space-separated list of hwpack formats.
 FLASH_KERNEL_SKIP="true" 
 export FLASH_KERNEL_SKIP # skip attempting to run flash-kernel-hooks
-DISTRIBUTION=`grep '^ID=' /etc/os-release | sed 's/ID=//'`
 
 sudo="sudo"
 if [ $(id -u) -eq 0 ]; then
@@ -129,7 +129,7 @@ setup_hwpack() {
         "Try using a newer version of $(basename $0)."
 
   # Check the architecture of the hwpack matches that of the host system.
-  if [ "x$EXTRACT_KERNEL_ONLY" = "xno" -a "$DISTRIBUTION" = "ubuntu" ]; then
+  if [ "x$EXTRACT_KERNEL_ONLY" = "xno" ]; then
     # TODO: create a generic way to identify the architecture, without depending on dpkg
     [ "$HWPACK_ARCH" = `dpkg --print-architecture` ] || \
       die "Hardware pack architecture ($HWPACK_ARCH) does not match the host's architecture"
@@ -269,49 +269,14 @@ extract_kernel_packages() {
   # We assume the hwpack is always available at the rootfs
   ROOTFS_DIR=$(dirname $HWPACK_TARBALL)
 
-  DEB_DIR="${TEMP_DIR}/extracted"
-  mkdir -p ${DEB_DIR}
-
   ls ${HWPACK_DIR}/pkgs/linux-[ih]*.deb | while read pkg; do
     echo "Extracting package `basename $pkg`"
-    if [ "$DISTRIBUTION" = "ubuntu" ]; then
-      dpkg-deb -x ${pkg} $ROOTFS_DIR
-    elif [ "$DISTRIBUTION" = "fedora" ]; then
-      ar x ${pkg}
-      tar -xf data.tar.* -C ${DEB_DIR}
-      rm -f debian-binary control.tar.gz data.tar.*
-    fi
+    dpkg-deb -x ${pkg} $ROOTFS_DIR
   done
-
-  ls ${HWPACK_DIR}/pkgs/arndale-pre-boot_*.deb | while read pkg; do
-    echo "Extracting package `basename $pkg`"
-    if [ "$DISTRIBUTION" = "ubuntu" ]; then
-      dpkg-deb -x ${pkg} $ROOTFS_DIR
-    elif [ "$DISTRIBUTION" = "fedora" ]; then
-      ar x ${pkg}
-      tar -xf data.tar.* -C ${DEB_DIR}
-      rm -f debian-binary control.tar.gz data.tar.*
-    fi
-  done
-
-  if [ "$DISTRIBUTION" = "fedora" ]; then
-      cp -a ${DEB_DIR}/boot/* /boot/
-      cp -a ${DEB_DIR}/lib/modules/* /usr/lib/modules/
-      cp -a ${DEB_DIR}/lib/firmware/* /usr/lib/firmware/
-  fi
-
-  if [ -d "${HWPACK_DIR}/u_boot" ]; then
-    cp -a ${HWPACK_DIR}/u_boot/usr/lib/* /usr/lib
-  fi
-
-  if [ -d "${HWPACK_DIR}/uefi" ]; then
-    cp -a ${HWPACK_DIR}/uefi/usr/lib/* /usr/lib
-  fi
 
   # manually generate modules.dep
   ls $ROOTFS_DIR/lib/modules | while read kernel; do
     depmod -b $ROOTFS_DIR ${kernel} || true
-    [ "$DISTRIBUTION" = "fedora" ] && dracut /boot/initrd.img-${kernel} ${kernel}
   done;
 }
 
@@ -319,7 +284,7 @@ cleanup() {
   # Ensure our temp dir and apt sources are removed.
   echo -n "Cleaning up ..."
   rm -rf $TEMP_DIR
-  if [ "x$EXTRACT_KERNEL_ONLY" = "xno" -a "$DISTRIBUTION" = "ubuntu" ]; then
+  if [ "x$EXTRACT_KERNEL_ONLY" = "xno" ]; then
     rm -f /usr/sbin/policy-rc.d
     mv -f /sbin/start-stop-daemon.REAL /sbin/start-stop-daemon
     if [ -x /sbin/initctl.REAL ]; then
@@ -353,7 +318,7 @@ trap cleanup EXIT
 setup_hwpack
 
 # In case we only care about the kernel, don't mess up with the system
-if [ "x$EXTRACT_KERNEL_ONLY" = "xno" -a "$DISTRIBUTION" = "ubuntu" ]; then
+if [ "x$EXTRACT_KERNEL_ONLY" = "xno" ]; then
   setup_apt_sources
   setup_ubuntu_rootfs
   install_deb_packages

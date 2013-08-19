@@ -181,6 +181,12 @@ if __name__ == '__main__':
         # The binary image is in the new live format.
         filesystem_dir = 'binary/boot/filesystem.dir'
 
+    # if not a debian compatible system, just extract the kernel packages
+    extract_kpkgs = False
+    if not path_in_tarfile_exists(
+            os.path.join(filesystem_dir, 'etc', 'debian_version'), args.binary):
+        extract_kpkgs = True
+
     ROOTFS_DIR = os.path.join(BIN_DIR, filesystem_dir)
 
     try:
@@ -202,24 +208,6 @@ if __name__ == '__main__':
     atexit.register(cleanup_tempdir)
 
     unpack_binary_tarball(args.binary, BIN_DIR)
-
-    # if compatible system, extract all packages
-    os_release_id = 'linux'
-    os_release_file = '%s/etc/os-release' % ROOTFS_DIR
-    if os.path.exists(os_release_file):
-        for line in open(os_release_file):
-            if line.startswith('ID='):
-                os_release_id = line[(len('ID=')):]
-                os_release_id = os_release_id.strip('\"\n')
-                break
-
-    if os_release_id == 'debian' or os_release_id == 'ubuntu' or \
-            os.path.exists('%s/etc/debian_version' % ROOTFS_DIR):
-        extract_kpkgs = False
-    elif os_release_id == 'fedora':
-        extract_kpkgs = False
-    else:
-        extract_kpkgs = True
 
     hwpacks = args.hwpacks
     lmc_dir = os.path.dirname(__file__)
@@ -275,6 +263,6 @@ if __name__ == '__main__':
         populate_rootfs(ROOTFS_DIR, ROOT_DISK, root_partition, args.rootfs,
             rootfs_id, create_swap, str(args.swap_file),
             board_config.mmc_device_id, board_config.mmc_part_offset,
-            os_release_id, board_config)
+            board_config)
 
     logger.info("Done creating Linaro image on %s" % media.path)

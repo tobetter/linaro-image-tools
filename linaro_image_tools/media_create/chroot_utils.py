@@ -105,7 +105,7 @@ def install_hwpack(rootfs_dir, hwpack_file, extract_kpkgs, hwpack_force_yes):
     print "Installing (linaro-hwpack-install) %s in target rootfs." % (
         hwpack_basename)
 
-    # Get information required by linaro-hwpack-install
+    # Get infromation required by linaro-hwpack-install
     with HardwarepackHandler([hwpack_file]) as hwpack:
         version, _ = hwpack.get_field("version")
         architecture, _ = hwpack.get_field("architecture")
