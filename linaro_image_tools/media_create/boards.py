@@ -1435,8 +1435,9 @@ class FastModelConfig(BoardConfig):
         bw_foundation = _get_file_matching("%s/boot/img-foundation.axf" %
                                            chroot_dir)
 
-        for filename in (bw_ve, bw_foundation, k_img_data,
-                         i_img_data, d_img_data):
+        files = [bw_ve, bw_foundation, k_img_data, i_img_data, d_img_data]
+        files.extend(glob.glob("%s/fvp/*.bin" % boot_dir))
+        for filename in files:
             if filename is not None:
                 copy_drop(filename, output_dir)
                 cmd_runner.run(["cp", "-v", filename, boot_dir],
@@ -1891,7 +1892,7 @@ def _get_file_matching(regex):
     elif len(files) == 0:
         return None
     else:
-        # TODO: Could ask the user to chosse which file to use instead of
+        # TODO: Could ask the user to choose which file to use instead of
         # raising an exception.
         raise ValueError("Too many files matching '%s' found." % regex)
 
