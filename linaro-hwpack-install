@@ -274,6 +274,16 @@ extract_kernel_packages() {
     dpkg-deb -x ${pkg} $ROOTFS_DIR
   done
 
+  ls ${HWPACK_DIR}/pkgs/*-pre-boot_*.deb | while read pkg; do
+    echo "Extracting package `basename $pkg`"
+    dpkg-deb -x ${pkg} $ROOTFS_DIR
+  done
+
+  ls ${HWPACK_DIR}/pkgs/uefi-image-*.deb | while read pkg; do
+    echo "Extracting package `basename $pkg`"
+    dpkg-deb -x ${pkg} $ROOTFS_DIR
+  done
+
   # manually generate modules.dep
   ls $ROOTFS_DIR/lib/modules | while read kernel; do
     depmod -b $ROOTFS_DIR ${kernel} || true
