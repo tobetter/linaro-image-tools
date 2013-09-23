@@ -1442,6 +1442,18 @@ class FastModelConfig(BoardConfig):
                 copy_drop(filename, output_dir)
                 cmd_runner.run(["cp", "-v", filename, boot_dir],
                                as_root=True).wait()
+        # Rename the kernel from Image-* to Image
+        if k_img_data is not None:
+            cmd_runner.run(["mv", "-v",
+                           os.path.join(output_dir,
+                                        os.path.basename(k_img_data)),
+                           os.path.join(output_dir, "Image")],
+                           as_root=True).wait()
+            cmd_runner.run(["mv", "-v",
+                           os.path.join(boot_dir,
+                                        os.path.basename(k_img_data)),
+                           os.path.join(boot_dir, "Image")],
+                           as_root=True).wait()
 
 
 class SamsungConfig(BoardConfig):
