@@ -873,6 +873,25 @@ class BoardConfig(object):
         if self.dtb_file:
             dtb = _get_file_matching(os.path.join(path, self.dtb_file))
         if not self.dtb_file or not dtb:
+            logger.warn("Could not find a valid dtb file from dtb_file, "
+                        "trying dtb_files...")
+
+        if self.dtb_files:
+            # Use first file from list as a default dtb file.
+            dtb_file = self.dtb_files[0]
+            if dtb_file:
+                if isinstance(dtb_file, dict):
+                    for key, value in dtb_file.iteritems():
+                        # The name of the dtb file.
+                        to_file = os.path.basename(key)
+                        from_file = value
+
+                        # User specified only the directory, without renaming
+                        # the file.
+                        if not to_file:
+                            to_file = os.path.basename(from_file)
+                        dtb = _get_file_matching(os.path.join(path, to_file))
+        if not self.dtb_files or not dtb:
             logger.warn("Could not find a valid dtb file, skipping it.")
 
         logger.info("Will use kernel=%s, initrd=%s, dtb=%s." %
