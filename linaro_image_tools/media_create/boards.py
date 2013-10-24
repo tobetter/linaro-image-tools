@@ -257,7 +257,8 @@ class BoardConfig(object):
         data, _ = self.hardwarepack_handler.get_field(field_name)
         return data
 
-    def set_metadata(self, hwpacks, bootloader=None, board=None):
+    def set_metadata(self, hwpacks, bootloader=None, board=None,
+                     dtb_file=None):
         self.hardwarepack_handler = HardwarepackHandler(hwpacks, bootloader,
                                                         board)
         with self.hardwarepack_handler:
@@ -310,6 +311,12 @@ class BoardConfig(object):
                 logger.warn("Deprecation warning: use the 'dtb_files' field "
                             "instead of 'dtb_file'.")
             self.dtb_files = self.get_metadata_field(DTB_FILES_FIELD)
+            if dtb_file:
+                dtb_dict = self._find_dtb_dict(dtb_file)
+                if dtb_dict:
+                    self.dtb_files = []
+                    self.dtb_files.append(dtb_dict)
+
             self.extra_boot_args_options = self.get_metadata_field(
                 EXTRA_BOOT_OPTIONS_FIELD)
             self.boot_script = self.get_metadata_field(BOOT_SCRIPT_FIELD)
@@ -890,7 +897,7 @@ class BoardConfig(object):
                         # the file.
                         if not to_file:
                             to_file = os.path.basename(from_file)
-                        dtb = _get_file_matching(os.path.join(path, to_file))
+                        dtb = _get_file_matching(os.path.join(path, from_file))
         if not self.dtb_files or not dtb:
             logger.warn("Could not find a valid dtb file, skipping it.")
 
@@ -918,6 +925,16 @@ class BoardConfig(object):
         if string and placeholder in string:
             presence = True
         return presence
+
+    def _find_dtb_dict(self, dtb):
+        """Returns dictionary entry from dt_files containing dtb file."""
+        for dtb_file in self.dtb_files:
+            if isinstance(dtb_file, dict):
+                for key, value in dtb_file.iteritems():
+                    # The name of the dtb file.
+                    if dtb in key:
+                        return dtb_file
+        return None
 
 
 class OmapConfig(BoardConfig):
