@@ -1904,44 +1904,44 @@ class TestGetSfdiskCmd(TestCase):
 
     def test_panda_android(self):
         self.assertEqual(
-            '63,270272,0x0C,*\n270336,1048576,L\n1318912,524288,L\n'
-            '1843200,-,E\n1843200,1048576,L\n2891776,,,-',
+            '63,270272,0x0C,*\n270336,1572864,L\n1843200,524288,L\n'
+            '2367488,-,E\n2367488,1048576,L\n3416064,,,-',
             android_boards.AndroidPandaConfig().get_sfdisk_cmd())
 
     def test_origen_android(self):
         self.assertEqual(
-            '1,8191,0xDA\n8253,270274,0x0C,*\n278528,1048576,L\n'
-            '1327104,-,E\n1327104,524288,L\n1851392,1048576,L\n2899968,,,-',
+            '1,8191,0xDA\n8253,270274,0x0C,*\n278528,1572864,L\n'
+            '1851392,-,E\n1851392,524288,L\n2375680,1048576,L\n3424256,,,-',
             android_boards.AndroidOrigenConfig().get_sfdisk_cmd())
 
     def test_origen_quad_android(self):
         self.assertEqual(
-            '1,8191,0xDA\n8253,270274,0x0C,*\n278528,1048576,L\n'
-            '1327104,-,E\n1327104,524288,L\n1851392,1048576,L\n2899968,,,-',
+            '1,8191,0xDA\n8253,270274,0x0C,*\n278528,1572864,L\n'
+            '1851392,-,E\n1851392,524288,L\n2375680,1048576,L\n3424256,,,-',
             android_boards.AndroidOrigenQuadConfig().get_sfdisk_cmd())
 
     def test_snowball_emmc_android(self):
         self.assertEqual(
-            '256,7936,0xDA\n8192,262144,0x0C,*\n270336,1048576,L\n'
-            '1318912,-,E\n1318912,524288,L\n1843200,1048576,L\n2891776,,,-',
+            '256,7936,0xDA\n8192,262144,0x0C,*\n270336,1572864,L\n'
+            '1843200,-,E\n1843200,524288,L\n2367488,1048576,L\n3416064,,,-',
             android_boards.AndroidSnowballEmmcConfig().get_sfdisk_cmd())
 
     def test_vexpress_android(self):
         self.assertEqual(
-            '63,270272,0x0E,*\n270336,1048576,L\n1318912,524288,L\n'
-            '1843200,-,E\n1843200,1048576,L\n2891776,,,-',
+            '63,270272,0x0E,*\n270336,1572864,L\n1843200,524288,L\n'
+            '2367488,-,E\n2367488,1048576,L\n3416064,,,-',
             android_boards.AndroidVexpressConfig().get_sfdisk_cmd())
 
     def test_mx5_android(self):
         self.assertEqual(
-            '1,8191,0xDA\n8192,262144,0x0C,*\n270336,1048576,L\n'
-            '1318912,-,E\n1318912,524288,L\n1843200,1048576,L\n2891776,,,-',
+            '1,8191,0xDA\n8192,262144,0x0C,*\n270336,1572864,L\n'
+            '1843200,-,E\n1843200,524288,L\n2367488,1048576,L\n3416064,,,-',
             android_boards.AndroidMx53LoCoConfig().get_sfdisk_cmd())
 
     def test_mx6_android(self):
         self.assertEqual(
-            '1,8191,0xDA\n8192,262144,0x0C,*\n270336,1048576,L\n'
-            '1318912,-,E\n1318912,524288,L\n1843200,1048576,L\n2891776,,,-',
+            '1,8191,0xDA\n8192,262144,0x0C,*\n270336,1572864,L\n'
+            '1843200,-,E\n1843200,524288,L\n2367488,1048576,L\n3416064,,,-',
             android_boards.AndroidMx6QSabreliteConfig().get_sfdisk_cmd())
 
 
