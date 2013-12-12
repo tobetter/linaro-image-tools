@@ -6,7 +6,7 @@ set -e
 self="$(basename "$0")"
 
 usage() {
-    echo "Usage: $self <version>"
+    echo "Usage: $self <version> [<old_version>]"
 }
 
 log() {
@@ -28,6 +28,7 @@ set_version() {
 }
 
 version="$1"
+old_version="$2"
 
 if [ -z "$version" ]; then
     usage >&2
@@ -35,7 +36,7 @@ if [ -z "$version" ]; then
 fi
 
 log_i "Checking tree status"
-status=`bzr status`
+status=`git status --short`
 if [ -n "$status" ]; then
     die "Tree is dirty according to bzr status"
 fi
@@ -48,20 +49,26 @@ fi
 log_i "Removing test repository data"
 rm -rf .testrepository/
 
-if bzr tags | awk '{print $1}' | grep -qFx "$version"; then
+if git tag | awk '{print $1}' | grep -qFx "$version"; then
     die "Tag $version already exists"
 fi
 
 set_version $version
 
 log_i "Committing $version"
-bzr commit -m "Release $version"
+git commit -a -m "Release $version."
 
 log_i "Creating tag $version"
-bzr tag "$version"
+git tag "$version"
 
 log_i "Generating ChangeLog"
-bzr log -v --gnu-changelog >ChangeLog
+if [ -z "$old_version"]; then
+    git log --date=short --no-merges --format=format:"%ad %aN <%aE>%n%n  %s%n" >ChangeLog
+else:
+    # If we have also the old revision, we can generate changelog only for
+    # those tags, instead of a full changelog since the beginning of time.
+    git log --date=short --no-merges --format=format:"%ad %aN <%aE>%n%n  %s%n" >ChangeLog "$old_version".."$version"
+fi
 
 log_i "Creating release tarball in parent directory"
 ./setup.py sdist -d ..
@@ -75,4 +82,4 @@ gpg --armor --sign --detach-sig "../linaro-image-tools-$version.tar.gz"
 set_version "$version.1"
 
 log_i "Committing $version.1"
-bzr commit -m "Post-release version bump to $version.1"
+git commit -a -m "Post-release version bump to $version.1."
