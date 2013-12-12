@@ -4028,7 +4028,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
                                       hwpack_version, hwpack_architecture)
         force_yes = False
         install_hwpack(chroot_dir, hwpack_tgz_location,
-                       extract_kpkgs, force_yes)
+                       extract_kpkgs, force_yes, 'linaro-hwpack-install')
         self.assertEquals(
             ['%s cp %s %s' % (sudo_args, hwpack_tgz_location, chroot_dir),
              '%s %s %s linaro-hwpack-install --hwpack-version %s '
@@ -4060,7 +4060,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
                                       hwpack_version, hwpack_architecture)
         force_yes = False
         install_hwpack(chroot_dir, hwpack_tgz_location,
-                       extract_kpkgs, force_yes)
+                       extract_kpkgs, force_yes, 'linaro-hwpack-install')
         self.assertEquals(
             ['%s cp %s %s' % (sudo_args, hwpack_tgz_location, chroot_dir),
              '%s linaro-hwpack-install --hwpack-version %s '

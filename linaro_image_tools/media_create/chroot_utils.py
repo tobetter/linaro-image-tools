@@ -33,6 +33,10 @@ from linaro_image_tools.hwpack.handler import HardwarepackHandler
 local_atexit = []
 
 
+class ChrootException(Exception):
+    """Base class for chroot exceptions."""
+
+
 def prepare_chroot(chroot_dir, tmp_dir):
     """Prepares a chroot to run commands in it (networking and QEMU setup)."""
     chroot_etc = os.path.join(chroot_dir, 'etc')
@@ -49,14 +53,21 @@ def install_hwpacks(
         extract_kpkgs=False, *hwpack_files):
     """Install the given hwpacks onto the given rootfs."""
 
+    install_command = 'linaro-hwpack-install'
+    linaro_hwpack_install_path = find_command(
+        install_command, prefer_dir=tools_dir)
+
+    if not linaro_hwpack_install_path:
+        raise ChrootException("The program linaro-hwpack-install could not "
+                              "be found found: cannot proceed.")
+    else:
+        linaro_hwpack_install_path = os.path.abspath(
+            linaro_hwpack_install_path)
+
     # In case we just want to extract the kernel packages, don't force qemu
     # with chroot, as we could have archs without qemu support
-
     if not extract_kpkgs:
         prepare_chroot(rootfs_dir, tmp_dir)
-
-        linaro_hwpack_install_path = find_command(
-            'linaro-hwpack-install', prefer_dir=tools_dir)
 
         # FIXME: shouldn't use chroot/usr/bin as this might conflict with
         # installed packages; would be best to use some custom directory like
@@ -79,6 +90,11 @@ def install_hwpacks(
                    "that qemu-user-static is installed and properly "
                    "configured before trying again.")
             raise
+    else:
+        # We are not in the chroot, we do not copy the linaro-hwpack-install
+        # file, but we might not have l-i-t installed, so we need the full path
+        # of the linaro-hwpack-install program to run.
+        install_command = linaro_hwpack_install_path
 
     try:
         for hwpack_file in hwpack_files:
@@ -86,12 +102,14 @@ def install_hwpacks(
             if os.path.basename(hwpack_file) in verified_files:
                 hwpack_verified = True
             install_hwpack(rootfs_dir, hwpack_file, extract_kpkgs,
-                           hwpack_force_yes or hwpack_verified)
+                           hwpack_force_yes or hwpack_verified,
+                           install_command)
     finally:
         run_local_atexit_funcs()
 
 
-def install_hwpack(rootfs_dir, hwpack_file, extract_kpkgs, hwpack_force_yes):
+def install_hwpack(rootfs_dir, hwpack_file, extract_kpkgs, hwpack_force_yes,
+                   install_command):
     """Install an hwpack on the given rootfs.
 
     Copy the hwpack file to the rootfs and run linaro-hwpack-install passing
@@ -111,7 +129,7 @@ def install_hwpack(rootfs_dir, hwpack_file, extract_kpkgs, hwpack_force_yes):
         architecture, _ = hwpack.get_field("architecture")
         name, _ = hwpack.get_field("name")
 
-    args = ['linaro-hwpack-install',
+    args = [install_command,
             '--hwpack-version', version,
             '--hwpack-arch', architecture,
             '--hwpack-name', name]
