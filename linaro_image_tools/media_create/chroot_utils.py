@@ -44,8 +44,13 @@ def prepare_chroot(chroot_dir, tmp_dir):
     temporarily_overwrite_file_on_dir('/etc/hosts', chroot_etc, tmp_dir)
 
     if not is_arm_host():
-        copy_file('/usr/bin/qemu-arm-static',
-                  os.path.join(chroot_dir, 'usr', 'bin'))
+        for root, dirs, files in os.walk('/usr/bin'):
+            for file in files:
+                # Copy all the QEMU ARM binaries
+                if file.startswith('qemu-arm'):
+                    file_name = os.path.join(root, file)
+                    copy_file(file_name,
+                              os.path.join(chroot_dir, 'usr', 'bin'))
 
 
 def install_hwpacks(
