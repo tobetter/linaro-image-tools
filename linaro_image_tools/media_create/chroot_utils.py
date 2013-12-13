@@ -86,7 +86,7 @@ def install_hwpacks(
         except:
             print ("Cannot proceed with hwpack installation because "
                    "there doesn't seem to be a binfmt interpreter registered "
-                   "to execute armel binaries in the chroot. Please check "
+                   "to execute arm binaries in the chroot. Please check "
                    "that qemu-user-static is installed and properly "
                    "configured before trying again.")
             raise
@@ -123,7 +123,7 @@ def install_hwpack(rootfs_dir, hwpack_file, extract_kpkgs, hwpack_force_yes,
     print "Installing (linaro-hwpack-install) %s in target rootfs." % (
         hwpack_basename)
 
-    # Get infromation required by linaro-hwpack-install
+    # Get information required by linaro-hwpack-install
     with HardwarepackHandler([hwpack_file]) as hwpack:
         version, _ = hwpack.get_field("version")
         architecture, _ = hwpack.get_field("architecture")
