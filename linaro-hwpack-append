@@ -1,0 +1,235 @@
+#!/usr/bin/env python
+# Copyright (C) 2013 Linaro
+#
+# Author: Milo Casagrande <milo.casagrande@linaro.org>
+#
+# This file is part of Linaro Image Tools. It adds the feature
+# to append a debian package into the given hwpack.
+# We might need to change the manifest and Packages file in the
+# future to match the hardware pack v2 changes when available.
+#
+# Linaro Image Tools is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Linaro Image Tools is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Linaro Image Tools.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+import argparse
+import atexit
+import os
+import sys
+import tarfile
+import tempfile
+import shutil
+from debian.arfile import ArError
+
+from linaro_image_tools.hwpack.packages import (
+    get_packages_file,
+    FetchedPackage
+    )
+from linaro_image_tools.utils import get_logger
+from linaro_image_tools.__version__ import __version__
+
+
+logger = None
+
+
+def setup_args_parser():
+    """Setup the argument parsing.
+
+    :return The parsed arguments.
+    """
+    description = "Adds new packages inside a hardware pack."
+    parser = argparse.ArgumentParser(version=__version__,
+                                     description=description)
+    parser.add_argument("-d", "--debug", action="store_true")
+    parser.add_argument("-t", "--hwpack", required=True,
+                        help="The hardware pack to modify")
+    parser.add_argument("-p", "--package", action="append", required=True,
+                        help="The debian package to append. Can be repeated "
+                             "multiple times.")
+    parser.add_argument("-i", "--inplace", action="store_true",
+                        help="Add the packages in place, without creating a "
+                             "new hardware pack.")
+    return parser.parse_args()
+
+
+def validate_args(args):
+    """Verify the arguments passed on the command line.
+
+    :param args: The arguments passed.
+    """
+    hwpack_path = os.path.abspath(args.hwpack)
+
+    if not os.path.isfile(hwpack_path):
+        logger.error("Error: provided hardware pack file does not exists, or "
+                     "is not a file: {0}.".format(args.hwpack))
+        sys.exit(1)
+
+    if not tarfile.is_tarfile(hwpack_path):
+        logger.error("Error: cannot read hardware pack file. Make sure it "
+                     "is a supported tar archive.")
+        sys.exit(1)
+
+    for package in args.package:
+        if not os.path.isfile(os.path.abspath(package)):
+            logger.error("Error: provided package to add does not exists, or "
+                         "is not a file: {0}.".format(package))
+            sys.exit(1)
+
+
+def modify_manifest_file(debpackage_info, hwpack_dir):
+    """Modify the manifest file to include a new package entry.
+
+    :param debpackage_info: The info to write.
+    :param hwpack_dir: Where the manifest file is located.
+    """
+    debpack_manifest = os.path.join(hwpack_dir, "manifest")
+    new_debpack_line = '{0}={1}\n'.format(debpackage_info.name,
+                                          debpackage_info.version)
+
+    logger.debug("Manifest line: {0}".format(new_debpack_line))
+
+    with open(debpack_manifest, "a") as manifest:
+        manifest.write(new_debpack_line)
+
+
+def modify_packages_file(debpack_info, pkgs_dir):
+    """Modify the Packages file to include a new package entry.
+
+    :param debpack_info: The info to be written.
+    :param pkgs_dir: The directory with the Packages file.
+    """
+    debpack_Packages_fname = os.path.join(pkgs_dir, "Packages")
+
+    package_info = get_packages_file([debpack_info]).strip()
+
+    logger.debug("Packages line:\n{0}".format(package_info))
+
+    with open(debpack_Packages_fname, "a") as packages_file:
+        packages_file.write("{0}\n\n".format(package_info))
+
+
+def has_matching_package(pkg_to_search, dir_to_search):
+    """Search for a matching file name in the provided directory.
+
+    :param pkg_to_search: The package whose name will be matched.
+    :param dir_to_search: Where to search for a matching name.
+    """
+    logger.debug("Searching matching packages")
+
+    package_found = False
+    for pkg in os.listdir(dir_to_search):
+        if os.path.basename(pkg_to_search) == os.path.basename(pkg):
+            package_found = True
+            break
+    return package_found
+
+
+def add_packages_to_hwpack(hwpack, packages_to_add, inplace):
+    """Add the provided packages to the hardware pack.
+
+    Each package to add will be checked against the already available packages:
+    if a similar one is found (it just need to have the same name), it will be
+    skipped.
+
+    :param hwpack: The hardware pack where to add the new files.
+    :param packagess_to_add: List of package to add.
+    """
+    hwpack = os.path.abspath(hwpack)
+    tempdir = tempfile.mkdtemp()
+    pkgs_dir = os.path.join(tempdir, 'pkgs')
+
+    # Cleanup once done.
+    atexit.register(shutil.rmtree, tempdir)
+
+    # Unfortunately we cannot operate in memory, Python tar library does not
+    # allow adding files with compressed tarballs. We have to extract it.
+    logger.info("Opening hardware pack {0}...".format(hwpack))
+    logger.debug("Extracting hardware pack in {0}".format(tempdir))
+    with tarfile.open(hwpack, "r|gz") as tar_file:
+        tar_file.extractall(tempdir)
+
+    if not os.path.isdir(pkgs_dir):
+        logger.error("Error: tar file does not include packages directory.")
+        sys.exit(1)
+
+    # Flag to check if we really need to save the new hwpack.
+    save_hwpack = False
+
+    for debpackage in packages_to_add:
+        debpackage_path = os.path.abspath(debpackage)
+
+        if has_matching_package(debpackage_path, pkgs_dir):
+            logger.warning("Found similar package in the tar archive: file "
+                           "will not be added.")
+            continue
+
+        if os.path.isfile(debpackage_path):
+            logger.info("Adding file {0}...".format(debpackage))
+
+            try:
+                debpackage_info = FetchedPackage.from_deb(debpackage_path)
+            except ArError:
+                logger.warning("File {0} is invalid, skipping "
+                               "it.".format(debpackage))
+                continue
+
+            if debpackage_info:
+                logger.debug("Package info data:\n{0}".format(debpackage_info))
+                modify_manifest_file(debpackage_info, tempdir)
+                modify_packages_file(debpackage_info, pkgs_dir)
+
+                shutil.copy2(debpackage_path, pkgs_dir)
+                save_hwpack |= True
+            else:
+                logger.warning("Unable to find valid info for package "
+                               "{0}.".format(debpackage))
+        else:
+            logger.warning("File {0} does not exists, skipping "
+                           "it.".format(debpackage))
+
+    if save_hwpack:
+        if inplace:
+            logger.info("Saving hardware pack {0}...".format(hwpack))
+            with tarfile.open(hwpack, "w|gz") as tar_file:
+                tar_file.add(tempdir, arcname="")
+        else:
+            save_dir = os.path.dirname(hwpack)
+
+            # Retrieve the file name without the extensions, and create a new
+            # file name.
+            root_ext, ext1 = os.path.splitext(os.path.basename(hwpack))
+            root, ext2 = os.path.splitext(root_ext)
+            root += "_new"
+            new_file_name = root + ext2 + ext1
+            save_file = os.path.join(save_dir, new_file_name)
+
+            logger.info("Saving new hardware pack {0}...".format(save_file))
+            with tarfile.open(save_file, "w|gz") as tar_file:
+                tar_file.add(tempdir, arcname="")
+        logger.info("New packages added successfully.")
+    else:
+        logger.info("No packages added. Exiting.")
+
+
+def hwpack_append():
+    args = setup_args_parser()
+
+    global logger
+    logger = get_logger(debug=args.debug)
+
+    validate_args(args)
+    add_packages_to_hwpack(args.hwpack, args.package, args.inplace)
+
+
+if __name__ == '__main__':
+    hwpack_append()
