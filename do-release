@@ -38,7 +38,7 @@ fi
 log_i "Checking tree status"
 status=`git status --short`
 if [ -n "$status" ]; then
-    die "Tree is dirty according to bzr status"
+    die "Tree is dirty according to git status"
 fi
 
 log_i "Running tests"
@@ -61,10 +61,14 @@ git commit -a -m "Release $version."
 log_i "Creating tag $version"
 git tag "$version"
 
+log_i "Pushing changes and tag"
+git push oring master
+git push --tags
+
 log_i "Generating ChangeLog"
 if [ -z "$old_version"]; then
     git log --date=short --no-merges --format=format:"%ad %aN <%aE>%n%n  %s%n" >ChangeLog
-else:
+else
     # If we have also the old revision, we can generate changelog only for
     # those tags, instead of a full changelog since the beginning of time.
     git log --date=short --no-merges --format=format:"%ad %aN <%aE>%n%n  %s%n" >ChangeLog "$old_version".."$version"
