@@ -584,14 +584,14 @@ class BoardConfig(object):
         boot_args_options = 'rootwait ro'
         serial_options = ''
         if self.extra_boot_args_options:
-            boot_args_options += ' %s' % self.extra_boot_args_options
+            boot_args_options += ' %s' % self.extra_boot_args_options.strip()
         if self.extra_serial_options:
-            serial_options = self.extra_serial_options
+            serial_options = self.extra_serial_options.strip()
         for console in consoles:
-            serial_options += ' console=%s' % console
+            serial_options += ' console=%s' % console.strip()
 
         lowmem_opt = ''
-        boot_snippet = 'root=%s' % rootfs_id
+        boot_snippet = 'root=%s' % rootfs_id.strip()
         if is_live:
             serial_options += ' %s' % self.live_serial_options
             boot_snippet = 'boot=casper'
@@ -1973,7 +1973,7 @@ def get_plain_boot_script_contents(boot_env):
         'setenv fdt_high "%(fdt_high)s"\n'
         'setenv bootcmd "%(bootcmd)s"\n'
         'setenv bootargs "%(bootargs)s"\n'
-        "boot"
+        'boot'
         % boot_env)
 
 

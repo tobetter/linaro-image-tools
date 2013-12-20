@@ -183,7 +183,7 @@ class AndroidBoardConfig(BoardConfig):
         return (
             "%(serial_options)s "
             "%(boot_args_options)s"
-            % replacements)
+            % replacements).strip()
 
     def _get_boot_env(self, consoles):
         """Get the boot environment for this board.
@@ -212,11 +212,12 @@ class AndroidBoardConfig(BoardConfig):
 
         boot_env = self._get_boot_env(consoles)
         cmdline_filepath = os.path.join(boot_disk, "cmdline")
-        cmdline_file = open(cmdline_filepath, 'r')
-        android_kernel_cmdline = cmdline_file.read()
+
+        with open(cmdline_filepath, 'r') as cmdline_file:
+            android_kernel_cmdline = cmdline_file.read().strip()
+
         boot_env['bootargs'] = boot_env['bootargs'] + ' ' + \
             android_kernel_cmdline
-        cmdline_file.close()
 
         boot_dir = boot_disk
         boot_script_path = os.path.join(boot_dir, self.boot_script)
