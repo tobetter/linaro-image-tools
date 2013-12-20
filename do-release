@@ -62,7 +62,7 @@ log_i "Creating tag $version"
 git tag "$version"
 
 log_i "Pushing changes and tag"
-git push oring master
+git push origin master
 git push --tags
 
 log_i "Generating ChangeLog"
