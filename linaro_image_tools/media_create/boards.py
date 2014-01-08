@@ -1760,6 +1760,84 @@ class ArndaleConfig(SamsungConfig):
         return bl0_file
 
 
+class ArndaleOctaConfig(ArndaleConfig):
+    def __init__(self):
+        super(ArndaleOctaConfig, self).__init__()
+        self.bl0_file = 'lib/firmware/arndale-octa/arndale-octa.bl1.bin'
+        self.tzsw_file = 'lib/firmware/arndale-octa/arndale-octa.tzsw.bin'
+        self.boot_script = 'boot.scr'
+        self.bootloader_flavor = 'smdk5420'
+        self.kernel_flavors = ['arndale-octa']
+        self.mmc_option = '0:2'
+        self.mmc_part_offset = 1
+        self.samsung_bl0_start = 1
+        self.samsung_bl0_len = 16
+        self.samsung_tzsw_start = 719
+        self.samsung_tzsw_len = 256
+
+    def _make_boot_files_v2(self, boot_env, chroot_dir, boot_dir,
+                            boot_device_or_file, k_img_data, i_img_data,
+                            d_img_data):
+        with self.hardwarepack_handler:
+            bl0_file = self._get_samsung_bl0(chroot_dir)
+            if self.samsung_bl0_start:
+                self._dd_file(bl0_file, boot_device_or_file,
+                              self.samsung_bl0_start)
+
+            spl_file = self.get_file('spl_file')
+            if self.spl_in_boot_part:
+                assert spl_file is not None, (
+                    "SPL binary could not be found")
+                logger.info(
+                    "Copying spl '%s' to boot partition." % spl_file)
+                cmd_runner.run(["cp", "-v", spl_file, boot_dir],
+                               as_root=True).wait()
+                # XXX: Is this really needed?
+                cmd_runner.run(["sync"]).wait()
+
+            if self.spl_dd:
+                self._dd_file(spl_file, boot_device_or_file, self.spl_dd)
+
+            bootloader_file = self.get_file('bootloader_file')
+            if self.bootloader_dd:
+                self._dd_file(bootloader_file, boot_device_or_file,
+                              self.bootloader_dd)
+
+            tzsw_file = self._get_samsung_tzsw(chroot_dir)
+            if self.samsung_tzsw_start:
+                self._dd_file(tzsw_file, boot_device_or_file,
+                              self.samsung_tzsw_start)
+
+        make_uImage(self.load_addr, k_img_data, boot_dir)
+
+        if i_img_data is not None:
+            make_uInitrd(i_img_data, boot_dir)
+
+        if d_img_data is not None:
+            make_dtb(d_img_data, boot_dir)
+
+        if self.boot_script is not None:
+            boot_script_path = os.path.join(boot_dir, self.boot_script)
+            make_boot_script(boot_env, boot_script_path)
+
+            # Only used for Omap, will this be bad for the other boards?
+            make_boot_ini(boot_script_path, boot_dir)
+
+        if self.env_dd:
+            # Do we need to zero out the env before flashing it?
+            _dd("/dev/zero", boot_device_or_file,
+                count=self.samsung_env_len,
+                seek=self.samsung_env_start)
+            env_size = self.samsung_env_len * SECTOR_SIZE
+            env_file = make_flashable_env(boot_env, env_size)
+            self._dd_file(env_file, boot_device_or_file,
+                          self.samsung_env_start)
+
+    def _get_samsung_tzsw(self, chroot_dir):
+        tzsw_file = os.path.join(chroot_dir, self.tzsw_file)
+        return tzsw_file
+
+
 class HighBankConfig(BoardConfig):
     def __init__(self):
         super(HighBankConfig, self).__init__()
@@ -1858,6 +1936,7 @@ class BoardConfigException(Exception):
 board_configs = {
     'aa9': Aa9Config,
     'arndale': ArndaleConfig,
+    'arndale-octa': ArndaleOctaConfig,
     'beagle': BeagleConfig,
     'beaglebone': BeagleBoneConfig,
     'efikamx': EfikamxConfig,
