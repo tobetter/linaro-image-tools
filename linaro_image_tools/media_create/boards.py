@@ -1766,7 +1766,7 @@ class ArndaleOctaConfig(ArndaleConfig):
         self.bl0_file = 'lib/firmware/arndale-octa/arndale-octa.bl1.bin'
         self.tzsw_file = 'lib/firmware/arndale-octa/arndale-octa.tzsw.bin'
         self.boot_script = 'boot.scr'
-        self.bootloader_flavor = 'smdk5420'
+        self.bootloader_flavor = 'arndale_octa'
         self.kernel_flavors = ['arndale-octa']
         self.mmc_option = '0:2'
         self.mmc_part_offset = 1
