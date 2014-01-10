@@ -1775,6 +1775,17 @@ class ArndaleOctaConfig(ArndaleConfig):
         self.samsung_tzsw_start = 719
         self.samsung_tzsw_len = 256
 
+    def _get_boot_env(self, is_live, is_lowmem, consoles, rootfs_id,
+                      i_img_data, d_img_data):
+        boot_env = super(SamsungConfig, self)._get_boot_env(
+            is_live, is_lowmem, consoles, rootfs_id, i_img_data, d_img_data)
+
+        boot_env["bootcmd"] = 'run addmac; %s' % \
+                              self._get_bootcmd(i_img_data, d_img_data)
+        boot_env["addmac"] = 'setenv bootargs "${bootargs} mac=${ethaddr}"'
+
+        return boot_env
+
     def _make_boot_files_v2(self, boot_env, chroot_dir, boot_dir,
                             boot_device_or_file, k_img_data, i_img_data,
                             d_img_data):
