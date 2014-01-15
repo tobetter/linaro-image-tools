@@ -87,7 +87,8 @@ def populate_rootfs(content_dir, root_disk, partition, rootfs_type,
 
         append_to_fstab(root_disk, fstab_additions)
 
-        if os_release_id == 'debian' or os_release_id == 'ubuntu':
+        if os_release_id == 'debian' or os_release_id == 'ubuntu' or \
+                os.path.exists('%s/etc/debian_version' % root_disk):
             print "\nCreating /etc/flash-kernel.conf\n"
             create_flash_kernel_config(
                 root_disk, mmc_device_id, 1 + partition_offset)
