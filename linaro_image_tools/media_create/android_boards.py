@@ -36,6 +36,7 @@ from linaro_image_tools.hwpack.hwpack_fields import FORMAT_FIELD
 from linaro_image_tools.media_create.partitions import SECTOR_SIZE
 from linaro_image_tools.media_create.boards import (
     ArndaleConfig,
+    ArndaleOctaConfig,
     BeagleConfig,
     BoardConfig,
     BoardConfigException,
@@ -565,6 +566,43 @@ class AndroidArndaleConfig(AndroidSamsungConfig, ArndaleConfig):
             _dd(file_path, boot_device_or_file, seek=boot_bin['seek'])
 
 
+class AndroidArndaleOctaConfig(AndroidArndaleConfig, ArndaleOctaConfig):
+    """Placeholder class for Arndale-Octa configuration inheritance."""
+    def __init__(self):
+        super(AndroidArndaleOctaConfig, self).__init__()
+        self.samsung_env_start = 1231
+        self.mmc_option = '0:2'
+        self.kernel_addr = '0x20007000'
+        self.initrd_addr = '0x21000000'
+        self.dtb_addr = '0x21f00000'
+        self.dtb_name = 'exynos5420-arndale-octa.dtb'
+        self._android_specific_args = (
+            'init=/init androidboot.console=ttySAC3 console=ttySAC3 initrd=%s'
+            % self.initrd_addr)
+        self._extra_serial_options = 'ttySAC3,115200n8'
+        self._extra_boot_args_options = 'rootdelay=3'
+
+    def populate_raw_partition(self, boot_device_or_file, chroot_dir):
+        boot_bin_0 = {'name': 'arndale-octa.bl1.bin', 'seek': 1}
+        boot_bin_1 = {'name': 'smdk5420-spl.signed.bin', 'seek': 31}
+        boot_bin_2 = {'name': 'u-boot.bin', 'seek': 63}
+        boot_bin_3 = {'name': 'arndale-octa.tzsw.bin', 'seek': 719}
+        boot_bins = [boot_bin_0, boot_bin_1, boot_bin_2, boot_bin_3]
+
+        boot_partition = 'boot'
+
+        # Zero the env so that the boot_script will get loaded
+        _dd("/dev/zero", boot_device_or_file, count=self.samsung_env_len,
+            seek=self.samsung_env_start)
+
+        for boot_bin in boot_bins:
+            name = boot_bin['name']
+            file_path = os.path.join(chroot_dir, boot_partition, name)
+            if not os.path.exists(file_path):
+                raise BoardException(
+                    "File '%s' does not exists. Cannot proceed." % name)
+            _dd(file_path, boot_device_or_file, seek=boot_bin['seek'])
+
 # This dictionary is composed as follows:
 # <device_name>: <class>
 # The <device_name> is the command line argument passed to l-a-m-c, the
@@ -573,6 +611,7 @@ class AndroidArndaleConfig(AndroidSamsungConfig, ArndaleConfig):
 # general AndroidBoardConfig class.
 android_board_configs = {
     'arndale': AndroidArndaleConfig,
+    'arndale-octa': AndroidArndaleOctaConfig,
     'beagle': AndroidBeagleConfig,
     'iMX53': AndroidMx53LoCoConfig,
     'mx53loco': AndroidMx53LoCoConfig,
