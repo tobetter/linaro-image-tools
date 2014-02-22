@@ -135,6 +135,7 @@ def copy_drop(src, dest_dir):
     final = os.path.join(dest_dir, os.path.basename(src))
     cmd = ["chown", "%s:%s" % (os.getuid(), os.getgid()), final]
     cmd_runner.run(cmd, as_root=True).wait()
+    os.chmod(final, 0644)
 
 
 class BoardException(Exception):
