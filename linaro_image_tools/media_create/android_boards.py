@@ -611,7 +611,7 @@ class AndroidArndaleOctaConfig(AndroidArndaleConfig, ArndaleOctaConfig):
 # general AndroidBoardConfig class.
 android_board_configs = {
     'arndale': AndroidArndaleConfig,
-    'arndale-octa': AndroidArndaleOctaConfig,
+    'arndale_octa': AndroidArndaleOctaConfig,
     'beagle': AndroidBeagleConfig,
     'iMX53': AndroidMx53LoCoConfig,
     'mx53loco': AndroidMx53LoCoConfig,
