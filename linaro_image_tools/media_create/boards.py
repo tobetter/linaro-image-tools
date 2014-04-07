@@ -1474,6 +1474,7 @@ class FastModelConfig(BoardConfig):
 
         files = [bw_ve, bw_foundation, k_img_data, i_img_data, d_img_data]
         files.extend(glob.glob("%s/fvp/*" % boot_dir))
+        files.extend(glob.glob("%s/juno/*" % boot_dir))
         for filename in files:
             if filename is not None:
                 copy_drop(filename, output_dir)
