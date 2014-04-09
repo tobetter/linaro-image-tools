@@ -1450,17 +1450,35 @@ class VexpressA9Config(VexpressConfig):
         super(VexpressA9Config, self).__init__()
 
 
-class FastModelConfig(BoardConfig):
+class GenericConfig(BoardConfig):
     def __init__(self):
-        super(FastModelConfig, self).__init__()
-        self.supports_writing_to_mmc = False
+        super(GenericConfig, self).__init__()
 
     def _get_bootcmd(self, i_img_data, d_img_data):
-        """Get the bootcmd for FastModel.
+        """Get the bootcmd.
 
         We override this as we don't do uboot.
         """
         return ""
+
+    def _make_boot_files_v2(self, boot_env, chroot_dir, boot_dir,
+                            boot_device_or_file, k_img_data, i_img_data,
+                            d_img_data):
+        # Rename the kernel image
+        if k_img_data is not None:
+            k_img = os.path.join(boot_dir,
+                                 os.path.basename(k_img_data).split('-')[0])
+            cmd_runner.run(["cp", "-v", k_img_data, k_img],
+                           as_root=True).wait()
+        if i_img_data is not None:
+            cmd_runner.run(["cp", "-v", i_img_data, boot_dir],
+                           as_root=True).wait()
+
+
+class FastModelConfig(GenericConfig):
+    def __init__(self):
+        super(FastModelConfig, self).__init__()
+        self.supports_writing_to_mmc = False
 
     def _make_boot_files_v2(self, boot_env, chroot_dir, boot_dir,
                             boot_device_or_file, k_img_data, i_img_data,
@@ -1956,9 +1974,11 @@ board_configs = {
     'efikamx': EfikamxConfig,
     'efikasb': EfikasbConfig,
     'fastmodel': FastModelConfig,
+    'generic': GenericConfig,
     'highbank': HighBankConfig,
     'i386': I386Config,
     'igep': IgepConfig,
+    'juno': GenericConfig,
     'mx51evk': Mx51evkConfig,
     'mx53loco': Mx53LoCoConfig,
     'mx6qsabrelite': BoardConfig,
