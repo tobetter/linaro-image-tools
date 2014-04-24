@@ -261,7 +261,7 @@ Description: Dummy package to install a hwpack
         env['LC_ALL'] = 'C'
         env['NO_PKG_MANGLE'] = '1'
         proc = cmd_runner.Popen(
-            ['dpkg-deb', '-b', packaging_dir],
+            ['dpkg-deb', '-b', '-Zgzip', packaging_dir],
             env=env,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdoutdata, stderrdata) = proc.communicate()
