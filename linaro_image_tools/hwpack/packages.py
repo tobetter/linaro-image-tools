@@ -74,6 +74,8 @@ def get_packages_file(packages, extra_text=None, rel_to=None):
             parts.append('Depends: %s' % package.depends)
         if package.pre_depends:
             parts.append('Pre-Depends: %s' % package.pre_depends)
+        if package.multi_arch:
+            parts.append('Multi-Arch: %s' % package.multi_arch)
         if package.conflicts:
             parts.append('Conflicts: %s' % package.conflicts)
         if package.recommends:
@@ -304,6 +306,9 @@ class FetchedPackage(object):
         pre-dependencies as specified in debian/control. May be None if the
         package has none.
     :type pre_depends: str or None
+    :ivar multi_arch: the Multi-Arch string that the package has.
+        May be None if the package has none.
+    :type multi_arch: str or None
     :ivar conflicts: the Conflicts string that the package has, i.e. the
         conflicts as specified in debian/control. May be None if the
         package has none.
@@ -328,8 +333,8 @@ class FetchedPackage(object):
 
     def __init__(self, name, version, filename, size, md5,
                  architecture, depends=None, pre_depends=None,
-                 conflicts=None, recommends=None, provides=None,
-                 replaces=None, breaks=None):
+                 multi_arch=None, conflicts=None, recommends=None,
+                 provides=None, replaces=None, breaks=None):
         """Create a FetchedPackage.
 
         See the instance variables for the arguments.
@@ -342,6 +347,7 @@ class FetchedPackage(object):
         self.architecture = architecture
         self.depends = depends
         self.pre_depends = pre_depends
+        self.multi_arch = multi_arch
         self.conflicts = conflicts
         self.recommends = recommends
         self.provides = provides
@@ -375,6 +381,7 @@ class FetchedPackage(object):
         """
         depends = stringify_relationship(pkg, "Depends")
         pre_depends = stringify_relationship(pkg, "PreDepends")
+        multi_arch = pkg.record.get("Multi-Arch") or None
         conflicts = stringify_relationship(pkg, "Conflicts")
         recommends = stringify_relationship(pkg, "Recommends")
         replaces = stringify_relationship(pkg, "Replaces")
@@ -383,9 +390,9 @@ class FetchedPackage(object):
         pkg = cls(
             pkg.package.name, pkg.version, filename, pkg.size,
             pkg.md5, pkg.architecture, depends=depends,
-            pre_depends=pre_depends, conflicts=conflicts,
-            recommends=recommends, provides=provides, replaces=replaces,
-            breaks=breaks)
+            pre_depends=pre_depends, multi_arch=multi_arch,
+            conflicts=conflicts, recommends=recommends, provides=provides,
+            replaces=replaces, breaks=breaks)
         if content is not None:
             pkg.content = content
         return pkg
@@ -402,6 +409,7 @@ class FetchedPackage(object):
         architecture = debcontrol['Architecture']
         depends = debcontrol.get('Depends')
         pre_depends = debcontrol.get('Pre-Depends')
+        multi_arch = debcontrol.get('Multi-Arch')
         conflicts = debcontrol.get('Conflicts')
         recommends = debcontrol.get('Recommends')
         provides = debcontrol.get('Provides')
@@ -409,7 +417,8 @@ class FetchedPackage(object):
         breaks = debcontrol.get('Breaks')
         pkg = cls(
             name, version, filename, size, md5sum, architecture, depends,
-            pre_depends, conflicts, recommends, provides, replaces, breaks)
+            pre_depends, multi_arch, conflicts, recommends, provides,
+            replaces, breaks)
         pkg.content = open(deb_file_path)
         pkg._file_path = deb_file_path
         return pkg
@@ -428,6 +437,7 @@ class FetchedPackage(object):
         'architecture',
         'depends',
         'pre_depends',
+        'multi_arch',
         'conflicts',
         'recommends',
         'provides',
@@ -452,12 +462,13 @@ class FetchedPackage(object):
         has_content = self.content and "yes" or "no"
         return (
             '<%s name=%s version=%s size=%s md5=%s architecture=%s '
-            'depends="%s" pre_depends="%s" conflicts="%s" recommends="%s" '
-            'provides="%s" replaces="%s" breaks="%s" has_content=%s>'
+            'depends="%s" pre_depends="%s" multi_arch="%s" conflicts="%s" '
+            'recommends="%s" provides="%s" replaces="%s" breaks="%s" '
+            'has_content=%s>'
             % (self.__class__.__name__, self.name, self.version, self.size,
                 self.md5, self.architecture, self.depends, self.pre_depends,
-                self.conflicts, self.recommends, self.provides,
-                self.replaces, self.breaks, has_content))
+                self.multi_arch, self.conflicts, self.recommends,
+                self.provides, self.replaces, self.breaks, has_content))
 
 
 class IsolatedAptCache(object):
