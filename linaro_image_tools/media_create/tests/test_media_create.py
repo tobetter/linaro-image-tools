@@ -4168,10 +4168,12 @@ class TestInstallHWPack(TestCaseWithFixtures):
         expected = [
             'cp /etc/resolv.conf chroot/etc',
             'cp /etc/hosts chroot/etc',
-            'cp /usr/bin/qemu-arm-static chroot/usr/bin',
             'cp /usr/bin/qemu-armeb-static chroot/usr/bin',
-            'rm -f chroot/usr/bin/qemu-armeb-static',
+            'cp /usr/bin/qemu-arm-static chroot/usr/bin',
+            'cp /usr/bin/qemu-aarch64-static chroot/usr/bin',
+            'rm -f chroot/usr/bin/qemu-aarch64-static',
             'rm -f chroot/usr/bin/qemu-arm-static',
+            'rm -f chroot/usr/bin/qemu-armeb-static',
             'rm -f chroot/etc/hosts',
             'rm -f chroot/etc/resolv.conf']
         expected = [

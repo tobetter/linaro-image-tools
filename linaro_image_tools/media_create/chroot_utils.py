@@ -47,7 +47,8 @@ def prepare_chroot(chroot_dir, tmp_dir):
         for root, dirs, files in os.walk('/usr/bin'):
             for file in files:
                 # Copy all the QEMU ARM binaries
-                if file.startswith('qemu-arm'):
+                if file.startswith('qemu-arm') or \
+                        file.startswith('qemu-aarch64'):
                     file_name = os.path.join(root, file)
                     copy_file(file_name,
                               os.path.join(chroot_dir, 'usr', 'bin'))
