@@ -3001,7 +3001,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         media = Media(tmpfile)
         media.is_block_device = True
 
-        self.assertEqual(0, wait_partition_to_settle(media))
+        self.assertEqual(0, wait_partition_to_settle(media, 'mbr'))
 
     def test_wait_partitions_to_settle_raises_SubcommandNonZeroReturnValue(
             self):
@@ -3018,8 +3018,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         media.is_block_device = True
 
         self.assertRaises(cmd_runner.SubcommandNonZeroReturnValue,
-                          wait_partition_to_settle,
-                          media)
+                          wait_partition_to_settle, media, 'mbr')
 
 
 class TestPartitionSetup(TestCaseWithFixtures):

@@ -103,6 +103,9 @@ def get_args_parser():
         '--dev', dest='dev', choices=KNOWN_BOARDS,
         help='Generate an SD card or image for the given board.')
     parser.add_argument(
+        '--part-table', default='mbr', choices=['mbr', 'gpt'],
+        help='Type of partition table to use for the MMC image')
+    parser.add_argument(
         '--rootfs', default='ext4', choices=['ext2', 'ext3', 'ext4', 'btrfs'],
         help='Type of filesystem to use for the rootfs')
     parser.add_argument(

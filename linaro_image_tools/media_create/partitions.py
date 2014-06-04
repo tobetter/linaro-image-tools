@@ -118,7 +118,7 @@ def setup_android_partitions(board_config, media, image_size, bootfs_label,
 def setup_partitions(board_config, media, image_size, bootfs_label,
                      rootfs_label, rootfs_type, should_create_partitions,
                      should_format_bootfs, should_format_rootfs,
-                     should_align_boot_part=False):
+                     should_align_boot_part=False, part_table="mbr"):
     """Make sure the given device is partitioned to boot the given board.
 
     :param board_config: A BoardConfig class.
@@ -135,6 +135,7 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
     :param should_format_rootfs: Whether to reuse the filesystem on the root
         partition.
     :param should_align_boot_part: Whether to align the boot partition too.
+    :param part_table: Type of partition table, either 'mbr' or 'gpt'.
     """
     cylinders = None
     if not media.is_block_device:
@@ -149,7 +150,8 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
     if should_create_partitions:
         create_partitions(
             board_config, media, HEADS, SECTORS, cylinders,
-            should_align_boot_part=should_align_boot_part)
+            should_align_boot_part=should_align_boot_part,
+            part_table=part_table)
 
     if media.is_block_device:
         bootfs, rootfs = get_boot_and_root_partitions_for_media(
@@ -556,8 +558,15 @@ def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
     return proc.communicate("%s\n" % commands)
 
 
+def run_sgdisk_commands(commands, device, as_root=True, stderr=None):
+    args = ['sgdisk', device]
+    args.extend(commands.split())
+    proc = cmd_runner.run(args, stderr=stderr, as_root=as_root)
+    proc.wait()
+
+
 def create_partitions(board_config, media, heads, sectors, cylinders=None,
-                      should_align_boot_part=False):
+                      should_align_boot_part=False, part_table="mbr"):
     """Partition the given media according to the board requirements.
 
     :param board_config: A BoardConfig class.
@@ -569,26 +578,37 @@ def create_partitions(board_config, media, heads, sectors, cylinders=None,
     :param cylinders: The number of cylinders to pass to sfdisk's -C argument.
         If None the -C argument is not passed.
     :param should_align_boot_part: Whether to align the boot partition too.
+    :param part_table Type of partition table, either 'mbr' or 'gpt'.
     """
+    label = 'msdos'
+    if part_table == 'gpt':
+        label = part_table
+
     if media.is_block_device:
         # Overwrite any existing partition tables with a fresh one.
         proc = cmd_runner.run(
-            ['parted', '-s', media.path, 'mklabel', 'msdos'], as_root=True)
+            ['parted', '-s', media.path, 'mklabel', label], as_root=True)
         proc.wait()
 
-    wait_partition_to_settle(media)
+    wait_partition_to_settle(media, part_table)
 
-    sfdisk_cmd = board_config.get_sfdisk_cmd(
-        should_align_boot_part=should_align_boot_part)
+    if part_table == 'gpt':
+        sgdisk_cmd = board_config.get_sgdisk_cmd(
+            should_align_boot_part=should_align_boot_part)
 
-    run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
+        run_sgdisk_commands(sgdisk_cmd, media.path)
+    else:  # default partition table to mbr
+        sfdisk_cmd = board_config.get_sfdisk_cmd(
+            should_align_boot_part=should_align_boot_part)
+
+        run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
 
     # Sync and sleep to wait for the partition to settle.
     cmd_runner.run(['sync']).wait()
-    wait_partition_to_settle(media)
+    wait_partition_to_settle(media, part_table)
 
 
-def wait_partition_to_settle(media):
+def wait_partition_to_settle(media, part_table):
     """Sleep in a loop to wait partition to settle
 
     :param media: A setup_partitions.Media object to partition.
@@ -599,9 +619,12 @@ def wait_partition_to_settle(media):
             logger.info("Sleeping for %s second(s) to wait "
                         "for the partition to settle" % tts)
             time.sleep(tts)
-            proc = cmd_runner.run(
-                ['sfdisk', '-l', media.path],
-                as_root=True, stdout=open('/dev/null', 'w'))
+
+            args = ['sfdisk', '-l', media.path]
+            if part_table == 'gpt':
+                args = ['sgdisk', '-L', media.path]
+            proc = cmd_runner.run(args, as_root=True,
+                                  stdout=open('/dev/null', 'w'))
             proc.wait()
             return 0
         except cmd_runner.SubcommandNonZeroReturnValue:

@@ -453,15 +453,7 @@ class BoardConfig(object):
         # kill off hwpacks V1.
         return self.get_normal_sfdisk_cmd(should_align_boot_part)
 
-    def get_normal_sfdisk_cmd(self, should_align_boot_part=False):
-        """Return the sfdisk command to partition the media.
-
-        :param should_align_boot_part: Whether to align the boot partition too.
-
-        This returns a boot partition of type FAT16 or FAT32 or Linux,
-        followed by a root partition.
-        """
-
+    def get_normal_params(self, should_align_boot_part=False):
         if self.bootfs_type == 'vfat':
             if self.fat_size == 32:
                 partition_type = '0x0C'
@@ -493,6 +485,31 @@ class BoardConfig(object):
         root_start, _root_end, _root_len = align_partition(
             boot_end + 1, self.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
 
+        return (boot_start, boot_len, partition_type, root_start)
+
+    def get_reserved_params(self, should_align_boot_part=None):
+        loader_start, loader_end, loader_len = align_partition(
+            self.loader_start_s, self.LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
+
+        boot_start, boot_end, boot_len = align_partition(
+            loader_end + 1, self.BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        root_start, _root_end, _root_len = align_partition(
+            boot_end + 1, self.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+
+        return (loader_start, loader_len, boot_start, boot_len, root_start)
+
+    def get_normal_sfdisk_cmd(self, should_align_boot_part=False):
+        """Return the sfdisk command to partition the media.
+
+        :param should_align_boot_part: Whether to align the boot partition too.
+
+        This returns a boot partition of type FAT16 or FAT32 or Linux,
+        followed by a root partition.
+        """
+        (boot_start, boot_len, partition_type,
+            root_start) = self.get_normal_params(should_align_boot_part)
+
         return '%s,%s,%s,*\n%s,,,-' % (
             boot_start, boot_len, partition_type, root_start)
 
@@ -504,17 +521,30 @@ class BoardConfig(object):
         This returns a loader partition, then a boot vfat partition of type
         FAT16 or FAT32, followed by a root partition.
         """
-        loader_start, loader_end, loader_len = align_partition(
-            self.loader_start_s, self.LOADER_MIN_SIZE_S, 1, PART_ALIGN_S)
-
-        boot_start, boot_end, boot_len = align_partition(
-            loader_end + 1, self.BOOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
-
-        root_start, _root_end, _root_len = align_partition(
-            boot_end + 1, self.ROOT_MIN_SIZE_S, PART_ALIGN_S, PART_ALIGN_S)
+        (loader_start, loader_len, boot_start, boot_len,
+            root_start) = self.get_reserved_params(should_align_boot_part)
 
         return '%s,%s,0xDA\n%s,%s,0x0C,*\n%s,,,-' % (
             loader_start, loader_len, boot_start, boot_len, root_start)
+
+    def get_normal_sgdisk_cmd(self, should_align_boot_part=None):
+        (boot_start, boot_len, partition_type,
+            root_start) = self.get_normal_params(should_align_boot_part)
+        # Ignoring partition type because we need 0xEF for GPT
+        return '-n 1:%s:%s -t 1:EF00 ' \
+               '-n 2:%s:- -t 2:8300' % (boot_start, boot_len, root_start)
+
+    def get_reserved_sgdisk_cmd(self, should_align_boot_part=None):
+        """Return the sgdisk command to partition the media.
+
+        :param should_align_boot_part: Ignored.
+        """
+        (loader_start, loader_len, boot_start, boot_len,
+            root_start) = self.get_reserved_params(should_align_boot_part)
+        return '-n 1:%s:%s -t 1:DA00 ' \
+               '-n 2:%s:%s -t 2:0C00 ' \
+               '-n 3:%s:- -t 3:8300' % (
+                   loader_start, loader_len, boot_start, boot_len, root_start)
 
     def get_sfdisk_cmd(self, should_align_boot_part=False):
         if (self.partition_layout in ['bootfs_rootfs', 'bootfs16_rootfs'] or
@@ -527,6 +557,18 @@ class BoardConfig(object):
                 "Hwpack format is not 1.0 but "
                 "partition_layout is unspecified.")
             return self.get_v1_sfdisk_cmd(should_align_boot_part)
+
+    def get_sgdisk_cmd(self, should_align_boot_part=False):
+        if (self.partition_layout in ['bootfs_rootfs', 'bootfs16_rootfs'] or
+                self.board == 'snowball_sd'):
+            return self.get_normal_sgdisk_cmd(should_align_boot_part)
+        elif self.partition_layout in ['reserved_bootfs_rootfs']:
+            return self.get_reserved_sgdisk_cmd(should_align_boot_part)
+        else:
+            assert (self.hwpack_format == HardwarepackHandler.FORMAT_1), (
+                "Hwpack format is not 1.0 but "
+                "partition_layout is unspecified.")
+            return self.get_normal_sgdisk_cmd(should_align_boot_part)
 
     def _get_bootcmd(self, i_img_data, d_img_data):
         """Get the bootcmd for this board.

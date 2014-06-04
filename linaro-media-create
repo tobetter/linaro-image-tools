@@ -94,7 +94,7 @@ def cleanup_tempdir():
 def ensure_required_commands(args):
     """Ensure we have the commands that we know are going to be used."""
     required_commands = [
-        'mkfs.vfat', 'sfdisk', 'mkimage', 'parted', 'gpg', 'sha1sum']
+        'mkfs.vfat', 'sfdisk', 'mkimage', 'parted', 'gpg', 'sha1sum', 'sgdisk']
     if not is_arm_host():
         required_commands.append('qemu-arm-static')
     if args.rootfs in ['btrfs', 'ext2', 'ext3', 'ext4']:
@@ -241,7 +241,8 @@ if __name__ == '__main__':
     boot_partition, root_partition = setup_partitions(
         board_config, media, args.image_size, args.boot_label, args.rfs_label,
         args.rootfs, args.should_create_partitions, args.should_format_bootfs,
-        args.should_format_rootfs, args.should_align_boot_part)
+        args.should_format_rootfs, args.should_align_boot_part,
+        args.part_table)
 
     uuid = get_uuid(root_partition)
     # In case we're only extracting the kernel packages, avoid
