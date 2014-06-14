@@ -83,14 +83,15 @@ class DummyFetchedPackage(FetchedPackage):
     """
 
     def __init__(self, name, version, architecture="all", depends=None,
-                 pre_depends=None, conflicts=None, recommends=None,
-                 provides=None, replaces=None, breaks=None, no_content=False,
-                 content=None):
+                 pre_depends=None, multi_arch=None, conflicts=None,
+                 recommends=None, provides=None, replaces=None, breaks=None,
+                 no_content=False, content=None):
         self.name = name
         self.version = version
         self.architecture = architecture
         self.depends = depends
         self.pre_depends = pre_depends
+        self.multi_arch = multi_arch
         self.conflicts = conflicts
         self.recommends = recommends
         self.provides = provides
