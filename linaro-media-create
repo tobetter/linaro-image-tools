@@ -164,6 +164,10 @@ if __name__ == '__main__':
         logger.error("Do not use --no-boot or --no-part in conjunction with "
                      "--image_file.")
         sys.exit(1)
+    elif args.part_table == 'gpt':
+        logger.error("Do not use --part-table gpt in conjunction with "
+                     "--image_file.")
+        sys.exit(1)
 
     # If --help was specified this won't execute.
     # Create temp dir and initialize rest of path vars.
