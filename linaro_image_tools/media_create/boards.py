@@ -1499,17 +1499,17 @@ class FastModelConfig(GenericConfig):
                 copy_drop(filename, output_dir)
                 cmd_runner.run(["cp", "-v", filename, boot_dir],
                                as_root=True).wait()
-        # Rename the kernel from Image-* to Image
+        # Rename the kernel image
         if k_img_data is not None:
+            k_img_basename = os.path.basename(k_img_data)
+            k_img = k_img_basename.split('-')[0]
             cmd_runner.run(["mv", "-v",
-                           os.path.join(output_dir,
-                                        os.path.basename(k_img_data)),
-                           os.path.join(output_dir, "Image")],
+                           os.path.join(output_dir, k_img_basename),
+                           os.path.join(output_dir, k_img)],
                            as_root=True).wait()
             cmd_runner.run(["mv", "-v",
-                           os.path.join(boot_dir,
-                                        os.path.basename(k_img_data)),
-                           os.path.join(boot_dir, "Image")],
+                           os.path.join(boot_dir, k_img_basename),
+                           os.path.join(boot_dir, k_img)],
                            as_root=True).wait()
 
 
