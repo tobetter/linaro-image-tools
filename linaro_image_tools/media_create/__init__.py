@@ -213,12 +213,29 @@ def get_android_args_parser():
         '--console', action='append', dest='consoles', default=[],
         help=('Add a console to kernel boot parameter; this parameter can be '
               'defined multiple times.'))
+
+    #group for system partition content specification
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        '--system', dest="system",
+        help=('The tarball containing the Android system paritition.'
+              'Like system.tar.bz2'))
+    group.add_argument(
+        '--systemimage', dest="systemimage",
+        help=('The ext4 filesystem data file containing the Android '
+              'system paritition. Like system.img'))
+
+    #group for userdata partition content specification
+    group = parser.add_mutually_exclusive_group(required=True)
     parser.add_argument(
-        '--system', default='system.tar.bz2', required=True,
-        help=('The tarball containing the Android system paritition'))
-    parser.add_argument(
-        '--userdata', default='userdata.tar.bz2', required=True,
-        help=('The tarball containing the Android data paritition'))
+        '--userdata', dest="userdata",
+        help=('The tarball containing the Android data paritition.'
+              'Like userdata.tar.bz2'))
+    group.add_argument(
+        '--userdataimage', dest="userdataimage",
+        help=('The ext4 filesystem data containing the Android '
+              'data paritition. Like userdata.img'))
+
     parser.add_argument(
         '--boot', default='boot.tar.bz2', required=True,
         help=('The tarball containing the Android root partition'))

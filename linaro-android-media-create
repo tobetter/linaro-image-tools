@@ -136,8 +136,10 @@ if __name__ == '__main__':
     cmd_runner.run(['mkdir', '-p', DATA_DIR]).wait()
 
     unpack_android_binary_tarball(args.boot, BOOT_DIR)
-    unpack_android_binary_tarball(args.system, SYSTEM_DIR)
-    unpack_android_binary_tarball(args.userdata, DATA_DIR)
+    if args.system:
+        unpack_android_binary_tarball(args.system, SYSTEM_DIR)
+    if args.userdata:
+        unpack_android_binary_tarball(args.userdata, DATA_DIR)
 
     board_config = get_board_config(args.dev)
 
@@ -167,6 +169,33 @@ if __name__ == '__main__':
     board_config.populate_boot_script(boot_partition, BOOT_DISK, args.consoles)
     with partition_mounted(boot_partition, BOOT_DISK):
         board_config.install_boot_loader(args.device, BOOT_DISK)
-    populate_partition(SYSTEM_DIR + "/system", SYSTEM_DISK, system_partition)
-    populate_partition(DATA_DIR + "/data", DATA_DISK, data_partition)
+
+    if args.system:
+        populate_partition(SYSTEM_DIR + "/system", SYSTEM_DISK, system_partition)
+    elif args.systemimage :
+        cmd_runner.run( [ 'e2label', args.systemimage, "system"],
+                        stderr=open('/dev/null', 'w'),
+                        as_root=True).wait()
+        cmd_runner.run( [ 'dd', 'if=%s' % args.systemimage,
+                          'of=%s' % system_partition],
+                        stderr=open('/dev/null', 'w'),
+                        as_root=True).wait()
+    else:
+        #should not reach here
+        pass
+
+    if args.userdata:
+        populate_partition(DATA_DIR + "/data", DATA_DISK, data_partition)
+    elif args.userdataimage:
+        cmd_runner.run( [ 'e2label', args.userdataimage, "userdata"],
+                        stderr=open('/dev/null', 'w'),
+                        as_root=True).wait()
+        cmd_runner.run( [ 'dd', 'if=%s' % args.userdataimage,
+                          'of=%s' % data_partition],
+                        stderr=open('/dev/null', 'w'),
+                        as_root=True).wait()
+    else:
+        #should not reach here
+        pass
+
     print "Done creating Linaro Android image on %s" % args.device
