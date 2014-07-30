@@ -227,7 +227,7 @@ def get_android_args_parser():
 
     #group for userdata partition content specification
     group = parser.add_mutually_exclusive_group(required=True)
-    parser.add_argument(
+    group.add_argument(
         '--userdata', dest="userdata",
         help=('The tarball containing the Android data paritition.'
               'Like userdata.tar.bz2'))
