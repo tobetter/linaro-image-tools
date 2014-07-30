@@ -53,9 +53,7 @@ from linaro_image_tools.utils import (
 # Just define the global variables
 TMP_DIR = None
 BOOT_DISK = None
-SYSTEM_DISK = None
 CACHE_DISK = None
-DATA_DISK = None
 SDCARD_DISK = None
 
 
@@ -69,7 +67,7 @@ def cleanup_tempdir():
     """
     devnull = open('/dev/null', 'w')
     # ignore non-zero return codes
-    for disk in BOOT_DISK, SYSTEM_DISK, CACHE_DISK, DATA_DISK, \
+    for disk in BOOT_DISK, CACHE_DISK, \
                 SDCARD_DISK:
         if disk is not None:
             try:
@@ -107,9 +105,7 @@ if __name__ == '__main__':
     DATA_DIR = os.path.join(TMP_DIR, 'data')
 
     BOOT_DISK = os.path.join(TMP_DIR, 'boot-disc')
-    SYSTEM_DISK = os.path.join(TMP_DIR, 'system-disc')
     CACHE_DISK = os.path.join(TMP_DIR, 'cache-disc')
-    DATA_DISK = os.path.join(TMP_DIR, 'userdata-disc')
     SDCARD_DISK = os.path.join(TMP_DIR, 'sdcard-disc')
 
     if args.dev == 'iMX53':
@@ -136,10 +132,6 @@ if __name__ == '__main__':
     cmd_runner.run(['mkdir', '-p', DATA_DIR]).wait()
 
     unpack_android_binary_tarball(args.boot, BOOT_DIR)
-    if args.system:
-        unpack_android_binary_tarball(args.system, SYSTEM_DIR)
-    if args.userdata:
-        unpack_android_binary_tarball(args.userdata, DATA_DIR)
 
     board_config = get_board_config(args.dev)
 
@@ -171,7 +163,8 @@ if __name__ == '__main__':
         board_config.install_boot_loader(args.device, BOOT_DISK)
 
     if args.system:
-        populate_partition(SYSTEM_DIR + "/system", SYSTEM_DISK, system_partition)
+        with partition_mounted(system_partition, SYSTEM_DIR):
+            unpack_android_binary_tarball(args.system, TMP_DIR)
     elif args.systemimage :
         cmd_runner.run( [ 'e2label', args.systemimage, "system"],
                         stderr=open('/dev/null', 'w'),
@@ -185,7 +178,8 @@ if __name__ == '__main__':
         pass
 
     if args.userdata:
-        populate_partition(DATA_DIR + "/data", DATA_DISK, data_partition)
+        with partition_mounted(system_partition, DATA_DIR):
+            unpack_android_binary_tarball(args.userdata, TMP_DIR)
     elif args.userdataimage:
         cmd_runner.run( [ 'e2label', args.userdataimage, "userdata"],
                         stderr=open('/dev/null', 'w'),
