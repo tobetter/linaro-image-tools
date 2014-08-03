@@ -200,8 +200,7 @@ def partition_mounted(device, path, *args):
     """A context manager that mounts the given device and umounts when done.
 
     We use a try/finally to make sure the device is umounted even if there's
-    an uncaught exception in the with block.  Also, before umounting we call
-    'sync'.
+    an uncaught exception in the with block.
 
     :param *args: Extra arguments to the mount command.
     """
@@ -211,7 +210,6 @@ def partition_mounted(device, path, *args):
     try:
         yield
     finally:
-        cmd_runner.run(['sync']).wait()
         try:
             umount(path)
         except cmd_runner.SubcommandNonZeroReturnValue, e:
@@ -603,8 +601,7 @@ def create_partitions(board_config, media, heads, sectors, cylinders=None,
 
         run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
 
-    # Sync and sleep to wait for the partition to settle.
-    cmd_runner.run(['sync']).wait()
+    # sleep to wait for the partition to settle.
     wait_partition_to_settle(media, part_table)
 
 

@@ -758,8 +758,6 @@ class BoardConfig(object):
                     "Copying spl '%s' to boot partition." % spl_file)
                 cmd_runner.run(["cp", "-v", spl_file, boot_dir],
                                as_root=True).wait()
-                # XXX: Is this really needed?
-                cmd_runner.run(["sync"]).wait()
 
             if self.spl_dd:
                 self._dd_file(spl_file, boot_device_or_file, self.spl_dd)
@@ -1782,8 +1780,6 @@ class ArndaleConfig(SamsungConfig):
                     "Copying spl '%s' to boot partition." % spl_file)
                 cmd_runner.run(["cp", "-v", spl_file, boot_dir],
                                as_root=True).wait()
-                # XXX: Is this really needed?
-                cmd_runner.run(["sync"]).wait()
 
             if self.spl_dd:
                 self._dd_file(spl_file, boot_device_or_file, self.spl_dd)
@@ -1866,8 +1862,6 @@ class ArndaleOctaConfig(ArndaleConfig):
                     "Copying spl '%s' to boot partition." % spl_file)
                 cmd_runner.run(["cp", "-v", spl_file, boot_dir],
                                as_root=True).wait()
-                # XXX: Is this really needed?
-                cmd_runner.run(["sync"]).wait()
 
             if self.spl_dd:
                 self._dd_file(spl_file, boot_device_or_file, self.spl_dd)
@@ -2214,8 +2208,6 @@ def install_omap_boot_loader(chroot_dir, boot_disk, cls):
             default = None
         mlo_file = cls.get_file('spl_file', default=default)
         cmd_runner.run(["cp", "-v", mlo_file, boot_disk], as_root=True).wait()
-        # XXX: Is this really needed?
-        cmd_runner.run(["sync"]).wait()
 
 
 def make_boot_ini(boot_script_path, boot_disk):

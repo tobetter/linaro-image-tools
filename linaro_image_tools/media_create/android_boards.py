@@ -224,7 +224,6 @@ class AndroidBoardConfig(BoardConfig):
         boot_script_path = os.path.join(boot_dir, self.boot_script)
         make_boot_script(boot_env, boot_script_path)
 
-        cmd_runner.run(['sync']).wait()
         try:
             cmd_runner.run(['umount', boot_disk], as_root=True).wait()
         except cmd_runner.SubcommandNonZeroReturnValue:
