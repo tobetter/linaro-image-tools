@@ -31,8 +31,8 @@ from linaro_image_tools.hwpack.hwpack_fields import (
 )
 
 
-KNOWN_BOARDS = board_configs.keys()
-ANDROID_KNOWN_BOARDS = android_board_configs.keys()
+KNOWN_BOARDS = sorted(board_configs.keys())
+ANDROID_KNOWN_BOARDS = sorted(android_board_configs.keys())
 
 
 class Live256MegsAction(argparse.Action):
