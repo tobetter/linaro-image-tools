@@ -178,7 +178,7 @@ if __name__ == '__main__':
         pass
 
     if args.userdata:
-        with partition_mounted(system_partition, DATA_DIR):
+        with partition_mounted(data_partition, DATA_DIR):
             unpack_android_binary_tarball(args.userdata, TMP_DIR)
     elif args.userdataimage:
         cmd_runner.run( [ 'e2label', args.userdataimage, "userdata"],
