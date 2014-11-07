@@ -789,6 +789,9 @@ class BoardConfig(object):
 	if (self.board == 'odroidx'):
             self.populate_raw_partition(boot_device_or_file, chroot_dir)
 
+	if (self.board == 'odroidxu4'):
+            self.populate_raw_partition(boot_device_or_file, chroot_dir)
+
         if self.env_dd:
             # Do we need to zero out the env before flashing it?
             _dd("/dev/zero", boot_device_or_file,
@@ -1781,6 +1784,74 @@ class OdroidXConfig(SamsungConfig):
                     "File '%s' does not exists. Cannot proceed." % name)
             _dd(file_path, boot_device_or_file, seek=boot_bin['seek'])
 
+class OdroidXU4Config(SamsungConfig):
+    def __init__(self):
+        super(OdroidXU4Config, self).__init__()
+        global PART_ALIGN_S
+        PART_ALIGN_S = 2 * 1024 * 1024 / SECTOR_SIZE
+
+        self.boot_script = 'boot.scr'
+        self.bootloader_flavor = 'odroidxu4'
+        self.initrd_addr = '0x42000000'
+        self.kernel_addr = '0x40008000'
+        self.kernel_flavors = ['odroidxu4']
+        self.load_addr = '0x40008000'
+        self.mmc_option = '0:2'
+        self.mmc_part_offset = 0
+        self.samsung_bl1_start = 1
+        self.samsung_bl1_len = 30
+        self.samsung_bl2_start = 31
+        self.samsung_bl2_len = 32
+        self.samsung_env_start = 1231
+        self.samsung_env_len = 32
+        self.serial_tty = 'ttySAC2'
+        self._extra_serial_options = 'console=%s,115200n8'
+
+    def get_sfdisk_cmd(self, should_align_boot_part=False):
+        return self.get_normal_sfdisk_cmd(True)
+
+    def populate_raw_partition(self, boot_device_or_file, chroot_dir):
+        boot_bin_0 = {'name': 'bl1.bin.hardkernel', 'seek': 1}
+        boot_bin_1 = {'name': 'bl2.bin.hardkernel', 'seek': 31}
+        boot_bin_2 = {'name': 'u-boot.bin.hardkernel', 'seek': 63}
+        boot_bin_3 = {'name': 'tzsw.bin.hardkernel', 'seek': 719}
+        boot_bins = [boot_bin_0, boot_bin_1, boot_bin_2, boot_bin_3]
+
+        boot_partition = 'boot'
+
+        # Zero the env so that the boot_script will get loaded
+        _dd("/dev/zero", boot_device_or_file, count=self.samsung_env_len,
+            seek=self.samsung_env_start)
+
+        for boot_bin in boot_bins:
+            name = boot_bin['name']
+            file_path = os.path.join(chroot_dir, boot_partition, name)
+            if not os.path.exists(file_path):
+                raise BoardException(
+                    "File '%s' does not exists. Cannot proceed." % name)
+            _dd(file_path, boot_device_or_file, seek=boot_bin['seek'])
+
+    def _make_boot_files_v2(self, boot_env, chroot_dir, boot_dir,
+                            boot_device_or_file, k_img_data, i_img_data,
+                            d_img_data):
+        boot_ini = os.path.join(chroot_dir, "boot/boot.ini")
+        cmd_runner.run(["mv", boot_ini, boot_dir], as_root=True).wait()
+        cmd_runner.run(["mv", k_img_data, boot_dir], as_root=True).wait()
+        cmd_runner.run(["mv", i_img_data, boot_dir], as_root=True).wait()
+        cmd_runner.run(["mv", d_img_data, boot_dir], as_root=True).wait()
+
+        if self.env_dd:
+            # Do we need to zero out the env before flashing it?
+            _dd("/dev/zero", boot_device_or_file,
+                count=self.samsung_env_len,
+                seek=self.samsung_env_start)
+            env_size = self.samsung_env_len * SECTOR_SIZE
+            env_file = make_flashable_env(boot_env, env_size)
+            self._dd_file(env_file, boot_device_or_file,
+                          self.samsung_env_start)
+
+        self.populate_raw_partition(boot_device_or_file, chroot_dir)
+
 class ArndaleConfig(SamsungConfig):
     def __init__(self):
         super(ArndaleConfig, self).__init__()
@@ -2059,6 +2130,7 @@ board_configs = {
     'mx53loco': Mx53LoCoConfig,
     'mx6qsabrelite': BoardConfig,
     'odroidx': OdroidXConfig,
+    'odroidxu4': OdroidXU4Config,
     'origen': OrigenConfig,
     'origen_quad': OrigenQuadConfig,
     'overo': OveroConfig,
