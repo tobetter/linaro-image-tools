@@ -98,7 +98,7 @@ def setup_android_partitions(board_config, media, image_size, bootfs_label,
     for label, dev in ext4_partitions.iteritems():
         mkfs = 'mkfs.%s' % "ext4"
         proc = cmd_runner.run(
-            [mkfs, dev, '-L', label],
+            [mkfs, '-F', dev, '-L', label],
             as_root=True)
         proc.wait()
 
@@ -181,7 +181,7 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
         print "\nFormating root partition\n"
         mkfs = 'mkfs.%s' % rootfs_type
         proc = cmd_runner.run(
-            [mkfs, rootfs, '-L', rootfs_label],
+            [mkfs, '-F', rootfs, '-L', rootfs_label],
             as_root=True)
         proc.wait()
 
