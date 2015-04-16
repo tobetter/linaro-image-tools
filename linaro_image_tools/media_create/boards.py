@@ -542,7 +542,7 @@ class BoardConfig(object):
         (loader_start, loader_len, boot_start, boot_len,
             root_start) = self.get_reserved_params(should_align_boot_part)
         return '-n 1:%s:%s -t 1:DA00 ' \
-               '-n 2:%s:%s -t 2:0C00 ' \
+               '-n 2:%s:%s -t 2:EF00 ' \
                '-n 3:%s:- -t 3:8300' % (
                    loader_start, loader_len, boot_start, boot_len, root_start)
 
