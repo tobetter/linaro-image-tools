@@ -207,6 +207,11 @@ echo "Warning: Fake initctl called, doing nothing"
 EOF
     chmod 755 /sbin/initctl
   fi
+
+  # Create dummy fstab. fsck initramfs-tools hook is reading fstab entries
+  # in order to copy e2fsck into initramfs image
+  [ -f /etc/fstab ] && mv -f /etc/fstab /etc/fstab.REAL
+  echo "UUID=00000000-0000-0000-0000-000000000000 / ext4 defaults 0 1" > /etc/fstab
 }
 
 install_deb_packages() {
@@ -300,6 +305,8 @@ cleanup() {
     if [ -x /sbin/initctl.REAL ]; then
       mv -f /sbin/initctl.REAL /sbin/initctl
     fi
+    rm -f /etc/fstab
+    [ -f /etc/fstab.REAL ] && mv -f /etc/fstab.REAL /etc/fstab
     # Do two updates. The first doesn't try to download package lists:
     # * First update doesn't access net
     #   - not allowed to fail. Image file + hwpack should contain all packages
