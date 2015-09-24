@@ -1,0 +1,163 @@
+linaro-image-tools (2014.11-1) unstable; urgency=medium
+
+  * New upstream release.
+  * debian/control: add gdisk dependency.
+
+ -- Fathi Boudra <fabo@debian.org>  Tue, 25 Nov 2014 15:56:23 +0200
+
+linaro-image-tools (2014.07-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Fathi Boudra <fabo@debian.org>  Tue, 05 Aug 2014 10:25:24 +0300
+
+linaro-image-tools (2014.04-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Fathi Boudra <fabo@debian.org>  Wed, 04 Jun 2014 21:15:39 +0300
+
+linaro-image-tools (2013.09-2) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Fathi Boudra <fabo@debian.org>  Sat, 16 Nov 2013 12:45:28 +0200
+
+linaro-image-tools (2012.09.1-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Fathi Boudra <fabo@debian.org>  Wed, 26 Sep 2012 12:21:49 +0300
+
+linaro-image-tools (2012.08.1-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Fathi Boudra <fabo@debian.org>  Wed, 29 Aug 2012 18:31:28 +0300
+
+linaro-image-tools (2012.08-1) unstable; urgency=low
+
+  * New upstream release.
+  * Update debian/control: re-add python-yaml to dependencies.
+
+ -- Fathi Boudra <fabo@debian.org>  Thu, 23 Aug 2012 19:00:53 +0300
+
+linaro-image-tools (2012.06-1) unstable; urgency=low
+
+  * New upstream release.
+  * Update debian/control: bump python-testtools build dependency to 0.9.12.
+
+ -- Fathi Boudra <fabo@debian.org>  Thu, 21 Jun 2012 12:12:07 +0300
+
+linaro-image-tools (2012.05-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Fathi Boudra <fabo@debian.org>  Fri, 25 May 2012 15:56:29 +0300
+
+linaro-image-tools (2012.04-1) unstable; urgency=low
+
+  * New upstream release.
+    - drop add-FORCE_OPTIONS-to-apt-update.patch - merged upstream.
+  * Update debian/rules: fix python shebang. Thanks to Zyga.
+
+ -- Fathi Boudra <fabo@debian.org>  Sat, 21 Apr 2012 19:15:42 +0300
+
+linaro-image-tools (2012.03-2) unstable; urgency=low
+
+  * Add FORCE_OPTIONS to apt update in linaro-hwpack-install.
+    Thanks to Hector Oron <zumbi@debian.org>. (Closes: #668401)
+
+ -- Fathi Boudra <fabo@debian.org>  Thu, 12 Apr 2012 15:17:10 +0300
+
+linaro-image-tools (2012.03-1) unstable; urgency=low
+
+  * New upstream release:
+    - linaro-fetch-image split into its own source package.
+  * Update debian/control:
+    - drop linaro-fetch-image dependencies: python-beautifulsoup,
+      python-wxgtk2.8, python-xdg, python-yaml.
+  * Update debian/linaro-image-tools.install:
+    - drop linaro-fetch-image and linaro-fetch-image-ui.
+
+ -- Fathi Boudra <fabo@debian.org>  Sun, 25 Mar 2012 10:21:30 +0300
+
+linaro-image-tools (2012.02-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Fathi Boudra <fabo@debian.org>  Wed, 22 Feb 2012 14:20:55 +0200
+
+linaro-image-tools (2012.01-1) unstable; urgency=low
+
+  * New upstream release.
+  * Drop increase_sleep_after_sfdisk.patch - a fix has been applied upstream.
+
+ -- Fathi Boudra <fabo@debian.org>  Thu, 02 Feb 2012 10:29:22 +0200
+
+linaro-image-tools (2011.12-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Fathi Boudra <fabo@debian.org>  Fri, 16 Dec 2011 13:19:55 +0200
+
+linaro-image-tools (2011.11-1) unstable; urgency=low
+
+  * New upstream release.
+  * Update debian/rules: re-add testsuite snippet but keep it disabled until
+    it's fixed.
+  * Update debian/control:
+    * add dosfstools build dependency to run the testsuite successfully.
+    * add apt-utils build dependency, l-i-t uses apt-ftparchive.
+
+ -- Fathi Boudra <fabo@debian.org>  Fri, 18 Nov 2011 12:02:39 +0200
+
+linaro-image-tools (2011.10+1-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Fathi Boudra <fabo@debian.org>  Wed, 26 Oct 2011 11:23:19 +0300
+
+linaro-image-tools (2011.10-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Fathi Boudra <fabo@debian.org>  Fri, 21 Oct 2011 11:16:43 +0300
+
+linaro-image-tools (2011.09+bzr448-1) unstable; urgency=low
+
+  * New upstream snapshot from bzr revision 448.
+  * Drop use_python_2.7.patch: python-parted 3.6-4 enabled support for
+    python2.6.
+  * Set X-Python-Version to >= 2.6.
+  * Drop python-parted versioned dependency.
+
+ -- Fathi Boudra <fabo@debian.org>  Sat, 15 Oct 2011 09:16:14 +0300
+
+linaro-image-tools (2011.09-1) unstable; urgency=low
+
+  * New upstream release.
+  * Update debian/control:
+    - update Maintainers field.
+    - Set Architecture: linux-any
+    - Recommends udisks [linux-any].
+
+ -- Fathi Boudra <fabo@debian.org>  Sat, 24 Sep 2011 08:48:57 +0300
+
+linaro-image-tools (2011.08-1) unstable; urgency=low
+
+  * Initial upload to Debian. (Closes: #641951)
+  * Add patches:
+    - use_python_2.7.patch
+      on Debian, current python default version is 2.6 and pyparted version is
+      3.6. PyParted 3.6 is not compatible with python versions prior to 2.7.
+      To work-around, we force to use python2.7.
+    - increase_sleep_after_sfdisk.patch
+      race condition, we create the partitions using sfdisk but before udisks
+      get notified about them we query udisks for information about them, which
+      fails. To work-around, we increase the sleep to 5s.
+  * Switch to dh_python2.
+  * Bump X-Python-Version to 2.7 (required by python-parted >= 3.6).
+  * Bump python-parted dependency to >= 3.6.
+
+ -- Fathi Boudra <fabo@debian.org>  Wed, 21 Sep 2011 18:17:35 +0300

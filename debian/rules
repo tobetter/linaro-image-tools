@@ -1,0 +1,15 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+export PATH := $(PATH):/sbin
+
+%:
+	dh $@ --with python2
+override_dh_install:
+	dh_install
+	find debian/linaro-image-tools -type f |xargs sed -i 's|#!/usr/bin/env python|#!/usr/bin/python|'
+
+#override_dh_auto_test:
+#	python -m testtools.run linaro_image_tools.tests.test_suite
