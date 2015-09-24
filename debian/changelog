@@ -1,3 +1,9 @@
+linaro-image-tools (2015.09-1) UNRELEASED; urgency=medium
+
+  * Add ODROID-XU4 board support
+
+ -- Dongjin Kim <tobetter@gmail.com>  Fri, 25 Sep 2015 01:27:46 +0900
+
 linaro-image-tools (2014.11-1) unstable; urgency=medium
 
   * New upstream release.
