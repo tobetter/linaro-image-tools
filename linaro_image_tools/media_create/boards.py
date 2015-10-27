@@ -939,7 +939,7 @@ class BoardConfig(object):
                         if not to_file:
                             to_file = os.path.basename(from_file)
                         dtb = _get_file_matching(os.path.join(path, from_file))
-        if not self.dtb_files or not dtb:
+        if not self.dtb_files and not dtb:
             logger.warn("Could not find a valid dtb file, skipping it.")
 
         logger.info("Will use kernel=%s, initrd=%s, dtb=%s." %
