@@ -55,20 +55,16 @@ class Live256MegsAction(argparse.Action):
 
 def get_version():
     qemu_path = '/usr/bin/qemu-arm-static'
-    p = cmd_runner.run(["head", "-n", "1"],
-                       stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     if os.path.exists(qemu_path):
-        try:
-            # qemu-arm-static has no --version option so it fails,
-            # but still prints its version plus usage
-            cmd_runner.run(["/usr/bin/qemu-arm-static", "--version"],
-                           stdout=p.stdin).communicate()
-            p.communicate()
-        except:
-            qemu_version = p.stdout.read()
+        # qemu-arm-static has -version option
+        proc = cmd_runner.run([qemu_path, "-version"],
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (qemu_version, stderrdata) = proc.communicate()
+        if (proc.returncode or stderrdata):
+            qemu_version = "qemu-arm version unknown (%s)" % stderrdata
     else:
         qemu_version = "Cannot find %s." % qemu_path
-    return "%s\n: %s" % (__version__, qemu_version)
+    return "%s\n* %s" % (__version__, qemu_version)
 
 
 def add_common_options(parser):
@@ -83,7 +79,8 @@ def add_common_options(parser):
 
 def get_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
-    parser = argparse.ArgumentParser(version='%(prog)s ' + get_version())
+    parser = argparse.ArgumentParser(version='%(prog)s ' + get_version(),
+                                     formatter_class=argparse.RawTextHelpFormatter)
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         '--mmc', dest='device', default="sd.img",
@@ -189,7 +186,8 @@ def get_args_parser():
 
 def get_android_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
-    parser = argparse.ArgumentParser(version='%(prog)s ' + get_version())
+    parser = argparse.ArgumentParser(version='%(prog)s ' + get_version(),
+                                     formatter_class=argparse.RawTextHelpFormatter)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         '--mmc', dest='device', help='The storage device to use.')
