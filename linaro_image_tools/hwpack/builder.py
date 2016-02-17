@@ -61,7 +61,8 @@ class ConfigFileMissing(Exception):
 
 class HardwarePackBuilder(object):
 
-    def __init__(self, config_path, version, local_debs, out_name=None):
+    def __init__(self, config_path, version, local_debs, backports=False,
+        out_name=None):
         try:
             with open(config_path) as fp:
                 self.config = Config(fp, allow_unset_bootloader=True)
@@ -78,6 +79,7 @@ class HardwarePackBuilder(object):
         self.packages = None
         self.packages_added_to_hwpack = []
         self.out_name = out_name
+        self.backports = backports
 
     def find_fetched_package(self, packages, wanted_package_name):
         wanted_package = None
@@ -224,7 +226,7 @@ class HardwarePackBuilder(object):
                 logger.info("Fetching packages")
                 fetcher = PackageFetcher(
                     sources, architecture=architecture,
-                    prefer_label=LOCAL_ARCHIVE_LABEL)
+                    backports=self.backports, prefer_label=LOCAL_ARCHIVE_LABEL)
                 with fetcher:
                     with PackageUnpacker() as self.package_unpacker:
                         fetcher.ignore_packages(self.config.assume_installed)

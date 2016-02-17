@@ -478,7 +478,8 @@ class IsolatedAptCache(object):
     :type cache: apt.cache.Cache
     """
 
-    def __init__(self, sources, architecture=None, prefer_label=None):
+    def __init__(self, sources, architecture=None, prefer_label=None,
+        backports=False):
         """Create an IsolatedAptCache.
 
         :param sources: a list of sources such that they can be prefixed
@@ -491,6 +492,7 @@ class IsolatedAptCache(object):
         self.architecture = architecture
         self.tempdir = None
         self.prefer_label = prefer_label
+        self.backports = backports
 
     def prepare(self):
         """Prepare the IsolatedAptCache for use.
@@ -551,14 +553,14 @@ class IsolatedAptCache(object):
                 f.write(
                     'Apt {\nArchitecture "%s";\n'
                     'Install-Recommends "true";\n}\n' % self.architecture)
-        # level the pin priority for the backports repositories, if required
         apt_preferences = os.path.join(
             self.tempdir, "etc", "apt", "preferences")
-        with open(apt_preferences, 'w') as f:
-            f.write(
-                'Package: *\n'
-                'Pin: release a=*-backports\n'
-                'Pin-Priority: 500\n\n')
+        if self.backports:
+            with open(apt_preferences, 'w') as f:
+                f.write(
+                    'Package: *\n'
+                    'Pin: release a=*-backports\n'
+                    'Pin-Priority: 500\n\n')
         if self.prefer_label is not None:
             with open(apt_preferences, 'a') as f:
                 f.write(
@@ -622,7 +624,8 @@ class DependencyNotSatisfied(Exception):
 class PackageFetcher(object):
     """A class to fetch packages from a defined list of sources."""
 
-    def __init__(self, sources, architecture=None, prefer_label=None):
+    def __init__(self, sources, architecture=None, prefer_label=None,
+        backports=False):
         """Create a PackageFetcher.
 
         Once created a PackageFetcher should have its `prepare` method
@@ -635,7 +638,8 @@ class PackageFetcher(object):
         :type architecture: str
         """
         self.cache = IsolatedAptCache(
-            sources, architecture=architecture, prefer_label=prefer_label)
+            sources, architecture=architecture, prefer_label=prefer_label,
+            backports=backports)
 
     def prepare(self):
         """Prepare the PackageFetcher for use.

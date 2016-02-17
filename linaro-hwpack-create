@@ -44,13 +44,15 @@ if __name__ == '__main__':
               "version than a package that would be otherwise installed.  "
               "Can be used more than once."))
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--backports", action="store_true",
+                        help="Level the pin priority for the backports repositories.")
 
     args = parser.parse_args()
     logger = get_logger(debug=args.debug)
 
     try:
         builder = HardwarePackBuilder(args.CONFIG_FILE,
-                                      args.VERSION, args.local_debs)
+                                      args.VERSION, args.local_debs, args.backports)
     except ConfigFileMissing, e:
         logger.error(str(e))
         sys.exit(1)
