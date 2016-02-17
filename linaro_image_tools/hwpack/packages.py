@@ -551,10 +551,16 @@ class IsolatedAptCache(object):
                 f.write(
                     'Apt {\nArchitecture "%s";\n'
                     'Install-Recommends "true";\n}\n' % self.architecture)
+        # level the pin priority for the backports repositories, if required
+        apt_preferences = os.path.join(
+            self.tempdir, "etc", "apt", "preferences")
+        with open(apt_preferences, 'w') as f:
+            f.write(
+                'Package: *\n'
+                'Pin: release a=*-backports\n'
+                'Pin-Priority: 500\n\n')
         if self.prefer_label is not None:
-            apt_preferences = os.path.join(
-                self.tempdir, "etc", "apt", "preferences")
-            with open(apt_preferences, 'w') as f:
+            with open(apt_preferences, 'a') as f:
                 f.write(
                     'Package: *\n'
                     'Pin: release l=%s\n'
