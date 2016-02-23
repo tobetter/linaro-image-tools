@@ -62,7 +62,7 @@ class ConfigFileMissing(Exception):
 class HardwarePackBuilder(object):
 
     def __init__(self, config_path, version, local_debs, backports=False,
-        out_name=None):
+                 out_name=None):
         try:
             with open(config_path) as fp:
                 self.config = Config(fp, allow_unset_bootloader=True)

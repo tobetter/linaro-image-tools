@@ -479,7 +479,7 @@ class IsolatedAptCache(object):
     """
 
     def __init__(self, sources, architecture=None, prefer_label=None,
-        backports=False):
+                 backports=False):
         """Create an IsolatedAptCache.
 
         :param sources: a list of sources such that they can be prefixed
@@ -625,7 +625,7 @@ class PackageFetcher(object):
     """A class to fetch packages from a defined list of sources."""
 
     def __init__(self, sources, architecture=None, prefer_label=None,
-        backports=False):
+                 backports=False):
         """Create a PackageFetcher.
 
         Once created a PackageFetcher should have its `prepare` method
