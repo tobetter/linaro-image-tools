@@ -79,8 +79,9 @@ def add_common_options(parser):
 
 def get_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
-    parser = argparse.ArgumentParser(version='%(prog)s ' + get_version(),
-                                     formatter_class=argparse.RawTextHelpFormatter)
+    parser = argparse.ArgumentParser(
+        version='%(prog)s ' + get_version(),
+        formatter_class=argparse.RawTextHelpFormatter)
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         '--mmc', dest='device', default="sd.img",
@@ -186,8 +187,9 @@ def get_args_parser():
 
 def get_android_args_parser():
     """Get the ArgumentParser for the arguments given on the command line."""
-    parser = argparse.ArgumentParser(version='%(prog)s ' + get_version(),
-                                     formatter_class=argparse.RawTextHelpFormatter)
+    parser = argparse.ArgumentParser(
+        version='%(prog)s ' + get_version(),
+        formatter_class=argparse.RawTextHelpFormatter)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         '--mmc', dest='device', help='The storage device to use.')

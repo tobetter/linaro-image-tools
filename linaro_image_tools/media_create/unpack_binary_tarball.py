@@ -73,7 +73,7 @@ def is_tar_support_selinux():
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         ).communicate()
-    except cmd_runner.SubcommandNonZeroReturnValue as inst:
+    except cmd_runner.SubcommandNonZeroReturnValue:
         return False
 
     for line in tar_help.splitlines():

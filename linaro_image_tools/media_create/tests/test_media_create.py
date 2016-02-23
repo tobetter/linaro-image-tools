@@ -1904,44 +1904,44 @@ class TestGetSfdiskCmd(TestCase):
 
     def test_panda_android(self):
         self.assertEqual(
-            '63,270272,0x0C,*\n270336,1572864,L\n1843200,524288,L\n'
-            '2367488,-,E\n2367488,1179648,L\n3547136,,,-',
+            '63,270272,0x0C,*\n270336,1835008,L\n2105344,524288,L\n'
+            '2629632,-,E\n2629632,1179648,L\n3809280,,,-',
             android_boards.AndroidPandaConfig().get_sfdisk_cmd())
 
     def test_origen_android(self):
         self.assertEqual(
-            '1,8191,0xDA\n8253,270274,0x0C,*\n278528,1572864,L\n'
-            '1851392,-,E\n1851392,524288,L\n2375680,1179648,L\n3555328,,,-',
+            '1,8191,0xDA\n8253,270274,0x0C,*\n278528,1835008,L\n'
+            '2113536,-,E\n2113536,524288,L\n2637824,1179648,L\n3817472,,,-',
             android_boards.AndroidOrigenConfig().get_sfdisk_cmd())
 
     def test_origen_quad_android(self):
         self.assertEqual(
-            '1,8191,0xDA\n8253,270274,0x0C,*\n278528,1572864,L\n'
-            '1851392,-,E\n1851392,524288,L\n2375680,1179648,L\n3555328,,,-',
+            '1,8191,0xDA\n8253,270274,0x0C,*\n278528,1835008,L\n'
+            '2113536,-,E\n2113536,524288,L\n2637824,1179648,L\n3817472,,,-',
             android_boards.AndroidOrigenQuadConfig().get_sfdisk_cmd())
 
     def test_snowball_emmc_android(self):
         self.assertEqual(
-            '256,7936,0xDA\n8192,262144,0x0C,*\n270336,1572864,L\n'
-            '1843200,-,E\n1843200,524288,L\n2367488,1179648,L\n3547136,,,-',
+            '256,7936,0xDA\n8192,262144,0x0C,*\n270336,1835008,L\n'
+            '2105344,-,E\n2105344,524288,L\n2629632,1179648,L\n3809280,,,-',
             android_boards.AndroidSnowballEmmcConfig().get_sfdisk_cmd())
 
     def test_vexpress_android(self):
         self.assertEqual(
-            '63,270272,0x0E,*\n270336,1572864,L\n1843200,524288,L\n'
-            '2367488,-,E\n2367488,1179648,L\n3547136,,,-',
+            '63,270272,0x0E,*\n270336,1835008,L\n2105344,524288,L\n'
+            '2629632,-,E\n2629632,1179648,L\n3809280,,,-',
             android_boards.AndroidVexpressConfig().get_sfdisk_cmd())
 
     def test_mx5_android(self):
         self.assertEqual(
-            '1,8191,0xDA\n8192,262144,0x0C,*\n270336,1572864,L\n'
-            '1843200,-,E\n1843200,524288,L\n2367488,1179648,L\n3547136,,,-',
+            '1,8191,0xDA\n8192,262144,0x0C,*\n270336,1835008,L\n'
+            '2105344,-,E\n2105344,524288,L\n2629632,1179648,L\n3809280,,,-',
             android_boards.AndroidMx53LoCoConfig().get_sfdisk_cmd())
 
     def test_mx6_android(self):
         self.assertEqual(
-            '1,8191,0xDA\n8192,262144,0x0C,*\n270336,1572864,L\n'
-            '1843200,-,E\n1843200,524288,L\n2367488,1179648,L\n3547136,,,-',
+            '1,8191,0xDA\n8192,262144,0x0C,*\n270336,1835008,L\n'
+            '2105344,-,E\n2105344,524288,L\n2629632,1179648,L\n3809280,,,-',
             android_boards.AndroidMx6QSabreliteConfig().get_sfdisk_cmd())
 
 
@@ -2533,7 +2533,7 @@ class TestBoards(TestCaseWithFixtures):
         board_conf.set_metadata([])
         install_omap_boot_loader("chroot_dir", "boot_disk", board_conf)
         expected = [
-            '%s cp -v chroot_dir/MLO boot_disk' % sudo_args, 'sync']
+            '%s cp -v chroot_dir/MLO boot_disk' % sudo_args]
         self.assertEqual(expected, fixture.mock.commands_executed)
 
     def test_install_smdk_u_boot(self):
@@ -2811,7 +2811,6 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
              '%s sfdisk -l %s' % (sudo_args, self.media.path),
-             'sync',
              '%s sfdisk -l %s' % (sudo_args, self.media.path)],
             popen_fixture.mock.commands_executed)
         # Notice that we create all partitions in a single sfdisk run because
@@ -2834,7 +2833,6 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
              '%s sfdisk -l %s' % (sudo_args, self.media.path),
-             'sync',
              '%s sfdisk -l %s' % (sudo_args, self.media.path)],
             popen_fixture.mock.commands_executed)
         # Notice that we create all partitions in a single sfdisk run because
@@ -2856,7 +2854,6 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
              '%s sfdisk -l %s' % (sudo_args, self.media.path),
-             'sync',
              '%s sfdisk -l %s' % (sudo_args, self.media.path)],
             popen_fixture.mock.commands_executed)
         # Notice that we create all partitions in a single sfdisk run because
@@ -2879,7 +2876,6 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
              '%s sfdisk -l %s' % (sudo_args, self.media.path),
-             'sync',
              '%s sfdisk -l %s' % (sudo_args, self.media.path)],
             popen_fixture.mock.commands_executed)
         # Notice that we create all partitions in a single sfdisk run because
@@ -2902,7 +2898,6 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
              '%s sfdisk -l %s' % (sudo_args, self.media.path),
-             'sync',
              '%s sfdisk -l %s' % (sudo_args, self.media.path)],
             popen_fixture.mock.commands_executed)
         # Notice that we create all partitions in a single sfdisk run because
@@ -2923,7 +2918,6 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
              '%s sfdisk -l %s' % (sudo_args, self.media.path),
-             'sync',
              '%s sfdisk -l %s' % (sudo_args, self.media.path)],
             popen_fixture.mock.commands_executed)
         self.assertEqual(
@@ -2945,7 +2939,6 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # for us to overwrite on the image file.
         self.assertEqual(
             ['%s sfdisk -l %s' % (sudo_args, tmpfile),
-             'sync',
              '%s sfdisk -l %s' % (sudo_args, tmpfile)],
             popen_fixture.mock.commands_executed)
 
@@ -3311,10 +3304,9 @@ class TestPartitionSetup(TestCaseWithFixtures):
              '%s sfdisk --force -D -uS -H %s -S %s -C 1024 %s' % (
                  sudo_args, HEADS, SECTORS, tmpfile),
              # Make sure changes are written to disk.
-             'sync',
              '%s sfdisk -l %s' % (sudo_args, tmpfile),
              '%s mkfs.vfat -F 32 %s -n boot' % (sudo_args, bootfs_dev),
-             '%s mkfs.ext3 %s -L root' % (sudo_args, rootfs_dev)],
+             '%s mkfs.ext3 -F %s -L root' % (sudo_args, rootfs_dev)],
             popen_fixture.mock.commands_executed)
 
     def test_setup_partitions_for_block_device(self):
@@ -3343,14 +3335,13 @@ class TestPartitionSetup(TestCaseWithFixtures):
              '%s sfdisk -l %s' % (sudo_args, tmpfile),
              '%s sfdisk --force -D -uS -H %s -S %s %s' % (
                  sudo_args, HEADS, SECTORS, tmpfile),
-             'sync',
              '%s sfdisk -l %s' % (sudo_args, tmpfile),
              # Since the partitions are mounted, setup_partitions will umount
              # them before running mkfs.
              '%s umount %s' % (sudo_args, bootfs_dev),
              '%s umount %s' % (sudo_args, rootfs_dev),
              '%s mkfs.vfat -F 32 %s -n boot' % (sudo_args, bootfs_dev),
-             '%s mkfs.ext3 %s -L root' % (sudo_args, rootfs_dev)],
+             '%s mkfs.ext3 -F %s -L root' % (sudo_args, rootfs_dev)],
             popen_fixture.mock.commands_executed)
 
     def test_get_device_file_for_partition_number_raises_DBusException(self):
@@ -3434,7 +3425,6 @@ class TestMountedPartitionContextManager(TestCaseWithFixtures):
                 pass
         test_func()
         expected = ['%s mount foo bar -t proc' % sudo_args,
-                    'sync',
                     '%s umount bar' % sudo_args]
         self.assertEqual(expected, popen_fixture.mock.commands_executed)
 
@@ -3449,7 +3439,6 @@ class TestMountedPartitionContextManager(TestCaseWithFixtures):
         except TestException:
             pass
         expected = ['%s mount foo bar' % sudo_args,
-                    'sync',
                     '%s umount bar' % sudo_args]
         self.assertEqual(expected, popen_fixture.mock.commands_executed)
 
@@ -3468,7 +3457,7 @@ class TestMountedPartitionContextManager(TestCaseWithFixtures):
             with partition_mounted('foo', 'bar'):
                 pass
         test_func()
-        expected = ['sudo -E mount foo bar', 'sync']
+        expected = ['sudo -E mount foo bar']
         self.assertEqual(expected, popen_fixture.mock.commands_executed)
 
 
@@ -3483,7 +3472,6 @@ class TestPopulateBoot(TestCaseWithFixtures):
     expected_calls = [
         'mkdir -p boot_disk',
         '%s mount boot_partition boot_disk' % sudo_args,
-        'sync',
         '%s umount boot_disk' % sudo_args]
 
     def save_args(self, *args):
@@ -3688,7 +3676,6 @@ class TestPopulateRootFS(TestCaseWithFixtures):
             '%s dd if=/dev/zero of=%s bs=1M count=100' % (
                 sudo_args, swap_file),
             '%s mkswap %s' % (sudo_args, swap_file),
-            'sync',
             '%s umount %s' % (sudo_args, root_disk)]
         self.assertEqual(expected, popen_fixture.mock.commands_executed)
 
@@ -3977,7 +3964,7 @@ class TestInstallHWPack(TestCaseWithFixtures):
         fixture = self.useFixture(MockCmdRunnerPopenFixture())
         temporarily_overwrite_file_on_dir('/path/to/file', '/dir', '/tmp/dir')
         self.assertEquals(
-            ['%s cp /path/to/file /dir' % sudo_args],
+            ['%s cp -a /path/to/file /dir' % sudo_args],
             fixture.mock.commands_executed)
 
         fixture.mock.calls = []
@@ -4165,8 +4152,8 @@ class TestInstallHWPack(TestCaseWithFixtures):
         prepare_chroot('chroot', '/tmp/dir')
         run_local_atexit_funcs()
         expected = [
-            'cp /etc/resolv.conf chroot/etc',
-            'cp /etc/hosts chroot/etc',
+            'cp -a /etc/resolv.conf chroot/etc',
+            'cp -a /etc/hosts chroot/etc',
             'cp /usr/bin/qemu-armeb-static chroot/usr/bin',
             'cp /usr/bin/qemu-arm-static chroot/usr/bin',
             'cp /usr/bin/qemu-aarch64-static chroot/usr/bin',
