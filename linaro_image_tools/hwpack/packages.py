@@ -87,6 +87,7 @@ def get_packages_file(packages, extra_text=None, rel_to=None):
         if package.breaks:
             parts.append('Breaks: %s' % package.breaks)
         parts.append('MD5sum: %s' % package.md5)
+        parts.append('SHA256: %s' % package.sha256)
         content += "\n".join(parts)
         content += "\n\n"
     return content
@@ -295,6 +296,9 @@ class FetchedPackage(object):
     :ivar md5: the hex representation of the md5sum of the contents of
         the package.
     :type md5: str
+    :ivar sha256: the hex representation of the sha256sum of the contents of
+        the package.
+    :type sha256: str
     :ivar architecture: the architecture that the package is for, may be
         'all'.
     :type architecture: str
@@ -331,7 +335,7 @@ class FetchedPackage(object):
     :type breaks: str or None
     """
 
-    def __init__(self, name, version, filename, size, md5,
+    def __init__(self, name, version, filename, size, md5, sha256,
                  architecture, depends=None, pre_depends=None,
                  multi_arch=None, conflicts=None, recommends=None,
                  provides=None, replaces=None, breaks=None):
@@ -344,6 +348,7 @@ class FetchedPackage(object):
         self.filename = filename
         self.size = size
         self.md5 = md5
+        self.sha256 = sha256
         self.architecture = architecture
         self.depends = depends
         self.pre_depends = pre_depends
@@ -389,7 +394,7 @@ class FetchedPackage(object):
         provides = ", ".join([a[0] for a in pkg._cand.provides_list]) or None
         pkg = cls(
             pkg.package.name, pkg.version, filename, pkg.size,
-            pkg.md5, pkg.architecture, depends=depends,
+            pkg.md5, pkg.sha256, pkg.architecture, depends=depends,
             pre_depends=pre_depends, multi_arch=multi_arch,
             conflicts=conflicts, recommends=recommends, provides=provides,
             replaces=replaces, breaks=breaks)
@@ -406,6 +411,7 @@ class FetchedPackage(object):
         filename = os.path.basename(deb_file_path)
         size = os.path.getsize(deb_file_path)
         md5sum = hashlib.md5(open(deb_file_path).read()).hexdigest()
+        sha256sum = hashlib.sha256(open(deb_file_path).read()).hexdigest()
         architecture = debcontrol['Architecture']
         depends = debcontrol.get('Depends')
         pre_depends = debcontrol.get('Pre-Depends')
@@ -416,8 +422,8 @@ class FetchedPackage(object):
         replaces = debcontrol.get('Replaces')
         breaks = debcontrol.get('Breaks')
         pkg = cls(
-            name, version, filename, size, md5sum, architecture, depends,
-            pre_depends, multi_arch, conflicts, recommends, provides,
+            name, version, filename, size, md5sum, sha256sum, architecture,
+            depends, pre_depends, multi_arch, conflicts, recommends, provides,
             replaces, breaks)
         pkg.content = open(deb_file_path)
         pkg._file_path = deb_file_path
@@ -434,6 +440,7 @@ class FetchedPackage(object):
         'filename',
         'size',
         'md5',
+        'sha256',
         'architecture',
         'depends',
         'pre_depends',
@@ -784,7 +791,7 @@ class PackageFetcher(object):
             result_package = fetched[package.name]
             destfile = os.path.join(self.cache.tempdir, base)
             acqfile = apt_pkg.AcquireFile(
-                acq, candidate.uri, candidate.md5, candidate.size,
+                acq, candidate.uri, candidate.sha256, candidate.size,
                 base, destfile=destfile)
             acqfiles.append((acqfile, result_package, destfile))
             # check if we have a private key in the pkg url
