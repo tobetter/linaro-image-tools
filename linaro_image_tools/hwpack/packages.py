@@ -791,7 +791,7 @@ class PackageFetcher(object):
             result_package = fetched[package.name]
             destfile = os.path.join(self.cache.tempdir, base)
             acqfile = apt_pkg.AcquireFile(
-                acq, candidate.uri, candidate.md5sum, candidate.size,
+                acq, candidate.uri, candidate.md5, candidate.size,
                 base, destfile=destfile)
             acqfiles.append((acqfile, result_package, destfile))
             # check if we have a private key in the pkg url
