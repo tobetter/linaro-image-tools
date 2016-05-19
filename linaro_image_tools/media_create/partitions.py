@@ -56,10 +56,8 @@ MIN_IMAGE_SIZE = ROUND_IMAGE_TO
 def setup_android_partitions(board_config, media, image_size, bootfs_label,
                              should_create_partitions,
                              should_align_boot_part=False):
-    cylinders = None
     if not media.is_block_device:
         image_size_in_bytes = get_partition_size_in_bytes(image_size)
-        cylinders = image_size_in_bytes / CYLINDER_SIZE
         proc = cmd_runner.run(
             ['dd', 'of=%s' % media.path,
              'bs=1', 'seek=%s' % image_size_in_bytes, 'count=0'],
@@ -68,8 +66,7 @@ def setup_android_partitions(board_config, media, image_size, bootfs_label,
 
     if should_create_partitions:
         create_partitions(
-            board_config, media, HEADS, SECTORS, cylinders,
-            should_align_boot_part=should_align_boot_part)
+            board_config, media, should_align_boot_part=should_align_boot_part)
 
     if media.is_block_device:
         bootfs, system, cache, data, sdcard = \
@@ -137,10 +134,8 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
     :param should_align_boot_part: Whether to align the boot partition too.
     :param part_table: Type of partition table, either 'mbr' or 'gpt'.
     """
-    cylinders = None
     if not media.is_block_device:
         image_size_in_bytes = get_partition_size_in_bytes(image_size)
-        cylinders = image_size_in_bytes / CYLINDER_SIZE
         proc = cmd_runner.run(
             ['dd', 'of=%s' % media.path,
              'bs=1', 'seek=%s' % image_size_in_bytes, 'count=0'],
@@ -149,8 +144,7 @@ def setup_partitions(board_config, media, image_size, bootfs_label,
 
     if should_create_partitions:
         create_partitions(
-            board_config, media, HEADS, SECTORS, cylinders,
-            should_align_boot_part=should_align_boot_part,
+            board_config, media, should_align_boot_part=should_align_boot_part,
             part_table=part_table)
 
     if media.is_block_device:
@@ -527,8 +521,7 @@ def _check_min_size(size):
     return size
 
 
-def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
-                        as_root=True, stderr=None):
+def run_sfdisk_commands(commands, device, as_root=True, stderr=None):
     """Run the given commands under sfdisk.
 
     Every time sfdisk is invoked it will repartition the device so to create
@@ -541,14 +534,7 @@ def run_sfdisk_commands(commands, heads, sectors, cylinders, device,
     # --force is unfortunate, but a consequence of having partitions not
     # starting on cylinder boundaries: sfdisk will abort with "Warning:
     # partition 2 does not start at a cylinder boundary"
-    args = ['sfdisk',
-            '--force',
-            '-D',
-            '-uS',
-            '-H', str(heads),
-            '-S', str(sectors)]
-    if cylinders is not None:
-        args.extend(['-C', str(cylinders)])
+    args = ['sfdisk', '--force', '-uS']
     args.append(device)
     proc = cmd_runner.run(
         args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr,
@@ -563,18 +549,12 @@ def run_sgdisk_commands(commands, device, as_root=True, stderr=None):
     proc.wait()
 
 
-def create_partitions(board_config, media, heads, sectors, cylinders=None,
-                      should_align_boot_part=False, part_table="mbr"):
+def create_partitions(board_config, media, should_align_boot_part=False,
+                      part_table="mbr"):
     """Partition the given media according to the board requirements.
 
     :param board_config: A BoardConfig class.
     :param media: A setup_partitions.Media object to partition.
-    :param heads: Number of heads to use in the disk geometry of
-        partitions.
-    :param sectors: Number of sectors to use in the disk geometry of
-        partitions.
-    :param cylinders: The number of cylinders to pass to sfdisk's -C argument.
-        If None the -C argument is not passed.
     :param should_align_boot_part: Whether to align the boot partition too.
     :param part_table Type of partition table, either 'mbr' or 'gpt'.
     """
@@ -599,7 +579,7 @@ def create_partitions(board_config, media, heads, sectors, cylinders=None,
         sfdisk_cmd = board_config.get_sfdisk_cmd(
             should_align_boot_part=should_align_boot_part)
 
-        run_sfdisk_commands(sfdisk_cmd, heads, sectors, cylinders, media.path)
+        run_sfdisk_commands(sfdisk_cmd, media.path)
 
     # sleep to wait for the partition to settle.
     wait_partition_to_settle(media, part_table)

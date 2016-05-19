@@ -80,10 +80,8 @@ from linaro_image_tools.media_create.chroot_utils import (
     temporarily_overwrite_file_on_dir,
 )
 from linaro_image_tools.media_create.partitions import (
-    HEADS,
     MIN_IMAGE_SIZE,
     Media,
-    SECTORS,
     _check_min_size,
     _get_device_file_for_partition_number,
     _parse_blkid_output,
@@ -2806,7 +2804,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
         board_conf = boards.Mx5Config()
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
-        create_partitions(board_conf, self.media, HEADS, SECTORS, '')
+        create_partitions(board_conf, self.media)
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
@@ -2817,8 +2815,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', HEADS, SECTORS,
-              '', self.media.path)],
+            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_smdkv310(self):
@@ -2828,7 +2825,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
         board_conf = get_board_config('smdkv310')
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
-        create_partitions(board_conf, self.media, HEADS, SECTORS, '')
+        create_partitions(board_conf, self.media)
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
@@ -2839,8 +2836,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', HEADS,
-              SECTORS, '', self.media.path)], sfdisk_fixture.mock.calls)
+            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', self.media.path)],
+            sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_origen(self):
         # For this board we create a one cylinder partition at the beginning.
@@ -2849,7 +2846,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
         board_conf = get_board_config('origen')
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
-        create_partitions(board_conf, self.media, HEADS, SECTORS, '')
+        create_partitions(board_conf, self.media)
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
@@ -2860,8 +2857,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', HEADS,
-              SECTORS, '', self.media.path)], sfdisk_fixture.mock.calls)
+            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', self.media.path)],
+            sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_origen_quad(self):
         # For this board we create a one cylinder partition at the beginning.
@@ -2871,7 +2868,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         board_conf = get_board_config('origen_quad')
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         create_partitions(
-            board_conf, self.media, HEADS, SECTORS, '')
+            board_conf, self.media)
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
@@ -2882,8 +2879,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', HEADS,
-              SECTORS, '', self.media.path)], sfdisk_fixture.mock.calls)
+            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', self.media.path)],
+            sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_arndale(self):
         # For this board we create a one cylinder partition at the beginning.
@@ -2893,7 +2890,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         board_conf = get_board_config('arndale')
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
         create_partitions(
-            board_conf, self.media, HEADS, SECTORS, '')
+            board_conf, self.media)
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
@@ -2904,8 +2901,8 @@ class TestCreatePartitions(TestCaseWithFixtures):
         # every time we run sfdisk it actually repartitions the device,
         # erasing any partitions created previously.
         self.assertEqual(
-            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', HEADS,
-              SECTORS, '', self.media.path)], sfdisk_fixture.mock.calls)
+            [('1,8191,0xDA\n8192,106496,0x0C,*\n114688,,,-', self.media.path)],
+            sfdisk_fixture.mock.calls)
 
     def test_create_partitions_for_beagle(self):
         popen_fixture = self.useFixture(MockCmdRunnerPopenFixture())
@@ -2913,7 +2910,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
 
         board_conf = get_board_config('beagle')
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
-        create_partitions(board_conf, self.media, HEADS, SECTORS, '')
+        create_partitions(board_conf, self.media)
 
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, self.media.path),
@@ -2921,8 +2918,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
              '%s sfdisk -l %s' % (sudo_args, self.media.path)],
             popen_fixture.mock.commands_executed)
         self.assertEqual(
-            [('63,106432,0x0C,*\n106496,,,-', HEADS, SECTORS, '',
-              self.media.path)],
+            [('63,106432,0x0C,*\n106496,,,-', self.media.path)],
             sfdisk_fixture.mock.calls)
 
     def test_create_partitions_with_img_file(self):
@@ -2932,7 +2928,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         tmpfile = self.createTempFileAsFixture()
         board_conf = get_board_config('beagle')
         board_conf.hwpack_format = HardwarepackHandler.FORMAT_1
-        create_partitions(board_conf, Media(tmpfile), HEADS, SECTORS, '')
+        create_partitions(board_conf, Media(tmpfile))
 
         # Unlike the test for partitioning of a regular block device, in this
         # case parted was not called as there's no existing partition table
@@ -2943,7 +2939,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
             popen_fixture.mock.commands_executed)
 
         self.assertEqual(
-            [('63,106432,0x0C,*\n106496,,,-', HEADS, SECTORS, '', tmpfile)],
+            [('63,106432,0x0C,*\n106496,,,-', tmpfile)],
             sfdisk_fixture.mock.calls)
 
     def test_run_sfdisk_commands(self):
@@ -2953,7 +2949,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
             stderr=open('/dev/null', 'w'))
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
-            '2,16063,0xDA', HEADS, SECTORS, '', tmpfile, as_root=False,
+            '2,16063,0xDA', tmpfile, as_root=False,
             stderr=subprocess.PIPE)
         self.assertIn('Successfully wrote the new partition table', stdout)
 
@@ -2962,7 +2958,7 @@ class TestCreatePartitions(TestCaseWithFixtures):
         self.assertRaises(
             cmd_runner.SubcommandNonZeroReturnValue,
             run_sfdisk_commands,
-            ',1,0xDA', HEADS, SECTORS, '', tmpfile, as_root=False,
+            ',1,0xDA', tmpfile, as_root=False,
             stderr=subprocess.PIPE)
 
     def test_wait_partitions_to_settle(self):
@@ -3034,10 +3030,10 @@ class TestPartitionSetup(TestCaseWithFixtures):
             (63 * SECTOR_SIZE, 32768 * SECTOR_SIZE),
             (32831 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
             (98367 * SECTOR_SIZE, 65536 * SECTOR_SIZE),
-            ((294975 + ext_part_size) * SECTOR_SIZE,
-             (131072 - ext_part_size) * SECTOR_SIZE),
-            ((426047 + ext_part_size) * SECTOR_SIZE,
-             self.android_image_size - (426047 + ext_part_size) * SECTOR_SIZE)
+            ((294944 + ext_part_size) * SECTOR_SIZE,
+             (131103 - ext_part_size) * SECTOR_SIZE),
+            ((426016 + ext_part_size) * SECTOR_SIZE,
+             self.android_image_size - (426016 + ext_part_size) * SECTOR_SIZE)
         ]
 
         self.android_snowball_offsets_and_sizes = [
@@ -3185,7 +3181,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             stderr=open('/dev/null', 'w'))
         proc.communicate()
         stdout, stderr = run_sfdisk_commands(
-            sfdisk_commands, HEADS, SECTORS, '', tmpfile, as_root=False,
+            sfdisk_commands, tmpfile, as_root=False,
             # Throw away stderr as sfdisk complains a lot when operating on a
             # qemu image.
             stderr=subprocess.PIPE)
@@ -3301,8 +3297,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
             ['dd of=%s bs=1 seek=2147483648 count=0' % tmpfile,
              '%s sfdisk -l %s' % (sudo_args, tmpfile),
              # This call would partition the image file.
-             '%s sfdisk --force -D -uS -H %s -S %s -C 1024 %s' % (
-                 sudo_args, HEADS, SECTORS, tmpfile),
+             '%s sfdisk --force -uS %s' % (sudo_args, tmpfile),
              # Make sure changes are written to disk.
              '%s sfdisk -l %s' % (sudo_args, tmpfile),
              '%s mkfs.vfat -F 32 %s -n boot' % (sudo_args, bootfs_dev),
@@ -3333,8 +3328,7 @@ class TestPartitionSetup(TestCaseWithFixtures):
         self.assertEqual(
             ['%s parted -s %s mklabel msdos' % (sudo_args, tmpfile),
              '%s sfdisk -l %s' % (sudo_args, tmpfile),
-             '%s sfdisk --force -D -uS -H %s -S %s %s' % (
-                 sudo_args, HEADS, SECTORS, tmpfile),
+             '%s sfdisk --force -uS %s' % (sudo_args, tmpfile),
              '%s sfdisk -l %s' % (sudo_args, tmpfile),
              # Since the partitions are mounted, setup_partitions will umount
              # them before running mkfs.
