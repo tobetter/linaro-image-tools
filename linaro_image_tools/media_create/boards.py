@@ -2083,8 +2083,10 @@ def _get_file_matching(regex):
 
     If zero or more than one files match, raise a ValueError.
     """
-    files = [fn for fn in glob.glob(regex)
-        if not os.path.islink(fn)]
+    files = []
+    for fn in glob.glob(regex):
+        if not os.path.islink(fn):
+            files.append(fn)
     if len(files) == 1:
         return files[0]
     elif len(files) == 0:
