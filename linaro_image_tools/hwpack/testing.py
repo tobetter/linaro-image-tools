@@ -126,6 +126,12 @@ class DummyFetchedPackage(FetchedPackage):
         md5sum.update(self.content.read())
         return md5sum.hexdigest()
 
+    @property
+    def sha256(self):
+        sha256sum = hashlib.sha256()
+        sha256sum.update(self.content.read())
+        return sha256sum.hexdigest()
+
 
 class AptSourceFixture(object):
     """A fixture that provides an apt source, with packages and indices.
