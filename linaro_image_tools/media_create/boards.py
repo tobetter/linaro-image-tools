@@ -1817,7 +1817,7 @@ class OdroidXU4Config(SamsungConfig):
         boot_bin_3 = {'name': 'tzsw.bin.hardkernel', 'seek': 719}
         boot_bins = [boot_bin_0, boot_bin_1, boot_bin_2, boot_bin_3]
 
-        boot_partition = 'boot'
+        boot_partition = 'usr/lib/u-boot/odroidxu4'
 
         # Zero the env so that the boot_script will get loaded
         _dd("/dev/zero", boot_device_or_file, count=self.samsung_env_len,
